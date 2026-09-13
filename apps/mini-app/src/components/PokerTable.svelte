@@ -1,0 +1,282 @@
+<script lang="ts">
+  import PlayingCard from './PlayingCard.svelte';
+  import PokerChip from './PokerChip.svelte';
+  import Avatar from './Avatar.svelte';
+  import TimerRing from './TimerRing.svelte';
+
+  export let gameState: any = null;
+  export let myUserId: number | null = null;
+  export let myAvatarId: string = 'spade';
+  export let theme: 'cash' | 'tournament' = 'cash';
+  export let tournamentTitle: string = '';
+  export let currentLevel: number = 1;
+  export let levelBlinds: { sb: number; bb: number; ante: number } | null = null;
+  export let isEliminated: boolean = false;
+
+  $: feltGradient = theme === 'tournament'
+    ? 'radial-gradient(ellipse at 50% 45%, #5b21b6 0%, #3b0764 55%, #1e1b4b 100%)'
+    : 'radial-gradient(ellipse at 50% 45%, #1a5c3a 0%, #0d3d24 55%, #072a1a 100%)';
+  $: rimColor = '#050a0a';
+
+  function fmt(n: any): string {
+    return Number(Number(n || 0).toFixed(2)).toFixed(2);
+  }
+
+  function suitChar(s: string): '♠' | '♥' | '♦' | '♣' {
+    if (s === 's') return '♠';
+    if (s === 'h') return '♥';
+    if (s === 'd') return '♦';
+    return '♣';
+  }
+
+  const ANGLE_MAP: Record<number, number[]> = {
+    1: [270],
+    2: [225, 315],
+    3: [200, 270, 340],
+    4: [180, 230, 310, 0],
+    5: [180, 220, 270, 320, 0],
+  };
+
+  function seatPos(idx: number, total: number): { x: number; y: number } {
+    const angles = ANGLE_MAP[total] || ANGLE_MAP[5];
+    const deg = angles[idx] ?? 270;
+    const rad = (deg * Math.PI) / 180;
+    const rx = 42;
+    const ry = 38;
+    return {
+      x: 50 + Math.cos(rad) * rx,
+      y: 50 + Math.sin(rad) * ry,
+    };
+  }
+
+  function towardCenter(px: number, py: number, dist: number): { x: number; y: number } {
+    const dx = 50 - px;
+    const dy = 50 - py;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    if (len === 0) return { x: 0, y: 0 };
+    return { x: (dx / len) * dist, y: (dy / len) * dist };
+  }
+
+  $: allSeats = gameState?.seats ?? [];
+  $: mySeat = allSeats.find((s: any) => s.userId === myUserId) ?? null;
+  $: opponents = allSeats.filter((s: any) => s.userId !== myUserId);
+  $: isMyTurn = !!(
+    gameState &&
+    mySeat &&
+    gameState.currentSeat === mySeat.seat &&
+    !mySeat.folded &&
+    !mySeat.allIn
+  );
+  $: totalPot = gameState?.pot ?? 0;
+  $: community = gameState?.community ?? [];
+  $: serverTime = gameState?.serverTime ?? 0;
+  $: turnStartedAt = gameState?.turnStartedAt ?? 0;
+  $: turnBaseLimit = gameState?.turnBaseLimit ?? 30;
+</script>
+
+<div class="absolute left-1/2 -translate-x-1/2 w-[92%] max-w-[420px]" style="top: 43%; transform: translate(-50%, -50%);">
+  <div class="relative w-full" style="aspect-ratio: 1 / 1.15;">
+
+    <div
+      class="absolute -inset-3 rounded-[50%]"
+      style="
+        background: {rimColor};
+        box-shadow:
+          0 10px 40px rgba(0,0,0,0.95),
+          inset 0 0 30px rgba(0,0,0,0.9),
+          0 0 0 2px rgba(30,41,59,0.6),
+          0 0 0 6px rgba(0,0,0,0.5);
+      "
+    ></div>
+
+    <div class="absolute -inset-1 rounded-[50%]" style="background: linear-gradient(180deg, rgba(255,255,255,0.08), transparent 30%, transparent 70%, rgba(255,255,255,0.04));"></div>
+
+    <div class="absolute inset-0 rounded-[50%] overflow-hidden" style="background: {feltGradient};">
+      <div class="absolute inset-0 rounded-[50%]" style="box-shadow: inset 0 0 80px rgba(0,0,0,0.7);"></div>
+      <div class="absolute inset-0 rounded-[50%] opacity-30" style="background: radial-gradient(ellipse at 50% 30%, rgba(255,255,255,0.2), transparent 55%);"></div>
+    </div>
+
+    {#if gameState}
+      {#each opponents as s, i}
+        {@const pos = seatPos(i, opponents.length)}
+        {@const isTurn = gameState.currentSeat === s.seat && !s.folded && !s.allIn}
+        {@const showCards = s.revealed && s.hole && s.hole.length > 0}
+        {@const betAmount = s.betThisStreet}
+        {@const chipOffset = towardCenter(pos.x, pos.y, 10)}
+
+        <div
+          class="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-20 pointer-events-none"
+          style="left: {pos.x}%; top: {pos.y}%;"
+        >
+          <div class="relative">
+            {#if isTurn}
+              <TimerRing
+                size={60}
+                strokeWidth={4}
+                startedAt={turnStartedAt}
+                limitSec={turnBaseLimit}
+                {serverTime}
+                active={true}
+                color="#f97316"
+              />
+            {/if}
+
+            <div
+              class="rounded-full p-[3px] bg-black {s.folded ? 'opacity-40' : ''}"
+              style="border: 3px solid {isTurn ? '#f97316' : '#e5e7eb'}; box-shadow: 0 4px 14px rgba(0,0,0,0.85);"
+            >
+              <div class="w-14 h-14 rounded-full overflow-hidden bg-gradient-to-br from-amber-700 to-amber-900 flex items-center justify-center">
+                <Avatar avatarId={s.avatarId || 'diamond'} size="md" />
+              </div>
+            </div>
+
+            {#if s.folded}
+              <div class="absolute inset-0 flex items-center justify-center rounded-full bg-black/75">
+                <span class="text-[9px] font-extrabold text-white">FOLD</span>
+              </div>
+            {:else if s.allIn}
+              <div class="absolute -top-2 left-1/2 -translate-x-1/2 z-10">
+                <span class="text-[8px] font-extrabold bg-red-600 rounded-full px-2 py-0.5 whitespace-nowrap border border-red-400 shadow-lg text-white">ALL-IN</span>
+              </div>
+            {/if}
+
+            {#if gameState.dealerSeat === s.seat}
+              <div class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white text-black text-[9px] font-extrabold flex items-center justify-center shadow-lg border-2 border-black/30 z-10">D</div>
+            {/if}
+          </div>
+
+          <div
+            class="mt-1.5 px-2.5 py-1 bg-white min-w-[72px] flex flex-col items-center"
+            style="border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.7); border: 1px solid rgba(0,0,0,0.15);"
+          >
+            <p class="text-[11px] font-extrabold text-black leading-none truncate max-w-[80px]">{s.displayName}</p>
+            <p class="text-[11px] font-extrabold text-amber-600 leading-tight tabular-nums mt-0.5">${fmt(s.stack)}</p>
+          </div>
+        </div>
+
+        {#if showCards}
+          <div
+            class="absolute -translate-x-1/2 -translate-y-1/2 z-[21] pointer-events-none flex gap-1"
+            style="left: {pos.x}%; top: {pos.y + 9}%;"
+          >
+            {#each s.hole as c}
+              <PlayingCard rank={c.r} suit={suitChar(c.s)} size="sm" />
+            {/each}
+          </div>
+        {/if}
+
+        {#if betAmount > 0 && !s.folded}
+          <div
+            class="absolute -translate-x-1/2 -translate-y-1/2 z-[25] pointer-events-none"
+            style="left: {pos.x + chipOffset.x}%; top: {pos.y + chipOffset.y}%;"
+          >
+            <div class="flex items-center gap-1.5 rounded-full px-2.5 py-1 border-2 border-amber-500/60 shadow-[0_4px_14px_rgba(0,0,0,0.9),0_0_12px_rgba(245,158,11,0.3)]" style="background: rgba(0,0,0,0.92);">
+              <PokerChip amount={betAmount} size={14} />
+              <span class="text-[12px] font-extrabold text-amber-400 leading-none tabular-nums">${fmt(betAmount)}</span>
+            </div>
+          </div>
+        {/if}
+      {/each}
+    {/if}
+
+    {#if gameState && totalPot > 0}
+      <div class="absolute top-[22%] left-1/2 -translate-x-1/2 z-20">
+        <div
+          class="rounded-full px-4 py-1 flex items-center gap-2"
+          style="background: #000; border: 2px solid #d97706; box-shadow: 0 4px 16px rgba(0,0,0,0.9), 0 0 16px rgba(217,119,6,0.2);"
+        >
+          <span class="text-[10px] uppercase tracking-widest font-extrabold text-white/80">POT</span>
+          <span class="text-[14px] font-extrabold text-amber-400 tabular-nums">${fmt(totalPot)}</span>
+        </div>
+      </div>
+    {/if}
+
+    {#if gameState}
+      <div class="absolute top-[42%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-1.5 z-10">
+        {#each Array(5) as _, i}
+          {#if community[i]}
+            <PlayingCard rank={community[i].r} suit={suitChar(community[i].s)} size="md" />
+          {:else}
+            <div class="w-11 h-[60px] rounded-md bg-black/30 border border-white/5"></div>
+          {/if}
+        {/each}
+      </div>
+    {/if}
+
+    {#if gameState && mySeat && mySeat.hole && mySeat.hole.length > 0 && !isEliminated}
+      <div class="absolute top-[68%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex justify-center gap-2 z-30">
+        {#each mySeat.hole as c}
+          <div class="drop-shadow-[0_6px_16px_rgba(0,0,0,0.95)]">
+            <PlayingCard rank={c.r} suit={suitChar(c.s)} size="lg" />
+          </div>
+        {/each}
+      </div>
+    {/if}
+
+    {#if gameState && mySeat}
+      <div class="absolute top-[92%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-30">
+        <div class="relative">
+          {#if isMyTurn}
+            <TimerRing
+              size={68}
+              strokeWidth={4}
+              startedAt={turnStartedAt}
+              limitSec={turnBaseLimit}
+              {serverTime}
+              active={true}
+              color="#f97316"
+            />
+          {/if}
+
+          <div
+            class="rounded-full p-[3px] bg-black {mySeat.folded || isEliminated ? 'opacity-40' : ''}"
+            style="border: 3px solid {isMyTurn ? '#f97316' : '#e5e7eb'}; box-shadow: 0 4px 18px rgba(0,0,0,0.9);"
+          >
+            <div class="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-amber-700 to-amber-900 flex items-center justify-center">
+              <Avatar avatarId={myAvatarId} size="md" />
+            </div>
+          </div>
+
+          {#if gameState.dealerSeat === mySeat.seat}
+            <div class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-white text-black text-[11px] font-extrabold flex items-center justify-center shadow-lg border-2 border-gray-400 z-10">D</div>
+          {/if}
+        </div>
+
+        <div
+          class="mt-2 px-3 py-1 bg-white min-w-[84px] flex flex-col items-center"
+          style="border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.7); border: 1px solid rgba(0,0,0,0.15);"
+        >
+          <p class="text-[11px] font-extrabold text-black leading-none">You</p>
+          <p class="text-[12px] font-extrabold text-amber-600 leading-tight tabular-nums mt-0.5">${fmt(mySeat.stack)}</p>
+        </div>
+
+        {#if mySeat.betThisStreet > 0 && !mySeat.folded}
+          <div class="mt-1 flex items-center gap-1 bg-black/85 rounded-full px-2 py-0.5 border border-amber-500/50">
+            <PokerChip amount={mySeat.betThisStreet} size={12} />
+            <span class="text-[10px] font-bold text-amber-400 leading-none tabular-nums">${fmt(mySeat.betThisStreet)}</span>
+          </div>
+        {/if}
+      </div>
+    {/if}
+
+    <div class="absolute top-[5%] left-1/2 -translate-x-1/2 z-10 text-center pointer-events-none">
+      {#if gameState}
+        <p class="text-[9px] uppercase tracking-widest font-bold text-white/35">
+          {gameState?.variant === 'omaha4' ? "OMAHA 4" : gameState?.variant === 'omaha5' ? "OMAHA 5" : "HOLD'EM"}
+        </p>
+        <p class="text-[10px] font-mono text-white/30 tabular-nums leading-none mt-0.5">
+          {gameState.phase ?? 'PREFLOP'}
+        </p>
+      {/if}
+    </div>
+  </div>
+</div>
+
+{#if gameState && theme === 'tournament'}
+  <div class="absolute top-14 left-0 right-0 z-20 flex flex-col items-center gap-1 pointer-events-none">
+    <div class="rounded-full px-3 py-0.5 flex items-center gap-2" style="background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.1);">
+      <span class="text-[9px] font-bold text-white/60">🎫</span>
+      <span class="text-[10px] font-bold text-white/90 truncate max-w-[140px]">{tournamentTitle}</span>
+    </div>
+  </div>
+{/if}

@@ -1,0 +1,15 @@
+export default {
+  nav: { home: 'Главная', tables: 'Столы', wallet: 'Кошелёк', profile: 'Я', leaderboard: 'Топ' },
+  common: { loading: 'Загрузка…', save: 'Сохранить', cancel: 'Отмена', ok: 'OK', back: 'Назад', soon: 'Скоро' },
+  home: { instantPlay: 'Быстрая игра', jumpIntoGame: 'Войти', quickSeat: 'БЫСТРО', games: 'Игры', topPlayers: 'Лучшие', leaderboardSoon: 'Скоро', prizesTop30: 'Топ-30 призы', freeChips: 'Бесплатные', playFree: 'Играть бесплатно', noRisk: 'Без риска' },
+  quickSeat: { title: 'Найти стол', variant: 'Игра', mode: 'Режим', free: 'Бесплатно', real: 'Реальные', findTable: 'НАЙТИ', realNote: 'TON / USDT' },
+  games: { holdem: 'Холдем', holdemSub: 'Безлимитный', omaha4: 'Омаха 4', omaha4Sub: 'Четыре', omaha5: 'Омаха 5', omaha5Sub: 'Пять', tourney: 'Турниры', tourneySub: 'Большие призы' },
+  login: { title: 'Войти', subtitle: 'Холдем, Омаха, Турниры', enterBtn: 'Войти через Telegram', signingIn: 'Вход…', terms: 'Соглашаетесь с условиями' },
+  tables: { title: 'Столы', all: 'Все', free: 'Бесплатно', real: 'Реальные', allVariant: 'Все игры', noTables: 'Нет столов', loadingTables: 'Загрузка…', blinds: 'Блайнды', seats: 'мест' },
+  wallet: { title: 'Кошелёк', totalBalance: 'Баланс', deposit: 'Пополнить', withdraw: 'Вывести', history: 'История', noTx: 'Нет транзакций', chooseAsset: 'Выбрать актив', depositNote: 'Откроется в Telegram', withdrawTo: 'Адрес', address: 'Адрес', amount: 'Сумма', minWithdraw: 'Мин', fee: 'Комиссия', comingSoon: 'Скоро' },
+  profile: { title: 'Профиль', chooseAvatar: 'Аватар', handsPlayed: 'Раздач', language: 'Язык', logout: 'Выйти' },
+  leaderboard: { title: 'Лидеры', prizePool: 'Призовой', top30Paid: 'Топ-30', hands: 'раздач', noData: 'Скоро', yourRank: 'Ваше место' },
+  events: { title: 'Турниры', noEvents: 'Нет турниров', register: 'Записаться', viewResult: 'Результаты' },
+  table: { fold: 'Фолд', check: 'Чек', call: 'Колл', raise: 'Рейз', allIn: 'Олл-ин', pot: 'БАНК', waitingPlayers: 'Ожидание…', waitingTurn: 'Ждите хода…', live: 'Онлайн', offline: 'Оффлайн' },
+  fair: { serverHash: 'Хеш', serverSeed: 'Сид', handNo: 'Раздача', community: 'Общие', verified: 'Подтверждено', locked: 'Обяз.' },
+};

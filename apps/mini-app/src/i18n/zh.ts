@@ -1,0 +1,15 @@
+export default {
+  nav: { home: '首页', tables: '牌桌', wallet: '钱包', profile: '我', leaderboard: '排行' },
+  common: { loading: '加载中…', save: '保存', cancel: '取消', ok: '确定', back: '返回', soon: '即将' },
+  home: { instantPlay: '即时游戏', jumpIntoGame: '进入游戏', quickSeat: '快速入座', games: '游戏', topPlayers: '顶尖', leaderboardSoon: '即将上线', prizesTop30: '前30奖励', freeChips: '免费筹码', playFree: '免费玩', noRisk: '无风险' },
+  quickSeat: { title: '找牌桌', variant: '选择游戏', mode: '模式', free: '免费', real: '真钱', findTable: '查找', realNote: 'TON / USDT' },
+  games: { holdem: '德州扑克', holdemSub: '无限注', omaha4: '奥马哈 4', omaha4Sub: '四张', omaha5: '奥马哈 5', omaha5Sub: '五张', tourney: '锦标赛', tourneySub: '大奖池' },
+  login: { title: '进入', subtitle: '德州、奥马哈、锦标赛', enterBtn: 'Telegram 登录', signingIn: '登录中…', terms: '同意条款' },
+  tables: { title: '牌桌', all: '全部', free: '免费', real: '真钱', allVariant: '所有游戏', noTables: '无牌桌', loadingTables: '加载中…', blinds: '盲注', seats: '座' },
+  wallet: { title: '钱包', totalBalance: '总余额', deposit: '充值', withdraw: '提现', history: '历史', noTx: '无交易', chooseAsset: '选择资产', depositNote: '在 Telegram 钱包中打开', withdrawTo: '提现地址', address: '地址', amount: '金额', minWithdraw: '最低', fee: '费用', comingSoon: '即将' },
+  profile: { title: '资料', chooseAvatar: '选择头像', handsPlayed: '已玩', language: '语言', logout: '退出' },
+  leaderboard: { title: '排行榜', prizePool: '奖池', top30Paid: '前30', hands: '手', noData: '即将', yourRank: '你的排名' },
+  events: { title: '锦标赛', noEvents: '暂无', register: '报名', viewResult: '结果' },
+  table: { fold: '弃牌', check: '过牌', call: '跟注', raise: '加注', allIn: '全押', pot: '底池', waitingPlayers: '等待…', waitingTurn: '等待回合…', live: '在线', offline: '离线' },
+  fair: { serverHash: '服务器哈希', serverSeed: '服务器种子', handNo: '手牌号', community: '公共牌', verified: '已验证', locked: '已承诺' },
+};

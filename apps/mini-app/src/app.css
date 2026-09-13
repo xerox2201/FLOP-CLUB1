@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #0a0e1a;
+  color: #fff;
+  font-family: 'Inter', system-ui, sans-serif;
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background:
+    radial-gradient(ellipse at top, rgba(76, 29, 149, 0.25), transparent 60%),
+    radial-gradient(ellipse at bottom, rgba(30, 58, 138, 0.20), transparent 60%),
+    #0a0e1a;
+  background-attachment: fixed;
+  min-height: 100dvh;
+}
+
+#app {
+  min-height: 100dvh;
+  max-width: 480px;
+  margin: 0 auto;
+  position: relative;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.glass-strong {
+  background: rgba(20, 25, 40, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.card {
+  @apply rounded-3xl p-4;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.btn-gold {
+  @apply font-bold py-3.5 px-6 rounded-2xl active:scale-[0.97] transition;
+  background: linear-gradient(180deg, #f5c842, #d4a017);
+  color: #0a0e1a;
+  box-shadow: 0 0 24px rgba(245, 200, 66, 0.35), 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.btn-dark {
+  @apply font-semibold py-3 px-6 rounded-2xl active:scale-[0.97] transition;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: #fff;
+}
+
+.game-card {
+  @apply rounded-3xl p-4 relative overflow-hidden active:scale-[0.98] transition;
+  min-height: 150px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.game-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.65));
+  pointer-events: none;
+}
+
+.game-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}

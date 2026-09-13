@@ -1,0 +1,346 @@
+<script lang="ts">
+  import { onMount, onDestroy } from 'svelte';
+  import PokerTable from '../components/PokerTable.svelte';
+  import WinnerBanner from '../components/WinnerBanner.svelte';
+  import { TableSocketIO, type TableState } from '../lib/socket';
+  import { auth } from '../stores/auth';
+  import { t } from '../i18n';
+
+  export let tableId: number = 1;
+  export let onBack: () => void = () => {};
+
+  let socket: TableSocketIO | null = null;
+  let gameState: TableState | null = null;
+  let connected = false;
+  let errorMsg = '';
+  let autoActionMsg = '';
+  let startingHand = true;
+  let showMenu = false;
+  let sittingOut = false;
+  let handResult: any = null;
+  let lastHandNo = 0;
+
+  let raiseAmount = 0;
+  let raiseTouched = false;
+
+  $: myUserId = $auth.user?.id;
+  $: mySeat = gameState?.seats?.find((s: any) => s.userId === myUserId) ?? null;
+  $: isMyTurn = !!(
+    gameState &&
+    mySeat &&
+    gameState.currentSeat === mySeat.seat &&
+    !mySeat.folded &&
+    !mySeat.allIn
+  );
+
+  $: maxBet = gameState ? Math.max(0, ...gameState.seats.map((s: any) => s.betThisStreet)) : 0;
+  $: myBet = mySeat?.betThisStreet ?? 0;
+  $: toCall = Math.max(0, maxBet - myBet);
+  $: myStack = mySeat?.stack ?? 0;
+  $: canCheck = toCall === 0;
+
+  $: minRaiseTo = gameState ? Math.min(maxBet + gameState.minRaise, myStack + myBet) : 0;
+  $: hardMax = myStack + myBet;
+  $: canRaise = isMyTurn && hardMax > maxBet && hardMax >= minRaiseTo;
+
+  $: canUseBank = isMyTurn && mySeat && mySeat.timeBankRemaining > 0 && !gameState?.turnBankActive;
+
+  $: if (isMyTurn && !raiseTouched) raiseAmount = Math.min(minRaiseTo, hardMax);
+  $: if (!isMyTurn) { raiseTouched = false; }
+  $: if (raiseAmount < minRaiseTo) raiseAmount = minRaiseTo;
+  $: if (raiseAmount > hardMax) raiseAmount = hardMax;
+
+  $: raisePercent = hardMax > minRaiseTo ? ((raiseAmount - minRaiseTo) / (hardMax - minRaiseTo)) * 100 : 100;
+
+  $: myAvatarId = ($auth.user as any)?.avatar_id || 'spade';
+
+  function fmt(n: any): string {
+    return Number(Number(n || 0).toFixed(2)).toFixed(2);
+  }
+
+  function connect() {
+    const token = localStorage.getItem('token');
+    if (!token) { errorMsg = 'no_token'; return; }
+
+    socket = new TableSocketIO(tableId, token);
+    socket.on((evt) => {
+      if (evt.type === 'connected') {
+        connected = true;
+      } else if (evt.type === 'disconnected') {
+        connected = false;
+        errorMsg = 'Reconnecting…';
+        setTimeout(() => { errorMsg = ''; }, 2000);
+      } else if (evt.type === 'state') {
+        gameState = evt.state;
+        startingHand = false;
+
+        const s: any = evt.state;
+        if (s.winners && s.winners.length > 0 && s.handNo !== lastHandNo) {
+          lastHandNo = s.handNo;
+          handResult = {
+            winners: s.winners,
+            showdown: true,
+            payouts: s.winners.map((seat: number) => ({ seat, amount: (s.pot / s.winners.length) })),
+            handNames: s.winners.map((seat: number) => ({ seat, name: 'Winner' })),
+            showdownPlayers: s.winners.map((seat: number) => {
+              const winner = s.seats.find((x: any) => x.seat === seat);
+              return {
+                seat,
+                displayName: winner?.displayName || 'Winner',
+                hole: winner?.hole || [],
+                best: winner?.hole || [],
+                handName: 'Winner',
+                isWinner: true,
+                payout: s.pot / s.winners.length,
+              };
+            }),
+          };
+          setTimeout(() => { handResult = null; }, 6000);
+        }
+      } else if (evt.type === 'error') {
+        errorMsg = evt.message;
+        setTimeout(() => { errorMsg = ''; }, 3000);
+      }
+    });
+    socket.connect();
+  }
+
+  onMount(() => { connect(); });
+  onDestroy(() => { if (socket) socket.close(); });
+
+  function doAction(action: 'FOLD' | 'CHECK' | 'CALL', amount = 0) {
+    if (!socket || !isMyTurn) return;
+    socket.action(action, amount);
+  }
+
+  function doRaise() {
+    if (!canRaise) return;
+    socket?.action('RAISE', Math.floor(raiseAmount * 100) / 100);
+  }
+
+  function setRaise(v: number) {
+    raiseTouched = true;
+    raiseAmount = Math.min(Math.max(v, minRaiseTo), hardMax);
+  }
+
+  function quickRaise(mult: number) {
+    if (!gameState) return;
+    setRaise(maxBet + gameState.bigBlind * mult);
+  }
+
+  function potRaise() {
+    if (!gameState) return;
+    setRaise((gameState.pot ?? 0) + maxBet - myBet);
+  }
+
+  function allIn() { setRaise(hardMax); }
+
+  function useTimeBank() {
+    if (!socket || !canUseBank) return;
+    socket.useTimeBank();
+  }
+
+  function toggleMenu() { showMenu = !showMenu; }
+
+  function doSitOut() {
+    sittingOut = true;
+    showMenu = false;
+    autoActionMsg = '💤 Sitting out';
+    setTimeout(() => { autoActionMsg = ''; }, 2500);
+  }
+
+  function doSitIn() {
+    sittingOut = false;
+    showMenu = false;
+    autoActionMsg = '▶️ Back in action';
+    setTimeout(() => { autoActionMsg = ''; }, 2000);
+  }
+
+  function leaveTable() {
+    showMenu = false;
+    if (!confirm('Leave this table?')) return;
+    socket?.leaveTable();
+    setTimeout(() => onBack(), 200);
+  }
+</script>
+
+<div class="relative w-full bg-black overflow-hidden" style="height: 100dvh; max-height: 100dvh; padding-bottom: env(safe-area-inset-bottom);">
+
+  <div class="absolute top-0 left-0 right-0 z-40 flex items-start justify-between px-4" style="padding-top: max(16px, env(safe-area-inset-top));">
+    <div class="flex items-center gap-2">
+      <button on:click={onBack} aria-label="Back" class="w-11 h-11 rounded-full flex items-center justify-center text-white text-xl active:scale-95" style="background: rgba(0,0,0,0.75); border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(10px);">←</button>
+      <button on:click={toggleMenu} aria-label="Settings" class="w-11 h-11 rounded-full flex items-center justify-center text-white active:scale-95 transition {showMenu ? 'ring-2 ring-amber-400' : ''}" style="background: rgba(0,0,0,0.75); border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(10px);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="flex flex-col items-end gap-1">
+      <div class="flex items-center gap-2">
+        <span class="text-[13px] font-extrabold text-white tracking-wider">LIVE</span>
+        <span class="w-3 h-3 rounded-full {connected ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}"></span>
+      </div>
+      {#if gameState?.handNo}
+        <span class="text-[10px] text-white/50 font-mono">Hand #{gameState.handNo}</span>
+      {/if}
+    </div>
+  </div>
+
+  {#if showMenu}
+    <button aria-label="Close menu" class="fixed inset-0 z-40 cursor-default" style="background: transparent;" on:click={() => showMenu = false}></button>
+    <div class="absolute z-50 rounded-2xl p-2 shadow-2xl" style="top: max(68px, calc(env(safe-area-inset-top) + 60px)); left: 16px; width: 240px; background: rgba(15, 23, 42, 0.98); border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(16px);">
+      {#if sittingOut}
+        <button on:click={doSitIn} class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left active:scale-[0.98] transition" style="background: rgba(16,185,129,0.1);">
+          <span class="text-lg">▶️</span>
+          <div class="flex-1"><p class="text-sm font-bold text-white">Sit In</p><p class="text-[10px] text-white/50">Resume playing</p></div>
+        </button>
+      {:else}
+        <button on:click={doSitOut} class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left active:scale-[0.98] transition" style="background: rgba(245,158,11,0.1);">
+          <span class="text-lg">⏸️</span>
+          <div class="flex-1"><p class="text-sm font-bold text-white">Sit Out</p><p class="text-[10px] text-white/50">Auto-fold next hands</p></div>
+        </button>
+      {/if}
+      <div class="my-1 mx-2" style="height: 1px; background: rgba(255,255,255,0.06);"></div>
+      <button on:click={leaveTable} class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left active:scale-[0.98] transition" style="background: rgba(220,38,38,0.15);">
+        <span class="text-lg">🚪</span>
+        <div class="flex-1"><p class="text-sm font-bold text-red-300">Leave Table</p><p class="text-[10px] text-white/50">Return chips</p></div>
+      </button>
+    </div>
+  {/if}
+
+  <PokerTable {gameState} {myUserId} {myAvatarId} theme="cash" />
+
+  {#if !gameState || startingHand}
+    <div class="absolute top-[80%] left-1/2 -translate-x-1/2 z-20 rounded-2xl px-5 py-3 text-center" style="background: rgba(0,0,0,0.85); border: 1px solid rgba(255,255,255,0.1);">
+      <p class="text-sm text-white/70">{$t('table.waitingPlayers')}</p>
+      <p class="text-xs text-amber-400 mt-1 font-bold">{gameState?.seats?.filter((s: any) => s.stack > 0).length ?? 0} / 2</p>
+    </div>
+  {/if}
+
+  {#if autoActionMsg}
+    <div class="absolute top-20 left-1/2 -translate-x-1/2 z-40 bg-amber-900/95 rounded-2xl px-4 py-2 border border-amber-700 max-w-[90%]">
+      <p class="text-xs font-bold text-amber-100 text-center">{autoActionMsg}</p>
+    </div>
+  {/if}
+
+  {#if errorMsg}
+    <div class="absolute top-32 left-1/2 -translate-x-1/2 z-40 bg-red-900/95 rounded-2xl px-4 py-2 border border-red-700">
+      <p class="text-xs font-bold text-red-200">{errorMsg}</p>
+    </div>
+  {/if}
+
+  {#if handResult}
+    <WinnerBanner result={handResult} />
+  {/if}
+
+  {#if gameState && !startingHand}
+    <div class="absolute bottom-0 left-0 right-0 z-30" style="padding: 12px 12px calc(16px + env(safe-area-inset-bottom)) 12px; max-width: 480px; margin: 0 auto;">
+      {#if isMyTurn && !sittingOut}
+        {#if canUseBank}
+          <div class="flex justify-center mb-2">
+            <button on:click={useTimeBank} class="rounded-full px-4 py-1.5 text-[11px] font-bold text-amber-300 active:scale-95" style="background: rgba(0,0,0,0.85); border: 1px solid rgba(245,158,11,0.5); backdrop-filter: blur(10px);">
+              ⏱️ Use Time Bank ({mySeat?.timeBankRemaining ?? 0}s left)
+            </button>
+          </div>
+        {/if}
+
+        {#if canRaise}
+          <div class="rounded-2xl p-3 mb-3" style="background: rgba(0,0,0,0.88); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(12px);">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-[14px] font-extrabold text-white tabular-nums">${fmt(minRaiseTo)}</span>
+              <button on:click={() => raiseTouched = true} class="text-[20px] font-extrabold text-amber-400 tabular-nums active:scale-95">${fmt(raiseAmount)}</button>
+              <span class="text-[14px] font-extrabold text-white/50 tabular-nums">${fmt(hardMax)}</span>
+            </div>
+
+            <input type="range" min={minRaiseTo} max={hardMax} step="0.01" value={raiseAmount} on:input={(e) => setRaise(Number((e.target as HTMLInputElement).value))} class="w-full raise-slider" style="--raise-pct: {raisePercent}%" />
+
+            <div class="flex gap-1.5 mt-3">
+              <button on:click={() => setRaise(minRaiseTo)} class="flex-1 rounded-lg py-1.5 text-[10px] font-bold text-white/70 active:scale-95" style="background: rgba(255,255,255,0.06);">MIN</button>
+              <button on:click={() => quickRaise(2)} class="flex-1 rounded-lg py-1.5 text-[10px] font-bold text-white/70 active:scale-95" style="background: rgba(255,255,255,0.06);">2×</button>
+              <button on:click={() => quickRaise(3)} class="flex-1 rounded-lg py-1.5 text-[10px] font-bold text-white/70 active:scale-95" style="background: rgba(255,255,255,0.06);">3×</button>
+              <button on:click={potRaise} class="flex-1 rounded-lg py-1.5 text-[10px] font-bold text-amber-400 active:scale-95" style="background: rgba(245,158,11,0.15);">POT</button>
+              <button on:click={allIn} class="flex-1 rounded-lg py-1.5 text-[10px] font-bold text-red-300 active:scale-95" style="background: rgba(220,38,38,0.2);">MAX</button>
+            </div>
+          </div>
+        {/if}
+
+        <div class="flex gap-2">
+          <button on:click={() => doAction('FOLD')} class="flex-1 rounded-xl py-4 active:scale-[0.97] transition-all" style="background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%); box-shadow: 0 5px 0 #7f1d1d, 0 6px 12px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.2);">
+            <span class="text-[15px] font-extrabold text-white uppercase tracking-wider">{$t('table.fold')}</span>
+          </button>
+
+          {#if canCheck}
+            <button on:click={() => doAction('CHECK')} class="flex-1 rounded-xl py-4 active:scale-[0.97] transition-all" style="background: linear-gradient(180deg, #3b82f6 0%, #1e40af 100%); box-shadow: 0 5px 0 #1e3a8a, 0 6px 12px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.2);">
+              <span class="text-[15px] font-extrabold text-white uppercase tracking-wider">{$t('table.check')}</span>
+            </button>
+          {:else}
+            <button on:click={() => doAction('CALL')} disabled={myStack === 0} class="flex-1 rounded-xl py-3 active:scale-[0.97] transition-all disabled:opacity-50" style="background: linear-gradient(180deg, #3b82f6 0%, #1e40af 100%); box-shadow: 0 5px 0 #1e3a8a, 0 6px 12px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.2);">
+              <span class="block text-[11px] font-bold text-white/90 leading-none uppercase">{$t('table.call')}</span>
+              <span class="block text-[15px] font-extrabold text-white leading-tight tabular-nums mt-0.5">${fmt(toCall)}</span>
+            </button>
+          {/if}
+
+          {#if canRaise}
+            <button on:click={doRaise} class="flex-1 rounded-xl py-3 active:scale-[0.97] transition-all" style="background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%); box-shadow: 0 5px 0 #92400e, 0 6px 12px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.3);">
+              <span class="block text-[11px] font-bold text-amber-950 leading-none uppercase">{$t('table.raise')}</span>
+              <span class="block text-[15px] font-extrabold text-amber-950 leading-tight tabular-nums mt-0.5">${fmt(raiseAmount)}</span>
+            </button>
+          {:else if myStack > 0 && myStack <= toCall}
+            <button on:click={allIn} class="flex-1 rounded-xl py-4 active:scale-[0.97] transition-all" style="background: linear-gradient(180deg, #ef4444 0%, #991b1b 100%); box-shadow: 0 5px 0 #7f1d1d, 0 6px 12px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.2);">
+              <span class="text-[15px] font-extrabold text-white uppercase tracking-wider">ALL-IN</span>
+            </button>
+          {/if}
+        </div>
+      {:else if sittingOut}
+        <div class="rounded-2xl p-3 text-center" style="background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4); backdrop-filter: blur(10px);">
+          <p class="text-xs font-bold text-amber-300">💤 Sitting Out — Auto-folding</p>
+          <button on:click={doSitIn} class="mt-2 text-[11px] text-white underline">Resume playing</button>
+        </div>
+      {:else}
+        <div class="rounded-2xl p-3 text-center" style="background: rgba(0,0,0,0.85); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px);">
+          <p class="text-xs text-white/60">{$t('table.waitingTurn')}</p>
+        </div>
+      {/if}
+    </div>
+  {/if}
+</div>
+
+<style>
+  .raise-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 9999px;
+    background: linear-gradient(to right, #dc2626 0%, #dc2626 var(--raise-pct, 50%), rgba(255, 255, 255, 0.12) var(--raise-pct, 50%), rgba(255, 255, 255, 0.12) 100%);
+    outline: none;
+    cursor: pointer;
+  }
+  .raise-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 2px solid #ffffff;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.8), 0 0 0 3px rgba(220, 38, 38, 0.4);
+  }
+  .raise-slider::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 2px solid #ffffff;
+    cursor: pointer;
+  }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] { -moz-appearance: textfield; }
+</style>

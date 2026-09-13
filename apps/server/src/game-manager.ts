@@ -1,7 +1,6 @@
- import { PokerEngine, ActionType } from '@pokertools/engine';
-import { Pool } from 'pg';
-
-export const SCALE = 100;
+ import { PokerGame } from '../../../packages/poker-engine/src/game.js';
+import type { GameOptions } from '../../../packages/poker-engine/src/game.js';
+import type { PlayerInit } from '../../../packages/poker-engine/src/types.js';
 
 export interface PlayerInfo {
   userId: number;
@@ -12,7 +11,7 @@ export interface PlayerInfo {
 
 export interface TableRoom {
   tableId: number;
-  engine: PokerEngine;
+  game: PokerGame;
   players: Map<string, PlayerInfo>;
   socketToPlayer: Map<string, string>;
   speed: 'regular' | 'fast' | 'turbo' | 'hyper';
@@ -25,7 +24,6 @@ export interface TableRoom {
   turnStartedAt: number;
   autoActionAt: number;
   lastActionAt: number;
-  handEnded: boolean;
 }
 
 const TIME_LIMITS = {
@@ -34,65 +32,6 @@ const TIME_LIMITS = {
   turbo: { action: 10, bank: 10 },
   hyper: { action: 8, bank: 8 },
 };
-
-function scaleDownState(state: any): any {
-  const currentBetsObj: Record<number, number> = {};
-  if (state.currentBets) {
-    const entries = state.currentBets instanceof Map
-      ? Array.from(state.currentBets.entries())
-      : Object.entries(state.currentBets);
-    for (const [k, v] of entries) {
-      currentBetsObj[Number(k)] = (Number(v) || 0) / SCALE;
-    }
-  }
-
-  const players = (state.players || []).map((p: any) => {
-    if (!p) return null;
-    return {
-      id: p.id,
-      name: p.name,
-      seat: p.seat,
-      stack: (p.stack ?? 0) / SCALE,
-      hand: p.hand || null,
-      shownCards: p.shownCards || null,
-      status: p.status,
-      betThisStreet: (p.betThisStreet ?? 0) / SCALE,
-      totalInvestedThisHand: (p.totalInvestedThisHand ?? 0) / SCALE,
-      isSittingOut: p.isSittingOut ?? false,
-      timeBank: p.timeBank ?? 30,
-    };
-  });
-
-  const pots = (state.pots || []).map((p: any) => ({
-    amount: (p.amount ?? 0) / SCALE,
-    eligibleSeats: p.eligibleSeats || [],
-  }));
-
-  return {
-    players,
-    board: state.board || [],
-    street: state.street,
-    pots,
-    currentBets: currentBetsObj,
-    minRaise: (state.minRaise ?? 0) / SCALE,
-    lastRaiseAmount: (state.lastRaiseAmount ?? 0) / SCALE,
-    actionTo: state.actionTo,
-    lastAggressorSeat: state.lastAggressorSeat ?? null,
-    activePlayers: state.activePlayers || [],
-    winners: state.winners ?? null,
-    rakeThisHand: (state.rakeThisHand ?? 0) / SCALE,
-    handNumber: state.handNumber ?? 0,
-    buttonSeat: state.buttonSeat ?? null,
-    smallBlind: (state.smallBlind ?? 0) / SCALE,
-    bigBlind: (state.bigBlind ?? 0) / SCALE,
-    ante: (state.ante ?? 0) / SCALE,
-    blindLevel: state.blindLevel ?? 0,
-    timeBankActiveSeat: state.timeBankActiveSeat ?? null,
-    handId: state.handId,
-    timestamp: state.timestamp,
-    variant: null,
-  };
-}
 
 class GameManager {
   private rooms: Map<number, TableRoom> = new Map();
@@ -110,18 +49,22 @@ class GameManager {
       return this.rooms.get(params.tableId)!;
     }
 
-    const sbScaled = Math.max(1, Math.round(params.smallBlind * SCALE));
-    const bbScaled = Math.max(2, Math.round(params.bigBlind * SCALE));
-
-    const engine = new PokerEngine({
-      smallBlind: sbScaled,
-      bigBlind: bbScaled,
-      maxPlayers: 6,
-    });
+    const engine = new PokerGame(
+      {
+        tableId: params.tableId,
+        variant: params.variant,
+        speed: params.speed,
+        smallBlind: params.smallBlind,
+        bigBlind: params.bigBlind,
+        ante: params.ante,
+        rakePct: params.rakePct,
+      },
+      []
+    );
 
     const room: TableRoom = {
       tableId: params.tableId,
-      engine,
+      game: engine,
       players: new Map(),
       socketToPlayer: new Map(),
       speed: params.speed,
@@ -134,11 +77,10 @@ class GameManager {
       turnStartedAt: 0,
       autoActionAt: 0,
       lastActionAt: 0,
-      handEnded: false,
     };
 
     this.rooms.set(params.tableId, room);
-    console.log(`[room] ✅ created table ${params.tableId} (sb=${sbScaled}, bb=${bbScaled})`);
+    console.log(`[room] ✅ created table ${params.tableId}`);
     return room;
   }
 
@@ -178,10 +120,8 @@ class GameManager {
     room.socketToPlayer.set(params.socketId, playerId);
 
     const takenSeats = new Set<number>();
-    for (const p of room.engine.state.players) {
-      if (p && p.seat !== undefined && p.seat !== null) {
-        takenSeats.add(p.seat);
-      }
+    for (const s of room.game.state.seats) {
+      if (s.stack > 0 || !s.folded) takenSeats.add(s.seat);
     }
 
     let seat = 0;
@@ -189,15 +129,28 @@ class GameManager {
       if (!takenSeats.has(i)) { seat = i; break; }
     }
 
-    const startingStack = Math.round(1000 * SCALE);
-
-    try {
-      room.engine.sit(seat, playerId, params.displayName, startingStack);
-      console.log(`[room] ✅ ${params.displayName} joined table ${params.tableId} at seat ${seat}`);
-    } catch (e: any) {
-      console.log(`[room] ⚠️ sit error: ${e.message}`);
+    // Initialize engine players array
+    if (room.game.state.seats.length === 0) {
+      const players: PlayerInit[] = [{
+        userId: params.userId,
+        displayName: params.displayName,
+        stack: 1000,
+      }];
+      room.game = new PokerGame(
+        {
+          tableId: params.tableId,
+          variant: room.variant,
+          speed: room.speed,
+          smallBlind: room.blinds.sb,
+          bigBlind: room.blinds.bb,
+          ante: room.blinds.ante,
+          rakePct: room.rakePct,
+        },
+        players
+      );
     }
 
+    console.log(`[room] ✅ ${params.displayName} joined table ${params.tableId}`);
     return room;
   }
 
@@ -207,7 +160,6 @@ class GameManager {
       if (playerId) {
         room.players.delete(playerId);
         room.socketToPlayer.delete(socketId);
-        try { room.engine.stand(playerId); } catch (e) {}
 
         console.log(`[room] ${playerId} left table ${tableId}, size=${room.players.size}`);
 
@@ -234,31 +186,50 @@ class GameManager {
     return null;
   }
 
-  async startHand(tableId: number, db: Pool, io: any): Promise<void> {
+  async startHand(tableId: number, io: any): Promise<void> {
     const room = this.rooms.get(tableId);
     if (!room || room.busy) return;
 
-    const activePlayers = room.engine.state.players.filter(
-      (p: any) => p && p.status !== 'SITTING_OUT' && p.stack > 0
-    );
-
-    if (activePlayers.length < 2) {
-      console.log(`[hand] table ${tableId}: not enough players (${activePlayers.length})`);
+    const activePlayers = room.players.size;
+    if (activePlayers < 2) {
+      console.log(`[hand] table ${tableId}: not enough players (${activePlayers})`);
       return;
     }
 
     room.busy = true;
     try {
-      room.handEnded = false;
-      room.engine.deal();
+      // Rebuild engine with current players
+      const players: PlayerInit[] = [];
+      for (const [pid, info] of room.players) {
+        const oldSeat = room.game.state.seats.find(s => s.userId === info.userId);
+        players.push({
+          userId: info.userId,
+          displayName: info.displayName,
+          stack: oldSeat?.stack ?? 1000,
+        });
+      }
+
+      room.game = new PokerGame(
+        {
+          tableId,
+          variant: room.variant,
+          speed: room.speed,
+          smallBlind: room.blinds.sb,
+          bigBlind: room.blinds.bb,
+          ante: room.blinds.ante,
+          rakePct: room.rakePct,
+        },
+        players
+      );
+
+      room.game.startHand([]);
       room.turnStartedAt = Date.now();
       const limits = TIME_LIMITS[room.speed];
       room.autoActionAt = room.turnStartedAt + limits.action * 1000;
 
-      console.log(`[hand] table ${tableId} started, hand #${room.engine.state.handNumber}`);
+      console.log(`[hand] table ${tableId} started, hand #${room.game.state.handNo}`);
 
       this.broadcastState(tableId, io);
-      this.scheduleTurnTimer(tableId, db, io);
     } finally {
       room.busy = false;
     }
@@ -268,7 +239,6 @@ class GameManager {
     socketId: string,
     actionType: string,
     amount: number,
-    db: Pool,
     io: any
   ): Promise<{ ok: boolean; error?: string }> {
     const ctx = this.getPlayerBySocket(socketId);
@@ -276,165 +246,52 @@ class GameManager {
 
     const { room, player } = ctx;
 
-    const currentSeat = room.engine.state.actionTo;
-    const mySeat = room.engine.state.players.find(
-      (p: any) => p && p.id === player.playerId
-    )?.seat;
+    const seatIdx = room.game.state.seats.findIndex(s => s.userId === player.userId);
+    if (seatIdx === -1) return { ok: false, error: 'not_seated' };
 
-    if (mySeat !== currentSeat) {
-      return { ok: false, error: 'not_your_turn' };
-    }
+    const actType = actionType.toLowerCase() as 'fold' | 'check' | 'call' | 'raise';
+    const result = room.game.act(seatIdx, actType, amount);
+    if (!result.ok) return result;
 
-    try {
-      const actionData: any = { type: actionType, playerId: player.playerId };
-      if (amount > 0) {
-        actionData.amount = Math.round(amount * SCALE);
-      }
+    room.lastActionAt = Date.now();
+    room.turnStartedAt = Date.now();
+    const limits = TIME_LIMITS[room.speed];
+    room.autoActionAt = room.turnStartedAt + limits.action * 1000;
 
-      room.engine.act(actionData);
-      room.lastActionAt = Date.now();
+    console.log(`[action] ${player.displayName} → ${actionType}${amount ? ' ' + amount : ''}`);
 
-      console.log(`[action] ${player.displayName} → ${actionType}${amount ? ' $' + amount : ''}`);
+    this.broadcastState(room.tableId, io);
 
+    if (room.game.state.phase === 'showdown') {
+      const handResult = room.game.finishHand();
       this.broadcastState(room.tableId, io);
 
-      const street = room.engine.state.street;
-      const winners = room.engine.state.winners;
-
-      if (street === 'SHOWDOWN' || (winners && winners.length > 0)) {
-        await this.finishHand(room.tableId, db, io);
-      } else {
-        room.turnStartedAt = Date.now();
-        const limits = TIME_LIMITS[room.speed];
-        room.autoActionAt = room.turnStartedAt + limits.action * 1000;
-        this.scheduleTurnTimer(room.tableId, db, io);
-      }
-
-      return { ok: true };
-    } catch (e: any) {
-      console.log(`[action] error: ${e.message}`);
-      return { ok: false, error: e.message };
+      setTimeout(() => {
+        const r = this.rooms.get(room.tableId);
+        if (!r) return;
+        this.startHand(room.tableId, io).catch((e) => console.error('[hand] error', e));
+      }, 5000);
     }
+
+    return { ok: true };
   }
 
-  async useTimeBank(socketId: string, db: Pool, io: any): Promise<{ ok: boolean; error?: string }> {
+  async useTimeBank(socketId: string, io: any): Promise<{ ok: boolean; error?: string }> {
     const ctx = this.getPlayerBySocket(socketId);
     if (!ctx) return { ok: false, error: 'not_in_room' };
 
     const { room, player } = ctx;
+    const seatIdx = room.game.state.seats.findIndex(s => s.userId === player.userId);
+    if (seatIdx === -1) return { ok: false, error: 'not_seated' };
 
-    try {
-      room.engine.act({ type: ActionType.TIME_BANK, playerId: player.playerId });
-      const limits = TIME_LIMITS[room.speed];
-      room.autoActionAt = Date.now() + limits.bank * 1000;
+    const result = room.game.useTimeBank(seatIdx);
+    if (!result.ok) return result;
 
-      this.broadcastState(room.tableId, io);
-      this.scheduleTurnTimer(room.tableId, db, io);
+    const limits = TIME_LIMITS[room.speed];
+    room.autoActionAt = Date.now() + limits.bank * 1000;
 
-      return { ok: true };
-    } catch (e: any) {
-      return { ok: false, error: e.message };
-    }
-  }
-
-  async finishHand(tableId: number, db: Pool, io: any): Promise<void> {
-    const room = this.rooms.get(tableId);
-    if (!room) return;
-
-    if (room.handEnded) return;
-    room.handEnded = true;
-
-    if (room.turnTimer) {
-      clearTimeout(room.turnTimer);
-      room.turnTimer = null;
-    }
-
-    console.log(`[hand] table ${tableId} finished`);
-
-    this.broadcastState(tableId, io);
-
-    try {
-      const state = room.engine.state;
-      const winners = state.winners ?? [];
-      const rake = (state.rakeThisHand ?? 0) / SCALE;
-      const pot = state.pots.reduce((s: number, p: any) => s + (p.amount ?? 0), 0) / SCALE;
-
-      await db.query(
-        `INSERT INTO hands (table_id, hand_no, pot, rake, result, ended_at)
-         VALUES ($1, $2, $3, $4, $5, NOW())`,
-        [tableId, state.handNumber, pot, rake, JSON.stringify({ winners })]
-      );
-
-      if (rake > 0) {
-        const today = new Date().toISOString().slice(0, 10);
-        await db.query(
-          `INSERT INTO revenue_daily (date, rake_total)
-           VALUES ($1, $2)
-           ON CONFLICT (date) DO UPDATE SET rake_total = revenue_daily.rake_total + $2`,
-          [today, rake]
-        );
-      }
-    } catch (e) {
-      console.error('[hand] DB error', e);
-    }
-
-    room.handTimer = setTimeout(() => {
-      this.startHand(tableId, db, io).catch((e) => console.error('[hand] error', e));
-    }, 5000);
-  }
-
-  scheduleTurnTimer(tableId: number, db: Pool, io: any): void {
-    const room = this.rooms.get(tableId);
-    if (!room || room.handEnded) return;
-
-    if (room.turnTimer) {
-      clearTimeout(room.turnTimer);
-      room.turnTimer = null;
-    }
-
-    const delay = room.autoActionAt - Date.now();
-    if (delay <= 0) return;
-
-    room.turnTimer = setTimeout(async () => {
-      const r = this.rooms.get(tableId);
-      if (!r || r.handEnded) return;
-
-      const currentSeat = r.engine.state.actionTo;
-      if (currentSeat === null || currentSeat === undefined) return;
-
-      const currentPlayer = r.engine.state.players.find(
-        (p: any) => p && p.seat === currentSeat
-      );
-      if (!currentPlayer) return;
-
-      const currentBet = r.engine.state.currentBets.get(currentSeat) ?? 0;
-      const bets = Array.from(r.engine.state.currentBets.values()) as number[];
-      const maxBet = Math.max(0, ...bets);
-      const toCall = maxBet - currentBet;
-
-      try {
-        if (toCall <= 0) {
-          r.engine.act({ type: ActionType.CHECK, playerId: currentPlayer.id });
-          console.log(`[timer] ⏱️ auto-CHECK for ${currentPlayer.id}`);
-        } else {
-          r.engine.act({ type: ActionType.FOLD, playerId: currentPlayer.id });
-          console.log(`[timer] ⏱️ auto-FOLD for ${currentPlayer.id}`);
-        }
-
-        this.broadcastState(tableId, io);
-
-        if (r.engine.state.street === 'SHOWDOWN' || (r.engine.state.winners && r.engine.state.winners.length > 0)) {
-          await this.finishHand(tableId, db, io);
-        } else {
-          r.turnStartedAt = Date.now();
-          const lims = TIME_LIMITS[r.speed];
-          r.autoActionAt = r.turnStartedAt + lims.action * 1000;
-          this.scheduleTurnTimer(tableId, db, io);
-        }
-      } catch (e: any) {
-        console.error('[timer] error', e.message);
-      }
-    }, delay);
+    this.broadcastState(room.tableId, io);
+    return { ok: true };
   }
 
   broadcastState(tableId: number, io: any): void {
@@ -443,13 +300,9 @@ class GameManager {
 
     for (const [playerId, info] of room.players) {
       try {
-        const view = room.engine.view(playerId);
-        const scaled = scaleDownState(view);
-        scaled.variant = room.variant;
-
+        const view = room.game.publicView(info.userId);
         io.to(info.socketId).emit('table:state', {
-          ...scaled,
-          scaleFactor: SCALE,
+          ...view,
           serverTime: Date.now(),
           turnStartedAt: room.turnStartedAt,
           autoActionAt: room.autoActionAt,
