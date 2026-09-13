@@ -1,0 +1,17 @@
+ {
+  "name": "poker-platform",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "server": "npm -w apps/server run dev",
+    "app": "npm -w apps/mini-app run dev",
+    "engine:test": "npm -w packages/poker-engine run test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
