@@ -24,6 +24,7 @@ export interface TableRoom {
   turnStartedAt: number;
   autoActionAt: number;
   lastActionAt: number;
+  handCounter: number;
 }
 
 const TIME_LIMITS = {
@@ -32,6 +33,10 @@ const TIME_LIMITS = {
   turbo: { action: 10, bank: 10 },
   hyper: { action: 8, bank: 8 },
 };
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
 
 class GameManager {
   private rooms: Map<number, TableRoom> = new Map();
@@ -77,6 +82,7 @@ class GameManager {
       turnStartedAt: 0,
       autoActionAt: 0,
       lastActionAt: 0,
+      handCounter: 0,
     };
 
     this.rooms.set(params.tableId, room);
@@ -118,37 +124,6 @@ class GameManager {
 
     room.players.set(playerId, info);
     room.socketToPlayer.set(params.socketId, playerId);
-
-    const takenSeats = new Set<number>();
-    for (const s of room.game.state.seats) {
-      if (s.stack > 0 || !s.folded) takenSeats.add(s.seat);
-    }
-
-    let seat = 0;
-    for (let i = 0; i < 6; i++) {
-      if (!takenSeats.has(i)) { seat = i; break; }
-    }
-
-    // Initialize engine players array
-    if (room.game.state.seats.length === 0) {
-      const players: PlayerInit[] = [{
-        userId: params.userId,
-        displayName: params.displayName,
-        stack: 1000,
-      }];
-      room.game = new PokerGame(
-        {
-          tableId: params.tableId,
-          variant: room.variant,
-          speed: room.speed,
-          smallBlind: room.blinds.sb,
-          bigBlind: room.blinds.bb,
-          ante: room.blinds.ante,
-          rakePct: room.rakePct,
-        },
-        players
-      );
-    }
 
     console.log(`[room] ✅ ${params.displayName} joined table ${params.tableId}`);
     return room;
@@ -198,7 +173,6 @@ class GameManager {
 
     room.busy = true;
     try {
-      // Rebuild engine with current players
       const players: PlayerInit[] = [];
       for (const [pid, info] of room.players) {
         const oldSeat = room.game.state.seats.find(s => s.userId === info.userId);
@@ -209,6 +183,12 @@ class GameManager {
         });
       }
 
+      // ============================================================
+      // ذخیره handCounter قبلی
+      // ============================================================
+      const prevHandCounter = room.handCounter ?? 0;
+
+      // ساخت موتور جدید
       room.game = new PokerGame(
         {
           tableId,
@@ -223,11 +203,19 @@ class GameManager {
       );
 
       room.game.startHand([]);
+
+      // ============================================================
+      // increment کردن handCounter روی room
+      // و ست کردن handNo موتور به همون مقدار
+      // ============================================================
+      room.handCounter = prevHandCounter + 1;
+      room.game.state.handNo = room.handCounter;
+
       room.turnStartedAt = Date.now();
       const limits = TIME_LIMITS[room.speed];
       room.autoActionAt = room.turnStartedAt + limits.action * 1000;
 
-      console.log(`[hand] table ${tableId} started, hand #${room.game.state.handNo}`);
+      console.log(`[hand] table ${tableId} started, hand #${room.handCounter}`);
 
       this.broadcastState(tableId, io);
     } finally {
@@ -260,17 +248,56 @@ class GameManager {
 
     console.log(`[action] ${player.displayName} → ${actionType}${amount ? ' ' + amount : ''}`);
 
-    this.broadcastState(room.tableId, io);
-
+    // ============================================================
+    // ============ Showdown — ارسال hand_result ==================
+    // ============================================================
     if (room.game.state.phase === 'showdown') {
       const handResult = room.game.finishHand();
+
+      // اطمینان از handNo درست
+      room.game.state.handNo = room.handCounter;
+
+      // ۱. ابتدا state نهایی (شامل کارت‌های افشا شده)
       this.broadcastState(room.tableId, io);
+
+      // ۲. سپس hand_result کامل برای نمایش banner + animation
+      for (const [pid, info] of room.players) {
+        try {
+          io.to(info.socketId).emit('table:hand_result', {
+            result: {
+              winners: handResult.winners,
+              payouts: handResult.payouts,
+              rake: handResult.rake,
+              revealSeed: handResult.revealSeed,
+              showdown: handResult.showdown,
+              showdownPlayers: handResult.showdownPlayers.map((p: any) => ({
+                seat: p.seat,
+                displayName: p.displayName,
+                hole: p.hole,
+                best: p.best,
+                handName: p.handName,
+                isWinner: p.isWinner,
+                payout: p.payout,
+              })),
+            },
+            state: room.game.publicView(info.userId),
+          });
+        } catch (e: any) {
+          console.error(`[hand_result] ${pid}: ${e.message}`);
+        }
+      }
+
+      console.log(
+        `🏆 Hand #${room.handCounter} finished. Winners: ${handResult.winners.join(',')}. Rake: $${handResult.rake}`
+      );
 
       setTimeout(() => {
         const r = this.rooms.get(room.tableId);
         if (!r) return;
         this.startHand(room.tableId, io).catch((e) => console.error('[hand] error', e));
       }, 5000);
+    } else {
+      this.broadcastState(room.tableId, io);
     }
 
     return { ok: true };
@@ -303,6 +330,17 @@ class GameManager {
         const view = room.game.publicView(info.userId);
         io.to(info.socketId).emit('table:state', {
           ...view,
+          handNo: room.handCounter,
+          pot: round2(view.pot ?? 0),
+          minRaise: round2(view.minRaise ?? 0),
+          smallBlind: round2(view.smallBlind ?? 0),
+          bigBlind: round2(view.bigBlind ?? 0),
+          seats: view.seats.map((s: any) => ({
+            ...s,
+            stack: round2(s.stack ?? 0),
+            betThisStreet: round2(s.betThisStreet ?? 0),
+            totalBet: round2(s.totalBet ?? 0),
+          })),
           serverTime: Date.now(),
           turnStartedAt: room.turnStartedAt,
           autoActionAt: room.autoActionAt,

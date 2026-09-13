@@ -1,7 +1,6 @@
-<script lang="ts">
+ <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import PokerTable from '../components/PokerTable.svelte';
-  import WinnerBanner from '../components/WinnerBanner.svelte';
   import { TableSocketIO, type TableState } from '../lib/socket';
   import { auth } from '../stores/auth';
   import { t } from '../i18n';
@@ -18,7 +17,8 @@
   let showMenu = false;
   let sittingOut = false;
   let handResult: any = null;
-  let lastHandNo = 0;
+  let showSeedModal = false;
+  let nowTick = Date.now();
 
   let raiseAmount = 0;
   let raiseTouched = false;
@@ -43,14 +43,28 @@
   $: hardMax = myStack + myBet;
   $: canRaise = isMyTurn && hardMax > maxBet && hardMax >= minRaiseTo;
 
-  $: canUseBank = isMyTurn && mySeat && mySeat.timeBankRemaining > 0 && !gameState?.turnBankActive;
+  // ============================================================
+  // ============ Time Bank — فقط ۵ ثانیه‌ی آخر ==================
+  // ============================================================
+  $: timeRemaining = gameState && gameState.turnStartedAt
+    ? Math.max(0, (gameState.turnBaseLimit ?? 30) - (nowTick - gameState.turnStartedAt) / 1000)
+    : 30;
+
+  $: canUseBank =
+    isMyTurn &&
+    mySeat &&
+    mySeat.timeBankRemaining > 0 &&
+    !gameState?.turnBankActive &&
+    timeRemaining <= 5;
 
   $: if (isMyTurn && !raiseTouched) raiseAmount = Math.min(minRaiseTo, hardMax);
   $: if (!isMyTurn) { raiseTouched = false; }
   $: if (raiseAmount < minRaiseTo) raiseAmount = minRaiseTo;
   $: if (raiseAmount > hardMax) raiseAmount = hardMax;
 
-  $: raisePercent = hardMax > minRaiseTo ? ((raiseAmount - minRaiseTo) / (hardMax - minRaiseTo)) * 100 : 100;
+  $: raisePercent = hardMax > minRaiseTo
+    ? ((raiseAmount - minRaiseTo) / (hardMax - minRaiseTo)) * 100
+    : 100;
 
   $: myAvatarId = ($auth.user as any)?.avatar_id || 'spade';
 
@@ -73,30 +87,10 @@
       } else if (evt.type === 'state') {
         gameState = evt.state;
         startingHand = false;
-
-        const s: any = evt.state;
-        if (s.winners && s.winners.length > 0 && s.handNo !== lastHandNo) {
-          lastHandNo = s.handNo;
-          handResult = {
-            winners: s.winners,
-            showdown: true,
-            payouts: s.winners.map((seat: number) => ({ seat, amount: (s.pot / s.winners.length) })),
-            handNames: s.winners.map((seat: number) => ({ seat, name: 'Winner' })),
-            showdownPlayers: s.winners.map((seat: number) => {
-              const winner = s.seats.find((x: any) => x.seat === seat);
-              return {
-                seat,
-                displayName: winner?.displayName || 'Winner',
-                hole: winner?.hole || [],
-                best: winner?.hole || [],
-                handName: 'Winner',
-                isWinner: true,
-                payout: s.pot / s.winners.length,
-              };
-            }),
-          };
-          setTimeout(() => { handResult = null; }, 6000);
-        }
+      } else if (evt.type === 'hand_result') {
+        handResult = evt.result;
+        gameState = evt.state;
+        setTimeout(() => { handResult = null; }, 6000);
       } else if (evt.type === 'error') {
         errorMsg = evt.message;
         setTimeout(() => { errorMsg = ''; }, 3000);
@@ -105,7 +99,12 @@
     socket.connect();
   }
 
-  onMount(() => { connect(); });
+  onMount(() => {
+    connect();
+    const interval = setInterval(() => { nowTick = Date.now(); }, 500);
+    return () => clearInterval(interval);
+  });
+
   onDestroy(() => { if (socket) socket.close(); });
 
   function doAction(action: 'FOLD' | 'CHECK' | 'CALL', amount = 0) {
@@ -166,6 +165,7 @@
 
 <div class="relative w-full bg-black overflow-hidden" style="height: 100dvh; max-height: 100dvh; padding-bottom: env(safe-area-inset-bottom);">
 
+  <!-- Top bar -->
   <div class="absolute top-0 left-0 right-0 z-40 flex items-start justify-between px-4" style="padding-top: max(16px, env(safe-area-inset-top));">
     <div class="flex items-center gap-2">
       <button on:click={onBack} aria-label="Back" class="w-11 h-11 rounded-full flex items-center justify-center text-white text-xl active:scale-95" style="background: rgba(0,0,0,0.75); border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(10px);">←</button>
@@ -183,11 +183,56 @@
         <span class="w-3 h-3 rounded-full {connected ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}"></span>
       </div>
       {#if gameState?.handNo}
-        <span class="text-[10px] text-white/50 font-mono">Hand #{gameState.handNo}</span>
+        <button
+          on:click={() => showSeedModal = true}
+          class="text-[10px] text-white/60 font-mono underline active:opacity-60"
+        >
+          Hand #{gameState.handNo} 🔒
+        </button>
       {/if}
     </div>
   </div>
 
+  <!-- Seed Modal -->
+  {#if showSeedModal && gameState}
+    <button aria-label="Close" class="fixed inset-0 z-[70] cursor-default" style="background: rgba(0,0,0,0.75); backdrop-filter: blur(4px);" on:click={() => showSeedModal = false}></button>
+    <div class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[80] rounded-2xl p-4 w-[90%] max-w-[380px]" style="background: rgba(15,23,42,0.98); border: 1px solid rgba(255,255,255,0.15);">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-extrabold text-white">🔒 Provably Fair</h3>
+        <button on:click={() => showSeedModal = false} class="text-white/60 text-xl leading-none">×</button>
+      </div>
+
+      <div class="space-y-2 text-[11px] font-mono">
+        <div>
+          <p class="text-white/40 mb-1">Hand #</p>
+          <p class="text-white break-all">{gameState.handNo}</p>
+        </div>
+        <div>
+          <p class="text-white/40 mb-1">Server Seed Hash (SHA-256)</p>
+          <p class="text-emerald-400 break-all">{gameState.serverSeedHash ?? '—'}</p>
+        </div>
+        <div>
+          <p class="text-white/40 mb-1">Client Seed</p>
+          <p class="text-white/80 break-all">{gameState.clientSeed ?? '—'}</p>
+        </div>
+        <div>
+          <p class="text-white/40 mb-1">Nonce</p>
+          <p class="text-white/80">{gameState.nonce ?? gameState.handNo}</p>
+        </div>
+        {#if gameState.revealSeed}
+          <div>
+            <p class="text-amber-400/80 mb-1">Revealed Server Seed ✓</p>
+            <p class="text-amber-300 break-all">{gameState.revealSeed}</p>
+          </div>
+          <p class="text-emerald-400 text-[10px] mt-2">✅ Verified</p>
+        {:else}
+          <p class="text-white/40 text-[10px] mt-2">🔒 Seed after hand ends revealed</p>
+        {/if}
+      </div>
+    </div>
+  {/if}
+
+  <!-- Menu -->
   {#if showMenu}
     <button aria-label="Close menu" class="fixed inset-0 z-40 cursor-default" style="background: transparent;" on:click={() => showMenu = false}></button>
     <div class="absolute z-50 rounded-2xl p-2 shadow-2xl" style="top: max(68px, calc(env(safe-area-inset-top) + 60px)); left: 16px; width: 240px; background: rgba(15, 23, 42, 0.98); border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(16px);">
@@ -210,15 +255,20 @@
     </div>
   {/if}
 
-  <PokerTable {gameState} {myUserId} {myAvatarId} theme="cash" />
+  <!-- Poker Table -->
+  <PokerTable {gameState} {myUserId} {myAvatarId} theme="cash" {handResult} />
 
+  <!-- Waiting -->
   {#if !gameState || startingHand}
     <div class="absolute top-[80%] left-1/2 -translate-x-1/2 z-20 rounded-2xl px-5 py-3 text-center" style="background: rgba(0,0,0,0.85); border: 1px solid rgba(255,255,255,0.1);">
       <p class="text-sm text-white/70">{$t('table.waitingPlayers')}</p>
-      <p class="text-xs text-amber-400 mt-1 font-bold">{gameState?.seats?.filter((s: any) => s.stack > 0).length ?? 0} / 2</p>
+      <p class="text-xs text-amber-400 mt-1 font-bold">
+        {gameState?.seats?.filter((s: any) => s.stack > 0).length ?? 0} / 2
+      </p>
     </div>
   {/if}
 
+  <!-- Toast -->
   {#if autoActionMsg}
     <div class="absolute top-20 left-1/2 -translate-x-1/2 z-40 bg-amber-900/95 rounded-2xl px-4 py-2 border border-amber-700 max-w-[90%]">
       <p class="text-xs font-bold text-amber-100 text-center">{autoActionMsg}</p>
@@ -231,11 +281,8 @@
     </div>
   {/if}
 
-  {#if handResult}
-    <WinnerBanner result={handResult} />
-  {/if}
-
-  {#if gameState && !startingHand}
+  <!-- Action Bar -->
+  {#if gameState && !startingHand && !handResult}
     <div class="absolute bottom-0 left-0 right-0 z-30" style="padding: 12px 12px calc(16px + env(safe-area-inset-bottom)) 12px; max-width: 480px; margin: 0 auto;">
       {#if isMyTurn && !sittingOut}
         {#if canUseBank}
@@ -250,11 +297,20 @@
           <div class="rounded-2xl p-3 mb-3" style="background: rgba(0,0,0,0.88); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(12px);">
             <div class="flex items-center justify-between mb-3">
               <span class="text-[14px] font-extrabold text-white tabular-nums">${fmt(minRaiseTo)}</span>
-              <button on:click={() => raiseTouched = true} class="text-[20px] font-extrabold text-amber-400 tabular-nums active:scale-95">${fmt(raiseAmount)}</button>
+              <span class="text-[20px] font-extrabold text-amber-400 tabular-nums">${fmt(raiseAmount)}</span>
               <span class="text-[14px] font-extrabold text-white/50 tabular-nums">${fmt(hardMax)}</span>
             </div>
 
-            <input type="range" min={minRaiseTo} max={hardMax} step="0.01" value={raiseAmount} on:input={(e) => setRaise(Number((e.target as HTMLInputElement).value))} class="w-full raise-slider" style="--raise-pct: {raisePercent}%" />
+            <input
+              type="range"
+              min={minRaiseTo}
+              max={hardMax}
+              step="0.01"
+              value={raiseAmount}
+              on:input={(e) => setRaise(Number((e.target as HTMLInputElement).value))}
+              class="w-full raise-slider"
+              style="--raise-pct: {raisePercent}%"
+            />
 
             <div class="flex gap-1.5 mt-3">
               <button on:click={() => setRaise(minRaiseTo)} class="flex-1 rounded-lg py-1.5 text-[10px] font-bold text-white/70 active:scale-95" style="background: rgba(255,255,255,0.06);">MIN</button>
@@ -337,10 +393,4 @@
     border: 2px solid #ffffff;
     cursor: pointer;
   }
-  input[type="number"]::-webkit-outer-spin-button,
-  input[type="number"]::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-  }
-  input[type="number"] { -moz-appearance: textfield; }
 </style>

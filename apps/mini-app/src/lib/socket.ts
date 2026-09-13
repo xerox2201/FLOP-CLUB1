@@ -1,4 +1,4 @@
-import { io, Socket } from 'socket.io-client';
+ import { io, Socket } from 'socket.io-client';
 import { API_URL } from './api';
 
 export interface TableState {
@@ -20,10 +20,13 @@ export interface TableState {
   autoActionAt: number;
   turnBaseLimit: number;
   timeBankLimit: number;
+  turnBankActive?: boolean;
+  variant?: string;
 }
 
 export type SocketEvent =
   | { type: 'state'; state: TableState }
+  | { type: 'hand_result'; result: any; state: any }
   | { type: 'connected' }
   | { type: 'disconnected'; reason: string }
   | { type: 'player_joined'; userId: number; displayName: string; total: number }
@@ -71,6 +74,14 @@ export class TableSocketIO {
 
     this.socket.on('table:state', (state: TableState) => {
       this.emit({ type: 'state', state });
+    });
+
+    this.socket.on('table:hand_result', (data: any) => {
+      this.emit({
+        type: 'hand_result',
+        result: data?.result,
+        state: data?.state,
+      });
     });
 
     this.socket.on('table:player_joined', (data: any) => {

@@ -1,4 +1,4 @@
-<script lang="ts">
+ <script lang="ts">
   import PlayingCard from './PlayingCard.svelte';
 
   export let result: any;
@@ -11,7 +11,36 @@
   }
 
   function fmt(n: any): string {
-    return Number(Number(n).toFixed(2)).toFixed(2);
+    return Number(Number(n || 0).toFixed(2)).toFixed(2);
+  }
+
+  // کارت ممکنه string ("As") یا object ({r:'A', s:'s'}) باشه
+  function normalizeCard(c: any): { r: string; s: '♠' | '♥' | '♦' | '♣' } | null {
+    if (!c) return null;
+    if (typeof c === 'string') {
+      return { r: c[0], s: suitChar(c[1]) };
+    }
+    if (typeof c === 'object' && c.r && c.s) {
+      return { r: c.r, s: suitChar(c.s) };
+    }
+    return null;
+  }
+
+  // فقط ۵ کارت یکتا (بدون تکرار)
+  function cleanBest(best: any[]): { r: string; s: '♠' | '♥' | '♦' | '♣' }[] {
+    if (!best) return [];
+    const seen = new Set<string>();
+    const out: { r: string; s: '♠' | '♥' | '♦' | '♣' }[] = [];
+    for (const c of best) {
+      const nc = normalizeCard(c);
+      if (!nc) continue;
+      const key = nc.r + nc.s;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(nc);
+      if (out.length === 5) break;
+    }
+    return out;
   }
 </script>
 
@@ -27,6 +56,7 @@
     {#if result.showdown && result.showdownPlayers && result.showdownPlayers.length > 0}
       <div class="space-y-2">
         {#each result.showdownPlayers as p}
+          {@const cards = cleanBest(p.best)}
           <div class="rounded-2xl p-2 {p.isWinner ? 'bg-gold/15 border-2 border-gold/60' : 'bg-white/5 border border-white/10'}">
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center gap-1.5 min-w-0">
@@ -38,20 +68,10 @@
               <span class="text-[10px] font-bold shrink-0 ml-2 {p.isWinner ? 'text-gold' : 'text-white/50'}">{p.handName}</span>
             </div>
 
-            <div class="flex items-center gap-0.5 justify-center">
-              {#if p.hole && p.hole.length > 0}
-                {#each p.hole as c}
-                  <div class="opacity-70 scale-90">
-                    <PlayingCard rank={c.r} suit={suitChar(c.s)} size="sm" />
-                  </div>
-                {/each}
-                <div class="w-1"></div>
-                <span class="text-white/40 text-[10px] font-bold">→</span>
-                <div class="w-1"></div>
-              {/if}
-              {#each p.best as c}
+            <div class="flex items-center gap-1 justify-center">
+              {#each cards as c}
                 <div class="{p.isWinner ? 'ring-1 ring-gold rounded-md' : ''}">
-                  <PlayingCard rank={c.r} suit={suitChar(c.s)} size="sm" />
+                  <PlayingCard rank={c.r} suit={c.s} size="sm" />
                 </div>
               {/each}
             </div>

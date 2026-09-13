@@ -1,70 +1,75 @@
-export type Suit = 's' | 'h' | 'd' | 'c';
-export type Rank = '2'|'3'|'4'|'5'|'6'|'7'|'8'|'9'|'T'|'J'|'Q'|'K'|'A';
+ export type Suit = 's' | 'h' | 'd' | 'c';
+export type Rank = 'A' | 'K' | 'Q' | 'J' | 'T' | '9' | '8' | '7' | '6' | '5' | '4' | '3' | '2';
+
+export interface Card {
+  r: Rank;
+  s: Suit;
+}
+
 export type Variant = 'holdem' | 'omaha4' | 'omaha5';
 export type Speed = 'regular' | 'fast' | 'turbo' | 'hyper';
-
-export interface Card { r: Rank; s: Suit; }
-
-export type Phase = 'waiting' | 'preflop' | 'flop' | 'turn' | 'river' | 'showdown';
 export type ActionType = 'fold' | 'check' | 'call' | 'raise';
+export type Phase = 'waiting' | 'preflop' | 'flop' | 'turn' | 'river' | 'showdown';
+
+export interface GameOptions {
+  tableId: number;
+  variant: Variant;
+  speed: Speed;
+  smallBlind: number;
+  bigBlind: number;
+  ante?: number;
+  rakePct?: number;
+}
 
 export interface PlayerInit {
   userId: number;
   displayName: string;
   stack: number;
+  avatarId?: string;
 }
 
-export interface SeatState {
+export interface Seat {
   seat: number;
   userId: number;
   displayName: string;
   stack: number;
+  hole: Card[];
   betThisStreet: number;
   totalBet: number;
   folded: boolean;
   allIn: boolean;
-  hole: Card[];
-  holeCount: number;
   hasActed: boolean;
   revealed: boolean;
   timeBankRemaining: number;
+  avatarId: string;
 }
 
 export interface GameState {
   tableId: number;
   variant: Variant;
   speed: Speed;
+  smallBlind: number;
+  bigBlind: number;
+  ante: number;
   handNo: number;
   phase: Phase;
-  community: Card[];
-  seats: SeatState[];
-  pot: number;
-  currentSeat: number;
   dealerSeat: number;
+  currentSeat: number;
+  pot: number;
+  community: Card[];
+  seats: Seat[];
   minRaise: number;
-  bigBlind: number;
-  smallBlind: number;
-  serverSeedHash: string;
-  serverSeed?: string;
+  lastAggressor: number;
   winners?: number[];
-
   turnStartedAt: number;
-  turnBaseLimit: number;
   turnBankActive: boolean;
-  turnBankLimit: number;
-  autoActionAt: number;
-}
 
-export interface ActionResult { ok: boolean; error?: string; }
-
-export interface ShowdownPlayer {
-  seat: number;
-  displayName: string;
-  hole: Card[];
-  best: Card[];
-  handName: string;
-  isWinner: boolean;
-  payout: number;
+  // ===== Provably Fair =====
+  serverSeed?: string;
+  serverSeedHash?: string;
+  clientSeed?: string;
+  nonce?: number;
+  revealSeed?: string;
 }
 
 export interface HandResult {
@@ -76,9 +81,12 @@ export interface HandResult {
   showdownPlayers: ShowdownPlayer[];
 }
 
-export const TIME_LIMITS: Record<Speed, { action: number; bank: number }> = {
-  regular: { action: 30, bank: 30 },
-  fast:    { action: 15, bank: 15 },
-  turbo:   { action: 10, bank: 10 },
-  hyper:   { action: 8,  bank: 8  },
-};
+export interface ShowdownPlayer {
+  seat: number;
+  displayName: string;
+  hole: Card[];
+  best: Card[];
+  handName: string;
+  isWinner: boolean;
+  payout: number;
+}

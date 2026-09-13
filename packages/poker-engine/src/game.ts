@@ -1,293 +1,369 @@
-import type {
-  Card, Variant, Speed, ActionType, PlayerInit, GameState, ActionResult, HandResult, ShowdownPlayer,
-} from './types.js';
-import { TIME_LIMITS } from './types.js';
-import { makeDeck } from './cards.js';
-import { shuffleDeck, generateServerSeed, sha256 } from './deck.js';
+import * as crypto from 'node:crypto';
 import { evaluateHand, compareHands } from './hand-evaluator.js';
+import { makeDeck, shuffleDeck } from './deck.js';
+import type {
+  Card,
+  GameOptions,
+  GameState,
+  PlayerInit,
+  Seat,
+  HandResult,
+  ShowdownPlayer,
+  ActionType,
+} from './types.js';
 
-export interface GameOptions {
-  tableId: number;
-  variant: Variant;
-  speed?: Speed;
-  smallBlind: number;
-  bigBlind: number;
-  ante?: number;
-  rakePct?: number;
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
 }
 
 export class PokerGame {
   state: GameState;
-  private variant: Variant;
-  private speed: Speed;
-  private ante: number;
-  private rakePct: number;
-
   private deck: Card[] = [];
   private serverSeed = '';
-  private clientSeeds: string[] = [];
+  private rakePct: number;
 
   constructor(opts: GameOptions, players: PlayerInit[]) {
-    this.variant = opts.variant;
-    this.speed = opts.speed ?? 'regular';
-    this.ante = opts.ante ?? 0;
     this.rakePct = opts.rakePct ?? 0.03;
-
-    const limits = TIME_LIMITS[this.speed];
-
     this.state = {
       tableId: opts.tableId,
       variant: opts.variant,
-      speed: this.speed,
+      speed: opts.speed,
+      smallBlind: opts.smallBlind,
+      bigBlind: opts.bigBlind,
+      ante: opts.ante ?? 0,
       handNo: 0,
       phase: 'waiting',
+      dealerSeat: -1,
+      currentSeat: -1,
+      pot: 0,
       community: [],
-      seats: players.map((p, i) => ({
-        seat: i,
+      seats: [],
+      minRaise: opts.bigBlind,
+      lastAggressor: -1,
+      winners: undefined,
+      serverSeed: undefined,
+      serverSeedHash: undefined,
+      clientSeed: crypto.randomBytes(16).toString('hex'),
+      nonce: 0,
+      revealSeed: undefined,
+      turnStartedAt: 0,
+      turnBankActive: false,
+    };
+
+    for (const p of players) {
+      this.state.seats.push({
+        seat: this.state.seats.length,
         userId: p.userId,
         displayName: p.displayName,
         stack: p.stack,
+        hole: [],
         betThisStreet: 0,
         totalBet: 0,
         folded: false,
         allIn: false,
-        hole: [],
-        holeCount: 0,
         hasActed: false,
         revealed: false,
-        timeBankRemaining: limits.bank,
-      })),
-      pot: 0,
-      currentSeat: 0,
-      dealerSeat: 0,
-      minRaise: opts.bigBlind,
-      smallBlind: opts.smallBlind,
-      bigBlind: opts.bigBlind,
-      serverSeedHash: '',
-      turnStartedAt: 0,
-      turnBaseLimit: limits.action,
-      turnBankActive: false,
-      turnBankLimit: limits.bank,
-      autoActionAt: 0,
-    };
+        timeBankRemaining: 30,
+        avatarId: (p as any).avatarId ?? 'spade',
+      });
+    }
   }
 
-  private holeCount(): number {
-    if (this.variant === 'holdem') return 2;
-    if (this.variant === 'omaha4') return 4;
-    return 5;
-  }
-
-  private startTurn(seat: number): void {
-    this.state.currentSeat = seat;
-    this.state.turnStartedAt = Date.now();
-    this.state.turnBankActive = false;
-    const limits = TIME_LIMITS[this.speed];
-    this.state.turnBaseLimit = limits.action;
-    this.state.turnBankLimit = limits.bank;
-    this.state.autoActionAt = this.state.turnStartedAt + limits.action * 1000;
-  }
-
-  useTimeBank(seat: number): ActionResult {
-    if (seat !== this.state.currentSeat) return { ok: false, error: 'not_your_turn' };
-    if (this.state.turnBankActive) return { ok: false, error: 'bank_already_active' };
-
-    const s = this.state.seats[seat];
-    if (s.timeBankRemaining <= 0) return { ok: false, error: 'no_time_bank' };
-
-    const elapsed = (Date.now() - this.state.turnStartedAt) / 1000;
-    const remaining = Math.max(0, this.state.turnBaseLimit - elapsed);
-    const use = Math.min(s.timeBankRemaining, this.state.turnBankLimit);
-    s.timeBankRemaining -= use;
-
-    this.state.turnBankActive = true;
-    this.state.autoActionAt = Date.now() + (remaining + use) * 1000;
-
-    return { ok: true };
-  }
-
-  forceTimeout(seat: number): ActionResult {
-    if (seat !== this.state.currentSeat) return { ok: false, error: 'not_your_turn' };
-    const maxBet = Math.max(...this.state.seats.map(s => s.betThisStreet));
-    const s = this.state.seats[seat];
-    const toCall = maxBet - s.betThisStreet;
-    if (toCall <= 0) return this.act(seat, 'check');
-    return this.act(seat, 'fold');
-  }
-
-  startHand(clientSeeds: string[] = []): void {
-    if (this.state.seats.filter(s => !s.folded && s.stack >= 0).length < 2) {
-      throw new Error('Not enough players');
+  // ============================================================
+  // ============ Start Hand ====================================
+  // ============================================================
+  startHand(_: any[]): void {
+    const seats = this.state.seats.filter((s) => s.stack > 0);
+    if (seats.length < 2) {
+      this.state.phase = 'waiting';
+      return;
     }
 
-    this.serverSeed = generateServerSeed();
-    this.state.serverSeedHash = sha256(this.serverSeed);
-    this.clientSeeds = clientSeeds;
-    this.state.handNo++;
+    this.state.handNo += 1;
+    this.state.nonce = this.state.handNo;
     this.state.phase = 'preflop';
     this.state.community = [];
     this.state.pot = 0;
     this.state.minRaise = this.state.bigBlind;
+    this.state.lastAggressor = -1;
     this.state.winners = undefined;
+    this.state.revealSeed = undefined;
+    this.state.turnBankActive = false;
+
+    // ===== Provably Fair =====
+    this.serverSeed = crypto.randomBytes(32).toString('hex');
+    this.state.serverSeedHash = crypto
+      .createHash('sha256')
+      .update(this.serverSeed)
+      .digest('hex');
     this.state.serverSeed = undefined;
 
-    for (const seat of this.state.seats) {
-      seat.folded = seat.stack <= 0;
-      seat.allIn = false;
-      seat.betThisStreet = 0;
-      seat.totalBet = 0;
-      seat.hole = [];
-      seat.holeCount = 0;
-      seat.hasActed = false;
-      seat.revealed = false;
+    // Reset seats
+    for (const s of this.state.seats) {
+      s.hole = [];
+      s.betThisStreet = 0;
+      s.totalBet = 0;
+      s.folded = s.stack <= 0;
+      s.allIn = false;
+      s.hasActed = false;
+      s.revealed = false;
     }
 
-    this.deck = shuffleDeck(makeDeck(), this.serverSeed, clientSeeds, this.state.handNo);
+    // Dealer
+    const activeSeats = this.state.seats.filter((s) => !s.folded);
+    if (this.state.dealerSeat < 0) {
+      this.state.dealerSeat = activeSeats[0].seat;
+    } else {
+      const curIdx = activeSeats.findIndex((s) => s.seat === this.state.dealerSeat);
+      this.state.dealerSeat = activeSeats[(curIdx + 1) % activeSeats.length].seat;
+    }
 
-    this.state.dealerSeat = this.nextOccupiedSeat(this.state.dealerSeat);
-    const sbSeat = this.nextOccupiedSeat(this.state.dealerSeat);
-    const bbSeat = this.nextOccupiedSeat(sbSeat);
+    // Deck
+    this.deck = makeDeck();
+    shuffleDeck(this.deck, this.serverSeed);
 
-    this.placeBet(sbSeat, this.state.smallBlind);
-    this.placeBet(bbSeat, this.state.bigBlind);
+    // Blinds
+    const order = this.orderFromDealer();
+    const sbSeat = order[0];
+    const bbSeat = order[1];
 
-    if (this.ante > 0) {
-      for (const seat of this.state.seats) {
-        if (seat.stack > 0) this.placeBet(seat.seat, this.ante);
+    this.postBet(sbSeat, this.state.smallBlind);
+    this.postBet(bbSeat, this.state.bigBlind);
+
+    // Ante
+    if (this.state.ante > 0) {
+      for (const s of activeSeats) {
+        this.postBet(s.seat, this.state.ante);
       }
     }
 
+    // Deal hole cards (2 rounds)
     const hc = this.holeCount();
     for (let round = 0; round < hc; round++) {
-      for (let i = 0; i < this.state.seats.length; i++) {
-        const seatIdx = (this.state.dealerSeat + 1 + i) % this.state.seats.length;
+      for (const seatIdx of order) {
         const seat = this.state.seats[seatIdx];
         if (seat.folded) continue;
-        seat.hole.push(this.deck.pop()!);
+        const c = this.deck.pop();
+        if (c) seat.hole.push(c);
       }
     }
-    for (const seat of this.state.seats) {
-      seat.holeCount = seat.hole.length;
-    }
 
-    if (this.shouldRunOutBoard()) {
-      this.runOutBoard();
-      return;
-    }
-
-    const firstSeat = this.nextActiveSeat(bbSeat);
-    this.startTurn(firstSeat);
+    // First to act
+    this.state.currentSeat = order[2] ?? order[0];
+    this.state.turnStartedAt = Date.now();
   }
 
-  act(seatIdx: number, action: ActionType, amount = 0): ActionResult {
-    if (this.state.phase === 'waiting' || this.state.phase === 'showdown') {
-      return { ok: false, error: 'not_playing' };
-    }
-    if (seatIdx !== this.state.currentSeat) {
-      return { ok: false, error: 'not_your_turn' };
-    }
-
+  // ============================================================
+  // ============ Actions =======================================
+  // ============================================================
+  act(seatIdx: number, action: ActionType, amount: number): { ok: boolean; error?: string } {
     const seat = this.state.seats[seatIdx];
-    if (seat.folded || seat.allIn) {
-      return { ok: false, error: 'inactive' };
-    }
+    if (!seat) return { ok: false, error: 'bad_seat' };
+    if (seat.folded || seat.allIn) return { ok: false, error: 'not_active' };
+    if (this.state.currentSeat !== seatIdx) return { ok: false, error: 'not_your_turn' };
 
-    const maxBet = Math.max(...this.state.seats.map(s => s.betThisStreet));
+    const maxBet = Math.max(...this.state.seats.map((s) => s.betThisStreet));
     const toCall = maxBet - seat.betThisStreet;
 
-    switch (action) {
-      case 'fold':
-        seat.folded = true;
-        break;
-      case 'check':
-        if (toCall > 0) return { ok: false, error: 'must_call' };
-        break;
-      case 'call':
-        this.placeBet(seatIdx, Math.min(toCall, seat.stack));
-        break;
-      case 'raise': {
-        const raiseTo = amount;
-        const maxRaiseTo = seat.betThisStreet + seat.stack;
-        if (raiseTo > maxRaiseTo) return { ok: false, error: 'not_enough_chips' };
-        if (raiseTo <= maxBet) return { ok: false, error: 'raise_too_small' };
-
-        const minRaiseTo = maxBet + this.state.minRaise;
-        const isAllIn = raiseTo >= maxRaiseTo;
-        if (raiseTo < minRaiseTo && !isAllIn) return { ok: false, error: 'raise_too_small' };
-
-        const delta = raiseTo - seat.betThisStreet;
-        this.placeBet(seatIdx, Math.min(delta, seat.stack));
-
-        if (raiseTo - maxBet >= this.state.minRaise) {
-          this.state.minRaise = raiseTo - maxBet;
-        }
-        for (const s of this.state.seats) {
-          if (!s.folded && !s.allIn && s.seat !== seatIdx) s.hasActed = false;
-        }
-        break;
+    if (action === 'fold') {
+      seat.folded = true;
+      seat.hasActed = true;
+    } else if (action === 'check') {
+      if (toCall > 0) return { ok: false, error: 'cannot_check' };
+      seat.hasActed = true;
+    } else if (action === 'call') {
+      const callAmt = Math.min(toCall, seat.stack);
+      this.postBet(seatIdx, callAmt);
+      if (seat.stack === 0) seat.allIn = true;
+      seat.hasActed = true;
+    } else if (action === 'raise') {
+      const total = round2(amount);
+      const minTotal = maxBet + this.state.minRaise;
+      if (total < minTotal && total < seat.stack + seat.betThisStreet) {
+        return { ok: false, error: 'raise_too_small' };
       }
-    }
-
-    seat.hasActed = true;
-
-    if (this.state.seats.filter(s => !s.folded).length <= 1) {
-      this.state.phase = 'showdown';
-      return { ok: true };
-    }
-
-    if (this.shouldRunOutBoard()) {
-      this.runOutBoard();
-      return { ok: true };
-    }
-
-    if (this.allCalled()) {
-      this.advanceStreet();
+      const add = total - seat.betThisStreet;
+      if (add > seat.stack) return { ok: false, error: 'not_enough_stack' };
+      this.postBet(seatIdx, add);
+      this.state.minRaise = total - maxBet;
+      this.state.lastAggressor = seatIdx;
+      if (seat.stack === 0) seat.allIn = true;
+      for (const s of this.state.seats) {
+        if (s.seat !== seatIdx && !s.folded && !s.allIn) s.hasActed = false;
+      }
+      seat.hasActed = true;
     } else {
-      const nextSeat = this.nextActiveSeat(seatIdx);
-      this.startTurn(nextSeat);
+      return { ok: false, error: 'bad_action' };
     }
 
+    this.advanceTurn();
     return { ok: true };
   }
 
-  private shouldRunOutBoard(): boolean {
-    const contenders = this.state.seats.filter(s => !s.folded);
-    if (contenders.length <= 1) return true;
-    const canAct = contenders.filter(s => !s.allIn && s.stack > 0);
-    if (canAct.length === 0) return true;
-    if (canAct.length === 1) {
-      const maxBet = Math.max(...contenders.map(s => s.betThisStreet));
-      const lastPlayer = canAct[0];
-      if (lastPlayer.betThisStreet >= maxBet && lastPlayer.hasActed) return true;
-      return false;
-    }
-    return false;
+  useTimeBank(seatIdx: number): { ok: boolean; error?: string } {
+    const seat = this.state.seats[seatIdx];
+    if (!seat) return { ok: false, error: 'bad_seat' };
+    if (this.state.currentSeat !== seatIdx) return { ok: false, error: 'not_your_turn' };
+    if (seat.timeBankRemaining <= 0) return { ok: false, error: 'no_time_bank' };
+    this.state.turnBankActive = true;
+    return { ok: true };
   }
 
-  private runOutBoard(): void {
-    while (this.state.community.length < 5) {
-      this.state.community.push(this.deck.pop()!);
+  // ============================================================
+  // ============ Internals =====================================
+  // ============================================================
+  private holeCount(): number {
+    if (this.state.variant === 'omaha4') return 4;
+    if (this.state.variant === 'omaha5') return 5;
+    return 2;
+  }
+
+  private orderFromDealer(): number[] {
+    const active = this.state.seats.filter((s) => !s.folded).map((s) => s.seat);
+    const startIdx = active.indexOf(this.state.dealerSeat);
+    const out: number[] = [];
+    for (let i = 1; i <= active.length; i++) {
+      out.push(active[(startIdx + i) % active.length]);
     }
+    return out;
+  }
+
+  private postBet(seatIdx: number, amt: number): void {
+    const seat = this.state.seats[seatIdx];
+    const real = Math.min(amt, seat.stack);
+    seat.stack = round2(seat.stack - real);
+    seat.betThisStreet = round2(seat.betThisStreet + real);
+    seat.totalBet = round2(seat.totalBet + real);
+    this.state.pot = round2(this.state.pot + real);
+  }
+
+  private advanceTurn(): void {
+    const active = this.state.seats.filter((s) => !s.folded && !s.allIn);
+    if (active.length <= 1) {
+      this.finishStreet();
+      return;
+    }
+
+    const allActed = active.every((s) => s.hasActed);
+    const maxBet = Math.max(...this.state.seats.map((s) => s.betThisStreet));
+    const allMatched = active.every((s) => s.betThisStreet === maxBet);
+
+    if (allActed && allMatched) {
+      this.finishStreet();
+      return;
+    }
+
+    const seats = this.state.seats.map((s) => s.seat);
+    const curIdx = seats.indexOf(this.state.currentSeat);
+    for (let i = 1; i <= seats.length; i++) {
+      const next = seats[(curIdx + i) % seats.length];
+      const s = this.state.seats[next];
+      if (!s.folded && !s.allIn && (!s.hasActed || s.betThisStreet < maxBet)) {
+        this.state.currentSeat = next;
+        this.state.turnStartedAt = Date.now();
+        this.state.turnBankActive = false;
+        return;
+      }
+    }
+    this.finishStreet();
+  }
+
+  private finishStreet(): void {
     for (const s of this.state.seats) {
       s.betThisStreet = 0;
       s.hasActed = false;
     }
-    this.state.phase = 'showdown';
+
+    const active = this.state.seats.filter((s) => !s.folded);
+    if (active.length <= 1) {
+      this.state.phase = 'showdown';
+      return;
+    }
+
+    if (this.state.phase === 'preflop') {
+      this.state.phase = 'flop';
+      this.burnAndDeal(3);
+    } else if (this.state.phase === 'flop') {
+      this.state.phase = 'turn';
+      this.burnAndDeal(1);
+    } else if (this.state.phase === 'turn') {
+      this.state.phase = 'river';
+      this.burnAndDeal(1);
+    } else if (this.state.phase === 'river') {
+      this.state.phase = 'showdown';
+      return;
+    }
+
+    // First to act post-flop: first active after dealer
+    const order = this.orderFromDealer();
+    for (const idx of order) {
+      const s = this.state.seats[idx];
+      if (!s.folded && !s.allIn) {
+        this.state.currentSeat = idx;
+        this.state.turnStartedAt = Date.now();
+        this.state.turnBankActive = false;
+        return;
+      }
+    }
   }
 
+  private burnAndDeal(n: number): void {
+    this.deck.pop(); // burn
+    for (let i = 0; i < n; i++) {
+      const c = this.deck.pop();
+      if (c) this.state.community.push(c);
+    }
+  }
+
+  private extractBestFive(cards: Card[]): Card[] {
+    if (cards.length <= 5) return cards;
+    const combos: Card[][] = [];
+    const rec = (start: number, cur: Card[]) => {
+      if (cur.length === 5) {
+        combos.push([...cur]);
+        return;
+      }
+      for (let i = start; i < cards.length; i++) {
+        cur.push(cards[i]);
+        rec(i + 1, cur);
+        cur.pop();
+      }
+    };
+    rec(0, []);
+    let bestCombo = combos[0];
+    let bestHand = evaluateHand(bestCombo);
+    for (const c of combos) {
+      const h = evaluateHand(c);
+      if (compareHands(h, bestHand) > 0) {
+        bestHand = h;
+        bestCombo = c;
+      }
+    }
+    return bestCombo;
+  }
+
+  // ============================================================
+  // ============ Finish Hand ===================================
+  // ============================================================
   finishHand(): HandResult {
-    const active = this.state.seats.filter(s => !s.folded);
+    // Reset all street bets before settlement
+    for (const s of this.state.seats) {
+      s.betThisStreet = 0;
+    }
+
+    const active = this.state.seats.filter((s) => !s.folded);
     const showdown = active.length > 1;
 
+    // ============ Winner by fold ============
     if (active.length === 1) {
       const winner = active[0];
       winner.revealed = false;
-      const rake = Math.round(this.state.pot * this.rakePct * 100) / 100;
-      const payout = Math.round((this.state.pot - rake) * 100) / 100;
-      winner.stack += payout;
+      const rake = round2(this.state.pot * this.rakePct);
+      const payout = round2(this.state.pot - rake);
+      winner.stack = round2(winner.stack + payout);
       this.state.winners = [winner.seat];
-      this.state.serverSeed = this.serverSeed;
       this.state.phase = 'showdown';
+      this.state.revealSeed = this.serverSeed;
 
       return {
         winners: [winner.seat],
@@ -299,7 +375,8 @@ export class PokerGame {
       };
     }
 
-    const evaluations = active.map(s => ({
+    // ============ Showdown ============
+    const evaluations = active.map((s) => ({
       seat: s,
       hand: evaluateHand([...s.hole, ...this.state.community]),
     }));
@@ -309,23 +386,23 @@ export class PokerGame {
       if (compareHands(e.hand, best.hand) > 0) best = e;
     }
 
-    const winners = evaluations.filter(e => compareHands(e.hand, best.hand) === 0);
-    const winnerSeats = winners.map(w => w.seat.seat);
+    const winners = evaluations.filter((e) => compareHands(e.hand, best.hand) === 0);
+    const winnerSeats = winners.map((w) => w.seat.seat);
 
     for (const e of evaluations) e.seat.revealed = true;
 
-    const rake = Math.round(this.state.pot * this.rakePct * 100) / 100;
-    const netPot = this.state.pot - rake;
-    const share = Math.round((netPot / winners.length) * 100) / 100;
+    const rake = round2(this.state.pot * this.rakePct);
+    const netPot = round2(this.state.pot - rake);
+    const share = round2(netPot / winners.length);
 
-    const payouts = winners.map(w => ({ seat: w.seat.seat, amount: share }));
-    for (const w of winners) w.seat.stack += share;
+    const payouts = winners.map((w) => ({ seat: w.seat.seat, amount: share }));
+    for (const w of winners) w.seat.stack = round2(w.seat.stack + share);
 
     this.state.winners = winnerSeats;
-    this.state.serverSeed = this.serverSeed;
     this.state.phase = 'showdown';
+    this.state.revealSeed = this.serverSeed;
 
-    const showdownPlayers: ShowdownPlayer[] = evaluations.map(e => ({
+    const showdownPlayers: ShowdownPlayer[] = evaluations.map((e) => ({
       seat: e.seat.seat,
       displayName: e.seat.displayName,
       hole: e.seat.hole,
@@ -345,106 +422,50 @@ export class PokerGame {
     };
   }
 
-  private extractBestFive(cards: Card[]): Card[] {
-    if (cards.length <= 5) return cards;
-    const combos: Card[][] = [];
-    const rec = (start: number, cur: Card[]) => {
-      if (cur.length === 5) { combos.push([...cur]); return; }
-      for (let i = start; i < cards.length; i++) {
-        cur.push(cards[i]);
-        rec(i + 1, cur);
-        cur.pop();
-      }
-    };
-    rec(0, []);
-    let bestCombo = combos[0];
-    let bestHand = evaluateHand(bestCombo);
-    for (const c of combos) {
-      const h = evaluateHand(c);
-      if (compareHands(h, bestHand) > 0) { bestHand = h; bestCombo = c; }
-    }
-    return bestCombo;
-  }
-
-  private placeBet(seatIdx: number, amount: number): void {
-    const seat = this.state.seats[seatIdx];
-    const real = Math.min(amount, seat.stack);
-    seat.stack -= real;
-    seat.betThisStreet += real;
-    seat.totalBet += real;
-    this.state.pot += real;
-    if (seat.stack === 0) seat.allIn = true;
-  }
-
-  private allCalled(): boolean {
-    const contenders = this.state.seats.filter(s => !s.folded);
-    if (contenders.length <= 1) return true;
-    const needToAct = contenders.filter(s => !s.allIn);
-    if (needToAct.length === 0) return true;
-    const maxBet = Math.max(...contenders.map(s => s.betThisStreet));
-    return needToAct.every(s => s.betThisStreet === maxBet && s.hasActed);
-  }
-
-  private advanceStreet(): void {
-    for (const s of this.state.seats) {
-      s.betThisStreet = 0;
-      s.hasActed = false;
-    }
-    this.state.minRaise = this.state.bigBlind;
-
-    switch (this.state.phase) {
-      case 'preflop':
-        this.state.community.push(this.deck.pop()!, this.deck.pop()!, this.deck.pop()!);
-        this.state.phase = 'flop';
-        break;
-      case 'flop':
-        this.state.community.push(this.deck.pop()!);
-        this.state.phase = 'turn';
-        break;
-      case 'turn':
-        this.state.community.push(this.deck.pop()!);
-        this.state.phase = 'river';
-        break;
-      case 'river':
-        this.state.phase = 'showdown';
-        return;
-    }
-
-    if (this.shouldRunOutBoard()) {
-      this.runOutBoard();
-      return;
-    }
-
-    const nextSeat = this.nextActiveSeat(this.state.dealerSeat);
-    this.startTurn(nextSeat);
-  }
-
-  private nextOccupiedSeat(from: number): number {
-    let i = (from + 1) % this.state.seats.length;
-    for (let k = 0; k < this.state.seats.length; k++) {
-      if (this.state.seats[i].stack > 0 || !this.state.seats[i].folded) return i;
-      i = (i + 1) % this.state.seats.length;
-    }
-    return from;
-  }
-
-  private nextActiveSeat(from: number): number {
-    let i = (from + 1) % this.state.seats.length;
-    for (let k = 0; k < this.state.seats.length; k++) {
-      const s = this.state.seats[i];
-      if (!s.folded && !s.allIn && s.stack > 0) return i;
-      i = (i + 1) % this.state.seats.length;
-    }
-    return from;
-  }
-
-  publicView(forUserId?: number): any {
+  // ============================================================
+  // ============ Public View ===================================
+  // ============================================================
+  publicView(forUserId: number): any {
     return {
-      ...this.state,
-      serverTime: Date.now(),
-      seats: this.state.seats.map(s => ({
-        ...s,
-        hole: (s.userId === forUserId || s.revealed) ? s.hole : [],
+      tableId: this.state.tableId,
+      variant: this.state.variant,
+      speed: this.state.speed,
+      handNo: this.state.handNo,
+      phase: this.state.phase,
+      dealerSeat: this.state.dealerSeat,
+      currentSeat: this.state.currentSeat,
+      pot: this.state.pot,
+      community: this.state.community,
+      minRaise: this.state.minRaise,
+      smallBlind: this.state.smallBlind,
+      bigBlind: this.state.bigBlind,
+      ante: this.state.ante,
+      winners: this.state.winners,
+      turnStartedAt: this.state.turnStartedAt,
+      turnBankActive: this.state.turnBankActive,
+
+      // ===== Provably Fair =====
+      serverSeedHash: this.state.serverSeedHash,
+      clientSeed: this.state.clientSeed,
+      nonce: this.state.nonce,
+      revealSeed: this.state.revealSeed,
+
+      seats: this.state.seats.map((s) => ({
+        seat: s.seat,
+        userId: s.userId,
+        displayName: s.displayName,
+        avatarId: s.avatarId,
+        stack: s.stack,
+        betThisStreet: s.betThisStreet,
+        totalBet: s.totalBet,
+        folded: s.folded,
+        allIn: s.allIn,
+        revealed: s.revealed,
+        timeBankRemaining: s.timeBankRemaining,
+        hole:
+          s.userId === forUserId || s.revealed
+            ? s.hole
+            : s.hole.map(() => ({ r: '?', s: '?' })),
       })),
     };
   }
