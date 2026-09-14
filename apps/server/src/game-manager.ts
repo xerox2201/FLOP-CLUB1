@@ -1,5 +1,4 @@
  import { PokerGame } from '../../../packages/poker-engine/src/game.js';
-import type { GameOptions } from '../../../packages/poker-engine/src/game.js';
 import type { PlayerInit } from '../../../packages/poker-engine/src/types.js';
 
 export interface PlayerInfo {
@@ -25,6 +24,8 @@ export interface TableRoom {
   autoActionAt: number;
   lastActionAt: number;
   handCounter: number;
+  totalRebuy: number;
+  totalRake: number;
 }
 
 const TIME_LIMITS = {
@@ -83,10 +84,12 @@ class GameManager {
       autoActionAt: 0,
       lastActionAt: 0,
       handCounter: 0,
+      totalRebuy: 0,
+      totalRake: 0,
     };
 
     this.rooms.set(params.tableId, room);
-    console.log(`[room] ✅ created table ${params.tableId}`);
+    console.log(`[room] created table ${params.tableId}`);
     return room;
   }
 
@@ -125,7 +128,7 @@ class GameManager {
     room.players.set(playerId, info);
     room.socketToPlayer.set(params.socketId, playerId);
 
-    console.log(`[room] ✅ ${params.displayName} joined table ${params.tableId}`);
+    console.log(`[room] ${params.displayName} joined table ${params.tableId}, size=${room.players.size}`);
     return room;
   }
 
@@ -142,7 +145,7 @@ class GameManager {
           if (room.handTimer) clearTimeout(room.handTimer);
           if (room.turnTimer) clearTimeout(room.turnTimer);
           this.rooms.delete(tableId);
-          console.log(`[room] 🗑️ table ${tableId} destroyed`);
+          console.log(`[room] table ${tableId} destroyed`);
         }
         return { tableId, playerId };
       }
@@ -163,7 +166,8 @@ class GameManager {
 
   async startHand(tableId: number, io: any): Promise<void> {
     const room = this.rooms.get(tableId);
-    if (!room || room.busy) return;
+    if (!room) return;
+    if (room.busy) return;
 
     const activePlayers = room.players.size;
     if (activePlayers < 2) {
@@ -174,21 +178,36 @@ class GameManager {
     room.busy = true;
     try {
       const players: PlayerInit[] = [];
-      for (const [pid, info] of room.players) {
+      let reBuysThisHand = 0;
+      const REBUY_THRESHOLD = Number(process.env.REBUY_THRESHOLD ?? 0);
+      const REBUY_AMOUNT = Number(process.env.REBUY_AMOUNT ?? 1000);
+
+      for (const [, info] of room.players) {
         const oldSeat = room.game.state.seats.find(s => s.userId === info.userId);
+        let stack = oldSeat?.stack ?? 1000;
+
+        if (REBUY_THRESHOLD > 0 && stack < REBUY_THRESHOLD) {
+          const injected = round2(REBUY_AMOUNT - stack);
+          room.totalRebuy = round2(room.totalRebuy + injected);
+          console.log(`[rebuy] ${info.displayName}: $${stack.toFixed(2)} → $${REBUY_AMOUNT.toFixed(2)} (+$${injected.toFixed(2)})`);
+          stack = REBUY_AMOUNT;
+          reBuysThisHand++;
+        }
+
         players.push({
           userId: info.userId,
           displayName: info.displayName,
-          stack: oldSeat?.stack ?? 1000,
+          stack,
         });
       }
 
-      // ============================================================
-      // ذخیره handCounter قبلی
-      // ============================================================
-      const prevHandCounter = room.handCounter ?? 0;
+      if (reBuysThisHand > 0) {
+        console.log(`[rebuy] ${reBuysThisHand} player(s) re-bought (hand #${room.handCounter + 1}), total rebuy=$${room.totalRebuy.toFixed(2)}`);
+      }
 
-      // ساخت موتور جدید
+      const prevHandCounter = room.handCounter ?? 0;
+      const prevDealerSeat = room.game.state.dealerSeat;
+
       room.game = new PokerGame(
         {
           tableId,
@@ -202,12 +221,12 @@ class GameManager {
         players
       );
 
+      if (prevDealerSeat >= 0) {
+        room.game.state.dealerSeat = prevDealerSeat;
+      }
+
       room.game.startHand([]);
 
-      // ============================================================
-      // increment کردن handCounter روی room
-      // و ست کردن handNo موتور به همون مقدار
-      // ============================================================
       room.handCounter = prevHandCounter + 1;
       room.game.state.handNo = room.handCounter;
 
@@ -215,9 +234,15 @@ class GameManager {
       const limits = TIME_LIMITS[room.speed];
       room.autoActionAt = room.turnStartedAt + limits.action * 1000;
 
-      console.log(`[hand] table ${tableId} started, hand #${room.handCounter}`);
-
       this.broadcastState(tableId, io);
+
+      let total = 0;
+      for (const s of room.game.state.seats) total += s.stack + s.betThisStreet;
+      const stacksStr = room.game.state.seats.map((s: any) => `${s.displayName}=$${s.stack.toFixed(2)}`).join(' ');
+      console.log(`[chips] hand #${room.handCounter} START total=$${total.toFixed(2)} | ${stacksStr}`);
+    } catch (e: any) {
+      console.error(`[hand] ERROR in startHand:`, e);
+      console.error(e.stack);
     } finally {
       room.busy = false;
     }
@@ -237,65 +262,67 @@ class GameManager {
     const seatIdx = room.game.state.seats.findIndex(s => s.userId === player.userId);
     if (seatIdx === -1) return { ok: false, error: 'not_seated' };
 
-    const actType = actionType.toLowerCase() as 'fold' | 'check' | 'call' | 'raise';
-    const result = room.game.act(seatIdx, actType, amount);
-    if (!result.ok) return result;
+  const actType = actionType.toLowerCase() as 'fold' | 'check' | 'call' | 'raise';
+const result = room.game.act(seatIdx, actType, amount);
+if (!result.ok) {
+  console.log(`[action] ❌ ${player.displayName} ${actType}${amount ? ' ' + amount : ''} FAILED: ${result.error}`);
+  return result;
+}
+console.log(`[action] ✅ ${player.displayName} ${actType}${amount ? ' ' + amount : ''}`);
 
     room.lastActionAt = Date.now();
     room.turnStartedAt = Date.now();
     const limits = TIME_LIMITS[room.speed];
     room.autoActionAt = room.turnStartedAt + limits.action * 1000;
 
-    console.log(`[action] ${player.displayName} → ${actionType}${amount ? ' ' + amount : ''}`);
-
-    // ============================================================
-    // ============ Showdown — ارسال hand_result ==================
-    // ============================================================
     if (room.game.state.phase === 'showdown') {
-      const handResult = room.game.finishHand();
+      try {
+        const handResult = room.game.finishHand();
 
-      // اطمینان از handNo درست
-      room.game.state.handNo = room.handCounter;
+        room.totalRake = round2(room.totalRake + handResult.rake);
 
-      // ۱. ابتدا state نهایی (شامل کارت‌های افشا شده)
-      this.broadcastState(room.tableId, io);
+        let total = 0;
+        for (const s of room.game.state.seats) total += s.stack + s.betThisStreet;
+        const stacksStr = room.game.state.seats.map((s: any) => `${s.displayName}=$${s.stack.toFixed(2)}`).join(' ');
+        console.log(`[chips] hand #${room.handCounter} END   total=$${total.toFixed(2)} | ${stacksStr}`);
 
-      // ۲. سپس hand_result کامل برای نمایش banner + animation
-      for (const [pid, info] of room.players) {
-        try {
-          io.to(info.socketId).emit('table:hand_result', {
-            result: {
-              winners: handResult.winners,
-              payouts: handResult.payouts,
-              rake: handResult.rake,
-              revealSeed: handResult.revealSeed,
-              showdown: handResult.showdown,
-              showdownPlayers: handResult.showdownPlayers.map((p: any) => ({
-                seat: p.seat,
-                displayName: p.displayName,
-                hole: p.hole,
-                best: p.best,
-                handName: p.handName,
-                isWinner: p.isWinner,
-                payout: p.payout,
-              })),
-            },
-            state: room.game.publicView(info.userId),
-          });
-        } catch (e: any) {
-          console.error(`[hand_result] ${pid}: ${e.message}`);
+        room.game.state.handNo = room.handCounter;
+
+        // 🔴 FIX: Emit hand_result FIRST so bot updates totalRake/totalRebuy
+        //         BEFORE checking chip conservation on state
+        for (const [, info] of room.players) {
+          try {
+            io.to(info.socketId).emit('table:hand_result', {
+              result: {
+                winners: handResult.winners,
+                payouts: handResult.payouts,
+                rake: handResult.rake,
+                revealSeed: handResult.revealSeed,
+                showdown: handResult.showdown,
+                showdownPlayers: handResult.showdownPlayers,
+                totalRake: room.totalRake,
+                totalRebuy: room.totalRebuy,
+              },
+              state: room.game.publicView(info.userId),
+            });
+          } catch (e: any) {
+            console.error(`[hand_result] ${info.playerId}: ${e.message}`);
+          }
         }
+
+        // Then broadcast state
+        this.broadcastState(room.tableId, io);
+      } catch (e: any) {
+        console.error('[finishHand] ERROR:', e);
+        console.error(e.stack);
       }
 
-      console.log(
-        `🏆 Hand #${room.handCounter} finished. Winners: ${handResult.winners.join(',')}. Rake: $${handResult.rake}`
-      );
-
+      const handInterval = Number(process.env.HANDS_INTERVAL_MS ?? 5000);
       setTimeout(() => {
         const r = this.rooms.get(room.tableId);
         if (!r) return;
         this.startHand(room.tableId, io).catch((e) => console.error('[hand] error', e));
-      }, 5000);
+      }, handInterval);
     } else {
       this.broadcastState(room.tableId, io);
     }
@@ -325,7 +352,7 @@ class GameManager {
     const room = this.rooms.get(tableId);
     if (!room) return;
 
-    for (const [playerId, info] of room.players) {
+    for (const [, info] of room.players) {
       try {
         const view = room.game.publicView(info.userId);
         io.to(info.socketId).emit('table:state', {
@@ -346,9 +373,11 @@ class GameManager {
           autoActionAt: room.autoActionAt,
           turnBaseLimit: TIME_LIMITS[room.speed].action,
           timeBankLimit: TIME_LIMITS[room.speed].bank,
+          totalRake: room.totalRake,
+          totalRebuy: room.totalRebuy,
         });
       } catch (e: any) {
-        console.error(`[broadcast] ${playerId}: ${e.message}`);
+        console.error(`[broadcast] ${info.playerId}: ${e.message}`);
       }
     }
   }

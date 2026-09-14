@@ -1,4 +1,5 @@
-import 'dotenv/config';
+ import './env.js';
+
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { Server as SocketIOServer } from 'socket.io';
@@ -119,7 +120,7 @@ app.post<{ Body: { initData: string } }>('/api/auth/telegram', async (req, reply
 
 app.get('/api/me', async (req, reply) => {
   const auth = req.headers.authorization;
-  if (!auth?.startsWith('Bearer ')) return reply.code(401).send({ error: 'no token' });
+  if (!auth?.startsWith('Bearer ')) return reply.code(401).send({ error: 'notoken' });
   const payload = verifyToken(auth.slice(7), JWT_SECRET);
   if (!payload) return reply.code(401).send({ error: 'invalid token' });
 
@@ -145,7 +146,7 @@ app.get('/api/me', async (req, reply) => {
 
 app.post<{ Body: { avatar_id: string } }>('/api/me/avatar', async (req, reply) => {
   const auth = req.headers.authorization;
-  if (!auth?.startsWith('Bearer ')) return reply.code(401).send({ error: 'no token' });
+  if (!auth?.startsWith('Bearer ')) return reply.code(401).send({ error: 'notoken' });
   const payload = verifyToken(auth.slice(7), JWT_SECRET);
   if (!payload) return reply.code(401).send({ error: 'invalid token' });
 

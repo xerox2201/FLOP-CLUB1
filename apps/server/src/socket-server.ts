@@ -1,4 +1,4 @@
-import { Server as SocketIOServer } from 'socket.io';
+ import { Server as SocketIOServer } from 'socket.io';
 import { Pool } from 'pg';
 import { verifyToken } from './auth.js';
 import { gameManager } from './game-manager.js';
@@ -6,17 +6,20 @@ import {
   recordIp, recordDevice, analyzeUser,
 } from './anti-cheat.js';
 
-const JWT_SECRET = process.env.JWT_SECRET ?? 'dev_secret_change_me';
+// Lazy read — dotenv ممکنه بعد از import اجرا بشه
+function getJwtSecret(): string {
+  return process.env.JWT_SECRET ?? 'dev_secret_change_me';
+}
 
 export function setupSocketServer(io: SocketIOServer, db: Pool): void {
-  console.log('[socket.io] ✅ server setup');
+  console.log('[socket.io] server setup');
 
   io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth?.token;
       if (!token) return next(new Error('no_token'));
 
-      const payload = verifyToken(token, JWT_SECRET);
+      const payload = verifyToken(token, getJwtSecret());
       if (!payload) return next(new Error('invalid_token'));
 
       const userId = payload.uid;
@@ -46,7 +49,7 @@ export function setupSocketServer(io: SocketIOServer, db: Pool): void {
     const userId = (socket as any).userId;
     const displayName = (socket as any).displayName;
 
-    console.log(`[socket.io] 🟢 connected: ${displayName} (${socket.id})`);
+    console.log(`[socket.io] connected: ${displayName} (${socket.id})`);
 
     socket.on('table:join', async (data: { tableId: number }, ack?: Function) => {
       try {
@@ -56,7 +59,7 @@ export function setupSocketServer(io: SocketIOServer, db: Pool): void {
           return;
         }
 
-        const tableRes = await db.query('SELECT * FROM poker_tables WHERE id = $1', [tableId]);
+        const tableRes = await db.query('SELECT * FROM poker_tables WHERE id= $1', [tableId]);
         if (tableRes.rows.length === 0) {
           ack?.({ ok: false, error: 'table_not_found' });
           return;
@@ -92,11 +95,21 @@ export function setupSocketServer(io: SocketIOServer, db: Pool): void {
 
         setTimeout(async () => {
           const r = gameManager.getRoom(tableId);
-          if (!r) return;
+          if (!r) {
+            console.log('[hand] no room after timeout');
+            return;
+          }
+          console.log(`[hand] timer fired. players=${r.players.size}, phase=${r.game.state.phase}, busy=${r.busy}`);
           if (r.players.size >= 2 && r.game.state.phase === 'waiting') {
-            await gameManager.startHand(tableId, io).catch((e) =>
-              console.error('[hand] startHand error:', e)
-            );
+            console.log('[hand] calling startHand...');
+            try {
+              await gameManager.startHand(tableId, io);
+              console.log('[hand] startHand returned OK');
+            } catch (e) {
+              console.error('[hand] startHand error:', e);
+            }
+          } else {
+            console.log(`[hand] skipping startHand (players=${r.players.size}, phase=${r.game.state.phase})`);
           }
         }, 1500);
 
@@ -107,7 +120,7 @@ export function setupSocketServer(io: SocketIOServer, db: Pool): void {
       }
     });
 
-    socket.on('table:action', async (data: { action: string; amount?: number }, ack?: Function) => {
+    socket.on('table:action', async (data: { action: string; amount?: number}, ack?: Function) => {
       try {
         const action = String(data?.action ?? '').toUpperCase();
         const amount = Number(data?.amount ?? 0);
@@ -146,7 +159,7 @@ export function setupSocketServer(io: SocketIOServer, db: Pool): void {
     });
 
     socket.on('disconnect', (reason) => {
-      console.log(`[socket.io] 🔴 disconnected: ${displayName} (${socket.id}) — ${reason}`);
+      console.log(`[socket.io] disconnected: ${displayName} (${socket.id}) - ${reason}`);
       const ctx = gameManager.getPlayerBySocket(socket.id);
       if (ctx) {
         const tableId = ctx.room.tableId;

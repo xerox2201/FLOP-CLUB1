@@ -1,0 +1,13 @@
+### Health
+GET http://localhost:4000/health
+
+### Tables
+GET http://localhost:4000/api/tables
+
+### Auth
+POST http://localhost:4000/api/auth/telegram
+Content-Type: application/json
+
+{
+  "initData": "user=%7B%22id%22%3A111%2C%22first_name%22%3A%22Ali%22%7D"
+}
