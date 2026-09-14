@@ -1,6 +1,7 @@
  <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import PokerTable from '../components/PokerTable.svelte';
+  import PlayingCard from '../components/PlayingCard.svelte';
   import { TableSocketIO, type TableState } from '../lib/socket';
   import { auth } from '../stores/auth';
   import { t } from '../i18n';
@@ -22,15 +23,18 @@
 
   let raiseAmount = 0;
   let raiseTouched = false;
+  let raiseInput = '0.00';
+  let raiseInputFocused = false;
+
+  // 🔴 Hand History — last 2 hands with full snapshot
+  let handHistory: any[] = [];
 
   $: myUserId = $auth.user?.id;
   $: mySeat = gameState?.seats?.find((s: any) => s.userId === myUserId) ?? null;
   $: isMyTurn = !!(
-    gameState &&
-    mySeat &&
+    gameState && mySeat &&
     gameState.currentSeat === mySeat.seat &&
-    !mySeat.folded &&
-    !mySeat.allIn
+    !mySeat.folded && !mySeat.allIn
   );
 
   $: maxBet = gameState ? Math.max(0, ...gameState.seats.map((s: any) => s.betThisStreet)) : 0;
@@ -43,16 +47,12 @@
   $: hardMax = myStack + myBet;
   $: canRaise = isMyTurn && hardMax > maxBet && hardMax >= minRaiseTo;
 
-  // ============================================================
-  // ============ Time Bank — فقط ۵ ثانیه‌ی آخر ==================
-  // ============================================================
   $: timeRemaining = gameState && gameState.turnStartedAt
     ? Math.max(0, (gameState.turnBaseLimit ?? 30) - (nowTick - gameState.turnStartedAt) / 1000)
     : 30;
 
   $: canUseBank =
-    isMyTurn &&
-    mySeat &&
+    isMyTurn && mySeat &&
     mySeat.timeBankRemaining > 0 &&
     !gameState?.turnBankActive &&
     timeRemaining <= 5;
@@ -62,6 +62,8 @@
   $: if (raiseAmount < minRaiseTo) raiseAmount = minRaiseTo;
   $: if (raiseAmount > hardMax) raiseAmount = hardMax;
 
+  $: if (!raiseInputFocused) raiseInput = raiseAmount.toFixed(2);
+
   $: raisePercent = hardMax > minRaiseTo
     ? ((raiseAmount - minRaiseTo) / (hardMax - minRaiseTo)) * 100
     : 100;
@@ -70,6 +72,13 @@
 
   function fmt(n: any): string {
     return Number(Number(n || 0).toFixed(2)).toFixed(2);
+  }
+
+  function suitChar(s: string): '♠' | '♥' | '♦' | '♣' {
+    if (s === 's') return '♠';
+    if (s === 'h') return '♥';
+    if (s === 'd') return '♦';
+    return '♣';
   }
 
   function connect() {
@@ -90,7 +99,48 @@
       } else if (evt.type === 'hand_result') {
         handResult = evt.result;
         gameState = evt.state;
-        setTimeout(() => { handResult = null; }, 6000);
+
+        // 🔴 Snapshot for hand history
+        try {
+          const winners: number[] = evt.result.winners || [];
+          const showdownPlayers: any[] = evt.result.showdownPlayers || [];
+          const payoutMap: Record<number, number> = {};
+          for (const po of (evt.result.payouts || [])) payoutMap[po.seat] = po.amount;
+
+          let winnerSnapshots: any[] = [];
+          if (showdownPlayers.length > 0) {
+            winnerSnapshots = showdownPlayers
+              .filter((p: any) => winners.includes(p.seat))
+              .map((p: any) => ({
+                displayName: p.displayName,
+                cards: (p.best || []).slice(0, 5),
+                handName: p.handName,
+                payout: payoutMap[p.seat] || 0,
+              }));
+          } else {
+            // Fold win — no showdown players
+            winnerSnapshots = winners.map((seatNum: number) => {
+              const s = evt.state?.seats?.find((x: any) => x.seat === seatNum);
+              return {
+                displayName: s?.displayName || `Seat ${seatNum}`,
+                cards: [],
+                handName: 'All folded',
+                payout: payoutMap[seatNum] || 0,
+              };
+            });
+          }
+
+          handHistory = [
+            {
+              handNo: evt.state?.handNo,
+              winners: winnerSnapshots,
+              isSplit: winners.length > 1,
+            },
+            ...handHistory,
+          ].slice(0, 2);
+        } catch (e) { /* ignore */ }
+
+        setTimeout(() => { handResult = null; }, 7000);
       } else if (evt.type === 'error') {
         errorMsg = evt.message;
         setTimeout(() => { errorMsg = ''; }, 3000);
@@ -122,6 +172,22 @@
     raiseAmount = Math.min(Math.max(v, minRaiseTo), hardMax);
   }
 
+  function commitRaiseInput() {
+    raiseInputFocused = false;
+    const v = parseFloat(raiseInput);
+    if (!isNaN(v) && v > 0) setRaise(v);
+    raiseInput = raiseAmount.toFixed(2);
+  }
+
+  function handleRaiseKey(e: KeyboardEvent) {
+    if (e.key === 'Enter') {
+      (e.target as HTMLInputElement).blur();
+    } else if (e.key === 'Escape') {
+      raiseInput = raiseAmount.toFixed(2);
+      (e.target as HTMLInputElement).blur();
+    }
+  }
+
   function quickRaise(mult: number) {
     if (!gameState) return;
     setRaise(maxBet + gameState.bigBlind * mult);
@@ -129,7 +195,8 @@
 
   function potRaise() {
     if (!gameState) return;
-    setRaise((gameState.pot ?? 0) + maxBet - myBet);
+    const potTotal = (gameState.pot ?? 0) + maxBet - myBet;
+    setRaise(Math.min(potTotal, hardMax));
   }
 
   function allIn() { setRaise(hardMax); }
@@ -183,15 +250,52 @@
         <span class="w-3 h-3 rounded-full {connected ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}"></span>
       </div>
       {#if gameState?.handNo}
-        <button
-          on:click={() => showSeedModal = true}
-          class="text-[10px] text-white/60 font-mono underline active:opacity-60"
-        >
+        <button on:click={() => showSeedModal = true} class="text-[10px] text-white/60 font-mono underline active:opacity-60">
           Hand #{gameState.handNo} 🔒
         </button>
       {/if}
     </div>
   </div>
+
+  <!-- 🔴 Hand History — هم‌ردیف تنظیمات، ۲ دست آخر با کارت -->
+  {#if handHistory.length > 0}
+    <div class="absolute z-30 flex gap-1.5 pointer-events-none" style="top: max(72px, calc(env(safe-area-inset-top) + 60px)); left: 16px;">
+      {#each handHistory as h, i}
+        <div class="rounded-xl p-2 w-[140px]" style="background: rgba(0,0,0,0.88); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); opacity: {1 - i * 0.25};">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[9px] font-mono text-white/50">Hand #{h.handNo}</span>
+            {#if h.isSplit}
+              <span class="text-[8px] font-bold text-blue-300 px-1 rounded" style="background: rgba(59,130,246,0.2);">SPLIT</span>
+            {/if}
+          </div>
+
+          {#each h.winners as w}
+            <div class="mb-1">
+              <div class="flex items-center gap-1 mb-0.5">
+                <span class="text-[10px]">🏆</span>
+                <span class="text-[10px] font-bold text-amber-400 truncate flex-1">{w.displayName}</span>
+              </div>
+              {#if w.cards.length > 0}
+                <div class="flex gap-0.5 justify-center my-1 flex-wrap">
+                  {#each w.cards as c}
+                    <div class="scale-[0.5] origin-center -mx-1.5">
+                      <PlayingCard rank={c.r} suit={suitChar(c.s)} size="sm" />
+                    </div>
+                  {/each}
+                </div>
+              {/if}
+              <div class="flex items-center justify-between">
+                <span class="text-[9px] font-bold text-white/50">{w.handName}</span>
+                {#if w.payout > 0}
+                  <span class="text-[9px] font-extrabold text-emerald-400 tabular-nums">+${fmt(w.payout)}</span>
+                {/if}
+              </div>
+            </div>
+          {/each}
+        </div>
+      {/each}
+    </div>
+  {/if}
 
   <!-- Seed Modal -->
   {#if showSeedModal && gameState}
@@ -201,14 +305,13 @@
         <h3 class="text-sm font-extrabold text-white">🔒 Provably Fair</h3>
         <button on:click={() => showSeedModal = false} class="text-white/60 text-xl leading-none">×</button>
       </div>
-
       <div class="space-y-2 text-[11px] font-mono">
         <div>
           <p class="text-white/40 mb-1">Hand #</p>
           <p class="text-white break-all">{gameState.handNo}</p>
         </div>
         <div>
-          <p class="text-white/40 mb-1">Server Seed Hash (SHA-256)</p>
+          <p class="text-white/40 mb-1">Server Seed Hash</p>
           <p class="text-emerald-400 break-all">{gameState.serverSeedHash ?? '—'}</p>
         </div>
         <div>
@@ -255,10 +358,8 @@
     </div>
   {/if}
 
-  <!-- Poker Table -->
   <PokerTable {gameState} {myUserId} {myAvatarId} theme="cash" {handResult} />
 
-  <!-- Waiting -->
   {#if !gameState || startingHand}
     <div class="absolute top-[80%] left-1/2 -translate-x-1/2 z-20 rounded-2xl px-5 py-3 text-center" style="background: rgba(0,0,0,0.85); border: 1px solid rgba(255,255,255,0.1);">
       <p class="text-sm text-white/70">{$t('table.waitingPlayers')}</p>
@@ -268,7 +369,6 @@
     </div>
   {/if}
 
-  <!-- Toast -->
   {#if autoActionMsg}
     <div class="absolute top-20 left-1/2 -translate-x-1/2 z-40 bg-amber-900/95 rounded-2xl px-4 py-2 border border-amber-700 max-w-[90%]">
       <p class="text-xs font-bold text-amber-100 text-center">{autoActionMsg}</p>
@@ -288,17 +388,29 @@
         {#if canUseBank}
           <div class="flex justify-center mb-2">
             <button on:click={useTimeBank} class="rounded-full px-4 py-1.5 text-[11px] font-bold text-amber-300 active:scale-95" style="background: rgba(0,0,0,0.85); border: 1px solid rgba(245,158,11,0.5); backdrop-filter: blur(10px);">
-              ⏱️ Use Time Bank ({mySeat?.timeBankRemaining ?? 0}s left)
+              ⏱️ Use Time Bank
             </button>
           </div>
         {/if}
 
         {#if canRaise}
           <div class="rounded-2xl p-3 mb-3" style="background: rgba(0,0,0,0.88); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(12px);">
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-[14px] font-extrabold text-white tabular-nums">${fmt(minRaiseTo)}</span>
-              <span class="text-[20px] font-extrabold text-amber-400 tabular-nums">${fmt(raiseAmount)}</span>
-              <span class="text-[14px] font-extrabold text-white/50 tabular-nums">${fmt(hardMax)}</span>
+            <div class="flex items-center justify-between mb-3 gap-2">
+              <span class="text-[13px] font-extrabold text-white/70 tabular-nums shrink-0">${fmt(minRaiseTo)}</span>
+              <div class="flex items-center gap-0.5 flex-1 justify-center">
+                <span class="text-[18px] font-extrabold text-amber-400/70">$</span>
+                <input
+                  type="text"
+                  inputmode="decimal"
+                  bind:value={raiseInput}
+                  on:focus={() => raiseInputFocused = true}
+                  on:blur={commitRaiseInput}
+                  on:keydown={handleRaiseKey}
+                  class="text-[20px] font-extrabold text-amber-400 tabular-nums bg-transparent border-b-2 border-amber-400/40 focus:border-amber-400 text-center outline-none"
+                  style="width: 5.5rem;"
+                />
+              </div>
+              <span class="text-[13px] font-extrabold text-white/50 tabular-nums shrink-0">${fmt(hardMax)}</span>
             </div>
 
             <input

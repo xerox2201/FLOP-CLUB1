@@ -58,9 +58,6 @@
     return { x: (dx / len) * dist, y: (dy / len) * dist };
   }
 
-  // ============================================================
-  // ============ Derived =======================================
-  // ============================================================
   $: allSeats = gameState?.seats ?? [];
   $: mySeat = allSeats.find((s: any) => s.userId === myUserId) ?? null;
   $: opponents = allSeats.filter((s: any) => s.userId !== myUserId);
@@ -80,9 +77,6 @@
   $: winners = gameState?.winners ?? [];
   $: isSplitPot = winners.length > 1;
 
-  // ============================================================
-  // ============ Winner Animation ==============================
-  // ============================================================
   let showWinner = false;
   let chipVisible = false;
   let chipLeft = 50;
@@ -112,10 +106,10 @@
             chipTop = pos.y - 16;
           }
         }
-      }, 60);
+      }, 80);
 
-      setTimeout(() => { chipVisible = false; }, 1400);
-      setTimeout(() => { showWinner = false; }, 3200);
+      setTimeout(() => { chipVisible = false; }, 2000);
+      setTimeout(() => { showWinner = false; }, 7000);
     }
   }
 
@@ -131,30 +125,37 @@
   function winnerLabel(): string {
     return isSplitPot ? 'SPLIT' : 'WINNER';
   }
+
+  // 🔴 Showdown — مرتب‌سازی بر اساس برنده
+  $: sortedShowdown = (() => {
+    const list = handResult?.showdownPlayers ?? [];
+    return [...list].sort((a: any, b: any) => {
+      if (a.isWinner && !b.isWinner) return -1;
+      if (!a.isWinner && b.isWinner) return 1;
+      return 0;
+    });
+  })();
+
+  $: showShowdownPanel =
+    showWinner &&
+    handResult?.showdown &&
+    sortedShowdown.length > 0;
 </script>
 
-<!-- ============================================================ -->
-<!-- ============ Table ======================================== -->
-<!-- ============================================================ -->
 <div class="absolute left-1/2 -translate-x-1/2 w-[92%] max-w-[420px]" style="top: 43%; transform: translate(-50%, -50%);">
   <div class="relative w-full" style="aspect-ratio: 1 / 1.15;">
 
-    <!-- Outer rim -->
     <div
       class="absolute -inset-3 rounded-[50%]"
       style="
         background: {rimColor};
-        box-shadow:
-          0 10px 40px rgba(0,0,0,0.95),
-          inset 0 0 30px rgba(0,0,0,0.9),
-          0 0 0 2px rgba(30,41,59,0.6),
-          0 0 0 6px rgba(0,0,0,0.5);
+        box-shadow: 0 10px 40px rgba(0,0,0,0.95), inset 0 0 30px rgba(0,0,0,0.9),
+          0 0 0 2px rgba(30,41,59,0.6), 0 0 0 6px rgba(0,0,0,0.5);
       "
     ></div>
 
     <div class="absolute -inset-1 rounded-[50%]" style="background: linear-gradient(180deg, rgba(255,255,255,0.08), transparent 30%, transparent 70%, rgba(255,255,255,0.04));"></div>
 
-    <!-- Felt -->
     <div class="absolute inset-0 rounded-[50%] overflow-hidden" style="background: {feltGradient};">
       <div class="absolute inset-0 rounded-[50%]" style="box-shadow: inset 0 0 80px rgba(0,0,0,0.7);"></div>
       <div class="absolute inset-0 rounded-[50%] opacity-30" style="background: radial-gradient(ellipse at 50% 30%, rgba(255,255,255,0.2), transparent 55%);"></div>
@@ -175,11 +176,11 @@
           style="left: {pos.x}%; top: {pos.y}%;"
         >
           <div class="relative">
-            <!-- TimerRing دقیقاً روی قاب آواتار -->
+            <!-- 🔴 TimerRing دقیقاً هم‌اندازه‌ی قاب بیرونی -->
             {#if isTurn}
-              <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-[5]">
+              <div class="absolute -inset-[6px] pointer-events-none z-[5]">
                 <TimerRing
-                  size={62}
+                  size={68}
                   strokeWidth={4}
                   startedAt={turnStartedAt}
                   limitSec={turnBaseLimit}
@@ -223,12 +224,12 @@
             {/if}
           </div>
 
-          <!-- Nameplate همیشه خوانا -->
+          <!-- Nameplate — بدون truncate -->
           <div
-            class="mt-2 px-2.5 py-1 bg-white min-w-[72px] flex flex-col items-center relative z-[50]"
-            style="border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.9); border: 2px solid rgba(0,0,0,0.3);"
+            class="mt-2 px-2.5 py-1 bg-white flex flex-col items-center relative z-[50]"
+            style="border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.9); border: 2px solid rgba(0,0,0,0.3); min-width: 80px;"
           >
-            <p class="text-[11px] font-extrabold text-black leading-none truncate max-w-[80px]">{s.displayName}</p>
+            <p class="text-[11px] font-extrabold text-black leading-none whitespace-nowrap max-w-[110px] overflow-hidden text-ellipsis">{s.displayName}</p>
             <p class="text-[11px] font-extrabold text-amber-600 leading-tight tabular-nums mt-0.5">${fmt(s.stack)}</p>
           </div>
 
@@ -264,24 +265,21 @@
       {/each}
     {/if}
 
-    <!-- ============ POT ============ -->
+    <!-- POT -->
     {#if gameState && totalPot > 0 && !showWinner}
       <div class="absolute top-[26%] left-1/2 -translate-x-1/2 z-[30]">
-        <div
-          class="rounded-full px-4 py-1 flex items-center gap-2"
-          style="background: #000; border: 2px solid #d97706; box-shadow: 0 4px 16px rgba(0,0,0,0.9), 0 0 16px rgba(217,119,6,0.2);"
-        >
+        <div class="rounded-full px-4 py-1 flex items-center gap-2" style="background: #000; border: 2px solid #d97706; box-shadow: 0 4px 16px rgba(0,0,0,0.9), 0 0 16px rgba(217,119,6,0.2);">
           <span class="text-[10px] uppercase tracking-widest font-extrabold text-white/80">POT</span>
           <span class="text-[14px] font-extrabold text-amber-400 tabular-nums">${fmt(totalPot)}</span>
         </div>
       </div>
     {/if}
 
-    <!-- ============ Chip Flying Animation ============ -->
+    <!-- Chip Fly -->
     {#if chipVisible}
       <div
-        class="absolute pointer-events-none z-[45] transition-all duration-[1200ms] ease-out"
-        style="left: {chipLeft}%; top: {chipTop}%; transform: translate(-50%, -50%);"
+        class="absolute pointer-events-none z-[45] transition-all duration-[1800ms] ease-out"
+        style="left: {chipLeft}%; top: {chipTop}%; transform: translate(-50%,-50%);"
       >
         <div class="drop-shadow-[0_0_24px_rgba(251,191,36,0.9)]">
           <PokerChip amount={totalPot} size={28} />
@@ -289,7 +287,7 @@
       </div>
     {/if}
 
-    <!-- ============ Community Cards ============ -->
+    <!-- Community -->
     {#if gameState}
       <div class="absolute top-[44%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-1.5 z-10">
         {#each Array(5) as _, i}
@@ -302,7 +300,7 @@
       </div>
     {/if}
 
-    <!-- ============ Hero Cards ============ -->
+    <!-- Hero Cards -->
     {#if gameState && mySeat && mySeat.hole && mySeat.hole.length > 0 && !isEliminated}
       <div class="absolute top-[68%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex justify-center gap-2 z-30">
         {#each mySeat.hole as c}
@@ -313,16 +311,15 @@
       </div>
     {/if}
 
-    <!-- ============ Hero Avatar ============ -->
+    <!-- Hero Avatar -->
     {#if gameState && mySeat}
       {@const isWin = isWinnerSeat(mySeat.seat)}
       <div class="absolute top-[92%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-30">
         <div class="relative">
-          <!-- TimerRing دقیقاً روی قاب آواتار هیرو -->
           {#if isMyTurn}
-            <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-[5]">
+            <div class="absolute -inset-[6px] pointer-events-none z-[5]">
               <TimerRing
-                size={70}
+                size={76}
                 strokeWidth={4}
                 startedAt={turnStartedAt}
                 limitSec={turnBaseLimit}
@@ -341,10 +338,7 @@
               <Avatar avatarId={myAvatarId} size="md" />
 
               {#if showWinner && isWin}
-                <div
-                  class="absolute inset-0 rounded-full flex items-center justify-center z-[40] animate-winner-pulse"
-                  style="background: linear-gradient(135deg, #fbbf24 0%, #d97706 60%, #b45309 100%);"
-                >
+                <div class="absolute inset-0 rounded-full flex items-center justify-center z-[40] animate-winner-pulse" style="background: linear-gradient(135deg, #fbbf24 0%, #d97706 60%, #b45309 100%);">
                   <span class="text-[9px] font-black text-black tracking-wider leading-none">{winnerLabel()}</span>
                 </div>
               {/if}
@@ -356,11 +350,7 @@
           {/if}
         </div>
 
-        <!-- Nameplate هیرو همیشه خوانا -->
-        <div
-          class="mt-3 px-3 py-1 bg-white min-w-[84px] flex flex-col items-center relative z-[50]"
-          style="border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.9); border: 2px solid rgba(0,0,0,0.3);"
-        >
+        <div class="mt-3 px-3 py-1 bg-white flex flex-col items-center relative z-[50]" style="border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.9); border: 2px solid rgba(0,0,0,0.3); min-width: 90px;">
           <p class="text-[11px] font-extrabold text-black leading-none">You</p>
           <p class="text-[12px] font-extrabold text-amber-600 leading-tight tabular-nums mt-0.5">${fmt(mySeat.stack)}</p>
         </div>
@@ -380,7 +370,7 @@
       </div>
     {/if}
 
-    <!-- ============ Table Info + Seed ============ -->
+    <!-- Table Info -->
     <div class="absolute top-[5%] left-1/2 -translate-x-1/2 z-10 text-center pointer-events-none w-full px-2">
       {#if gameState}
         <p class="text-[9px] uppercase tracking-widest font-bold text-white/35">
@@ -389,14 +379,13 @@
         <p class="text-[10px] font-mono text-white/30 tabular-nums leading-none mt-0.5">
           {gameState.phase ?? 'PREFLOP'} · Hand #{gameState.handNo ?? 0}
         </p>
-        {#if gameState.serverSeedHash}
+        {#if gameState.revealSeed}
+          <p class="text-[8px] font-mono text-amber-400/80 tabular-nums leading-none mt-1 truncate">
+            🌱 {gameState.revealSeed.slice(0, 16)}… ✓
+          </p>
+        {:else if gameState.serverSeedHash}
           <p class="text-[8px] font-mono text-emerald-400/60 tabular-nums leading-none mt-1 truncate">
             🔒 {gameState.serverSeedHash.slice(0, 16)}…
-          </p>
-        {/if}
-        {#if gameState.revealSeed}
-          <p class="text-[8px] font-mono text-amber-400/80 tabular-nums leading-none mt-0.5 truncate">
-            🌱 {gameState.revealSeed.slice(0, 16)}… ✓
           </p>
         {/if}
       {/if}
@@ -404,7 +393,45 @@
   </div>
 </div>
 
-<!-- Tournament info -->
+<!-- ============ Showdown Panel (کارت‌های بزرگ‌تر) ============ -->
+{#if showShowdownPanel}
+  <div class="absolute left-1/2 -translate-x-1/2 z-[60] pointer-events-none w-[94%] max-w-[400px]" style="top: 68px;">
+    <div class="rounded-2xl border-2 border-amber-500/50 shadow-2xl overflow-hidden" style="background: rgba(0,0,0,0.94); backdrop-filter: blur(10px);">
+      <div class="px-3 py-1.5 border-b border-white/10 flex items-center justify-between">
+        <span class="text-[10px] uppercase tracking-widest font-extrabold text-amber-400">
+          {isSplitPot ? '🔀 Split Pot' : '🏆 Showdown'}
+        </span>
+        <span class="text-[10px] text-white/40 font-mono">Hand #{gameState.handNo}</span>
+      </div>
+      <div class="p-2 space-y-2">
+        {#each sortedShowdown as p}
+          <div class="rounded-xl px-2 py-2 {p.isWinner ? 'border border-amber-500/60 bg-amber-500/10' : 'border border-white/5 bg-white/5'}">
+            <div class="flex items-center justify-between mb-1.5">
+              <div class="flex items-center gap-1.5 min-w-0">
+                {#if p.isWinner}
+                  <span class="text-sm">👑</span>
+                {/if}
+                <span class="text-[12px] font-bold truncate {p.isWinner ? 'text-amber-300' : 'text-white/70'}">{p.displayName}</span>
+              </div>
+              <span class="text-[10px] font-bold shrink-0 ml-2 {p.isWinner ? 'text-amber-400' : 'text-white/40'}">{p.handName}</span>
+            </div>
+            <div class="flex gap-0.5 justify-center flex-wrap">
+              {#each p.best as c}
+                <PlayingCard rank={c.r} suit={suitChar(c.s)} size="sm" />
+              {/each}
+            </div>
+            {#if p.isWinner && p.payout > 0}
+              <div class="text-center mt-1.5">
+                <span class="text-[11px] font-extrabold text-emerald-400">+${fmt(p.payout)}</span>
+              </div>
+            {/if}
+          </div>
+        {/each}
+      </div>
+    </div>
+  </div>
+{/if}
+
 {#if gameState && theme === 'tournament'}
   <div class="absolute top-14 left-0 right-0 z-20 flex flex-col items-center gap-1 pointer-events-none">
     <div class="rounded-full px-3 py-0.5 flex items-center gap-2" style="background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.1);">

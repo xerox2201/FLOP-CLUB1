@@ -1,4 +1,4 @@
-<script lang="ts">
+ <script lang="ts">
   import { onDestroy } from 'svelte';
 
   export let size: number = 60;
@@ -47,11 +47,12 @@
 </script>
 
 {#if active && startedAt > 0}
+  <!-- SVG دقیقاً هم‌اندازه‌ی wrapper -->
   <svg
     width={size}
     height={size}
     viewBox="0 0 {size} {size}"
-    class="absolute -inset-[3px] pointer-events-none z-30"
+    class="absolute inset-0 pointer-events-none"
     style="transform: rotate(-90deg);"
   >
     <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="rgba(0,0,0,0.7)" stroke-width={strokeWidth}/>
@@ -63,8 +64,9 @@
     />
   </svg>
 
-  <div class="absolute -top-2 -right-2 z-40 pointer-events-none">
-    <div class="w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-extrabold text-white shadow-lg border-2 border-white/30" style="background: {color};">
+  <!-- شمارنده‌ی عددی روی گوشه‌ی بالا-راست حلقه -->
+  <div class="absolute -top-1 -right-1 z-10 pointer-events-none">
+    <div class="w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-extrabold text-white shadow-lg border-2 border-white/40" style="background: {color};">
       {Math.ceil(remaining)}
     </div>
   </div>
