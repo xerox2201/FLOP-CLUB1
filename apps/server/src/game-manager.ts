@@ -413,6 +413,7 @@ class GameManager {
                 revealSeed: handResult.revealSeed,
                 showdown: handResult.showdown,
                 showdownPlayers: handResult.showdownPlayers,
+                sidePots: handResult.sidePots,   // 🔴 NEW
                 totalRake: room.totalRake,
                 totalRebuy: room.totalRebuy,
               },

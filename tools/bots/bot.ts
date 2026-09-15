@@ -96,6 +96,10 @@ function decideAction(state: any, mySeat: any): { action: string; amount?: numbe
   const canRaiseToMin = allInTotal + 0.0001 >= minTotal && stack > 0;
 
   const r = Math.random();
+  // 🧪 Test: 15% chance to go all-in (creates side pots)
+  if (r < 0.15) {
+    return { action: 'RAISE', amount: allInTotal };
+  }
 
   if (toCall === 0) {
     if (canRaiseToMin && r < 0.12) {

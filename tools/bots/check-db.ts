@@ -31,6 +31,23 @@ async function main() {
     'SELECT id, hand_id, sequence, event_type FROM hand_events ORDER BY id DESC LIMIT 10'
   );
   console.table(ev.rows);
+  console.log('\n=== HANDS WITH SIDE POTS ===');
+  const sp = await db.query(`
+    SELECT id, hand_no, pot, rake,
+           (SELECT COUNT(*) FROM jsonb_array_elements(result->'sidePots')) as pot_count,
+           result->'sidePots' as side_pots
+    FROM hands
+    WHERE finished = TRUE
+      AND result->'sidePots' IS NOT NULL
+      AND jsonb_array_length(result->'sidePots') > 1
+    ORDER BY id DESC LIMIT 3
+  `);
+  for (const row of sp.rows) {
+    console.log(`Hand #${row.hand_no} (id=${row.id}) pot=$${row.pot}:`);
+    for (const p of (row.side_pots || [])) {
+      console.log(`  ${p.label}: $${p.amount} (net $${p.netAmount}) - winners: ${p.winnerSeats.join(',')}`);
+    }
+  }
 
   console.log('\n=== RAKE TRANSACTIONS ===');
   const t = await db.query(

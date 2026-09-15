@@ -10,6 +10,7 @@ import type {
   ShowdownPlayer,
   ActionType,
   Seat,
+  SidePot,
 } from './types.js';
 
 function round2(n: number): number {
@@ -41,6 +42,7 @@ export class PokerGame {
       minRaise: opts.bigBlind,
       lastAggressor: -1,
       winners: undefined,
+      sidePots: undefined,
       serverSeed: undefined,
       serverSeedHash: undefined,
       clientSeed: crypto.randomBytes(16).toString('hex'),
@@ -64,7 +66,7 @@ export class PokerGame {
         hasActed: false,
         revealed: false,
         timeBankRemaining: 30,
-        avatarId: (p as any).avatarId ?? 'spade',
+        avatarId: p.avatarId ?? 'spade',
       });
     }
   }
@@ -93,16 +95,10 @@ export class PokerGame {
     return result;
   }
 
-  /**
-   * انتخاب بهترین ۵ کارت با توجه به variant:
-   * - Hold'em: بهترین ۵ از ۷ (یا کمتر)
-   * - Omaha:  دقیقاً ۲ از hole + دقیقاً ۳ از community
-   */
   private extractBestFive(hole: Card[]): Card[] {
     const community = this.state.community;
     const variant = this.state.variant;
 
-    // ---------- Hold'em ----------
     if (variant === 'holdem') {
       const all = [...hole, ...community];
       if (all.length <= 5) return all;
@@ -120,7 +116,7 @@ export class PokerGame {
       return bestCombo;
     }
 
-    // ---------- Omaha (4 یا 5) ----------
+    // Omaha
     const holeCombos = this.combinations(hole, 2);
     const boardCombos = this.combinations(community, 3);
 
@@ -140,9 +136,6 @@ export class PokerGame {
     return best;
   }
 
-  /**
-   * ارزیابی دست یک seat با توجه به variant
-   */
   private evaluateSeat(seat: Seat): EvalResult {
     const variant = this.state.variant;
 
@@ -150,7 +143,6 @@ export class PokerGame {
       return evaluateHand([...seat.hole, ...this.state.community]);
     }
 
-    // Omaha
     const holeCombos = this.combinations(seat.hole, 2);
     const boardCombos = this.combinations(this.state.community, 3);
 
@@ -163,9 +155,68 @@ export class PokerGame {
         }
       }
     }
-    // اگه هنوز best null باشه (یعنی community کمتر از 3 کارت داره)،
-    // fallback به Hold'em style
     return best ?? evaluateHand([...seat.hole, ...this.state.community]);
+  }
+
+  // ============================================================
+  // ============ 🔴 Side Pot Calculator ========================
+  // ============================================================
+  private calculatePots(): SidePot[] {
+    const seats = this.state.seats;
+
+    // Contribution های هر بازیکن
+    const contributions = seats.map(s => ({
+      seat: s.seat,
+      total: s.totalBet,
+      folded: s.folded,
+    }));
+
+    // سطوح منحصربفرد total bet (فقط از بازیکنان فعال)
+    const levels = [...new Set(
+      seats
+        .filter(s => !s.folded && s.totalBet > 0)
+        .map(s => round2(s.totalBet))
+    )].sort((a, b) => a - b);
+
+    if (levels.length === 0) return [];
+
+    const pots: SidePot[] = [];
+    let prevLevel = 0;
+
+    for (const level of levels) {
+      const diff = round2(level - prevLevel);
+      if (diff <= 0) continue;
+
+      let potAmount = 0;
+      const eligible: number[] = [];
+
+      for (const c of contributions) {
+        const contrib = Math.min(diff, Math.max(0, round2(c.total - prevLevel)));
+        if (contrib > 0) {
+          potAmount = round2(potAmount + contrib);
+          if (!c.folded && c.total >= level) {
+            eligible.push(c.seat);
+          }
+        }
+      }
+
+      if (potAmount > 0 && eligible.length > 0) {
+        const idx = pots.length;
+        pots.push({
+          type: idx === 0 ? 'main' : `side_${idx}`,
+          label: idx === 0 ? 'Main Pot' : `Side Pot ${idx}`,
+          amount: potAmount,
+          netAmount: 0,
+          eligibleSeats: eligible,
+          winnerSeats: [],
+          payouts: [],
+        });
+      }
+
+      prevLevel = level;
+    }
+
+    return pots;
   }
 
   // ============================================================
@@ -186,10 +237,10 @@ export class PokerGame {
     this.state.minRaise = this.state.bigBlind;
     this.state.lastAggressor = -1;
     this.state.winners = undefined;
+    this.state.sidePots = undefined;
     this.state.revealSeed = undefined;
     this.state.turnBankActive = false;
 
-    // ===== Provably Fair =====
     this.serverSeed = crypto.randomBytes(32).toString('hex');
     this.state.serverSeedHash = crypto
       .createHash('sha256')
@@ -197,7 +248,6 @@ export class PokerGame {
       .digest('hex');
     this.state.serverSeed = undefined;
 
-    // Reset seats
     for (const s of this.state.seats) {
       s.hole = [];
       s.betThisStreet = 0;
@@ -208,7 +258,6 @@ export class PokerGame {
       s.revealed = false;
     }
 
-    // Dealer
     const activeSeats = this.state.seats.filter((s) => !s.folded);
     if (this.state.dealerSeat < 0) {
       this.state.dealerSeat = activeSeats[0].seat;
@@ -217,12 +266,10 @@ export class PokerGame {
       this.state.dealerSeat = activeSeats[(curIdx + 1) % activeSeats.length].seat;
     }
 
-    // Deck
     this.deck = makeDeck();
     const seed = this.serverSeed || `${this.state.tableId}-${this.state.handNo}-${Date.now()}`;
     shuffleDeck(this.deck, seed);
 
-    // Blinds
     const order = this.orderFromDealer();
     const sbSeat = order[0];
     const bbSeat = order[1];
@@ -230,14 +277,12 @@ export class PokerGame {
     this.postBet(sbSeat, this.state.smallBlind);
     this.postBet(bbSeat, this.state.bigBlind);
 
-    // Ante
     if (this.state.ante > 0) {
       for (const s of activeSeats) {
         this.postBet(s.seat, this.state.ante);
       }
     }
 
-    // Deal hole cards
     const hc = this.holeCount();
     for (let round = 0; round < hc; round++) {
       for (const seatIdx of order) {
@@ -248,7 +293,6 @@ export class PokerGame {
       }
     }
 
-    // First to act (UTG = after BB)
     this.state.currentSeat = order[2] ?? order[0];
     this.state.turnStartedAt = Date.now();
   }
@@ -281,14 +325,12 @@ export class PokerGame {
       if (seat.stack === 0) seat.allIn = true;
       seat.hasActed = true;
     } else if (action === 'raise') {
-      const EPSILON = 0.001;  // 1/10 سنت — برای float drift
+      const EPSILON = 0.001;
       const total = round2(amount);
       const minTotal = round2(maxBet + this.state.minRaise);
       const allInTotal = round2(seat.stack + seat.betThisStreet);
 
-      // reject فقط اگه واقعاً کوچیک باشه AND all-in نباشه
       if (total + EPSILON < minTotal && total + EPSILON < allInTotal) {
-        console.log(`[raise_reject] total=${total} minTotal=${minTotal} allIn=${allInTotal} minRaise=${this.state.minRaise}`);
         return { ok: false, error: 'raise_too_small' };
       }
 
@@ -297,8 +339,6 @@ export class PokerGame {
       if (add > seat.stack + EPSILON) return { ok: false, error: 'not_enough_stack' };
 
       this.postBet(seatIdx, Math.min(add, seat.stack));
-
-      // 🔴 round2 برای float drift
       this.state.minRaise = round2(total - maxBet);
       this.state.lastAggressor = seatIdx;
 
@@ -393,7 +433,6 @@ export class PokerGame {
       s.hasActed = false;
     }
 
-    // 🔴 FIX: reset minRaise to bigBlind at start of new street
     this.state.minRaise = this.state.bigBlind;
 
     const active = this.state.seats.filter((s) => !s.folded);
@@ -437,7 +476,7 @@ export class PokerGame {
   }
 
   // ============================================================
-  // ============ Finish Hand ===================================
+  // ============ Finish Hand (with Side Pots) ==================
   // ============================================================
   finishHand(): HandResult {
     for (const s of this.state.seats) {
@@ -456,6 +495,17 @@ export class PokerGame {
       winner.stack = round2(winner.stack + payout);
       this.state.pot = 0;
       this.state.winners = [winner.seat];
+      this.state.sidePots = [
+        {
+          type: 'main',
+          label: 'Main Pot',
+          amount: round2(payout + rake),
+          netAmount: payout,
+          eligibleSeats: [winner.seat],
+          winnerSeats: [winner.seat],
+          payouts: [{ seat: winner.seat, amount: payout }],
+        },
+      ];
       this.state.phase = 'showdown';
       this.state.revealSeed = this.serverSeed;
 
@@ -466,6 +516,7 @@ export class PokerGame {
         revealSeed: this.serverSeed,
         showdown: false,
         showdownPlayers: [],
+        sidePots: this.state.sidePots,
       };
     }
 
@@ -475,25 +526,73 @@ export class PokerGame {
       hand: this.evaluateSeat(s),
     }));
 
-    let best = evaluations[0];
-    for (const e of evaluations) {
-      if (compareHands(e.hand, best.hand) > 0) best = e;
+    // 🔴 Calculate side pots
+    const pots = this.calculatePots();
+
+    // Fallback if no pots (shouldn't happen)
+    if (pots.length === 0) {
+      pots.push({
+        type: 'main',
+        label: 'Main Pot',
+        amount: this.state.pot,
+        netAmount: this.state.pot,
+        eligibleSeats: active.map(s => s.seat),
+        winnerSeats: [],
+        payouts: [],
+      });
     }
 
-    const winners = evaluations.filter((e) => compareHands(e.hand, best.hand) === 0);
-    const winnerSeats = winners.map((w) => w.seat.seat);
+    const totalRake = round2(this.state.pot * this.rakePct);
+    let rakeRemaining = totalRake;
+
+    const allPayouts: { seat: number; amount: number }[] = [];
+    const winnerSeatsSet = new Set<number>();
+
+    // 🔴 Distribute each pot
+    for (let i = 0; i < pots.length; i++) {
+      const pot = pots[i];
+
+      // Rake فقط از main pot
+      let rakeFromPot = 0;
+      if (i === 0 && rakeRemaining > 0) {
+        rakeFromPot = Math.min(rakeRemaining, pot.amount);
+        rakeRemaining = round2(rakeRemaining - rakeFromPot);
+      }
+      pot.netAmount = round2(pot.amount - rakeFromPot);
+
+      // Find best hand among eligible
+      const eligibleEvals = evaluations.filter(e => pot.eligibleSeats.includes(e.seat.seat));
+      if (eligibleEvals.length === 0) continue;
+
+      let best = eligibleEvals[0];
+      for (const e of eligibleEvals) {
+        if (compareHands(e.hand, best.hand) > 0) best = e;
+      }
+
+      const potWinners = eligibleEvals.filter(e => compareHands(e.hand, best.hand) === 0);
+      const share = round2(pot.netAmount / potWinners.length);
+
+      for (const w of potWinners) {
+        w.seat.stack = round2(w.seat.stack + share);
+        winnerSeatsSet.add(w.seat.seat);
+
+        pot.winnerSeats.push(w.seat.seat);
+        pot.payouts.push({ seat: w.seat.seat, amount: share });
+
+        const existing = allPayouts.find(p => p.seat === w.seat.seat);
+        if (existing) {
+          existing.amount = round2(existing.amount + share);
+        } else {
+          allPayouts.push({ seat: w.seat.seat, amount: share });
+        }
+      }
+    }
 
     for (const e of evaluations) e.seat.revealed = true;
 
-    const rake = round2(this.state.pot * this.rakePct);
-    const netPot = round2(this.state.pot - rake);
-    const share = round2(netPot / winners.length);
-
-    const payouts = winners.map((w) => ({ seat: w.seat.seat, amount: share }));
-    for (const w of winners) w.seat.stack = round2(w.seat.stack + share);
     this.state.pot = 0;
-
-    this.state.winners = winnerSeats;
+    this.state.winners = [...winnerSeatsSet];
+    this.state.sidePots = pots;
     this.state.phase = 'showdown';
     this.state.revealSeed = this.serverSeed;
 
@@ -503,17 +602,18 @@ export class PokerGame {
       hole: e.seat.hole,
       best: this.extractBestFive(e.seat.hole),
       handName: e.hand.name,
-      isWinner: winnerSeats.includes(e.seat.seat),
-      payout: winnerSeats.includes(e.seat.seat) ? share : 0,
+      isWinner: winnerSeatsSet.has(e.seat.seat),
+      payout: allPayouts.find(p => p.seat === e.seat.seat)?.amount ?? 0,
     }));
 
     return {
-      winners: winnerSeats,
-      payouts,
-      rake,
+      winners: [...winnerSeatsSet],
+      payouts: allPayouts,
+      rake: totalRake,
       revealSeed: this.serverSeed,
       showdown: true,
       showdownPlayers,
+      sidePots: pots,
     };
   }
 
@@ -536,6 +636,7 @@ export class PokerGame {
       bigBlind: this.state.bigBlind,
       ante: this.state.ante,
       winners: this.state.winners,
+      sidePots: this.state.sidePots,   // 🔴 NEW
       turnStartedAt: this.state.turnStartedAt,
       turnBankActive: this.state.turnBankActive,
       serverSeedHash: this.state.serverSeedHash,

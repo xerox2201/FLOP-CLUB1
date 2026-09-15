@@ -1,4 +1,4 @@
- export type Suit = 's' | 'h' | 'd' | 'c';
+export type Suit = 's' | 'h' | 'd' | 'c';
 export type Rank = 'A' | 'K' | 'Q' | 'J' | 'T' | '9' | '8' | '7' | '6' | '5' | '4' | '3' | '2';
 
 export interface Card {
@@ -44,6 +44,17 @@ export interface Seat {
   avatarId: string;
 }
 
+// 🔴 NEW: Side Pot
+export interface SidePot {
+  type: string;         // 'main' | 'side_1' | 'side_2'
+  label: string;        // 'Main Pot' | 'Side Pot 1'
+  amount: number;       // total contributed
+  netAmount: number;    // after rake
+  eligibleSeats: number[];
+  winnerSeats: number[];
+  payouts: { seat: number; amount: number }[];
+}
+
 export interface GameState {
   tableId: number;
   variant: Variant;
@@ -61,10 +72,11 @@ export interface GameState {
   minRaise: number;
   lastAggressor: number;
   winners?: number[];
+  sidePots?: SidePot[];   // 🔴 NEW
   turnStartedAt: number;
   turnBankActive: boolean;
 
-  // ===== Provably Fair =====
+  // Provably Fair
   serverSeed?: string;
   serverSeedHash?: string;
   clientSeed?: string;
@@ -79,6 +91,7 @@ export interface HandResult {
   revealSeed: string;
   showdown: boolean;
   showdownPlayers: ShowdownPlayer[];
+  sidePots?: SidePot[];   // 🔴 NEW
 }
 
 export interface ShowdownPlayer {

@@ -324,14 +324,28 @@
       {/each}
     {/if}
 
-    <!-- ============ POT ============ -->
+    <!-- ============ POT / SIDE POTS ============ -->
     {#if gameState && totalPot > 0 && !showWinner}
-      <div class="absolute top-[26%] left-1/2 -translate-x-1/2 z-[30]">
-        <div class="rounded-full px-4 py-1 flex items-center gap-2" style="background: #000; border: 2px solid #d97706; box-shadow: 0 4px 16px rgba(0,0,0,0.9), 0 0 16px rgba(217,119,6,0.2);">
-          <span class="text-[10px] uppercase tracking-widest font-extrabold text-white/80">POT</span>
-          <span class="text-[14px] font-extrabold text-amber-400 tabular-nums">${fmt(totalPot)}</span>
+      {@const sidePots = gameState.sidePots ?? []}
+      {#if sidePots.length > 1}
+        <!-- 🔴 Multiple pots (side pots) -->
+        <div class="absolute top-[24%] left-1/2 -translate-x-1/2 z-[30] flex flex-col items-center gap-1">
+          {#each sidePots as pot}
+            <div class="rounded-full px-3 py-0.5 flex items-center gap-1.5" style="background: #000; border: 2px solid {pot.type === 'main' ? '#d97706' : '#0891b2'}; box-shadow: 0 4px 12px rgba(0,0,0,0.9);">
+              <span class="text-[9px] uppercase tracking-widest font-extrabold {pot.type === 'main' ? 'text-amber-400/80' : 'text-cyan-400/80'}">{pot.label}</span>
+              <span class="text-[12px] font-extrabold {pot.type === 'main' ? 'text-amber-400' : 'text-cyan-400'} tabular-nums">${fmt(pot.amount)}</span>
+            </div>
+          {/each}
         </div>
-      </div>
+      {:else}
+        <!-- Single pot -->
+        <div class="absolute top-[26%] left-1/2 -translate-x-1/2 z-[30]">
+          <div class="rounded-full px-4 py-1 flex items-center gap-2" style="background: #000; border: 2px solid #d97706; box-shadow: 0 4px 16px rgba(0,0,0,0.9), 0 0 16px rgba(217,119,6,0.2);">
+            <span class="text-[10px] uppercase tracking-widest font-extrabold text-white/80">POT</span>
+            <span class="text-[14px] font-extrabold text-amber-400 tabular-nums">${fmt(totalPot)}</span>
+          </div>
+        </div>
+      {/if}
     {/if}
 
     <!-- ============ Chip Fly ============ -->
@@ -505,6 +519,27 @@
             {/if}
           </div>
         {/each}
+
+        <!-- 🔴 Side Pots breakdown -->
+        {#if handResult?.sidePots && handResult.sidePots.length > 1}
+          <div class="mt-2 pt-2 border-t border-white/10">
+            <div class="text-[9px] uppercase tracking-widest text-white/40 mb-1.5 text-center">Pot Breakdown</div>
+            <div class="space-y-1">
+              {#each handResult.sidePots as pot}
+                {@const winners = handResult.showdownPlayers?.filter((p: any) => pot.winnerSeats.includes(p.seat)) || []}
+                <div class="flex items-center justify-between gap-2 px-2 py-1 rounded-lg" style="background: {pot.type === 'main' ? 'rgba(245,158,11,0.08)' : 'rgba(8,145,178,0.08)'}; border: 1px solid {pot.type === 'main' ? 'rgba(245,158,11,0.25)' : 'rgba(8,145,178,0.25)'};">
+                  <span class="text-[10px] font-bold {pot.type === 'main' ? 'text-amber-400' : 'text-cyan-400'}">{pot.label}</span>
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <span class="text-[9px] text-white/50 truncate">
+                      {winners.map((w: any) => w.displayName).join(', ') || '—'}
+                    </span>
+                    <span class="text-[11px] font-extrabold {pot.type === 'main' ? 'text-amber-400' : 'text-cyan-400'} tabular-nums">${fmt(pot.netAmount)}</span>
+                  </div>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
       </div>
     </div>
   </div>
