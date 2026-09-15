@@ -9,18 +9,31 @@
   import Table from './routes/Table.svelte';
   import Leaderboard from './routes/Leaderboard.svelte';
   import Events from './routes/Events.svelte';
+  import Tournaments from './routes/Tournaments.svelte';
+  import TournamentDetail from './routes/TournamentDetail.svelte';
   import BottomNav from './components/BottomNav.svelte';
   import Splash from './routes/Splash.svelte';
 
-  type Page = 'home' | 'tables' | 'wallet' | 'profile' | 'table' | 'leaderboard' | 'events';
+  type Page =
+    | 'home'
+    | 'tables'
+    | 'wallet'
+    | 'profile'
+    | 'table'
+    | 'leaderboard'
+    | 'events'
+    | 'tournaments'
+    | 'tournament-detail';
 
   let currentPage: Page = 'home';
   let activeTableId = 1;
+  let activeTournamentId: number | null = null;
+  let tableSource: 'cash' | 'tournament' = 'cash';
   let tablesVariant: string = 'all';
   let tablesMode: 'all' | 'free' | 'real' = 'all';
   let tablesKey = 0;
 
-  $: hideBottomNav = currentPage === 'table';
+  $: hideBottomNav = currentPage === 'table' || currentPage === 'tournament-detail';
 
   onMount(async () => {
     await auth.init();
@@ -33,7 +46,31 @@
 
   function openTable(id: number) {
     activeTableId = id;
+    tableSource = 'cash';
     currentPage = 'table';
+    window.scrollTo({ top: 0 });
+  }
+
+  function openTournamentTable(tournamentId: number, virtualTableId: number) {
+    activeTournamentId = tournamentId;
+    activeTableId = virtualTableId;
+    tableSource = 'tournament';
+    currentPage = 'table';
+    window.scrollTo({ top: 0 });
+  }
+
+  function openTournament(id: number) {
+    activeTournamentId = id;
+    currentPage = 'tournament-detail';
+    window.scrollTo({ top: 0 });
+  }
+
+  function backFromTable() {
+    if (tableSource === 'tournament' && activeTournamentId) {
+      currentPage = 'tournament-detail';
+    } else {
+      navigate('tables');
+    }
   }
 
   function quickSeat(variant: string, mode: 'free' | 'real') {
@@ -61,11 +98,19 @@
   {:else if currentPage === 'profile'}
     <Profile onNavigate={navigate} />
   {:else if currentPage === 'table'}
-    <Table tableId={activeTableId} onBack={() => navigate('tables')} />
+    <Table tableId={activeTableId} onBack={backFromTable} />
   {:else if currentPage === 'leaderboard'}
     <Leaderboard />
   {:else if currentPage === 'events'}
     <Events onNavigate={navigate} />
+  {:else if currentPage === 'tournaments'}
+    <Tournaments onOpenTournament={openTournament} />
+  {:else if currentPage === 'tournament-detail' && activeTournamentId !== null}
+    <TournamentDetail
+      tournamentId={activeTournamentId}
+      onBack={() => navigate('tournaments')}
+      onOpenTable={openTournamentTable}
+    />
   {/if}
 
   {#if !hideBottomNav}

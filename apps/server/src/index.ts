@@ -1,4 +1,4 @@
- import './env.js';
+import './env.js';
 
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
@@ -15,6 +15,9 @@ import { registerHandsRoutes } from './hands-routes.js';
 import { registerWalletRoutes } from './wallet-routes.js';
 import { tonAdapter } from './ton.js';
 import { DepositWatcher } from './deposit-watcher.js';
+import { gameManager } from './game-manager.js';
+import { TournamentManager } from './tournament-manager.js';
+import { registerTournamentRoutes } from './tournament-routes.js';
 
 const PORT = Number(process.env.PORT ?? 4000);
 const DATABASE_URL = process.env.DATABASE_URL ?? 'postgres://poker:pokerpass@localhost:5432/poker';
@@ -28,174 +31,252 @@ const db = new Pool({ connectionString: DATABASE_URL });
 // 🔴 Expose db pool for HandPersister
 (globalThis as any).__dbPool = db;
 
-const redis = new Redis(REDIS_URL, {
-  maxRetriesPerRequest: 3,
-  retryStrategy(times) {
-    if (times > 20) return null;
-    return Math.min(times * 500, 5000);
-  },
-});
+async function main() {
+  // ============================================================
+  // CORS
+  // ============================================================
+  await app.register(cors, {
+    origin: true,
+    credentials: true,
+  });
 
-let redisReady = false;
-let lastRedisErrorLog = 0;
-
-redis.on('ready', () => {
-  redisReady = true;
-  console.log('[redis] ✅ connected');
-});
-redis.on('error', (err: any) => {
-  redisReady = false;
-  const now = Date.now();
-  if (now - lastRedisErrorLog > 30000) {
-    lastRedisErrorLog = now;
-    console.error(`[redis] ⚠️ ${err.code ?? err.message}`);
+  // ============================================================
+  // Redis
+  // ============================================================
+  let redis: Redis | null = null;
+  try {
+    redis = new Redis(REDIS_URL);
+    redis.on('connect', () => console.log('[redis] ✅ connected'));
+    redis.on('error', (e: any) => console.error('[redis] error:', e.message));
+  } catch (e: any) {
+    console.error('[redis] init failed:', e.message);
   }
-});
 
-await app.register(cors, { origin: true });
+  // ============================================================
+  // Health
+  // ============================================================
+  app.get('/health', async () => ({ ok: true, ts: Date.now() }));
 
-app.get('/health', async () => {
-  const dbRes = await db.query('SELECT NOW() as now');
-  let redisStatus: string;
-  try { redisStatus = await redis.ping(); } catch { redisStatus = 'unavailable'; }
-  return {
-    status: 'ok',
-    db_time: dbRes.rows[0].now,
-    redis: redisStatus,
-    redis_ready: redisReady,
-    uptime: process.uptime(),
-  };
-});
+  // ============================================================
+  // Auth routes
+  // ============================================================
+  app.post<{ Body: { initData: string } }>('/api/auth/telegram', async (req, reply) => {
+    const { initData } = req.body ?? {};
+    if (!initData) return reply.code(400).send({ error: 'missing initData' });
 
-app.get('/api/tables', async () => {
-  const res = await db.query(
-    'SELECT id, name, variant, mode, speed, blinds, min_buyin, max_buyin, rake_pct, seats FROM poker_tables WHERE is_active = TRUE ORDER BY id'
-  );
-  return { tables: res.rows };
-});
-
-app.post<{ Body: { initData: string } }>('/api/auth/telegram', async (req, reply) => {
-  const { initData } = req.body ?? {};
-  if (!initData) return reply.code(400).send({ error: 'initData required' });
-
-  let tgUser;
-  if (!BOT_TOKEN) {
-    const params = new URLSearchParams(initData);
-    const u = params.get('user');
-    if (!u) return reply.code(400).send({ error: 'dev mode: user required' });
-    tgUser = JSON.parse(u);
-  } else {
     const parsed = verifyTelegramInitData(initData, BOT_TOKEN);
-    if (!parsed) return reply.code(401).send({ error: 'invalid initData' });
-    tgUser = parsed.user;
-  }
-
-  const existing = await db.query('SELECT * FROM users WHERE telegram_id = $1', [tgUser.id]);
-  let user;
-  if (existing.rows.length > 0) {
-    user = existing.rows[0];
-    const newName = tgUser.first_name ?? user.display_name;
-    if (user.display_name !== newName) {
-      await db.query('UPDATE users SET display_name = $1 WHERE id = $2', [newName, user.id]);
-      user.display_name = newName;
+    if (!parsed) {
+      // 🔴 dev fallback: allow user=... without hash
+      const urlParams = new URLSearchParams(initData);
+      const userStr = urlParams.get('user');
+      if (!userStr) return reply.code(401).send({ error: 'invalid initData' });
+      try {
+        const u = JSON.parse(userStr);
+        const userId = Number(u.id);
+        const displayName = u.first_name || u.username || `User${userId}`;
+        const dbUser = await upsertUser(userId, displayName);
+        const token = signToken({ uid: dbUser.id, tg: userId }, JWT_SECRET);
+        return { token, user: dbUser };
+      } catch {
+        return reply.code(401).send({ error: 'invalid user json' });
+      }
     }
-  } else {
-    const inserted = await db.query(
-      `INSERT INTO users (telegram_id, username, display_name, language)
-       VALUES ($1, $2, $3, $4) RETURNING *`,
-      [tgUser.id, tgUser.username ?? null, tgUser.first_name ?? 'Player', tgUser.language_code ?? 'en']
+
+    const dbUser = await upsertUser(parsed.user.id, parsed.user.first_name || parsed.user.username);
+    const token = signToken({ uid: dbUser.id, tg: parsed.user.id }, JWT_SECRET);
+    return { token, user: dbUser };
+  });
+
+  // ============================================================
+  // Me
+  // ============================================================
+  app.get('/api/me', async (req, reply) => {
+    const auth = req.headers.authorization;
+    if (!auth?.startsWith('Bearer ')) return reply.code(401).send({ error: 'notoken' });
+    const payload = verifyToken(auth.slice(7), JWT_SECRET);
+    if (!payload) return reply.code(401).send({ error: 'invalid token' });
+
+    const userRes = await db.query(
+      'SELECT id, telegram_id, display_name, avatar_id, created_at FROM users WHERE id = $1',
+      [payload.uid]
     );
-    user = inserted.rows[0];
-    await db.query('INSERT INTO wallets (user_id, balance_usd) VALUES ($1, $2)', [user.id, 0]);
-    await db.query('INSERT INTO free_chips (user_id, chips) VALUES ($1, $2)', [user.id, 10000]);
-  }
+    if (userRes.rows.length === 0) return reply.code(404).send({ error: 'user_not_found' });
 
-  const token = signToken({ uid: user.id, tg: user.telegram_id }, JWT_SECRET);
+    const user = userRes.rows[0];
 
-  return {
-    token,
-    user: {
-      id: user.id,
-      telegram_id: user.telegram_id,
-      username: user.username,
-      display_name: user.display_name,
-      language: user.language,
-      avatar_id: user.avatar_id || 'spade',
-    },
-  };
-});
+    // wallet / ledger balance
+    let balance = 0;
+    try {
+      const { LedgerService } = await import('./ledger.js');
+      const ledger = new LedgerService(db);
+      const acc = await ledger.getUserAccountId(user.id);
+      if (acc) balance = await ledger.getBalance(acc);
+    } catch (e: any) {
+      console.error('[me] ledger error:', e.message);
+    }
 
-app.get('/api/me', async (req, reply) => {
-  const auth = req.headers.authorization;
-  if (!auth?.startsWith('Bearer ')) return reply.code(401).send({ error: 'notoken' });
-  const payload = verifyToken(auth.slice(7), JWT_SECRET);
-  if (!payload) return reply.code(401).send({ error: 'invalid token' });
+    const chipsRes = await db.query(
+      'SELECT chips FROM free_chips WHERE user_id = $1',
+      [user.id]
+    );
 
-  const user = await db.query(
-    'SELECT id, telegram_id, username, display_name, language, avatar_id, created_at FROM users WHERE id = $1',
-    [payload.uid]
-  );
-  const wallet = await db.query(
-    'SELECT balance_usd, locked_usd FROM wallets WHERE user_id = $1',
-    [payload.uid]
-  );
-  const chips = await db.query(
-    'SELECT chips, total_hands FROM free_chips WHERE user_id = $1',
-    [payload.uid]
-  );
+    return {
+      user: {
+        id: user.id,
+        telegram_id: user.telegram_id,
+        display_name: user.display_name,
+        avatar_id: user.avatar_id,
+      },
+      wallet: { balance },
+      free_chips: { chips: Number(chipsRes.rows[0]?.chips ?? 0) },
+    };
+  });
 
-  return {
-    user: user.rows[0],
-    wallet: wallet.rows[0],
-    free_chips: chips.rows[0],
-  };
-});
+  app.post<{ Body: { avatar_id: string } }>('/api/me/avatar', async (req, reply) => {
+    const auth = req.headers.authorization;
+    if (!auth?.startsWith('Bearer ')) return reply.code(401).send({ error: 'notoken' });
+    const payload = verifyToken(auth.slice(7), JWT_SECRET);
+    if (!payload) return reply.code(401).send({ error: 'invalid token' });
 
-app.post<{ Body: { avatar_id: string } }>('/api/me/avatar', async (req, reply) => {
-  const auth = req.headers.authorization;
-  if (!auth?.startsWith('Bearer ')) return reply.code(401).send({ error: 'notoken' });
-  const payload = verifyToken(auth.slice(7), JWT_SECRET);
-  if (!payload) return reply.code(401).send({ error: 'invalid token' });
+    const { avatar_id } = req.body ?? {};
+    if (!avatar_id) return reply.code(400).send({ error: 'missing avatar_id' });
 
-  const { avatar_id } = req.body ?? {};
-  if (!avatar_id) return reply.code(400).send({ error: 'avatar_id required' });
+    await db.query('UPDATE users SET avatar_id = $1 WHERE id = $2', [avatar_id, payload.uid]);
+    return { ok: true, avatar_id };
+  });
 
-  await db.query('UPDATE users SET avatar_id = $1 WHERE id = $2', [avatar_id, payload.uid]);
-  return { ok: true, avatar_id };
-});
+  // ============================================================
+  // Tables (public list)
+  // ============================================================
+  app.get('/api/tables', async () => {
+    try {
+      const res = await db.query(
+        `SELECT id, name, variant, mode, speed, small_blind, big_blind, ante,
+                min_buy_in, max_buy_in, max_seats, rake_pct, is_active
+         FROM poker_tables
+         WHERE is_active = TRUE
+         ORDER BY id ASC`
+      );
+      return {
+        tables: res.rows.map(r => ({
+          id: r.id,
+          name: r.name,
+          variant: r.variant,
+          mode: r.mode,
+          speed: r.speed,
+          blinds: {
+            sb: Number(r.small_blind),
+            bb: Number(r.big_blind),
+            ante: Number(r.ante),
+          },
+          minBuyIn: Number(r.min_buy_in),
+          maxBuyIn: Number(r.max_buy_in),
+          maxSeats: r.max_seats,
+          rakePct: Number(r.rake_pct),
+        })),
+      };
+    } catch (e: any) {
+      console.error('[tables] error:', e.message);
+      return { tables: [] };
+    }
+  });
 
-await registerLeaderboardRoutes(app, db);
-await registerEventsRoutes(app, db);
-await registerAntiCheatRoutes(app, db);
-await registerTableManagerRoutes(app, db);
-await registerHandsRoutes(app, db);
-await registerWalletRoutes(app, db);// 🔴 Init TON adapter
-await tonAdapter.init();
+  // ============================================================
+  // Route registrations
+  // ============================================================
+  await registerLeaderboardRoutes(app, db);
+  await registerEventsRoutes(app, db);
+  await registerAntiCheatRoutes(app, db);
+  await registerTableManagerRoutes(app, db);
+  await registerHandsRoutes(app, db);
+  await registerWalletRoutes(app, db);
 
-try {
+  // 🔴 Tournament Manager
+  const tournamentManager = new TournamentManager(db);
+  await registerTournamentRoutes(app, db, tournamentManager);
+
+  // 🔴 Wire game-manager ↔ tournament-manager
+  gameManager.setTournamentHandEndCallback(async (tournamentId, room) => {
+    await tournamentManager.syncStacksAndEliminate(tournamentId, room);
+  });
+
+  // ============================================================
+  // TON adapter
+  // ============================================================
+  await tonAdapter.init();
+
+  // ============================================================
+  // Listen
+  // ============================================================
   await app.listen({ port: PORT, host: '0.0.0.0' });
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 
+  // ============================================================
+  // Socket.IO
+  // ============================================================
   const io = new SocketIOServer(app.server, {
-    cors: { origin: '*', methods: ['GET', 'POST'] },
-    pingTimeout: 30000,
-    pingInterval: 25000,
-    maxHttpBufferSize: 1e6,
+    cors: { origin: true, credentials: true },
   });
 
   setupSocketServer(io, db);
-  // 🔴 Start deposit watcher
-const depositWatcher = new DepositWatcher(db);
-depositWatcher.start();
+  console.log('🔌 Socket.IO attached');
 
-// Graceful shutdown
-process.on('SIGINT', () => {
-  depositWatcher.stop();
-  process.exit(0);
-});
+  tournamentManager.setIO(io);
 
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`🔌 Socket.IO attached`);
-} catch (err) {
-  app.log.error(err);
-  process.exit(1);
+  // ============================================================
+  // Deposit watcher
+  // ============================================================
+  const depositWatcher = new DepositWatcher(db);
+  depositWatcher.start();
+
+  process.on('SIGINT', () => {
+    depositWatcher.stop();
+    process.exit(0);
+  });
 }
+
+// ============================================================
+// User upsert helper
+// ============================================================
+async function upsertUser(telegramId: number, displayName: string): Promise<any> {
+  const existing = await db.query('SELECT * FROM users WHERE telegram_id = $1', [telegramId]);
+  if (existing.rows.length > 0) {
+    return existing.rows[0];
+  }
+
+  const res = await db.query(
+    `INSERT INTO users (telegram_id, display_name, avatar_id)
+     VALUES ($1, $2, 'spade')
+     RETURNING id, telegram_id, display_name, avatar_id, created_at`,
+    [telegramId, displayName]
+  );
+
+  const newUser = res.rows[0];
+
+  // Create ledger account for new user
+  try {
+    const { LedgerService } = await import('./ledger.js');
+    const ledger = new LedgerService(db);
+    await ledger.ensureUserAccount(newUser.id);
+  } catch (e: any) {
+    console.error('[user] ledger account creation failed:', e.message);
+  }
+
+  // Give free chips
+  try {
+    await db.query(
+      `INSERT INTO free_chips (user_id, chips) VALUES ($1, 1000)
+       ON CONFLICT (user_id) DO NOTHING`,
+      [newUser.id]
+    );
+  } catch (e: any) {
+    console.error('[user] free chips creation failed:', e.message);
+  }
+
+  return newUser;
+}
+
+main().catch((e) => {
+  console.error('FATAL:', e);
+  process.exit(1);
+});

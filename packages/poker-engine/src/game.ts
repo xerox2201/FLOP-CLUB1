@@ -139,6 +139,80 @@ export class PokerGame {
     return pots;
   }
 
+  // ============================================================
+  // 🔴 PRE-FLOP ACTION ORDER
+  // Multi-way: UTG (left of BB) → ... → BTN → SB → BB
+  // Heads-up: BTN/SB first, BB last
+  // ============================================================
+  private preflopOrder(): number[] {
+    const active = this.state.seats
+      .filter((s) => !s.folded)
+      .map((s) => s.seat);
+
+    if (active.length === 0) return [];
+
+    if (active.length === 2) {
+      // Heads-up preflop: BTN/SB acts first, BB acts last
+      const dealerIdx = active.indexOf(this.state.dealerSeat);
+      if (dealerIdx < 0) return active;
+      return [
+        active[dealerIdx],
+        active[(dealerIdx + 1) % active.length],
+      ];
+    }
+
+    // Multi-way: find BB, then start from UTG (left of BB)
+    const dealerIdx = active.indexOf(this.state.dealerSeat);
+    if (dealerIdx < 0) return active;
+    const bbIdx = (dealerIdx + 2) % active.length; // BB is 2 seats after BTN
+    const utgIdx = (bbIdx + 1) % active.length;    // UTG is left of BB
+
+    const out: number[] = [];
+    for (let i = 0; i < active.length; i++) {
+      out.push(active[(utgIdx + i) % active.length]);
+    }
+    return out;
+  }
+
+  // ============================================================
+  // 🔴 POST-FLOP ACTION ORDER
+  // Starts with the first ACTIVE player to the LEFT of the button
+  // and proceeds clockwise. BTN acts last.
+  // ============================================================
+  private postflopOrder(): number[] {
+    const active = this.state.seats
+      .filter((s) => !s.folded)
+      .map((s) => s.seat);
+
+    if (active.length === 0) return [];
+
+    if (active.length === 2) {
+      // Heads-up postflop: BB acts first, BTN/SB acts last
+      const dealerIdx = active.indexOf(this.state.dealerSeat);
+      if (dealerIdx < 0) return active;
+      return [
+        active[(dealerIdx + 1) % active.length], // BB
+        active[dealerIdx],                        // BTN/SB
+      ];
+    }
+
+    // Multi-way: find first active seat strictly clockwise from BTN
+    const dealerIdx = active.indexOf(this.state.dealerSeat);
+    if (dealerIdx < 0) return active;
+
+    // Start from the seat immediately left of BTN (i.e., SB position)
+    const sbIdx = (dealerIdx + 1) % active.length;
+
+    const out: number[] = [];
+    for (let i = 0; i < active.length; i++) {
+      out.push(active[(sbIdx + i) % active.length]);
+    }
+    return out;
+  }
+
+  // ============================================================
+  // START HAND
+  // ============================================================
   startHand(_: any[]): void {
     const seats = this.state.seats.filter((s) => s.stack > 0);
     if (seats.length < 2) { this.state.phase = 'waiting'; return; }
@@ -176,9 +250,20 @@ export class PokerGame {
     const seed = this.serverSeed || `${this.state.tableId}-${this.state.handNo}-${Date.now()}`;
     shuffleDeck(this.deck, seed);
 
-    const order = this.orderFromDealer();
-    const sbSeat = order[0];
-    const bbSeat = order[1];
+    // Post blinds
+    const activeCount = activeSeats.length;
+    let sbSeat: number, bbSeat: number;
+
+    if (activeCount === 2) {
+      // Heads-up: BTN is SB, other is BB
+      sbSeat = this.state.dealerSeat;
+      bbSeat = activeSeats.find(s => s.seat !== sbSeat)!.seat;
+    } else {
+      // Multi-way: SB = left of BTN, BB = left of SB
+      const dealerIdx = activeSeats.findIndex(s => s.seat === this.state.dealerSeat);
+      sbSeat = activeSeats[(dealerIdx + 1) % activeCount].seat;
+      bbSeat = activeSeats[(dealerIdx + 2) % activeCount].seat;
+    }
 
     this.postBet(sbSeat, this.state.smallBlind);
     this.postBet(bbSeat, this.state.bigBlind);
@@ -187,9 +272,16 @@ export class PokerGame {
       for (const s of activeSeats) this.postBet(s.seat, this.state.ante);
     }
 
+    // Deal hole cards starting from SB, clockwise
+    const dealOrder: number[] = [];
+    const sbIdx = activeSeats.findIndex(s => s.seat === sbSeat);
+    for (let i = 0; i < activeSeats.length; i++) {
+      dealOrder.push(activeSeats[(sbIdx + i) % activeSeats.length].seat);
+    }
+
     const hc = this.holeCount();
     for (let round = 0; round < hc; round++) {
-      for (const seatIdx of order) {
+      for (const seatIdx of dealOrder) {
         const seat = this.state.seats[seatIdx];
         if (seat.folded) continue;
         const c = this.deck.pop();
@@ -197,8 +289,14 @@ export class PokerGame {
       }
     }
 
-    this.state.currentSeat = order[2] ?? order[0];
+    // First to act preflop
+    const order = this.preflopOrder();
+    this.state.currentSeat = order[0] ?? bbSeat;
     this.state.turnStartedAt = Date.now();
+
+    console.log(
+      `[engine] hand #${this.state.handNo} dealer=${this.state.dealerSeat} SB=${sbSeat} BB=${bbSeat} first=${this.state.currentSeat}`
+    );
   }
 
   act(seatIdx: number, action: ActionType, amount: number): { ok: boolean; error?: string } {
@@ -265,16 +363,6 @@ export class PokerGame {
     return 2;
   }
 
-  private orderFromDealer(): number[] {
-    const active = this.state.seats.filter((s) => !s.folded).map((s) => s.seat);
-    const startIdx = active.indexOf(this.state.dealerSeat);
-    const out: number[] = [];
-    for (let i = 1; i <= active.length; i++) {
-      out.push(active[(startIdx + i) % active.length]);
-    }
-    return out;
-  }
-
   private postBet(seatIdx: number, amt: number): void {
     const seat = this.state.seats[seatIdx];
     const real = round2(Math.min(amt, seat.stack));
@@ -289,28 +377,31 @@ export class PokerGame {
     const active = this.state.seats.filter((s) => !s.folded && !s.allIn);
     const maxBet = Math.max(...this.state.seats.map((s) => s.betThisStreet));
 
-    // 🔴 FIX: 0 بازیکن فعال → runout
     if (active.length === 0) {
       this.finishStreet();
       return;
     }
 
-    // 🔴 FIX: 1 بازیکن فعال
     if (active.length === 1) {
+      // Only one non-folded player remains
       const s = active[0];
-      // اگه call کرده → runout
+      const nonFolded = this.state.seats.filter((x) => !x.folded);
+      if (nonFolded.length === 1) {
+        // Everyone else folded → hand over immediately
+        this.finishStreet();
+        return;
+      }
+      // One player + all-ins: continue if not matched
       if (s.betThisStreet >= maxBet && s.hasActed) {
         this.finishStreet();
         return;
       }
-      // وگرنه نوبتشه که call/fold کنه
       this.state.currentSeat = s.seat;
       this.state.turnStartedAt = Date.now();
       this.state.turnBankActive = false;
       return;
     }
 
-    // Multiple active players
     const allActed = active.every((s) => s.hasActed);
     const allMatched = active.every((s) => s.betThisStreet === maxBet);
 
@@ -319,6 +410,7 @@ export class PokerGame {
       return;
     }
 
+    // Move to next active seat clockwise
     const seats = this.state.seats.map((s) => s.seat);
     const curIdx = seats.indexOf(this.state.currentSeat);
     for (let i = 1; i <= seats.length; i++) {
@@ -334,7 +426,6 @@ export class PokerGame {
     this.finishStreet();
   }
 
-  // 🔴 FIX: همه all-in → runout
   private finishStreet(): void {
     for (const s of this.state.seats) {
       s.betThisStreet = 0;
@@ -349,7 +440,6 @@ export class PokerGame {
       return;
     }
 
-    // 🔴 بررسی: آیا کسی می‌تونه اکشن بزنه؟
     const actionable = active.filter((s) => !s.allIn);
     const shouldRunOut = actionable.length <= 1;
 
@@ -367,14 +457,14 @@ export class PokerGame {
       return;
     }
 
-    // 🔴 اگه کسی نمی‌تونه اکشن بزنه، بقیه‌ی street ها رو هم deal کن
     if (shouldRunOut) {
       this.finishStreet();
       return;
     }
 
-    const order = this.orderFromDealer();
-    for (const idx of order) {
+    // 🔴 CRITICAL FIX: use postflopOrder() which correctly skips folded players
+    const postflop = this.postflopOrder();
+    for (const idx of postflop) {
       const s = this.state.seats[idx];
       if (!s.folded && !s.allIn) {
         this.state.currentSeat = idx;
@@ -383,7 +473,6 @@ export class PokerGame {
         return;
       }
     }
-    // اگه کسی پیدا نشد → runout
     this.finishStreet();
   }
 

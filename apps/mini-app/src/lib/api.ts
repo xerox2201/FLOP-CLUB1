@@ -57,7 +57,9 @@ class ApiClient {
     }
   }
 
+  // ============================================================
   // Auth
+  // ============================================================
   async authTelegram(initData: string): Promise<ApiResponse<{ token: string; user: any }>> {
     return this.request('/api/auth/telegram', {
       method: 'POST',
@@ -76,7 +78,9 @@ class ApiClient {
     });
   }
 
-  // Tables — با alias
+  // ============================================================
+  // Tables
+  // ============================================================
   async tables(): Promise<ApiResponse<{ tables: any[] }>> {
     return this.request('/api/tables');
   }
@@ -85,7 +89,9 @@ class ApiClient {
     return this.request('/api/tables');
   }
 
-  // Leaderboard — با alias
+  // ============================================================
+  // Leaderboard / Events
+  // ============================================================
   async leaderboard(period: string = 'all'): Promise<ApiResponse<any>> {
     return this.request(`/api/leaderboard?period=${period}`);
   }
@@ -94,7 +100,6 @@ class ApiClient {
     return this.request(`/api/leaderboard?period=${period}`);
   }
 
-  // Events — با alias
   async events(): Promise<ApiResponse<any>> {
     return this.request('/api/events');
   }
@@ -103,7 +108,9 @@ class ApiClient {
     return this.request('/api/events');
   }
 
+  // ============================================================
   // Hands
+  // ============================================================
   async getRecentHands(limit = 20, offset = 0): Promise<ApiResponse<{ hands: any[] }>> {
     return this.request(`/api/hands/recent?limit=${limit}&offset=${offset}`);
   }
@@ -116,7 +123,9 @@ class ApiClient {
     return this.request(`/api/hands/${handId}/replay`);
   }
 
+  // ============================================================
   // Wallet
+  // ============================================================
   async walletBalance(): Promise<ApiResponse<{ balance: number; freeChips: number; ton: any; hotWalletReady: boolean }>> {
     return this.request('/api/wallet/balance');
   }
@@ -134,6 +143,54 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify({ amountTon, toAddress }),
     });
+  }
+
+  // ============================================================
+  // Tournaments
+  // ============================================================
+  async listTournaments(filter?: { status?: string; variant?: string; mode?: string }): Promise<ApiResponse<{ tournaments: any[] }>> {
+    const qs = new URLSearchParams();
+    if (filter?.status) qs.set('status', filter.status);
+    if (filter?.variant) qs.set('variant', filter.variant);
+    if (filter?.mode) qs.set('mode', filter.mode);
+    const q = qs.toString();
+    return this.request(`/api/tournaments${q ? '?' + q : ''}`);
+  }
+
+  async getTournament(id: number): Promise<ApiResponse<any>> {
+    return this.request(`/api/tournaments/${id}`);
+  }
+
+  async createTournament(body: any): Promise<ApiResponse<{ ok: boolean; tournamentId: number }>> {
+    return this.request('/api/tournaments', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  }
+
+  async registerTournament(id: number): Promise<ApiResponse<{ ok: boolean }>> {
+    return this.request(`/api/tournaments/${id}/register`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+  }
+
+  async unregisterTournament(id: number): Promise<ApiResponse<{ ok: boolean }>> {
+    return this.request(`/api/tournaments/${id}/unregister`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+  }
+
+  async startTournament(id: number): Promise<ApiResponse<{ ok: boolean }>> {
+    return this.request(`/api/tournaments/${id}/start`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+  }
+
+  async listBlindStructures(): Promise<ApiResponse<{ structures: any[] }>> {
+    return this.request('/api/blind-structures');
   }
 }
 

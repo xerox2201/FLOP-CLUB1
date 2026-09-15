@@ -1,4 +1,4 @@
- import { Server as SocketIOServer } from 'socket.io';
+import { Server as SocketIOServer } from 'socket.io';
 import { Pool } from 'pg';
 import { verifyToken } from './auth.js';
 import { gameManager } from './game-manager.js';
@@ -7,6 +7,8 @@ import { ErrorCode } from './errors.js';
 import { recordIp, recordDevice, analyzeUser } from './anti-cheat.js';
 
 const JWT_SECRET = process.env.JWT_SECRET ?? 'dev_secret_change_me';
+
+const VIRTUAL_TABLE_THRESHOLD = 1_000_000;
 
 export function setupSocketServer(io: SocketIOServer, db: Pool): void {
   console.log('[socket.io] server setup');
@@ -54,10 +56,30 @@ export function setupSocketServer(io: SocketIOServer, db: Pool): void {
         const tableId = Number(data?.tableId);
         if (!tableId) return ack?.({ ok: false, code: ErrorCode.TABLE_NOT_FOUND });
 
-        const tableRes = await db.query('SELECT * FROM poker_tables WHERE id = $1', [tableId]);
-        if (tableRes.rows.length === 0) return ack?.({ ok: false, code: ErrorCode.TABLE_NOT_FOUND });
+        const isTournament = tableId >= VIRTUAL_TABLE_THRESHOLD;
 
-        const table = tableRes.rows[0];
+        let table: any;
+
+        if (isTournament) {
+          const existingRoom = gameManager.getRoom(tableId);
+          if (!existingRoom) {
+            console.warn(`[socket] tournament table ${tableId} not found in gameManager`);
+            return ack?.({ ok: false, code: 'TOURNAMENT_TABLE_NOT_FOUND' });
+          }
+          table = {
+            id: tableId,
+            variant: existingRoom.variant,
+            mode: 'real',
+            speed: existingRoom.speed,
+            blinds: existingRoom.blinds,
+            rake_pct: 0,
+          };
+          console.log(`[socket] ${displayName} joining tournament table ${tableId} (T#${existingRoom.tournamentId} table ${existingRoom.tournamentTableNumber})`);
+        } else {
+          const tableRes = await db.query('SELECT * FROM poker_tables WHERE id = $1', [tableId]);
+          if (tableRes.rows.length === 0) return ack?.({ ok: false, code: ErrorCode.TABLE_NOT_FOUND });
+          table = tableRes.rows[0];
+        }
 
         const room = gameManager.joinRoom({
           tableId,
@@ -69,7 +91,6 @@ export function setupSocketServer(io: SocketIOServer, db: Pool): void {
 
         socket.join(`table:${tableId}`);
 
-        // 🔴 Resync check
         const sync = gameManager.resync(tableId, userId, data?.lastHandNo ?? null, data?.lastSequence ?? null);
 
         ack?.({
@@ -91,14 +112,33 @@ export function setupSocketServer(io: SocketIOServer, db: Pool): void {
           total: room.players.size,
         });
 
+        // 🔴 Auto-start logic
         setTimeout(async () => {
           const r = gameManager.getRoom(tableId);
           if (!r) return;
-          if (r.players.size >= 2 && r.game.state.phase === 'waiting') {
-            try {
-              await gameManager.startHand(tableId, io);
-            } catch (e) {
-              console.error('[hand] startHand error:', e);
+          if (r.game.state.phase !== 'waiting') return;
+
+          const connected = [...r.players.values()].filter(p => !!p.socketId).length;
+          const total = r.players.size;
+
+          if (isTournament) {
+            if (connected >= 2) {
+              console.log(`[hand] 🏆 tournament table ${tableId}: starting with ${connected}/${total} connected`);
+              try {
+                await gameManager.startHand(tableId, io);
+              } catch (e) {
+                console.error('[hand] tournament startHand error:', e);
+              }
+            } else {
+              console.log(`[hand] tournament table ${tableId}: waiting (${connected}/${total} connected)`);
+            }
+          } else {
+            if (connected >= 2) {
+              try {
+                await gameManager.startHand(tableId, io);
+              } catch (e) {
+                console.error('[hand] startHand error:', e);
+              }
             }
           }
         }, 1500);
