@@ -1,4 +1,4 @@
- export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
 export interface ApiResponse<T = any> {
   ok: boolean;
@@ -18,7 +18,7 @@ class ApiClient {
     return localStorage.getItem('token');
   }
 
-  private async request<T = any>(
+  async request<T = any>(
     path: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
@@ -57,9 +57,7 @@ class ApiClient {
     }
   }
 
-  // ============================================================
   // Auth
-  // ============================================================
   async authTelegram(initData: string): Promise<ApiResponse<{ token: string; user: any }>> {
     return this.request('/api/auth/telegram', {
       method: 'POST',
@@ -78,9 +76,7 @@ class ApiClient {
     });
   }
 
-  // ============================================================
-  // Tables — با alias برای سازگاری
-  // ============================================================
+  // Tables — با alias
   async tables(): Promise<ApiResponse<{ tables: any[] }>> {
     return this.request('/api/tables');
   }
@@ -89,9 +85,7 @@ class ApiClient {
     return this.request('/api/tables');
   }
 
-  // ============================================================
   // Leaderboard — با alias
-  // ============================================================
   async leaderboard(period: string = 'all'): Promise<ApiResponse<any>> {
     return this.request(`/api/leaderboard?period=${period}`);
   }
@@ -100,9 +94,7 @@ class ApiClient {
     return this.request(`/api/leaderboard?period=${period}`);
   }
 
-  // ============================================================
   // Events — با alias
-  // ============================================================
   async events(): Promise<ApiResponse<any>> {
     return this.request('/api/events');
   }
@@ -111,9 +103,7 @@ class ApiClient {
     return this.request('/api/events');
   }
 
-  // ============================================================
-  // Hands API (Phase C)
-  // ============================================================
+  // Hands
   async getRecentHands(limit = 20, offset = 0): Promise<ApiResponse<{ hands: any[] }>> {
     return this.request(`/api/hands/recent?limit=${limit}&offset=${offset}`);
   }
@@ -124,6 +114,26 @@ class ApiClient {
 
   async getHandReplay(handId: number): Promise<ApiResponse<{ hand: any; initialSnapshot: any; events: any[] }>> {
     return this.request(`/api/hands/${handId}/replay`);
+  }
+
+  // Wallet
+  async walletBalance(): Promise<ApiResponse<{ balance: number; freeChips: number; ton: any; hotWalletReady: boolean }>> {
+    return this.request('/api/wallet/balance');
+  }
+
+  async walletDepositInfo(): Promise<ApiResponse<{ depositAddress: string; memo: string; minDeposit: number; network: string }>> {
+    return this.request('/api/wallet/deposit-info');
+  }
+
+  async walletHistory(): Promise<ApiResponse<{ tonTransactions: any[]; ledgerTransactions: any[] }>> {
+    return this.request('/api/wallet/history');
+  }
+
+  async walletWithdraw(amountTon: number, toAddress: string): Promise<ApiResponse<any>> {
+    return this.request('/api/wallet/withdraw', {
+      method: 'POST',
+      body: JSON.stringify({ amountTon, toAddress }),
+    });
   }
 }
 

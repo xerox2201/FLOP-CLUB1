@@ -12,6 +12,9 @@ import { registerEventsRoutes } from './events.js';
 import { registerAntiCheatRoutes } from './anti-cheat-routes.js';
 import { registerTableManagerRoutes } from './table-manager.js';
 import { registerHandsRoutes } from './hands-routes.js';
+import { registerWalletRoutes } from './wallet-routes.js';
+import { tonAdapter } from './ton.js';
+import { DepositWatcher } from './deposit-watcher.js';
 
 const PORT = Number(process.env.PORT ?? 4000);
 const DATABASE_URL = process.env.DATABASE_URL ?? 'postgres://poker:pokerpass@localhost:5432/poker';
@@ -166,6 +169,8 @@ await registerEventsRoutes(app, db);
 await registerAntiCheatRoutes(app, db);
 await registerTableManagerRoutes(app, db);
 await registerHandsRoutes(app, db);
+await registerWalletRoutes(app, db);// 🔴 Init TON adapter
+await tonAdapter.init();
 
 try {
   await app.listen({ port: PORT, host: '0.0.0.0' });
@@ -178,6 +183,15 @@ try {
   });
 
   setupSocketServer(io, db);
+  // 🔴 Start deposit watcher
+const depositWatcher = new DepositWatcher(db);
+depositWatcher.start();
+
+// Graceful shutdown
+process.on('SIGINT', () => {
+  depositWatcher.stop();
+  process.exit(0);
+});
 
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`🔌 Socket.IO attached`);

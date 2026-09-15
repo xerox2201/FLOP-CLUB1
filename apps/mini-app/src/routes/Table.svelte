@@ -36,6 +36,13 @@
 
   let handHistory: any[] = [];
 
+  // 🔴 Pre-Action
+  type PreActionKey = 'check_fold' | 'check' | 'call_any' | 'fold';
+  type PreAction = PreActionKey | null;
+  let preAction: PreAction = null;
+  let lastFireKey: string | null = null;
+  let lastEndedHandNo = -1;
+
   $: myUserId = $auth.user?.id;
   $: mySeat = gameState?.seats?.find((s: any) => s.userId === myUserId) ?? null;
   $: isMyTurn = !!(
@@ -77,6 +84,26 @@
 
   $: myAvatarId = ($auth.user as any)?.avatar_id || 'spade';
 
+  // 🔴 Pre-action definitions
+  const PRE_ACTIONS: { key: PreActionKey; label: string; icon: string; color: string }[] = [
+    { key: 'check_fold', label: 'Check/Fold', icon: '✓/✗', color: '#3b82f6' },
+    { key: 'check',      label: 'Check',      icon: '✓',    color: '#10b981' },
+    { key: 'call_any',   label: 'Call Any',   icon: '📞',   color: '#8b5cf6' },
+    { key: 'fold',       label: 'Fold',       icon: '✗',    color: '#ef4444' },
+  ];
+
+  // 🔴 Show pre-action panel
+  $: showPreActions =
+    gameState &&
+    !startingHand &&
+    !handResult &&
+    !sittingOut &&
+    !isMyTurn &&
+    mySeat &&
+    !mySeat.folded &&
+    !mySeat.allIn &&
+    (gameState.phase !== 'showdown' && gameState.phase !== 'waiting');
+
   function fmt(n: any): string {
     return Number(Number(n || 0).toFixed(2)).toFixed(2);
   }
@@ -115,6 +142,9 @@
       } else if (evt.type === 'hand_result') {
         handResult = evt.result;
         gameState = evt.state;
+
+        // 🔴 Reset pre-action immediately when hand ends
+        resetPreAction();
 
         try {
           const winners: number[] = evt.result.winners || [];
@@ -171,13 +201,105 @@
 
   onDestroy(() => { if (socket) socket.close(); });
 
+  // 🔴 Helper to reset pre-action
+  function resetPreAction() {
+    preAction = null;
+    lastFireKey = null;
+  }
+
+  // 🔴 Reset on hand change (backup safety)
+  $: if (gameState?.handNo && gameState.handNo !== lastEndedHandNo && gameState.winners && gameState.winners.length > 0) {
+    lastEndedHandNo = gameState.handNo;
+    resetPreAction();
+  }
+
+  // 🔴 Fire pre-action
+  function tryFirePreAction() {
+    if (!isMyTurn || !preAction || sittingOut) return;
+    if (!socket) return;
+
+    const action = preAction;
+    const handNo = gameState?.handNo ?? -1;
+
+    const fireKey = `${handNo}-${gameState?.community?.length || 0}-${gameState?.currentSeat}`;
+    if (lastFireKey === fireKey) return;
+    lastFireKey = fireKey;
+
+    let sent = false;
+
+    if (action === 'fold') {
+      socket.action('FOLD', 0);
+      autoActionMsg = '✗ Fold (pre-action)';
+      sent = true;
+    } else if (action === 'check') {
+      if (canCheck) {
+        socket.action('CHECK', 0);
+        autoActionMsg = '✓ Check (pre-action)';
+        sent = true;
+      } else {
+        autoActionMsg = '⚠️ Cannot check';
+        setTimeout(() => { autoActionMsg = ''; }, 1500);
+      }
+    } else if (action === 'check_fold') {
+      if (canCheck) {
+        socket.action('CHECK', 0);
+        autoActionMsg = '✓ Check (pre-action)';
+        sent = true;
+      } else {
+        socket.action('FOLD', 0);
+        autoActionMsg = '✗ Fold (pre-action)';
+        sent = true;
+      }
+    } else if (action === 'call_any') {
+      if (canCheck) {
+        socket.action('CHECK', 0);
+        autoActionMsg = '✓ Check (pre-action)';
+        sent = true;
+      } else if (myStack > 0) {
+        socket.action('CALL', 0);
+        autoActionMsg = '📞 Call (pre-action)';
+        sent = true;
+      } else {
+        socket.action('FOLD', 0);
+        autoActionMsg = '✗ Fold (no chips)';
+        sent = true;
+      }
+    }
+
+    // 🔴 ONE-SHOT: خاموش کردن بعد از fire
+    if (sent) {
+      preAction = null;
+      lastFireKey = null;
+      setTimeout(() => { autoActionMsg = ''; }, 2000);
+    }
+  }
+
+  // 🔴 Reactive: fire on turn
+  $: if (isMyTurn && preAction && !sittingOut) {
+    setTimeout(tryFirePreAction, 150);
+  }
+
+  function setPreAction(pa: PreActionKey) {
+    if (preAction === pa) {
+      preAction = null;
+      lastFireKey = null;
+    } else {
+      preAction = pa;
+      lastFireKey = null;
+      autoActionMsg = `🎯 ${pa.replace('_', '/')} armed`;
+      setTimeout(() => { autoActionMsg = ''; }, 1500);
+    }
+  }
+
   function doAction(action: 'FOLD' | 'CHECK' | 'CALL', amount = 0) {
     if (!socket || !isMyTurn) return;
+    resetPreAction();
     socket.action(action, amount);
   }
 
   function doRaise() {
     if (!canRaise) return;
+    resetPreAction();
     socket?.action('RAISE', Math.floor(raiseAmount * 100) / 100);
   }
 
@@ -225,6 +347,7 @@
   function doSitOut() {
     sittingOut = true;
     showMenu = false;
+    resetPreAction();
     autoActionMsg = '💤 Sitting out';
     setTimeout(() => { autoActionMsg = ''; }, 2500);
   }
@@ -282,7 +405,6 @@
               <span class="text-[8px] font-bold text-blue-300 px-1 rounded" style="background: rgba(59,130,246,0.2);">SPLIT</span>
             {/if}
           </div>
-
           {#each h.winners as w}
             <div class="mb-1">
               <div class="flex items-center gap-1 mb-0.5">
@@ -428,10 +550,36 @@
     </div>
   {/if}
 
-  <!-- Action Bar -->
-  {#if gameState && !startingHand && !handResult}
+  <!-- 🔴 Pre-Action Panel -->
+  {#if showPreActions}
     <div class="absolute bottom-0 left-0 right-0 z-30" style="padding: 12px 12px calc(16px + env(safe-area-inset-bottom)) 12px; max-width: 480px; margin: 0 auto;">
-      {#if isMyTurn && !sittingOut}
+      <div class="rounded-2xl p-2" style="background: rgba(0,0,0,0.88); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(12px);">
+        <div class="flex items-center justify-between px-2 mb-1.5">
+          <span class="text-[9px] uppercase tracking-widest font-extrabold text-white/40">Pre-Action</span>
+          {#if preAction}
+            <span class="text-[9px] font-bold text-amber-400">Armed · Tap again to cancel</span>
+          {/if}
+        </div>
+        <div class="flex gap-1.5">
+          {#each PRE_ACTIONS as pa}
+            <button
+              on:click={() => setPreAction(pa.key)}
+              class="flex-1 rounded-xl py-2.5 active:scale-[0.97] transition-all flex flex-col items-center gap-0.5"
+              style="background: {preAction === pa.key ? pa.color : 'rgba(255,255,255,0.06)'}; border: {preAction === pa.key ? `2px solid ${pa.color}` : '2px solid transparent'}; box-shadow: {preAction === pa.key ? `0 0 14px ${pa.color}60` : 'none'};"
+            >
+              <span class="text-[16px] leading-none" style="color: {preAction === pa.key ? 'white' : pa.color};">{pa.icon}</span>
+              <span class="text-[9px] font-bold leading-none" style="color: {preAction === pa.key ? 'white' : 'rgba(255,255,255,0.7)'};">{pa.label}</span>
+            </button>
+          {/each}
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  <!-- Action Bar (when it's my turn) -->
+  {#if gameState && !startingHand && !handResult && isMyTurn}
+    <div class="absolute bottom-0 left-0 right-0 z-30" style="padding: 12px 12px calc(16px + env(safe-area-inset-bottom)) 12px; max-width: 480px; margin: 0 auto;">
+      {#if !sittingOut}
         {#if canUseBank}
           <div class="flex justify-center mb-2">
             <button on:click={useTimeBank} class="rounded-full px-4 py-1.5 text-[11px] font-bold text-amber-300 active:scale-95" style="background: rgba(0,0,0,0.85); border: 1px solid rgba(245,158,11,0.5); backdrop-filter: blur(10px);">
@@ -508,14 +656,10 @@
             </button>
           {/if}
         </div>
-      {:else if sittingOut}
+      {:else}
         <div class="rounded-2xl p-3 text-center" style="background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4); backdrop-filter: blur(10px);">
           <p class="text-xs font-bold text-amber-300">💤 Sitting Out — Auto-folding</p>
           <button on:click={doSitIn} class="mt-2 text-[11px] text-white underline">Resume playing</button>
-        </div>
-      {:else}
-        <div class="rounded-2xl p-3 text-center" style="background: rgba(0,0,0,0.85); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px);">
-          <p class="text-xs text-white/60">{$t('table.waitingTurn')}</p>
         </div>
       {/if}
     </div>
