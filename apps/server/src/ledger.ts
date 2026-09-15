@@ -1,4 +1,4 @@
- import { Pool } from 'pg';
+import { Pool } from 'pg';
 
 export type LedgerKind =
   | 'DEPOSIT'
@@ -41,11 +41,6 @@ export interface LedgerResult {
 export class LedgerService {
   constructor(private db: Pool) {}
 
-  /**
-   * ثبت یک تراکنش مالی
-   * - جمع همه‌ی amount ها باید صفر باشه
-   * - اگه idempotencyKey تکراری باشه، تراکنش دوباره ثبت نمیشه
-   */
   async record(input: LedgerTransactionInput): Promise<LedgerResult> {
     const sum = input.entries.reduce((s, e) => s + e.amount, 0);
     if (Math.abs(sum) > 0.001) {
@@ -146,6 +141,26 @@ export class LedgerService {
 
   async getUserAccountId(userId: number): Promise<number | null> {
     return this.getAccountId(`USER_${userId}`);
+  }
+
+  async ensureUserAccount(userId: number): Promise<number | null> {
+    const code = `USER_${userId}`;
+    const existing = await this.getAccountId(code);
+    if (existing) return existing;
+
+    try {
+      const res = await this.db.query(
+        `INSERT INTO accounts (code, type, owner_user_id)
+         VALUES ($1, 'user', $2)
+         ON CONFLICT (code) DO UPDATE SET code = EXCLUDED.code
+         RETURNING id`,
+        [code, userId]
+      );
+      return res.rows[0]?.id ?? null;
+    } catch (e: any) {
+      console.error('[ledger] ensureUserAccount failed:', e.message);
+      return null;
+    }
   }
 
   async getHistory(userId: number, limit = 50, offset = 0) {

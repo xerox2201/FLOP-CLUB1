@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: poker
+          POSTGRES_PASSWORD: pokerpass
+          POSTGRES_DB: poker
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm -w apps/server run typecheck
+
+      - name: Test engine
+        run: npm -w packages/poker-engine run test
+
+      - name: Test server
+        run: npm -w apps/server run test
+
+      - name: Test frontend
+        run: npm -w apps/mini-app run test
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E tests
+        run: npx playwright test
+        env:
+          DATABASE_URL: postgres://poker:pokerpass@localhost:5432/poker
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test_secret
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage
+          path: |
+            packages/poker-engine/coverage/
+            apps/server/coverage/
+            apps/mini-app/coverage/

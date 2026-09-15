@@ -151,8 +151,8 @@ async function main() {
   app.get('/api/tables', async () => {
     try {
       const res = await db.query(
-        `SELECT id, name, variant, mode, speed, small_blind, big_blind, ante,
-                min_buy_in, max_buy_in, max_seats, rake_pct, is_active
+        `SELECT id, name, variant, mode, speed, blinds,
+                min_buyin, max_buyin, seats, rake_pct, is_active
          FROM poker_tables
          WHERE is_active = TRUE
          ORDER BY id ASC`
@@ -165,14 +165,14 @@ async function main() {
           mode: r.mode,
           speed: r.speed,
           blinds: {
-            sb: Number(r.small_blind),
-            bb: Number(r.big_blind),
-            ante: Number(r.ante),
+            sb: Number(r.blinds?.sb ?? 0),
+            bb: Number(r.blinds?.bb ?? 0),
+            ante: Number(r.blinds?.ante ?? 0),
           },
-          minBuyIn: Number(r.min_buy_in),
-          maxBuyIn: Number(r.max_buy_in),
-          maxSeats: r.max_seats,
-          rakePct: Number(r.rake_pct),
+          minBuyIn: Number(r.min_buyin ?? 0),
+          maxBuyIn: Number(r.max_buyin ?? 0),
+          maxSeats: Number(r.seats ?? 6),
+          rakePct: Number(r.rake_pct ?? 0),
         })),
       };
     } catch (e: any) {
