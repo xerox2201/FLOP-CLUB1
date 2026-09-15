@@ -4,6 +4,7 @@
 
   export let open: boolean = false;
   export let onClose: () => void = () => {};
+  export let onReplay: (handId: number) => void = () => {};
 
   let view: 'list' | 'detail' = 'list';
   let hands: any[] = [];
@@ -114,6 +115,7 @@
     class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[90] flex flex-col w-[94%] max-w-[420px] rounded-2xl overflow-hidden"
     style="height: 80vh; max-height: 720px; background: #0f172a; border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 20px 60px rgba(0,0,0,0.9);"
   >
+    <!-- Header -->
     <div class="flex items-center gap-2 px-3 py-3 border-b border-white/10 shrink-0">
       {#if view === 'detail'}
         <button
@@ -125,6 +127,17 @@
       <h2 class="text-sm font-extrabold text-white flex-1">
         {view === 'list' ? '📜 Hand History' : `Hand #${selectedHand?.handNo}`}
       </h2>
+
+      {#if view === 'detail' && selectedHand}
+        <button
+          on:click={() => onReplay(selectedHand.id)}
+          class="px-2.5 py-1.5 rounded-full text-[10px] font-extrabold text-black active:scale-95 flex items-center gap-1"
+          style="background: #fbbf24;"
+        >
+          ▶ Replay
+        </button>
+      {/if}
+
       <button
         on:click={onClose}
         class="w-8 h-8 rounded-full flex items-center justify-center text-white/60 text-xl leading-none active:scale-95"
@@ -132,6 +145,7 @@
       >×</button>
     </div>
 
+    <!-- Content -->
     <div class="flex-1 overflow-y-auto">
       {#if loading}
         <div class="flex items-center justify-center h-full">
@@ -184,6 +198,7 @@
           </div>
         {/if}
       {:else if view === 'detail' && selectedDetail}
+        <!-- Tabs -->
         <div class="flex border-b border-white/10 shrink-0 sticky top-0 z-10" style="background: #0f172a;">
           {#each [['summary', 'SUMMARY'], ['actions', 'ACTIONS'], ['results', 'RESULTS']] as [key, label]}
             <button

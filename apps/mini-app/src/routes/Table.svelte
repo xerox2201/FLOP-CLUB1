@@ -3,6 +3,7 @@
   import PokerTable from '../components/PokerTable.svelte';
   import PlayingCard from '../components/PlayingCard.svelte';
   import HandHistoryModal from '../components/HandHistoryModal.svelte';
+  import HandReplayModal from '../components/HandReplayModal.svelte';
   import { TableSocketIO, type TableState } from '../lib/socket';
   import { auth } from '../stores/auth';
   import { t } from '../i18n';
@@ -21,6 +22,8 @@
   let startingHand = true;
   let showMenu = false;
   let showHandHistory = false;
+  let showReplay = false;
+  let replayHandId: number | null = null;
   let sittingOut = false;
   let handResult: any = null;
   let showSeedModal = false;
@@ -389,6 +392,18 @@
   <HandHistoryModal
     open={showHandHistory}
     onClose={() => showHandHistory = false}
+    onReplay={(handId) => {
+      showHandHistory = false;
+      replayHandId = handId;
+      showReplay = true;
+    }}
+  />
+
+  <!-- Hand Replay Modal -->
+  <HandReplayModal
+    open={showReplay}
+    handId={replayHandId}
+    onClose={() => { showReplay = false; replayHandId = null; }}
   />
 
   <!-- Waiting -->
