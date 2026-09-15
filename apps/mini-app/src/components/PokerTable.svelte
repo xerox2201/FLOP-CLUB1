@@ -25,8 +25,6 @@
     return '♣';
   }
 
-  // Angles from center of table (screen coords: 90 = bottom, 270 = top)
-  // Hero is always at 90° (bottom center)
   const BASE_ANGLES: Record<number, number[]> = {
     2: [90, 270],
     3: [90, 210, 330],
@@ -66,7 +64,8 @@
     mySeat &&
     gameState.currentSeat === mySeat.seat &&
     !mySeat.folded &&
-    !mySeat.allIn
+    !mySeat.allIn &&
+    winners.length === 0
   );
 
   $: totalPot = gameState?.pot ?? 0;
@@ -122,7 +121,6 @@
     return showdownData?.[seat]?.payout ?? 0;
   }
 
-  // Chip fly on win
   let chipVisible = false;
   let chipLeft = 50;
   let chipTop = 40;
@@ -160,20 +158,15 @@
   }
 </script>
 
-<!-- ============================================================
-     TABLE
-     ============================================================ -->
 <div
   class="absolute left-1/2 -translate-x-1/2 w-[94%] max-w-[430px]"
   style="top: 46%; transform: translate(-50%, -50%);"
 >
   <div class="relative w-full" style="aspect-ratio: 1 / 1.12;">
-    <!-- Outer rim -->
     <div
       class="absolute -inset-2 rounded-[50%] {isFinalTable ? 'felt-rim-final' : 'felt-rim'}"
     ></div>
 
-    <!-- Felt -->
     <div class="absolute inset-0 rounded-[50%] overflow-hidden felt-cash">
       <div
         class="absolute inset-0 rounded-[50%]"
@@ -185,7 +178,6 @@
       ></div>
     </div>
 
-    <!-- ─── POT ─────────────────────────────────────────── -->
     {#if gameState && totalPot > 0 && winners.length === 0}
       {#if sidePots.length > 1}
         <div
@@ -233,7 +225,6 @@
       {/if}
     {/if}
 
-    <!-- ─── COMMUNITY CARDS ─────────────────────────────── -->
     {#if gameState}
       <div class="absolute top-[49%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-1 z-[8]">
         {#each Array(5) as _, i}
@@ -246,10 +237,10 @@
       </div>
     {/if}
 
-    <!-- ─── OPPONENTS ──────────────────────────────────── -->
     {#each opponents as s}
       {@const pos = oppPos(s.seat)}
-      {@const isTurn = gameState?.currentSeat === s.seat && !s.folded && !s.allIn}
+      {@const isTurn =
+        gameState?.currentSeat === s.seat && !s.folded && !s.allIn && winners.length === 0}
       {@const showCards = s.revealed && s.hole && s.hole.length > 0}
       {@const betAmount = s.betThisStreet}
       {@const chipOffset = towardCenter(pos.x, pos.y, 9)}
@@ -327,7 +318,6 @@
           {/if}
         </div>
 
-        <!-- Nameplate -->
         <div
           class="mt-2 px-2.5 py-0.5 bg-soft-white flex flex-col items-center relative z-[16] shadow-lg"
           style="border-radius: 6px; border: 2px solid {isShowdownWin
@@ -346,7 +336,6 @@
           </p>
         </div>
 
-        <!-- Win / Lose -->
         {#if isShowdown}
           <div
             class="mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold tracking-wider z-[20]"
@@ -356,7 +345,7 @@
           >
             {isShowdownWin ? '✓ WIN' : '✗ LOSE'}
           </div>
-          {#if payoutForSeat(s.seat) > 0}
+          {#if payoutForSeat(s.seat) > 0 && !gameState?.tournamentId}
             <div
               class="mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold text-emerald-300 z-[20]"
               style="background: rgba(0,0,0,0.85);"
@@ -371,7 +360,6 @@
           {/if}
         {/if}
 
-        <!-- Bet chips -->
         {#if betAmount > 0 && !s.folded && winners.length === 0}
           <div
             class="absolute -translate-x-1/2 -translate-y-1/2 z-[22] pointer-events-none"
@@ -391,7 +379,6 @@
       </div>
     {/each}
 
-    <!-- ─── CHIP FLY ───────────────────────────────────── -->
     {#if chipVisible}
       <div
         class="absolute pointer-events-none z-[60] transition-all duration-[1800ms] ease-out"
@@ -403,7 +390,6 @@
       </div>
     {/if}
 
-    <!-- ─── HERO HOLE CARDS ────────────────────────────── -->
     {#if gameState && mySeat && mySeat.hole && mySeat.hole.length > 0 && !isEliminated}
       <div
         class="absolute top-[68%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex justify-center gap-2 z-[30]"
@@ -416,7 +402,6 @@
       </div>
     {/if}
 
-    <!-- ─── HERO AVATAR ────────────────────────────────── -->
     {#if gameState && mySeat}
       {@const isWin = isWinnerSeat(mySeat.seat)}
       {@const isShowdown = inShowdown(mySeat.seat)}
@@ -498,7 +483,7 @@
           >
             {isShowdownWin ? '✓ WIN' : '✗ LOSE'}
           </div>
-          {#if payoutForSeat(mySeat.seat) > 0}
+          {#if payoutForSeat(mySeat.seat) > 0 && !gameState?.tournamentId}
             <div
               class="mt-0.5 px-2 py-0.5 rounded-full text-[11px] font-extrabold text-emerald-300 z-[20]"
               style="background: rgba(0,0,0,0.85);"
