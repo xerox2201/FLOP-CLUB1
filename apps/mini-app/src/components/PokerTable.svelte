@@ -58,6 +58,9 @@
     return { x: (dx / len) * dist, y: (dy / len) * dist };
   }
 
+  // ============================================================
+  // ============ Derived =======================================
+  // ============================================================
   $: allSeats = gameState?.seats ?? [];
   $: mySeat = allSeats.find((s: any) => s.userId === myUserId) ?? null;
   $: opponents = allSeats.filter((s: any) => s.userId !== myUserId);
@@ -77,13 +80,16 @@
   $: winners = gameState?.winners ?? [];
   $: isSplitPot = winners.length > 1;
 
+  // ============================================================
+  // ============ Winner Animation ==============================
+  // ============================================================
   let showWinner = false;
   let chipVisible = false;
   let chipLeft = 50;
   let chipTop = 26;
   let lastAnimatedHandNo = -1;
 
-  $: if (winners.length > 0 && gameState.handNo !== lastAnimatedHandNo) {
+  $: if (winners.length > 0 && gameState?.handNo !== lastAnimatedHandNo) {
     lastAnimatedHandNo = gameState.handNo;
     const winnerSeat = winners[0];
     const winnerData = allSeats.find((s: any) => s.seat === winnerSeat);
@@ -126,7 +132,39 @@
     return isSplitPot ? 'SPLIT' : 'WINNER';
   }
 
-  // 🔴 Showdown — مرتب‌سازی بر اساس برنده
+  // ============================================================
+  // ============ 🔴 Showdown WIN/LOSE Labels ===================
+  // ============================================================
+  $: showdownData = (() => {
+    if (!showWinner) return null;
+    if (!handResult?.showdown) return null;
+    if (!handResult?.showdownPlayers) return null;
+
+    const map: Record<number, { isWinner: boolean; handName: string }> = {};
+    for (const p of handResult.showdownPlayers) {
+      map[p.seat] = {
+        isWinner: !!p.isWinner,
+        handName: p.handName || '',
+      };
+    }
+    return map;
+  })();
+
+  function isInShowdown(seat: number): boolean {
+    return !!(showdownData && showdownData[seat]);
+  }
+
+  function isShowdownWinner(seat: number): boolean {
+    return !!(showdownData && showdownData[seat]?.isWinner);
+  }
+
+  function showdownHandName(seat: number): string {
+    return showdownData?.[seat]?.handName || '';
+  }
+
+  // ============================================================
+  // ============ 🔴 Showdown Panel =============================
+  // ============================================================
   $: sortedShowdown = (() => {
     const list = handResult?.showdownPlayers ?? [];
     return [...list].sort((a: any, b: any) => {
@@ -145,6 +183,7 @@
 <div class="absolute left-1/2 -translate-x-1/2 w-[92%] max-w-[420px]" style="top: 43%; transform: translate(-50%, -50%);">
   <div class="relative w-full" style="aspect-ratio: 1 / 1.15;">
 
+    <!-- Outer rim -->
     <div
       class="absolute -inset-3 rounded-[50%]"
       style="
@@ -156,6 +195,7 @@
 
     <div class="absolute -inset-1 rounded-[50%]" style="background: linear-gradient(180deg, rgba(255,255,255,0.08), transparent 30%, transparent 70%, rgba(255,255,255,0.04));"></div>
 
+    <!-- Felt -->
     <div class="absolute inset-0 rounded-[50%] overflow-hidden" style="background: {feltGradient};">
       <div class="absolute inset-0 rounded-[50%]" style="box-shadow: inset 0 0 80px rgba(0,0,0,0.7);"></div>
       <div class="absolute inset-0 rounded-[50%] opacity-30" style="background: radial-gradient(ellipse at 50% 30%, rgba(255,255,255,0.2), transparent 55%);"></div>
@@ -170,13 +210,16 @@
         {@const betAmount = s.betThisStreet}
         {@const chipOffset = towardCenter(pos.x, pos.y, 10)}
         {@const isWin = isWinnerSeat(s.seat)}
+        {@const inShowdown = isInShowdown(s.seat) && !s.folded}
+        {@const showdownWin = inShowdown && isShowdownWinner(s.seat)}
+        {@const showdownLose = inShowdown && !isShowdownWinner(s.seat)}
 
         <div
           class="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-20 pointer-events-none"
           style="left: {pos.x}%; top: {pos.y}%;"
         >
           <div class="relative">
-            <!-- 🔴 TimerRing دقیقاً هم‌اندازه‌ی قاب بیرونی -->
+            <!-- TimerRing -->
             {#if isTurn}
               <div class="absolute -inset-[6px] pointer-events-none z-[5]">
                 <TimerRing
@@ -193,7 +236,7 @@
 
             <div
               class="relative rounded-full p-[3px] bg-black {s.folded ? 'opacity-40' : ''}"
-              style="border: 3px solid {isWin ? '#fbbf24' : (isTurn ? '#f97316' : '#e5e7eb')}; box-shadow: 0 4px 14px rgba(0,0,0,0.85){isWin ? ', 0 0 24px rgba(251,191,36,0.9)' : ''};"
+              style="border: 3px solid {isWin ? '#fbbf24' : (showdownLose ? '#6b7280' : (isTurn ? '#f97316' : '#e5e7eb'))}; box-shadow: 0 4px 14px rgba(0,0,0,0.85){isWin ? ', 0 0 24px rgba(251,191,36,0.9)' : ''};"
             >
               <div class="relative w-14 h-14 rounded-full overflow-hidden bg-gradient-to-br from-amber-700 to-amber-900 flex items-center justify-center">
                 <Avatar avatarId={s.avatarId || 'diamond'} size="md" />
@@ -224,7 +267,7 @@
             {/if}
           </div>
 
-          <!-- Nameplate — بدون truncate -->
+          <!-- Nameplate -->
           <div
             class="mt-2 px-2.5 py-1 bg-white flex flex-col items-center relative z-[50]"
             style="border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.9); border: 2px solid rgba(0,0,0,0.3); min-width: 80px;"
@@ -233,6 +276,22 @@
             <p class="text-[11px] font-extrabold text-amber-600 leading-tight tabular-nums mt-0.5">${fmt(s.stack)}</p>
           </div>
 
+          <!-- 🔴 WIN / LOSE badge at showdown -->
+          {#if inShowdown}
+            <div
+              class="mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold tracking-wider z-[50] animate-winner-pulse"
+              style="background: {showdownWin ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #4b5563, #374151)'}; color: white; box-shadow: {showdownWin ? '0 0 12px rgba(16,185,129,0.6)' : '0 2px 6px rgba(0,0,0,0.6)'};"
+            >
+              {showdownWin ? '✓ WIN' : '✗ LOSE'}
+            </div>
+            {#if showdownHandName(s.seat)}
+              <div class="mt-0.5 text-[9px] font-bold text-white/60 truncate max-w-[100px]">
+                {showdownHandName(s.seat)}
+              </div>
+            {/if}
+          {/if}
+
+          <!-- Payout badge -->
           {#if showWinner && isWin && payoutForSeat(s.seat) > 0}
             <div class="mt-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold text-white animate-winner-pulse z-[50]" style="background: linear-gradient(135deg, #10b981, #059669);">
               +${fmt(payoutForSeat(s.seat))}
@@ -265,7 +324,7 @@
       {/each}
     {/if}
 
-    <!-- POT -->
+    <!-- ============ POT ============ -->
     {#if gameState && totalPot > 0 && !showWinner}
       <div class="absolute top-[26%] left-1/2 -translate-x-1/2 z-[30]">
         <div class="rounded-full px-4 py-1 flex items-center gap-2" style="background: #000; border: 2px solid #d97706; box-shadow: 0 4px 16px rgba(0,0,0,0.9), 0 0 16px rgba(217,119,6,0.2);">
@@ -275,7 +334,7 @@
       </div>
     {/if}
 
-    <!-- Chip Fly -->
+    <!-- ============ Chip Fly ============ -->
     {#if chipVisible}
       <div
         class="absolute pointer-events-none z-[45] transition-all duration-[1800ms] ease-out"
@@ -287,7 +346,7 @@
       </div>
     {/if}
 
-    <!-- Community -->
+    <!-- ============ Community ============ -->
     {#if gameState}
       <div class="absolute top-[44%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-1.5 z-10">
         {#each Array(5) as _, i}
@@ -300,7 +359,7 @@
       </div>
     {/if}
 
-    <!-- Hero Cards -->
+    <!-- ============ Hero Cards ============ -->
     {#if gameState && mySeat && mySeat.hole && mySeat.hole.length > 0 && !isEliminated}
       <div class="absolute top-[68%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex justify-center gap-2 z-30">
         {#each mySeat.hole as c}
@@ -311,9 +370,13 @@
       </div>
     {/if}
 
-    <!-- Hero Avatar -->
+    <!-- ============ Hero Avatar ============ -->
     {#if gameState && mySeat}
       {@const isWin = isWinnerSeat(mySeat.seat)}
+      {@const inShowdown = isInShowdown(mySeat.seat) && !mySeat.folded}
+      {@const showdownWin = inShowdown && isShowdownWinner(mySeat.seat)}
+      {@const showdownLose = inShowdown && !isShowdownWinner(mySeat.seat)}
+
       <div class="absolute top-[92%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-30">
         <div class="relative">
           {#if isMyTurn}
@@ -332,7 +395,7 @@
 
           <div
             class="relative rounded-full p-[3px] bg-black {mySeat.folded || isEliminated ? 'opacity-40' : ''}"
-            style="border: 3px solid {isWin ? '#fbbf24' : (isMyTurn ? '#f97316' : '#e5e7eb')}; box-shadow: 0 4px 18px rgba(0,0,0,0.9){isWin ? ', 0 0 26px rgba(251,191,36,0.9)' : ''};"
+            style="border: 3px solid {isWin ? '#fbbf24' : (showdownLose ? '#6b7280' : (isMyTurn ? '#f97316' : '#e5e7eb'))}; box-shadow: 0 4px 18px rgba(0,0,0,0.9){isWin ? ', 0 0 26px rgba(251,191,36,0.9)' : ''};"
           >
             <div class="relative w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-amber-700 to-amber-900 flex items-center justify-center">
               <Avatar avatarId={myAvatarId} size="md" />
@@ -355,6 +418,21 @@
           <p class="text-[12px] font-extrabold text-amber-600 leading-tight tabular-nums mt-0.5">${fmt(mySeat.stack)}</p>
         </div>
 
+        <!-- 🔴 WIN / LOSE badge for hero -->
+        {#if inShowdown}
+          <div
+            class="mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold tracking-wider z-[50] animate-winner-pulse"
+            style="background: {showdownWin ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #4b5563, #374151)'}; color: white; box-shadow: {showdownWin ? '0 0 12px rgba(16,185,129,0.6)' : '0 2px 6px rgba(0,0,0,0.6)'};"
+          >
+            {showdownWin ? '✓ WIN' : '✗ LOSE'}
+          </div>
+          {#if showdownHandName(mySeat.seat)}
+            <div class="mt-0.5 text-[9px] font-bold text-white/60">
+              {showdownHandName(mySeat.seat)}
+            </div>
+          {/if}
+        {/if}
+
         {#if showWinner && isWin && payoutForSeat(mySeat.seat) > 0}
           <div class="mt-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold text-white animate-winner-pulse z-[50]" style="background: linear-gradient(135deg, #10b981, #059669);">
             +${fmt(payoutForSeat(mySeat.seat))}
@@ -370,7 +448,7 @@
       </div>
     {/if}
 
-    <!-- Table Info -->
+    <!-- ============ Table Info + Seed ============ -->
     <div class="absolute top-[5%] left-1/2 -translate-x-1/2 z-10 text-center pointer-events-none w-full px-2">
       {#if gameState}
         <p class="text-[9px] uppercase tracking-widest font-bold text-white/35">
@@ -393,7 +471,7 @@
   </div>
 </div>
 
-<!-- ============ Showdown Panel (کارت‌های بزرگ‌تر) ============ -->
+<!-- ============ Showdown Panel ============ -->
 {#if showShowdownPanel}
   <div class="absolute left-1/2 -translate-x-1/2 z-[60] pointer-events-none w-[94%] max-w-[400px]" style="top: 68px;">
     <div class="rounded-2xl border-2 border-amber-500/50 shadow-2xl overflow-hidden" style="background: rgba(0,0,0,0.94); backdrop-filter: blur(10px);">
