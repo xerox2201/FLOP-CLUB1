@@ -13,6 +13,7 @@ export interface TableState {
   dealerSeat: number;
   winners: number[] | null;
   handNo: number;
+  sequence: number;
   serverSeedHash: string;
   serverSeed?: string;
   serverTime: number;
@@ -22,6 +23,9 @@ export interface TableState {
   timeBankLimit: number;
   turnBankActive?: boolean;
   variant?: string;
+  mode?: 'free' | 'real';
+  totalRake?: number;
+  totalRebuy?: number;
 }
 
 export type SocketEvent =
@@ -29,9 +33,11 @@ export type SocketEvent =
   | { type: 'hand_result'; result: any; state: any }
   | { type: 'connected' }
   | { type: 'disconnected'; reason: string }
+  | { type: 'reconnecting'; attempt: number }
+  | { type: 'reconnected'; syncType: string }
   | { type: 'player_joined'; userId: number; displayName: string; total: number }
   | { type: 'player_left'; userId: number; total: number }
-  | { type: 'error'; message: string };
+  | { type: 'error'; message: string; code?: string };
 
 type Listener = (e: SocketEvent) => void;
 
@@ -41,6 +47,11 @@ export class TableSocketIO {
   private token: string;
   private tableId: number;
   private closedByUser = false;
+
+  // 🔴 Track sequence for resync
+  private lastHandNo: number = 0;
+  private lastSequence: number = 0;
+  private reconnectAttempt = 0;
 
   constructor(tableId: number, token: string) {
     this.tableId = tableId;
@@ -64,19 +75,39 @@ export class TableSocketIO {
     });
 
     this.socket.on('connect', () => {
+      const isReconnect = this.reconnectAttempt > 0;
       this.emit({ type: 'connected' });
-      this.socket?.emit('table:join', { tableId: this.tableId }, (res: any) => {
-        if (!res?.ok) {
-          this.emit({ type: 'error', message: res?.error ?? 'join_failed' });
+      this.reconnectAttempt = 0;
+
+      this.socket?.emit(
+        'table:join',
+        {
+          tableId: this.tableId,
+          lastHandNo: this.lastHandNo,
+          lastSequence: this.lastSequence,
+        },
+        (res: any) => {
+          if (!res?.ok) {
+            this.emit({ type: 'error', message: res?.error ?? 'join_failed', code: res?.code });
+            return;
+          }
+          if (isReconnect) {
+            this.emit({ type: 'reconnected', syncType: res.syncType || 'full' });
+          }
         }
-      });
+      );
     });
 
     this.socket.on('table:state', (state: TableState) => {
+      // 🔴 Track sequence
+      if (typeof state.handNo === 'number') this.lastHandNo = state.handNo;
+      if (typeof state.sequence === 'number') this.lastSequence = state.sequence;
+
       this.emit({ type: 'state', state });
     });
 
     this.socket.on('table:hand_result', (data: any) => {
+      if (data?.state?.handNo) this.lastHandNo = data.state.handNo;
       this.emit({
         type: 'hand_result',
         result: data?.result,
@@ -105,6 +136,11 @@ export class TableSocketIO {
       this.emit({ type: 'error', message: err.message });
     });
 
+    this.socket.io.on('reconnect_attempt', (attempt: number) => {
+      this.reconnectAttempt = attempt;
+      this.emit({ type: 'reconnecting', attempt });
+    });
+
     this.socket.on('disconnect', (reason: string) => {
       if (!this.closedByUser) {
         this.emit({ type: 'disconnected', reason });
@@ -129,16 +165,41 @@ export class TableSocketIO {
 
   action(action: 'FOLD' | 'CHECK' | 'CALL' | 'RAISE', amount = 0): void {
     if (!this.socket?.connected) return;
-    this.socket.emit('table:action', { action, amount }, (res: any) => {
+
+    // 🔴 Generate unique commandId for idempotency
+    const commandId = this.generateCommandId();
+
+    this.socket.emit('table:action', { action, amount, commandId }, (res: any) => {
       if (!res?.ok) {
-        this.emit({ type: 'error', message: res?.error ?? 'action_failed' });
+        this.emit({ type: 'error', message: res?.error ?? 'action_failed', code: res?.code });
       }
     });
+  }
+
+  private generateCommandId(): string {
+    return `${Date.now()}_${Math.random().toString(36).substring(2, 12)}`;
   }
 
   useTimeBank(): void {
     if (!this.socket?.connected) return;
     this.socket.emit('table:time_bank', {}, () => {});
+  }
+
+  requestResync(): void {
+    if (!this.socket?.connected) return;
+    this.socket.emit(
+      'table:resync',
+      {
+        tableId: this.tableId,
+        lastHandNo: this.lastHandNo,
+        lastSequence: this.lastSequence,
+      },
+      (res: any) => {
+        if (res?.ok) {
+          this.emit({ type: 'reconnected', syncType: res.syncType || 'full' });
+        }
+      }
+    );
   }
 
   leaveTable(): void {

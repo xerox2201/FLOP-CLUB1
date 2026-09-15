@@ -2,25 +2,23 @@
 import { Pool } from 'pg';
 import { verifyToken } from './auth.js';
 import { gameManager } from './game-manager.js';
-import {
-  recordIp, recordDevice, analyzeUser,
-} from './anti-cheat.js';
+import { CommandQueue } from './command-queue.js';
+import { ErrorCode } from './errors.js';
+import { recordIp, recordDevice, analyzeUser } from './anti-cheat.js';
 
-// Lazy read — dotenv ممکنه بعد از import اجرا بشه
-function getJwtSecret(): string {
-  return process.env.JWT_SECRET ?? 'dev_secret_change_me';
-}
+const JWT_SECRET = process.env.JWT_SECRET ?? 'dev_secret_change_me';
 
 export function setupSocketServer(io: SocketIOServer, db: Pool): void {
   console.log('[socket.io] server setup');
+  const commandQueue = new CommandQueue(db);
 
   io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth?.token;
-      if (!token) return next(new Error('no_token'));
+      if (!token) return next(new Error(ErrorCode.AUTH_REQUIRED));
 
-      const payload = verifyToken(token, getJwtSecret());
-      if (!payload) return next(new Error('invalid_token'));
+      const payload = verifyToken(token, JWT_SECRET);
+      if (!payload) return next(new Error(ErrorCode.INVALID_SESSION));
 
       const userId = payload.uid;
 
@@ -51,19 +49,13 @@ export function setupSocketServer(io: SocketIOServer, db: Pool): void {
 
     console.log(`[socket.io] connected: ${displayName} (${socket.id})`);
 
-    socket.on('table:join', async (data: { tableId: number }, ack?: Function) => {
+    socket.on('table:join', async (data: { tableId: number; lastHandNo?: number; lastSequence?: number }, ack?: Function) => {
       try {
         const tableId = Number(data?.tableId);
-        if (!tableId) {
-          ack?.({ ok: false, error: 'invalid_table_id' });
-          return;
-        }
+        if (!tableId) return ack?.({ ok: false, code: ErrorCode.TABLE_NOT_FOUND });
 
-        const tableRes = await db.query('SELECT * FROM poker_tables WHERE id= $1', [tableId]);
-        if (tableRes.rows.length === 0) {
-          ack?.({ ok: false, error: 'table_not_found' });
-          return;
-        }
+        const tableRes = await db.query('SELECT * FROM poker_tables WHERE id = $1', [tableId]);
+        if (tableRes.rows.length === 0) return ack?.({ ok: false, code: ErrorCode.TABLE_NOT_FOUND });
 
         const table = tableRes.rows[0];
 
@@ -77,12 +69,18 @@ export function setupSocketServer(io: SocketIOServer, db: Pool): void {
 
         socket.join(`table:${tableId}`);
 
+        // 🔴 Resync check
+        const sync = gameManager.resync(tableId, userId, data?.lastHandNo ?? null, data?.lastSequence ?? null);
+
         ack?.({
           ok: true,
           tableId,
           userId,
           displayName,
           playersInRoom: room.players.size,
+          syncType: sync.syncType,
+          currentHandNo: sync.currentHandNo,
+          currentSequence: sync.currentSequence,
         });
 
         gameManager.broadcastState(tableId, io);
@@ -95,46 +93,44 @@ export function setupSocketServer(io: SocketIOServer, db: Pool): void {
 
         setTimeout(async () => {
           const r = gameManager.getRoom(tableId);
-          if (!r) {
-            console.log('[hand] no room after timeout');
-            return;
-          }
-          console.log(`[hand] timer fired. players=${r.players.size}, phase=${r.game.state.phase}, busy=${r.busy}`);
+          if (!r) return;
           if (r.players.size >= 2 && r.game.state.phase === 'waiting') {
-            console.log('[hand] calling startHand...');
             try {
               await gameManager.startHand(tableId, io);
-              console.log('[hand] startHand returned OK');
             } catch (e) {
               console.error('[hand] startHand error:', e);
             }
-          } else {
-            console.log(`[hand] skipping startHand (players=${r.players.size}, phase=${r.game.state.phase})`);
           }
         }, 1500);
 
         setTimeout(() => analyzeUser(db, userId, tableId), 2000);
       } catch (e: any) {
         console.error('[socket] join error', e);
-        ack?.({ ok: false, error: e.message });
+        ack?.({ ok: false, code: 'JOIN_FAILED', error: e.message });
       }
     });
 
-    socket.on('table:action', async (data: { action: string; amount?: number}, ack?: Function) => {
+    socket.on('table:action', async (data: { action: string; amount?: number; commandId?: string }, ack?: Function) => {
       try {
         const action = String(data?.action ?? '').toUpperCase();
         const amount = Number(data?.amount ?? 0);
+        const commandId = data?.commandId || `${socket.id}_${Date.now()}_${Math.random()}`;
 
         if (!['FOLD', 'CHECK', 'CALL', 'RAISE', 'BET'].includes(action)) {
-          ack?.({ ok: false, error: 'invalid_action' });
-          return;
+          return ack?.({ ok: false, code: ErrorCode.INVALID_ACTION });
         }
 
-        const result = await gameManager.act(socket.id, action, amount, io);
+        const result = await commandQueue.run(
+          commandId,
+          userId,
+          'table_action',
+          () => gameManager.act(socket.id, action, amount, io)
+        );
+
         ack?.(result);
       } catch (e: any) {
         console.error('[socket] action error', e);
-        ack?.({ ok: false, error: e.message });
+        ack?.({ ok: false, code: 'INTERNAL_ERROR', error: e.message });
       }
     });
 
@@ -143,7 +139,18 @@ export function setupSocketServer(io: SocketIOServer, db: Pool): void {
         const result = await gameManager.useTimeBank(socket.id, io);
         ack?.(result);
       } catch (e: any) {
-        ack?.({ ok: false, error: e.message });
+        ack?.({ ok: false, code: 'INTERNAL_ERROR', error: e.message });
+      }
+    });
+
+    socket.on('table:resync', async (data: { tableId: number; lastHandNo: number; lastSequence: number }, ack?: Function) => {
+      try {
+        const tableId = Number(data?.tableId);
+        const sync = gameManager.resync(tableId, userId, data?.lastHandNo ?? null, data?.lastSequence ?? null);
+        ack?.({ ok: true, ...sync });
+        gameManager.broadcastState(tableId, io);
+      } catch (e: any) {
+        ack?.({ ok: false, code: 'INTERNAL_ERROR', error: e.message });
       }
     });
 
@@ -154,7 +161,7 @@ export function setupSocketServer(io: SocketIOServer, db: Pool): void {
         gameManager.leaveRoom(socket.id);
         ack?.({ ok: true });
       } catch (e: any) {
-        ack?.({ ok: false, error: e.message });
+        ack?.({ ok: false, code: 'INTERNAL_ERROR', error: e.message });
       }
     });
 

@@ -1,6 +1,7 @@
  import { PokerGame } from '../../../packages/poker-engine/src/game.js';
 import type { PlayerInit } from '../../../packages/poker-engine/src/types.js';
 import { HandPersister } from './hand-persister.js';
+import { ErrorCode, type CommandResult } from './errors.js';
 
 export interface PlayerInfo {
   userId: number;
@@ -50,9 +51,7 @@ class GameManager {
   private getPersister(): HandPersister {
     if (!this.persister) {
       const pool = (globalThis as any).__dbPool;
-      if (!pool) {
-        throw new Error('DB pool not initialized');
-      }
+      if (!pool) throw new Error('DB pool not initialized');
       this.persister = new HandPersister(pool);
       console.log('[game-manager] HandPersister initialized');
     }
@@ -189,6 +188,30 @@ class GameManager {
     return null;
   }
 
+  /**
+   * 🔴 Resync — وضعیت فعلی برای reconnect
+   */
+  resync(tableId: number, userId: number, lastHandNo: number | null, lastSequence: number | null): {
+    syncType: 'full' | 'none';
+    currentHandNo: number;
+    currentSequence: number;
+  } {
+    const room = this.rooms.get(tableId);
+    if (!room) {
+      return { syncType: 'full', currentHandNo: 0, currentSequence: 0 };
+    }
+
+    const curHand = room.handCounter;
+    const curSeq = room.currentSequence;
+
+    if (lastHandNo === curHand && lastSequence === curSeq) {
+      return { syncType: 'none', currentHandNo: curHand, currentSequence: curSeq };
+    }
+
+    // اگه خیلی عقب باشه، full state
+    return { syncType: 'full', currentHandNo: curHand, currentSequence: curSeq };
+  }
+
   async startHand(tableId: number, io: any): Promise<void> {
     const room = this.rooms.get(tableId);
     if (!room) return;
@@ -250,6 +273,7 @@ class GameManager {
 
       room.handCounter = prevHandCounter + 1;
       room.game.state.handNo = room.handCounter;
+      room.currentSequence = 0;
 
       room.turnStartedAt = Date.now();
       const limits = TIME_LIMITS[room.speed];
@@ -278,11 +302,9 @@ class GameManager {
           players: handPlayers,
         });
         room.currentHandId = handId;
-        room.currentSequence = 0;
       } catch (e: any) {
         console.error('[game-manager] persister.startHand error:', e.message);
         room.currentHandId = null;
-        room.currentSequence = 0;
       }
 
       this.broadcastState(tableId, io);
@@ -298,18 +320,20 @@ class GameManager {
     actionType: string,
     amount: number,
     io: any
-  ): Promise<{ ok: boolean; error?: string }> {
+  ): Promise<CommandResult> {
     const ctx = this.getPlayerBySocket(socketId);
-    if (!ctx) return { ok: false, error: 'not_in_room' };
+    if (!ctx) return { ok: false, code: ErrorCode.NOT_IN_ROOM };
 
     const { room, player } = ctx;
 
     const seatIdx = room.game.state.seats.findIndex(s => s.userId === player.userId);
-    if (seatIdx === -1) return { ok: false, error: 'not_seated' };
+    if (seatIdx === -1) return { ok: false, code: ErrorCode.NOT_SEATED };
 
     const actType = actionType.toLowerCase() as 'fold' | 'check' | 'call' | 'raise';
     const result = room.game.act(seatIdx, actType, amount);
-    if (!result.ok) return result;
+    if (!result.ok) {
+      return { ok: false, code: (result.error as any) || ErrorCode.INVALID_ACTION };
+    }
 
     room.lastActionAt = Date.now();
     room.turnStartedAt = Date.now();
@@ -417,16 +441,16 @@ class GameManager {
     return { ok: true };
   }
 
-  async useTimeBank(socketId: string, io: any): Promise<{ ok: boolean; error?: string }> {
+  async useTimeBank(socketId: string, io: any): Promise<CommandResult> {
     const ctx = this.getPlayerBySocket(socketId);
-    if (!ctx) return { ok: false, error: 'not_in_room' };
+    if (!ctx) return { ok: false, code: ErrorCode.NOT_IN_ROOM };
 
     const { room, player } = ctx;
     const seatIdx = room.game.state.seats.findIndex(s => s.userId === player.userId);
-    if (seatIdx === -1) return { ok: false, error: 'not_seated' };
+    if (seatIdx === -1) return { ok: false, code: ErrorCode.NOT_SEATED };
 
     const result = room.game.useTimeBank(seatIdx);
-    if (!result.ok) return result;
+    if (!result.ok) return { ok: false, code: (result.error as any) || ErrorCode.INVALID_ACTION };
 
     const limits = TIME_LIMITS[room.speed];
     room.autoActionAt = Date.now() + limits.bank * 1000;
@@ -445,6 +469,7 @@ class GameManager {
         io.to(info.socketId).emit('table:state', {
           ...view,
           handNo: room.handCounter,
+          sequence: room.currentSequence,
           pot: round2(view.pot ?? 0),
           minRaise: round2(view.minRaise ?? 0),
           smallBlind: round2(view.smallBlind ?? 0),

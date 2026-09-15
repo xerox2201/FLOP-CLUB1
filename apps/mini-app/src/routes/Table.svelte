@@ -12,6 +12,9 @@
   let socket: TableSocketIO | null = null;
   let gameState: TableState | null = null;
   let connected = false;
+  let reconnecting = false;
+  let reconnectAttempt = 0;
+  let reconnectSynced = false;
   let errorMsg = '';
   let autoActionMsg = '';
   let startingHand = true;
@@ -89,10 +92,19 @@
     socket.on((evt) => {
       if (evt.type === 'connected') {
         connected = true;
+        reconnecting = false;
       } else if (evt.type === 'disconnected') {
         connected = false;
+        reconnecting = true;
         errorMsg = 'Reconnecting…';
-        setTimeout(() => { errorMsg = ''; }, 2000);
+      } else if (evt.type === 'reconnecting') {
+        reconnecting = true;
+        reconnectAttempt = (evt as any).attempt || 0;
+      } else if (evt.type === 'reconnected') {
+        reconnecting = false;
+        reconnectSynced = true;
+        autoActionMsg = '✅ Reconnected';
+        setTimeout(() => { autoActionMsg = ''; reconnectSynced = false; }, 2000);
       } else if (evt.type === 'state') {
         gameState = evt.state;
         startingHand = false;
