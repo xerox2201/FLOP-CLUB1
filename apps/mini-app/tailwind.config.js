@@ -63,9 +63,5 @@ export default {
     },
   },
   plugins: [],
-  gold: {
-  DEFAULT: '#f4c95d',
-  dark: '#a87922',
-  light: '#ffe9a8',
-},
+  
 };
