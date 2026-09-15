@@ -394,6 +394,7 @@ class GameManager {
                 winners: handResult.winners,
                 communityCards: room.game.state.community,
                 showdownPlayers: handResult.showdownPlayers,
+                sidePots: handResult.sidePots || [],   // 🔴 NEW
                 playerStacks,
               },
               room.mode

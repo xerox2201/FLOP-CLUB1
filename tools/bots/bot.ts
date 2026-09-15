@@ -39,7 +39,7 @@ const stats = {
   realErrors: [] as string[],
   warnings: [] as string[],
   startTime: 0,
-  initialChips: NUM_BOTS * 1000,
+  initialChips: 0,   // set dynamically
   totalRake: 0,
   totalRebuy: 0,
   seenCardsPerHand: new Map<number, Set<string>>(),
@@ -255,11 +255,17 @@ async function main() {
 
   console.log('▸ Creating bot users...');
   const bots: BotState[] = [];
+  // 🔴 Different stacks to force side pots
+  const STARTING_STACKS = [500, 750, 1000, 1500, 2000, 3000];
   for (let i = 0; i < NUM_BOTS; i++) {
     const bot = await createBot(i);
+    (bot as any).startingStack = STARTING_STACKS[i % STARTING_STACKS.length];
     bots.push(bot);
   }
   console.log(`  ✓ ${bots.length} bots created`);
+  for (let i = 0; i < bots.length; i++) {
+    console.log(`    ${bots[i].displayName}: $${(bots[i] as any).startingStack}`);
+  }
   console.log('');
 
   const actionQueue: (() => void)[] = [];

@@ -25,6 +25,7 @@ export interface HandResultInput {
   winners: number[];
   communityCards: any[];
   showdownPlayers: any[];
+  sidePots: any[];   // 🔴 NEW
   playerStacks: Array<{ seat: number; userId: number; stack: number }>;
 }
 
@@ -122,7 +123,11 @@ export class HandPersister {
           [
             input.pot,
             input.rake,
-            JSON.stringify({ winners: input.winners, showdownPlayers: input.showdownPlayers }),
+            JSON.stringify({
+              winners: input.winners,
+              showdownPlayers: input.showdownPlayers,
+              sidePots: input.sidePots || [],   // 🔴 NEW
+            }),
             JSON.stringify(input.communityCards || []),
             JSON.stringify(input.winners),
             handId,

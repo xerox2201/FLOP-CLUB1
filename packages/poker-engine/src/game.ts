@@ -287,13 +287,37 @@ export class PokerGame {
 
   private advanceTurn(): void {
     const active = this.state.seats.filter((s) => !s.folded && !s.allIn);
-    if (active.length <= 1) { this.finishStreet(); return; }
-
-    const allActed = active.every((s) => s.hasActed);
     const maxBet = Math.max(...this.state.seats.map((s) => s.betThisStreet));
+
+    // 🔴 FIX: 0 بازیکن فعال → runout
+    if (active.length === 0) {
+      this.finishStreet();
+      return;
+    }
+
+    // 🔴 FIX: 1 بازیکن فعال
+    if (active.length === 1) {
+      const s = active[0];
+      // اگه call کرده → runout
+      if (s.betThisStreet >= maxBet && s.hasActed) {
+        this.finishStreet();
+        return;
+      }
+      // وگرنه نوبتشه که call/fold کنه
+      this.state.currentSeat = s.seat;
+      this.state.turnStartedAt = Date.now();
+      this.state.turnBankActive = false;
+      return;
+    }
+
+    // Multiple active players
+    const allActed = active.every((s) => s.hasActed);
     const allMatched = active.every((s) => s.betThisStreet === maxBet);
 
-    if (allActed && allMatched) { this.finishStreet(); return; }
+    if (allActed && allMatched) {
+      this.finishStreet();
+      return;
+    }
 
     const seats = this.state.seats.map((s) => s.seat);
     const curIdx = seats.indexOf(this.state.currentSeat);
