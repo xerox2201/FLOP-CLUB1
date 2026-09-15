@@ -44,11 +44,8 @@
     error = '';
     try {
       const res = await api.getRecentHands(30);
-      if (res.ok && res.data) {
-        hands = res.data.hands || [];
-      } else {
-        error = res.error || 'failed';
-      }
+      if (res.ok && res.data) hands = res.data.hands || [];
+      else error = res.error || 'failed';
     } catch (e: any) {
       error = e.message;
     } finally {
@@ -66,9 +63,7 @@
         selectedDetail = res.data;
         view = 'detail';
         activeTab = 'summary';
-      } else {
-        error = res.error || 'failed';
-      }
+      } else error = res.error || 'failed';
     } catch (e: any) {
       error = e.message;
     } finally {
@@ -82,9 +77,7 @@
     selectedDetail = null;
   }
 
-  $: if (open && hands.length === 0 && !loading) {
-    loadHands();
-  }
+  $: if (open && hands.length === 0 && !loading) loadHands();
 
   $: actionsByStreet = (() => {
     const result: Record<string, any[]> = {
@@ -101,10 +94,7 @@
       if (phase === 'flop') street = 'flop';
       else if (phase === 'turn') street = 'turn';
       else if (phase === 'river') street = 'river';
-
-      if (evt.type === 'ACTION_TAKEN') {
-        result[street].push(evt.payload);
-      }
+      if (evt.type === 'ACTION_TAKEN') result[street].push(evt.payload);
     }
     return result;
   })();
@@ -114,22 +104,28 @@
   <button
     aria-label="Close"
     class="fixed inset-0 z-[85] cursor-default"
-    style="background: rgba(0,0,0,0.8); backdrop-filter: blur(4px);"
+    style="background: rgba(0,0,0,0.85); backdrop-filter: blur(4px);"
     on:click={onClose}
   ></button>
 
   <div
     class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[90] flex flex-col w-[94%] max-w-[420px] rounded-2xl overflow-hidden"
-    style="height: 80vh; max-height: 720px; background: #0f172a; border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 20px 60px rgba(0,0,0,0.9);"
+    style="height: 82vh; max-height: 720px; background: linear-gradient(180deg, #101a3a, #080d24); border: 1px solid rgba(139,92,246,0.35); box-shadow: 0 20px 60px rgba(0,0,0,0.95);"
   >
     <!-- Header -->
-    <div class="flex items-center gap-2 px-3 py-3 border-b border-white/10 shrink-0">
+    <div
+      class="flex items-center gap-2 px-3 py-3 shrink-0"
+      style="border-bottom: 1px solid rgba(139,92,246,0.2);"
+    >
       {#if view === 'detail'}
         <button
           on:click={goBack}
+          aria-label="Back"
           class="w-8 h-8 rounded-full flex items-center justify-center text-white/70 active:scale-95"
-          style="background: rgba(255,255,255,0.06);">←</button
+          style="background: rgba(139,92,246,0.15);"
         >
+          ←
+        </button>
       {/if}
       <h2 class="text-sm font-extrabold text-white flex-1">
         {view === 'list' ? '📜 Hand History' : `Hand #${selectedHand?.handNo}`}
@@ -138,8 +134,7 @@
       {#if view === 'detail' && selectedHand}
         <button
           on:click={() => onReplay(selectedHand.id)}
-          class="px-2.5 py-1.5 rounded-full text-[10px] font-extrabold text-black active:scale-95 flex items-center gap-1"
-          style="background: #fbbf24;"
+          class="px-2.5 py-1.5 rounded-full text-[10px] font-extrabold text-near-black active:scale-95 flex items-center gap-1 badge-gold"
         >
           ▶ Replay
         </button>
@@ -147,9 +142,12 @@
 
       <button
         on:click={onClose}
+        aria-label="Close"
         class="w-8 h-8 rounded-full flex items-center justify-center text-white/60 text-xl leading-none active:scale-95"
-        style="background: rgba(255,255,255,0.06);">×</button
+        style="background: rgba(139,92,246,0.15);"
       >
+        ×
+      </button>
     </div>
 
     <!-- Content -->
@@ -173,17 +171,19 @@
               <button
                 on:click={() => openHand(h)}
                 class="w-full text-left rounded-xl p-3 active:scale-[0.99] transition"
-                style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);"
+                style="background: rgba(16,26,58,0.6); border: 1px solid rgba(139,92,246,0.15);"
               >
                 <div class="flex items-center justify-between mb-1">
-                  <span class="text-[11px] font-mono text-white/50">Hand #{h.handNo}</span>
+                  <span class="text-[11px] font-mono text-white/50">
+                    Hand #{h.handNo}
+                  </span>
                   <span
                     class="text-[10px] font-bold px-2 py-0.5 rounded-full {h.mode === 'free'
                       ? 'text-emerald-300'
-                      : 'text-amber-300'}"
+                      : 'text-gold'}"
                     style="background: {h.mode === 'free'
                       ? 'rgba(16,185,129,0.15)'
-                      : 'rgba(245,158,11,0.15)'};"
+                      : 'rgba(244,201,93,0.15)'};"
                   >
                     {h.mode === 'free' ? 'PLAY' : 'REAL'}
                   </span>
@@ -198,11 +198,13 @@
                     </div>
                   </div>
                   <div class="text-right shrink-0">
-                    <div class="text-[12px] font-extrabold text-amber-400 tabular-nums">
+                    <div class="text-[12px] font-extrabold text-gold tabular-nums">
                       ${fmt(h.pot)}
                     </div>
                     {#if h.rake > 0}
-                      <div class="text-[9px] text-white/40 tabular-nums">rake ${fmt(h.rake)}</div>
+                      <div class="text-[9px] text-white/40 tabular-nums">
+                        rake ${fmt(h.rake)}
+                      </div>
                     {/if}
                   </div>
                 </div>
@@ -213,19 +215,21 @@
       {:else if view === 'detail' && selectedDetail}
         <!-- Tabs -->
         <div
-          class="flex border-b border-white/10 shrink-0 sticky top-0 z-10"
-          style="background: #0f172a;"
+          class="flex shrink-0 sticky top-0 z-10"
+          style="background: #101a3a; border-bottom: 1px solid rgba(139,92,246,0.2);"
         >
           {#each [['summary', 'SUMMARY'], ['actions', 'ACTIONS'], ['results', 'RESULTS']] as [key, label]}
             <button
-              on:click={() => (activeTab = key)}
+              on:click={() => (activeTab = key as any)}
               class="flex-1 py-2.5 text-[11px] font-extrabold uppercase tracking-wider"
               style="color: {activeTab === key
-                ? '#fbbf24'
+                ? '#f4c95d'
                 : 'rgba(255,255,255,0.4)'}; border-bottom: 2px solid {activeTab === key
-                ? '#fbbf24'
-                : 'transparent'};">{label}</button
+                ? '#f4c95d'
+                : 'transparent'};"
             >
+              {label}
+            </button>
           {/each}
         </div>
 
@@ -234,40 +238,42 @@
             <div class="space-y-3">
               <div
                 class="rounded-xl p-3"
-                style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);"
+                style="background: rgba(16,26,58,0.6); border: 1px solid rgba(139,92,246,0.2);"
               >
-                <div class="text-[10px] uppercase tracking-widest text-white/40 mb-2">Info</div>
+                <div class="text-[10px] uppercase tracking-widest text-white/40 mb-2 font-bold">
+                  Info
+                </div>
                 <div class="space-y-1 text-[11px] font-mono">
                   <div class="flex justify-between">
-                    <span class="text-white/50">Date</span><span class="text-white/80"
-                      >{fmtDate(selectedHand.startedAt)}</span
-                    >
+                    <span class="text-white/50">Date</span>
+                    <span class="text-white/80">{fmtDate(selectedHand.startedAt)}</span>
                   </div>
                   <div class="flex justify-between">
-                    <span class="text-white/50">Table</span><span class="text-white/80"
+                    <span class="text-white/50">Table</span>
+                    <span class="text-white/80"
                       >{selectedDetail.hand.tableName || selectedHand.tableName}</span
                     >
                   </div>
                   <div class="flex justify-between">
-                    <span class="text-white/50">Blinds</span><span class="text-white/80"
+                    <span class="text-white/50">Blinds</span>
+                    <span class="text-white/80"
                       >${fmt(selectedHand.smallBlind)} / ${fmt(selectedHand.bigBlind)}</span
                     >
                   </div>
                   <div class="flex justify-between">
-                    <span class="text-white/50">Players</span><span class="text-white/80"
-                      >{selectedHand.playerCount}</span
-                    >
+                    <span class="text-white/50">Players</span>
+                    <span class="text-white/80">{selectedHand.playerCount}</span>
                   </div>
                 </div>
               </div>
 
               <div
                 class="rounded-xl p-3"
-                style="background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.2);"
+                style="background: linear-gradient(135deg, rgba(244,201,93,0.12), rgba(168,121,34,0.04)); border: 1px solid rgba(244,201,93,0.3);"
               >
                 <div class="flex justify-between mb-1">
                   <span class="text-[11px] text-white/60">Total Pot</span>
-                  <span class="text-[14px] font-extrabold text-amber-400 tabular-nums"
+                  <span class="text-[14px] font-extrabold text-gold tabular-nums"
                     >${fmt(selectedHand.pot)}</span
                   >
                 </div>
@@ -282,9 +288,11 @@
               {#if selectedDetail.hand.community && selectedDetail.hand.community.length > 0}
                 <div
                   class="rounded-xl p-3"
-                  style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);"
+                  style="background: rgba(16,26,58,0.6); border: 1px solid rgba(139,92,246,0.2);"
                 >
-                  <div class="text-[10px] uppercase tracking-widest text-white/40 mb-2">Board</div>
+                  <div class="text-[10px] uppercase tracking-widest text-white/40 mb-2 font-bold">
+                    Board
+                  </div>
                   <div class="flex gap-1">
                     {#each selectedDetail.hand.community as c}
                       <PlayingCard rank={c.r} suit={suitChar(c.s)} size="sm" />
@@ -295,9 +303,11 @@
 
               <div
                 class="rounded-xl p-3"
-                style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);"
+                style="background: rgba(16,26,58,0.6); border: 1px solid rgba(139,92,246,0.2);"
               >
-                <div class="text-[10px] uppercase tracking-widest text-white/40 mb-2">Players</div>
+                <div class="text-[10px] uppercase tracking-widest text-white/40 mb-2 font-bold">
+                  Players
+                </div>
                 {#if !selectedDetail.hand.players || selectedDetail.hand.players.length === 0}
                   <div class="text-[11px] text-white/40">No player data</div>
                 {:else}
@@ -313,7 +323,7 @@
                           <span class="text-[11px] text-white/80">{p.displayName}</span>
                           <span class="text-[9px] text-white/40 font-mono">seat {p.seat}</span>
                         </div>
-                        <span class="text-[11px] font-mono text-amber-400 tabular-nums"
+                        <span class="text-[11px] font-mono text-gold tabular-nums"
                           >${fmt(p.stack)}</span
                         >
                       </div>
@@ -328,9 +338,9 @@
                 {#if actionsByStreet[key]?.length > 0}
                   <div
                     class="rounded-xl p-3"
-                    style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);"
+                    style="background: rgba(16,26,58,0.6); border: 1px solid rgba(139,92,246,0.2);"
                   >
-                    <div class="text-[10px] uppercase tracking-widest text-amber-400/80 mb-2">
+                    <div class="text-[10px] uppercase tracking-widest text-gold/80 mb-2 font-bold">
                       {label}
                     </div>
                     <div class="space-y-1">
@@ -342,9 +352,7 @@
                           <div class="flex items-center gap-2">
                             <span class="font-bold text-white/90 uppercase">{a.action}</span>
                             {#if a.amount > 0}
-                              <span class="font-mono text-amber-400 tabular-nums"
-                                >${fmt(a.amount)}</span
-                              >
+                              <span class="font-mono text-gold tabular-nums">${fmt(a.amount)}</span>
                             {/if}
                           </div>
                         </div>
@@ -360,11 +368,11 @@
                 {#each selectedDetail.hand.players.filter( (p: any) => selectedHand.winners.includes(p.seat) ) as w}
                   <div
                     class="rounded-xl p-3"
-                    style="background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.4);"
+                    style="background: linear-gradient(135deg, rgba(244,201,93,0.15), rgba(168,121,34,0.05)); border: 1px solid rgba(244,201,93,0.4);"
                   >
                     <div class="flex items-center gap-2 mb-1">
                       <span>👑</span>
-                      <span class="text-[12px] font-bold text-amber-300">{w.displayName}</span>
+                      <span class="text-[12px] font-bold text-gold">{w.displayName}</span>
                     </div>
                     <div class="text-[10px] text-white/60">
                       Winner · Seat {w.seat} · ${fmt(w.stack)}
@@ -374,7 +382,7 @@
               {:else}
                 <div
                   class="rounded-xl p-3"
-                  style="background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.4);"
+                  style="background: linear-gradient(135deg, rgba(244,201,93,0.15), rgba(168,121,34,0.05)); border: 1px solid rgba(244,201,93,0.4);"
                 >
                   <div class="text-[11px] text-white/60">
                     Winners: {selectedHand.winners.join(', ')}
@@ -383,19 +391,19 @@
               {/if}
               <div
                 class="rounded-xl p-3"
-                style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);"
+                style="background: rgba(16,26,58,0.6); border: 1px solid rgba(139,92,246,0.2);"
               >
-                <div class="text-[10px] uppercase tracking-widest text-white/40 mb-2">Final</div>
+                <div class="text-[10px] uppercase tracking-widest text-white/40 mb-2 font-bold">
+                  Final
+                </div>
                 <div class="space-y-1 text-[11px] font-mono">
                   <div class="flex justify-between">
-                    <span class="text-white/50">Pot</span><span class="text-white/80"
-                      >${fmt(selectedHand.pot)}</span
-                    >
+                    <span class="text-white/50">Pot</span>
+                    <span class="text-white/80">${fmt(selectedHand.pot)}</span>
                   </div>
                   <div class="flex justify-between">
-                    <span class="text-white/50">Rake</span><span class="text-white/80"
-                      >${fmt(selectedHand.rake)}</span
-                    >
+                    <span class="text-white/50">Rake</span>
+                    <span class="text-white/80">${fmt(selectedHand.rake)}</span>
                   </div>
                 </div>
               </div>

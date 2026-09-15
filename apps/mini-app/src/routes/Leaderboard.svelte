@@ -10,43 +10,22 @@
   let entries: any[] = [];
   let myEntry: any = null;
   let myRank: number | null = null;
-  let prizePool = 0;
   let displayPrizePool = 0;
   let refreshTimer: any = null;
-  let animTimer: any = null;
 
   function fmt(n: any): string {
     return Number(Number(n).toFixed(2)).toFixed(2);
   }
+
   function medal(rank: number): string {
     if (rank === 1) return '🥇';
     if (rank === 2) return '🥈';
     if (rank === 3) return '🥉';
     return `#${rank}`;
   }
+
   function handsLabel(n: number): string {
     return n === 1 ? 'hand' : 'hands';
-  }
-
-  function animatePrizePool(target: number) {
-    if (animTimer) clearInterval(animTimer);
-    const start = displayPrizePool;
-    const diff = target - start;
-    if (Math.abs(diff) < 0.01) {
-      displayPrizePool = target;
-      return;
-    }
-    const steps = 20;
-    const stepValue = diff / steps;
-    let current = 0;
-    animTimer = setInterval(() => {
-      current++;
-      if (current >= steps) {
-        displayPrizePool = target;
-        clearInterval(animTimer);
-        animTimer = null;
-      } else displayPrizePool = start + stepValue * current;
-    }, 30);
   }
 
   async function loadAll() {
@@ -54,9 +33,7 @@
     if (cur.ok && cur.data) {
       period = cur.data.period;
       entries = cur.data.entries;
-      const newPool = cur.data.livePrizePool ?? 0;
-      if (Math.abs(newPool - prizePool) > 0.001) animatePrizePool(newPool);
-      prizePool = newPool;
+      displayPrizePool = cur.data.livePrizePool ?? 0;
     }
     if (me.ok && me.data) {
       myEntry = me.data.entry;
@@ -68,13 +45,9 @@
   async function refresh() {
     const res = await api.leaderboardCurrent();
     if (res.ok && res.data) {
-      const newPool = res.data.livePrizePool ?? 0;
-      if (Math.abs(newPool - prizePool) > 0.001) {
-        animatePrizePool(newPool);
-        prizePool = newPool;
-      }
       entries = res.data.entries;
       period = res.data.period;
+      displayPrizePool = res.data.livePrizePool ?? 0;
     }
   }
 
@@ -82,9 +55,9 @@
     await loadAll();
     refreshTimer = setInterval(refresh, 5000);
   });
+
   onDestroy(() => {
     if (refreshTimer) clearInterval(refreshTimer);
-    if (animTimer) clearInterval(animTimer);
   });
 </script>
 
@@ -93,25 +66,38 @@
   <div class="flex items-center justify-between mt-3 mb-4">
     <h1 class="text-2xl font-extrabold">{$t('leaderboard.title')}</h1>
     {#if period}
-      <span class="text-[10px] glass rounded-full px-3 py-1 font-mono"
-        >{period.period_start?.slice(0, 10)} → {period.period_end?.slice(0, 10)}</span
+      <span
+        class="text-[9px] rounded-full px-2.5 py-1 font-mono text-white/60"
+        style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.25);"
       >
+        {period.period_start?.slice(5, 10)} → {period.period_end?.slice(5, 10)}
+      </span>
     {/if}
   </div>
 
   {#if period}
-    <div class="card bg-gradient-to-br from-amber-800/30 to-amber-950/30 border-amber-700/40 mb-5">
-      <div class="flex items-center gap-2 mb-1">
-        <p class="text-[10px] uppercase tracking-wider text-amber-200/80 font-bold">
+    <div
+      class="rounded-3xl p-4 mb-5 relative overflow-hidden"
+      style="background: linear-gradient(135deg, rgba(244,201,93,0.2), rgba(168,121,34,0.08)); border: 1px solid rgba(244,201,93,0.35); box-shadow: 0 8px 24px rgba(0,0,0,0.4);"
+    >
+      <div
+        class="absolute -top-8 -right-8 w-40 h-40 rounded-full opacity-25"
+        style="background: radial-gradient(circle, #f4c95d, transparent 70%);"
+      ></div>
+
+      <div class="flex items-center gap-2 mb-1 relative">
+        <p class="text-[10px] uppercase tracking-widest text-gold/80 font-bold">
           {$t('leaderboard.prizePool')}
         </p>
         <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
         <span class="text-[9px] text-emerald-300 font-bold">LIVE</span>
       </div>
-      <p class="text-5xl font-extrabold text-gold tabular-nums leading-tight">
+      <p class="text-5xl font-extrabold text-gold-gradient tabular-nums leading-tight">
         ${fmt(displayPrizePool)}
       </p>
-      <p class="text-[11px] text-white/60 mt-2">{$t('leaderboard.top30Paid')}</p>
+      <p class="text-[11px] text-white/60 mt-2 relative">
+        {$t('leaderboard.top30Paid')}
+      </p>
     </div>
   {/if}
 
@@ -124,22 +110,46 @@
     </div>
   {:else}
     <div class="space-y-2">
-      {#each entries as e}
+      {#each entries as e (e.user_id)}
+        {@const isMe = e.user_id === myEntry?.user_id}
+        {@const rank = e.rank || 0}
         <div
-          class="card flex items-center gap-3 {e.user_id === myEntry?.user_id
-            ? 'ring-2 ring-gold'
-            : ''}"
+          class="rounded-2xl p-3 flex items-center gap-3 {isMe ? 'ring-2 ring-gold' : ''}"
+          style="background: {rank === 1
+            ? 'linear-gradient(135deg, rgba(244,201,93,0.15), rgba(168,121,34,0.05))'
+            : rank <= 3
+              ? 'linear-gradient(135deg, rgba(139,92,246,0.12), rgba(109,40,217,0.04))'
+              : 'rgba(16,26,58,0.6)'}; border: 1px solid {rank === 1
+            ? 'rgba(244,201,93,0.4)'
+            : 'rgba(139,92,246,0.15)'};"
         >
-          <div class="text-lg font-extrabold w-10 text-center shrink-0">{medal(e.rank || 0)}</div>
+          <div
+            class="text-lg font-extrabold w-9 text-center shrink-0 {rank === 1
+              ? 'text-gold'
+              : rank <= 3
+                ? 'text-white'
+                : 'text-white/50'}"
+          >
+            {medal(rank)}
+          </div>
           <Avatar avatarId={e.avatar_id || 'spade'} size="sm" />
           <div class="flex-1 min-w-0">
-            <p class="font-bold text-sm truncate">{e.display_name}</p>
-            <p class="text-[10px] text-white/50">{e.hands_played} {handsLabel(e.hands_played)}</p>
+            <p class="font-bold text-sm truncate text-white">
+              {e.display_name}
+            </p>
+            <p class="text-[10px] text-white/50">
+              {e.hands_played}
+              {handsLabel(e.hands_played)}
+            </p>
           </div>
           <div class="text-right shrink-0">
-            <p class="text-sm font-bold text-emerald-400">+${fmt(e.total_won_usd)}</p>
+            <p class="text-sm font-bold text-emerald-400 tabular-nums">
+              +${fmt(e.total_won_usd)}
+            </p>
             {#if e.prize_usd > 0}
-              <p class="text-[10px] text-gold font-semibold">🏆 ${fmt(e.prize_usd)}</p>
+              <p class="text-[10px] text-gold font-bold tabular-nums">
+                🏆 ${fmt(e.prize_usd)}
+              </p>
             {/if}
           </div>
         </div>
@@ -149,11 +159,14 @@
 
   {#if myEntry || myRank}
     <div
-      class="fixed bottom-20 left-4 right-4 max-w-[480px] mx-auto glass-strong rounded-2xl p-3 flex items-center gap-3 z-30"
+      class="fixed bottom-20 left-4 right-4 max-w-[480px] mx-auto rounded-2xl p-3 flex items-center gap-3 z-30"
+      style="background: rgba(8,13,36,0.95); border: 1px solid rgba(244,201,93,0.4); backdrop-filter: blur(16px); box-shadow: 0 8px 24px rgba(0,0,0,0.6);"
     >
-      <span class="text-gold font-extrabold text-lg">{myRank ? `#${myRank}` : '—'}</span>
+      <span class="text-gold font-extrabold text-lg tabular-nums">
+        {myRank ? `#${myRank}` : '—'}
+      </span>
       <div class="flex-1">
-        <p class="text-xs font-bold">{$t('leaderboard.yourRank')}</p>
+        <p class="text-xs font-bold text-white">{$t('leaderboard.yourRank')}</p>
         <p class="text-[10px] text-white/50">
           {myEntry?.hands_played || 0}
           {handsLabel(myEntry?.hands_played || 0)} · +${fmt(myEntry?.total_won_usd || 0)}

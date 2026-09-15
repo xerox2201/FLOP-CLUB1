@@ -45,15 +45,18 @@
 </script>
 
 <nav class="fixed bottom-0 left-0 right-0 z-40">
-  <div class="max-w-[480px] mx-auto px-4 pb-3 pt-2">
-    <div class="glass-strong rounded-3xl flex items-center justify-around py-2 shadow-card">
+  <div class="max-w-[480px] mx-auto px-3 pb-2 pt-2">
+    <div
+      class="glass-strong rounded-3xl flex items-center justify-around py-1.5"
+      style="box-shadow: 0 -4px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06);"
+    >
       {#each items as item}
         <button
           on:click={() => onNavigate(item.id)}
-          class="flex flex-col items-center gap-1 px-2 py-1 rounded-2xl transition {current ===
+          class="flex flex-col items-center gap-0.5 px-2 py-1 rounded-2xl transition-all active:scale-95 {current ===
           item.id
             ? 'text-gold'
-            : 'text-white/50'}"
+            : 'text-white/45'}"
         >
           <svg
             width="22"
@@ -67,9 +70,12 @@
           >
             <path d={item.path} />
           </svg>
-          <span class="text-[9px] font-semibold">{$t(item.key)}</span>
+          <span class="text-[9px] font-bold">{$t(item.key)}</span>
           {#if current === item.id}
-            <span class="w-5 h-0.5 bg-gold rounded-full"></span>
+            <span
+              class="w-1 h-1 rounded-full bg-gold"
+              style="box-shadow: 0 0 6px rgba(244,201,93,0.8);"
+            ></span>
           {/if}
         </button>
       {/each}

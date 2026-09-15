@@ -5,7 +5,7 @@
 
   export let tournamentId: number;
   export let onBack: () => void = () => {};
-  export let onOpenTable: (tournamentId: number, virtualTableId: number) => void = () => {};
+  export let onOpenTable: (tid: number, virtualTableId: number) => void = () => {};
 
   let t: any = null;
   let loading = true;
@@ -46,8 +46,8 @@
 
   function statusColor(status: string): string {
     if (status === 'running') return '#10b981';
-    if (status === 'final_table') return '#fbbf24';
-    if (status === 'registering') return '#3b82f6';
+    if (status === 'final_table') return '#f4c95d';
+    if (status === 'registering') return '#22d3ee';
     if (status === 'scheduled') return '#8b5cf6';
     if (status === 'finished') return '#6b7280';
     return '#ef4444';
@@ -57,11 +57,8 @@
     error = '';
     try {
       const res = await api.getTournament(tournamentId);
-      if (res.ok && res.data) {
-        t = res.data;
-      } else {
-        error = res.error || 'not_found';
-      }
+      if (res.ok && res.data) t = res.data;
+      else error = res.error || 'not_found';
     } catch (e: any) {
       error = e.message;
     } finally {
@@ -76,16 +73,12 @@
       if (res.ok) {
         toast = '✅ Registered!';
         await load();
-      } else {
-        toast = '❌ ' + (res.error || 'failed');
-      }
+      } else toast = '❌ ' + (res.error || 'failed');
     } catch (e: any) {
       toast = '❌ ' + e.message;
     } finally {
       acting = false;
-      setTimeout(() => {
-        toast = '';
-      }, 3000);
+      setTimeout(() => (toast = ''), 3000);
     }
   }
 
@@ -96,16 +89,12 @@
       if (res.ok) {
         toast = '↩️ Unregistered';
         await load();
-      } else {
-        toast = '❌ ' + (res.error || 'failed');
-      }
+      } else toast = '❌ ' + (res.error || 'failed');
     } catch (e: any) {
       toast = '❌ ' + e.message;
     } finally {
       acting = false;
-      setTimeout(() => {
-        toast = '';
-      }, 3000);
+      setTimeout(() => (toast = ''), 3000);
     }
   }
 
@@ -117,16 +106,12 @@
       if (res.ok) {
         toast = '🚀 Started!';
         await load();
-      } else {
-        toast = '❌ ' + (res.error || 'failed');
-      }
+      } else toast = '❌ ' + (res.error || 'failed');
     } catch (e: any) {
       toast = '❌ ' + e.message;
     } finally {
       acting = false;
-      setTimeout(() => {
-        toast = '';
-      }, 3000);
+      setTimeout(() => (toast = ''), 3000);
     }
   }
 
@@ -144,9 +129,12 @@
   <div class="flex items-center gap-2 mt-3 mb-4">
     <button
       on:click={onBack}
+      aria-label="Back"
       class="w-10 h-10 rounded-full flex items-center justify-center text-white/70 active:scale-95"
-      style="background: rgba(255,255,255,0.06);">←</button
+      style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.25);"
     >
+      ←
+    </button>
     <h1 class="text-lg font-extrabold flex-1 truncate">{t?.name || 'Tournament'}</h1>
   </div>
 
@@ -160,38 +148,53 @@
       <p class="text-red-300 text-sm">{error}</p>
     </div>
   {:else if t}
-    <!-- Status + Buy-in -->
-    <div class="glass rounded-2xl p-4 mb-3">
-      <div class="flex items-center justify-between mb-2">
+    {@const sc = statusColor(t.status)}
+
+    <!-- Hero card -->
+    <div
+      class="rounded-3xl p-4 mb-4 relative overflow-hidden"
+      style="background: linear-gradient(135deg, {sc}25, {sc}08); border: 1px solid {sc}50; box-shadow: 0 8px 24px rgba(0,0,0,0.4);"
+    >
+      <div
+        class="absolute -top-8 -right-8 w-40 h-40 rounded-full opacity-25"
+        style="background: radial-gradient(circle, {sc}, transparent 70%);"
+      ></div>
+
+      <div class="flex items-center justify-between mb-2 relative">
         <span
-          class="text-[10px] font-extrabold px-2 py-1 rounded uppercase"
-          style="background: {statusColor(t.status)}22; color: {statusColor(t.status)};"
-          >{t.status.replace('_', ' ')}</span
+          class="text-[10px] font-extrabold px-2 py-1 rounded-full uppercase tracking-wider"
+          style="background: {sc}25; color: {sc}; border: 1px solid {sc}60;"
         >
+          {t.status.replace('_', ' ')}
+        </span>
         <span class="text-[10px] text-white/40 font-mono">#{t.id}</span>
       </div>
-      <div class="text-3xl font-extrabold text-amber-400 tabular-nums">
+
+      <div class="text-3xl font-extrabold text-gold tabular-nums relative leading-tight">
         {t.buyIn > 0 ? `$${fmt(t.buyIn)}` : 'Free'}
       </div>
       {#if t.fee > 0}
-        <div class="text-[10px] text-white/40 mt-0.5">+ ${fmt(t.fee)} fee</div>
+        <div class="text-[10px] text-white/40 mt-0.5 relative">
+          + ${fmt(t.fee)} fee
+        </div>
       {/if}
-      <div class="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-white/5">
+
+      <div class="grid grid-cols-3 gap-3 mt-4 pt-4 relative" style="border-top: 1px solid {sc}25;">
         <div>
-          <p class="text-[9px] text-white/40 uppercase">Registered</p>
-          <p class="text-sm font-extrabold text-white tabular-nums">
+          <p class="text-[9px] text-white/40 uppercase tracking-wider font-bold">Registered</p>
+          <p class="text-base font-extrabold text-white tabular-nums">
             {t.registeredCount} / {t.maxPlayers}
           </p>
         </div>
         <div>
-          <p class="text-[9px] text-white/40 uppercase">Prize Pool</p>
-          <p class="text-sm font-extrabold text-emerald-400 tabular-nums">
+          <p class="text-[9px] text-white/40 uppercase tracking-wider font-bold">Prize Pool</p>
+          <p class="text-base font-extrabold text-emerald-400 tabular-nums">
             ${fmt(t.totalPrizePool)}
           </p>
         </div>
         <div>
-          <p class="text-[9px] text-white/40 uppercase">Stack</p>
-          <p class="text-sm font-extrabold text-white tabular-nums">
+          <p class="text-[9px] text-white/40 uppercase tracking-wider font-bold">Stack</p>
+          <p class="text-base font-extrabold text-white tabular-nums">
             {fmt(t.startingStack, 0)}
           </p>
         </div>
@@ -199,7 +202,10 @@
     </div>
 
     <!-- Info -->
-    <div class="glass rounded-2xl p-3 mb-3 space-y-2 text-[11px] font-mono">
+    <div
+      class="rounded-2xl p-3 mb-3 space-y-2 text-[11px] font-mono"
+      style="background: rgba(16,26,58,0.6); border: 1px solid rgba(139,92,246,0.2);"
+    >
       <div class="flex justify-between">
         <span class="text-white/40">Variant</span>
         <span class="text-white/80 uppercase">{t.variant}</span>
@@ -215,7 +221,7 @@
       {#if t.status === 'running' || t.status === 'final_table'}
         <div class="flex justify-between">
           <span class="text-white/40">Current Level</span>
-          <span class="text-amber-400 font-bold">Lvl {t.currentLevel}</span>
+          <span class="text-gold font-bold">Lvl {t.currentLevel}</span>
         </div>
       {/if}
       {#if t.guaranteed > 0}
@@ -228,13 +234,18 @@
 
     <!-- Payouts -->
     {#if t.payouts && t.payouts.length > 0}
-      <div class="glass rounded-2xl p-3 mb-3">
-        <div class="text-[10px] uppercase tracking-widest text-white/40 mb-2">Payouts</div>
+      <div
+        class="rounded-2xl p-3 mb-3"
+        style="background: rgba(16,26,58,0.6); border: 1px solid rgba(139,92,246,0.2);"
+      >
+        <div class="text-[10px] uppercase tracking-widest text-white/40 mb-2 font-bold">
+          Payouts
+        </div>
         <div class="space-y-1">
           {#each t.payouts as po}
             <div class="flex justify-between text-[11px]">
               <span class="text-white/60">#{po.position}</span>
-              <span class="text-amber-400 font-bold tabular-nums">
+              <span class="text-gold font-bold tabular-nums">
                 {(Number(po.percentage) * 100).toFixed(1)}%
                 {#if t.totalPrizePool > 0}
                   · ${fmt(t.totalPrizePool * Number(po.percentage))}
@@ -248,8 +259,11 @@
 
     <!-- Players -->
     {#if t.players && t.players.length > 0}
-      <div class="glass rounded-2xl p-3 mb-3">
-        <div class="text-[10px] uppercase tracking-widest text-white/40 mb-2">
+      <div
+        class="rounded-2xl p-3 mb-3"
+        style="background: rgba(16,26,58,0.6); border: 1px solid rgba(139,92,246,0.2);"
+      >
+        <div class="text-[10px] uppercase tracking-widest text-white/40 mb-2 font-bold">
           Players ({t.players.length})
         </div>
         <div class="space-y-1 max-h-64 overflow-y-auto">
@@ -267,10 +281,10 @@
                   {p.displayName}
                 </span>
                 {#if p.userId === myUserId}
-                  <span class="text-[9px] font-bold text-amber-400">YOU</span>
+                  <span class="text-[9px] font-bold text-gold">YOU</span>
                 {/if}
               </div>
-              <span class="text-[11px] font-mono text-amber-400 tabular-nums">
+              <span class="text-[11px] font-mono text-gold tabular-nums">
                 {fmt(p.stack, 0)}
               </span>
             </div>
@@ -282,12 +296,7 @@
     <!-- Actions -->
     <div class="space-y-2">
       {#if canRegister && !isRegistered}
-        <button
-          on:click={doRegister}
-          disabled={acting}
-          class="w-full rounded-xl py-3 font-extrabold text-black active:scale-[0.98] transition disabled:opacity-50"
-          style="background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%); box-shadow: 0 5px 0 #92400e;"
-        >
+        <button on:click={doRegister} disabled={acting} class="w-full btn-gold disabled:opacity-50">
           {acting ? '…' : t.buyIn > 0 ? `Register · $${fmt(t.buyIn + t.fee)}` : 'Register — Free'}
         </button>
       {:else if canRegister && isRegistered}
@@ -303,8 +312,8 @@
           <button
             on:click={doStart}
             disabled={acting}
-            class="w-full rounded-xl py-3 font-extrabold text-black active:scale-[0.98] transition disabled:opacity-50"
-            style="background: linear-gradient(180deg, #10b981 0%, #059669 100%); box-shadow: 0 5px 0 #064e3b;"
+            class="w-full rounded-xl py-3 font-extrabold text-white active:scale-[0.98] transition disabled:opacity-50"
+            style="background: linear-gradient(180deg, #22c55e 0%, #15803d 100%); box-shadow: 0 4px 0 #14532d;"
           >
             🚀 Start Now
           </button>
@@ -312,8 +321,8 @@
       {:else if canGoToTable}
         <button
           on:click={() => onOpenTable(tournamentId, myVirtualTableId)}
-          class="w-full rounded-xl py-4 font-extrabold text-black active:scale-[0.98] transition animate-pulse"
-          style="background: linear-gradient(180deg, #10b981 0%, #059669 100%); box-shadow: 0 5px 0 #064e3b;"
+          class="w-full rounded-xl py-4 font-extrabold text-near-black active:scale-[0.98] transition animate-pulse-gold"
+          style="background: linear-gradient(180deg, #22c55e 0%, #15803d 100%); box-shadow: 0 4px 0 #14532d, 0 0 20px rgba(34,197,94,0.4);"
         >
           🎰 Go to Your Table
         </button>
@@ -342,7 +351,7 @@
   {#if toast}
     <div
       class="fixed top-20 left-1/2 -translate-x-1/2 z-40 rounded-2xl px-4 py-2 max-w-[90%]"
-      style="background: rgba(0,0,0,0.9); border: 1px solid rgba(255,255,255,0.15);"
+      style="background: rgba(8,13,36,0.95); border: 1px solid rgba(139,92,246,0.4);"
     >
       <p class="text-xs font-bold text-white">{toast}</p>
     </div>

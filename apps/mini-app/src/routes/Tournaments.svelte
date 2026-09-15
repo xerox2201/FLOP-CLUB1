@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { api } from '../lib/api';
+  import TopBar from '../components/TopBar.svelte';
 
   export let onOpenTournament: (id: number) => void = () => {};
 
@@ -20,8 +21,7 @@
     if (!iso) return '—';
     try {
       const d = new Date(iso);
-      const now = Date.now();
-      const diff = d.getTime() - now;
+      const diff = d.getTime() - Date.now();
       if (diff < 0) return 'Started';
       const min = Math.floor(diff / 60000);
       if (min < 60) return `in ${min}m`;
@@ -59,18 +59,23 @@
 
   function statusColor(status: string): string {
     if (status === 'running') return '#10b981';
-    if (status === 'final_table') return '#fbbf24';
-    if (status === 'registering') return '#3b82f6';
+    if (status === 'final_table') return '#f4c95d';
+    if (status === 'registering') return '#22d3ee';
     if (status === 'scheduled') return '#8b5cf6';
     if (status === 'finished') return '#6b7280';
     return '#ef4444';
+  }
+
+  function statusLabel(status: string): string {
+    if (status === 'final_table') return 'FINAL';
+    return status.replace('_', ' ').toUpperCase();
   }
 
   function formatLabel(t: any): string {
     const map: Record<string, string> = {
       sng: 'SNG',
       mtt: 'MTT',
-      freeroll: 'FREEROLL',
+      freeroll: 'FREE',
       satellite: 'SAT',
     };
     return map[t.format] || t.format.toUpperCase();
@@ -87,12 +92,14 @@
 </script>
 
 <div class="px-4 pb-28" style="min-height: 100dvh;">
+  <TopBar />
   <div class="flex items-center justify-between mt-3 mb-4">
     <h1 class="text-2xl font-extrabold">🏆 Tournaments</h1>
     <button
       on:click={load}
-      class="w-10 h-10 rounded-full flex items-center justify-center text-white/70 active:scale-95"
-      style="background: rgba(255,255,255,0.06);"
+      aria-label="Refresh"
+      class="w-9 h-9 rounded-full flex items-center justify-center text-white/60 active:scale-95"
+      style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.25);"
     >
       🔄
     </button>
@@ -108,11 +115,15 @@
         }}
         class="px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap active:scale-95 transition"
         style="background: {filter === f.key
-          ? '#fbbf24'
-          : 'rgba(255,255,255,0.06)'}; color: {filter === f.key
-          ? 'black'
-          : 'rgba(255,255,255,0.7)'};">{f.label}</button
+          ? 'linear-gradient(180deg, #ffe9a8 0%, #f4c95d 50%, #a87922 100%)'
+          : 'rgba(139,92,246,0.12)'}; color: {filter === f.key
+          ? '#050611'
+          : 'rgba(255,255,255,0.7)'}; border: 1px solid {filter === f.key
+          ? 'transparent'
+          : 'rgba(139,92,246,0.2)'};"
       >
+        {f.label}
+      </button>
     {/each}
   </div>
 
@@ -126,25 +137,36 @@
       <p class="text-red-300 text-sm">{error}</p>
     </div>
   {:else if tournaments.length === 0}
-    <div class="glass rounded-2xl p-8 text-center text-white/40 text-sm">
-      No tournaments {filter === 'all' ? 'yet' : `in "${filter}"`}
+    <div class="card p-8 text-center">
+      <p class="text-4xl mb-2">🎫</p>
+      <p class="text-white/50 text-sm">
+        No tournaments {filter === 'all' ? 'yet' : `in "${filter}"`}
+      </p>
     </div>
   {:else}
-    <div class="space-y-2">
+    <div class="space-y-2.5">
       {#each tournaments as t}
+        {@const sc = statusColor(t.status)}
         <button
           on:click={() => onOpenTournament(t.id)}
-          class="w-full text-left rounded-2xl p-3 active:scale-[0.99] transition"
-          style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);"
+          class="relative w-full text-left rounded-2xl p-3 active:scale-[0.98] transition overflow-hidden"
+          style="background: linear-gradient(135deg, rgba(16,26,58,0.9), rgba(8,13,36,0.9)); border: 1px solid rgba(139,92,246,0.2); box-shadow: 0 4px 16px rgba(0,0,0,0.4);"
         >
-          <div class="flex items-start justify-between mb-2">
+          <!-- Status strip -->
+          <div
+            class="absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl"
+            style="background: {sc};"
+          ></div>
+
+          <div class="flex items-start justify-between mb-2 pl-2">
             <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2 mb-0.5">
+              <div class="flex items-center gap-1.5 mb-1">
                 <span
-                  class="text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase"
-                  style="background: {statusColor(t.status)}22; color: {statusColor(t.status)};"
-                  >{t.status.replace('_', ' ')}</span
+                  class="text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider"
+                  style="background: {sc}25; color: {sc}; border: 1px solid {sc}50;"
                 >
+                  {statusLabel(t.status)}
+                </span>
                 <span class="text-[9px] font-bold text-white/40">{formatLabel(t)}</span>
                 {#if t.mode === 'free'}
                   <span class="text-[9px] font-bold text-emerald-400">FREE</span>
@@ -156,30 +178,35 @@
               </p>
             </div>
             <div class="text-right shrink-0 ml-2">
-              <div class="text-[11px] font-extrabold text-amber-400 tabular-nums">
-                {t.buyIn > 0 ? `$${fmt(t.buyIn)}` : 'Free'}
+              <div class="text-[12px] font-extrabold text-gold tabular-nums leading-none">
+                {t.buyIn > 0 ? `$${fmt(t.buyIn)}` : 'FREE'}
               </div>
               {#if t.guaranteed > 0}
-                <div class="text-[9px] text-white/40">GTD ${fmt(t.guaranteed)}</div>
+                <div class="text-[9px] text-gold/60 mt-0.5">
+                  GTD ${fmt(t.guaranteed)}
+                </div>
               {/if}
             </div>
           </div>
 
-          <div class="grid grid-cols-3 gap-2 mt-2 pt-2 border-t border-white/5">
+          <div
+            class="grid grid-cols-3 gap-2 mt-2 pt-2 pl-2"
+            style="border-top: 1px solid rgba(139,92,246,0.15);"
+          >
             <div>
-              <p class="text-[9px] text-white/40 uppercase tracking-wider">Players</p>
+              <p class="text-[9px] text-white/40 uppercase tracking-wider font-bold">Players</p>
               <p class="text-[11px] font-bold text-white tabular-nums">
                 {t.activeCount > 0 ? t.activeCount : t.registeredCount} / {t.maxPlayers}
               </p>
             </div>
             <div>
-              <p class="text-[9px] text-white/40 uppercase tracking-wider">Prize</p>
+              <p class="text-[9px] text-white/40 uppercase tracking-wider font-bold">Prize</p>
               <p class="text-[11px] font-bold text-emerald-400 tabular-nums">
                 ${fmt(t.totalPrizePool)}
               </p>
             </div>
             <div>
-              <p class="text-[9px] text-white/40 uppercase tracking-wider">
+              <p class="text-[9px] text-white/40 uppercase tracking-wider font-bold">
                 {t.status === 'running' || t.status === 'final_table' ? 'Level' : 'Starts'}
               </p>
               <p class="text-[11px] font-bold text-white tabular-nums">

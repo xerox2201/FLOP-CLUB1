@@ -4,6 +4,8 @@
   import PlayingCard from '../components/PlayingCard.svelte';
   import HandHistoryModal from '../components/HandHistoryModal.svelte';
   import HandReplayModal from '../components/HandReplayModal.svelte';
+  import PlayerInfoModal from '../components/PlayerInfoModal.svelte';
+  import ChatModal from '../components/ChatModal.svelte';
   import { TableSocketIO, type TableState } from '../lib/socket';
   import { auth } from '../stores/auth';
   import { t } from '../i18n';
@@ -29,12 +31,16 @@
   let showSeedModal = false;
   let nowTick = Date.now();
 
+  // 🔴 New: player info + chat
+  let selectedPlayer: any = null;
+  let showPlayerInfo = false;
+  let showChat = false;
+
   let raiseAmount = 0;
   let raiseTouched = false;
   let raiseInput = '0.00';
   let raiseInputFocused = false;
 
-  // 🔴 Pre-Action
   type PreActionKey = 'check_fold' | 'check' | 'call_any' | 'fold';
   type PreAction = PreActionKey | null;
   let preAction: PreAction = null;
@@ -87,15 +93,32 @@
 
   $: myAvatarId = ($auth.user as any)?.avatar_id || 'spade';
 
-  // 🔴 Pre-action definitions
-  const PRE_ACTIONS: { key: PreActionKey; label: string; icon: string; color: string }[] = [
+  $: variantLabel =
+    gameState?.variant === 'omaha4'
+      ? 'Omaha 4'
+      : gameState?.variant === 'omaha5'
+        ? 'Omaha 5'
+        : "NL Hold'em";
+  $: blindsLabel = gameState
+    ? `$${fmt(gameState.smallBlind)} / $${fmt(gameState.bigBlind)}`
+    : '$0.50 / $1.00';
+  $: isTournament = !!gameState?.tournamentId;
+  $: isFinalTable = isTournament && gameState?.tournamentTableNumber === 1000;
+  $: tableTitle = isTournament ? 'Tournament' : 'Cash Game';
+  $: seatCount = gameState?.seats?.length ?? 0;
+
+  const PRE_ACTIONS: {
+    key: PreActionKey;
+    label: string;
+    icon: string;
+    color: string;
+  }[] = [
     { key: 'check_fold', label: 'Check/Fold', icon: '✓/✗', color: '#3b82f6' },
     { key: 'check', label: 'Check', icon: '✓', color: '#10b981' },
     { key: 'call_any', label: 'Call Any', icon: '📞', color: '#8b5cf6' },
     { key: 'fold', label: 'Fold', icon: '✗', color: '#ef4444' },
   ];
 
-  // 🔴 Show pre-action panel
   $: showPreActions =
     gameState &&
     !startingHand &&
@@ -152,9 +175,7 @@
       } else if (evt.type === 'hand_result') {
         handResult = evt.result;
         gameState = evt.state;
-
         resetPreAction();
-
         setTimeout(() => {
           handResult = null;
         }, 7000);
@@ -180,13 +201,11 @@
     if (socket) socket.close();
   });
 
-  // 🔴 Helper to reset pre-action
   function resetPreAction() {
     preAction = null;
     lastFireKey = null;
   }
 
-  // 🔴 Reset on hand change (backup safety)
   $: if (
     gameState?.handNo &&
     gameState.handNo !== lastEndedHandNo &&
@@ -197,7 +216,6 @@
     resetPreAction();
   }
 
-  // 🔴 Fire pre-action
   function tryFirePreAction() {
     if (!isMyTurn || !preAction || sittingOut) return;
     if (!socket) return;
@@ -261,7 +279,6 @@
     }
   }
 
-  // 🔴 Reactive: fire on turn
   $: if (isMyTurn && preAction && !sittingOut) {
     setTimeout(tryFirePreAction, 150);
   }
@@ -313,15 +330,16 @@
     }
   }
 
-  function quickRaise(mult: number) {
-    if (!gameState) return;
-    setRaise(maxBet + gameState.bigBlind * mult);
-  }
-
   function potRaise() {
     if (!gameState) return;
     const potTotal = (gameState.pot ?? 0) + maxBet - myBet;
     setRaise(Math.min(potTotal, hardMax));
+  }
+
+  function fractionRaise(f: number) {
+    if (!gameState) return;
+    const potTotal = (gameState.pot ?? 0) + maxBet - myBet;
+    setRaise(Math.min(maxBet + potTotal * f, hardMax));
   }
 
   function allIn() {
@@ -362,68 +380,89 @@
     socket?.leaveTable();
     setTimeout(() => onBack(), 200);
   }
+
+  function openPlayerInfo(userId: number) {
+    const s = gameState?.seats?.find((x: any) => x.userId === userId);
+    if (!s) return;
+    selectedPlayer = {
+      ...s,
+      dealer: gameState?.dealerSeat === s.seat,
+    };
+    showPlayerInfo = true;
+  }
+
+  function mutePlayer(userId: number) {
+    autoActionMsg = '🔇 Player muted';
+    setTimeout(() => {
+      autoActionMsg = '';
+    }, 1500);
+  }
 </script>
 
 <div
-  class="relative w-full bg-black overflow-hidden"
+  class="relative w-full bg-navy overflow-hidden"
   style="height: 100dvh; max-height: 100dvh; padding-bottom: env(safe-area-inset-bottom);"
 >
-  <!-- Top bar -->
+  <!-- HEADER -->
   <div
-    class="absolute top-0 left-0 right-0 z-40 flex items-start justify-between px-4"
-    style="padding-top: max(16px, env(safe-area-inset-top));"
+    class="absolute top-0 left-0 right-0 z-40 px-3 flex items-start justify-between"
+    style="padding-top: max(12px, env(safe-area-inset-top));"
   >
-    <div class="flex items-center gap-2">
-      <button
-        on:click={onBack}
-        aria-label="Back"
-        class="w-11 h-11 rounded-full flex items-center justify-center text-white text-xl active:scale-95"
-        style="background: rgba(0,0,0,0.75); border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(10px);"
-        >←</button
-      >
-      <button
-        on:click={toggleMenu}
-        aria-label="Settings"
-        class="w-11 h-11 rounded-full flex items-center justify-center text-white active:scale-95 transition {showMenu
-          ? 'ring-2 ring-amber-400'
-          : ''}"
-        style="background: rgba(0,0,0,0.75); border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(10px);"
-      >
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <circle cx="12" cy="12" r="3" />
-          <path
-            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
-          />
-        </svg>
-      </button>
+    <button
+      on:click={onBack}
+      aria-label="Back"
+      class="w-10 h-10 rounded-full flex items-center justify-center text-white text-lg active:scale-95 shrink-0"
+      style="background: rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(10px);"
+    >
+      ←
+    </button>
+
+    <div class="flex-1 flex flex-col items-center pt-1">
+      <p class="text-[13px] font-extrabold text-white tracking-wide">
+        {tableTitle}
+        {#if seatCount}({seatCount} Max){/if}
+      </p>
+      <p class="text-[10px] text-cyan/80 font-semibold mt-0.5">
+        {variantLabel} · {blindsLabel}
+      </p>
     </div>
 
-    <div class="flex flex-col items-end gap-1">
-      <div class="flex items-center gap-2">
-        <span class="text-[13px] font-extrabold text-white tracking-wider">LIVE</span>
-        <span
-          class="w-3 h-3 rounded-full {connected ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}"
-        ></span>
-      </div>
-      {#if gameState?.handNo}
-        <button
-          on:click={() => (showSeedModal = true)}
-          class="text-[10px] text-white/60 font-mono underline active:opacity-60"
-        >
-          Hand #{gameState.handNo} 🔒
-        </button>
-      {/if}
-    </div>
+    <button
+      on:click={toggleMenu}
+      aria-label="Menu"
+      class="w-10 h-10 rounded-full flex items-center justify-center text-white active:scale-95 shrink-0 {showMenu
+        ? 'ring-2 ring-gold'
+        : ''}"
+      style="background: rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(10px);"
+    >
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <circle cx="12" cy="12" r="3" />
+        <path
+          d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+        />
+      </svg>
+    </button>
   </div>
 
-  <!-- Seed Modal -->
+  <!-- CONNECTION STATUS -->
+  {#if reconnecting}
+    <div
+      class="absolute z-40 rounded-full px-3 py-1 flex items-center gap-1.5"
+      style="top: max(64px, calc(env(safe-area-inset-top) + 56px)); left: 50%; transform: translateX(-50%); background: rgba(239,68,68,0.9); border: 1px solid rgba(255,255,255,0.2);"
+    >
+      <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+      <span class="text-[10px] font-bold text-white">Reconnecting…</span>
+    </div>
+  {/if}
+
+  <!-- SEED MODAL -->
   {#if showSeedModal && gameState}
     <button
       aria-label="Close"
@@ -433,13 +472,13 @@
     ></button>
     <div
       class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[80] rounded-2xl p-4 w-[90%] max-w-[380px]"
-      style="background: rgba(15,23,42,0.98); border: 1px solid rgba(255,255,255,0.15);"
+      style="background: rgba(15,23,42,0.98); border: 1px solid rgba(139,92,246,0.25);"
     >
       <div class="flex items-center justify-between mb-3">
         <h3 class="text-sm font-extrabold text-white">🔒 Provably Fair</h3>
-        <button on:click={() => (showSeedModal = false)} class="text-white/60 text-xl leading-none"
-          >×</button
-        >
+        <button on:click={() => (showSeedModal = false)} class="text-white/60 text-xl leading-none">
+          ×
+        </button>
       </div>
       <div class="space-y-2 text-[11px] font-mono">
         <div>
@@ -448,20 +487,16 @@
         </div>
         <div>
           <p class="text-white/40 mb-1">Server Seed Hash</p>
-          <p class="text-emerald-400 break-all">{gameState.serverSeedHash ?? '—'}</p>
+          <p class="text-cyan break-all">{gameState.serverSeedHash ?? '—'}</p>
         </div>
         <div>
           <p class="text-white/40 mb-1">Client Seed</p>
           <p class="text-white/80 break-all">{gameState.clientSeed ?? '—'}</p>
         </div>
-        <div>
-          <p class="text-white/40 mb-1">Nonce</p>
-          <p class="text-white/80">{gameState.nonce ?? gameState.handNo}</p>
-        </div>
         {#if gameState.revealSeed}
           <div>
-            <p class="text-amber-400/80 mb-1">Revealed Server Seed ✓</p>
-            <p class="text-amber-300 break-all">{gameState.revealSeed}</p>
+            <p class="text-gold/80 mb-1">Revealed Server Seed ✓</p>
+            <p class="text-gold break-all">{gameState.revealSeed}</p>
           </div>
           <p class="text-emerald-400 text-[10px] mt-2">✅ Verified</p>
         {:else}
@@ -471,7 +506,7 @@
     </div>
   {/if}
 
-  <!-- Menu -->
+  <!-- MENU -->
   {#if showMenu}
     <button
       aria-label="Close menu"
@@ -481,7 +516,7 @@
     ></button>
     <div
       class="absolute z-50 rounded-2xl p-2 shadow-2xl"
-      style="top: max(68px, calc(env(safe-area-inset-top) + 60px)); left: 16px; width: 240px; background: rgba(15, 23, 42, 0.98); border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(16px);"
+      style="top: max(64px, calc(env(safe-area-inset-top) + 56px)); right: 12px; width: 220px; background: rgba(8,13,36,0.98); border: 1px solid rgba(139,92,246,0.25); backdrop-filter: blur(16px);"
     >
       <button
         on:click={() => {
@@ -489,7 +524,7 @@
           showHandHistory = true;
         }}
         class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left active:scale-[0.98] transition"
-        style="background: rgba(59,130,246,0.1);"
+        style="background: rgba(139,92,246,0.12);"
       >
         <span class="text-lg">📜</span>
         <div class="flex-1">
@@ -498,13 +533,43 @@
         </div>
       </button>
 
-      <div class="my-1 mx-2" style="height: 1px; background: rgba(255,255,255,0.06);"></div>
+      <button
+        on:click={() => {
+          showMenu = false;
+          showChat = true;
+        }}
+        class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left active:scale-[0.98] transition"
+        style="background: rgba(34,211,238,0.12);"
+      >
+        <span class="text-lg">💬</span>
+        <div class="flex-1">
+          <p class="text-sm font-bold text-white">Chat</p>
+          <p class="text-[10px] text-white/50">Talk to players</p>
+        </div>
+      </button>
+
+      <button
+        on:click={() => {
+          showMenu = false;
+          showSeedModal = true;
+        }}
+        class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left active:scale-[0.98] transition"
+        style="background: rgba(34,211,238,0.1);"
+      >
+        <span class="text-lg">🔒</span>
+        <div class="flex-1">
+          <p class="text-sm font-bold text-white">Provably Fair</p>
+          <p class="text-[10px] text-white/50">View seed</p>
+        </div>
+      </button>
+
+      <div class="my-1 mx-2" style="height: 1px; background: rgba(139,92,246,0.15);"></div>
 
       {#if sittingOut}
         <button
           on:click={doSitIn}
           class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left active:scale-[0.98] transition"
-          style="background: rgba(16,185,129,0.1);"
+          style="background: rgba(16,185,129,0.12);"
         >
           <span class="text-lg">▶️</span>
           <div class="flex-1">
@@ -516,7 +581,7 @@
         <button
           on:click={doSitOut}
           class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left active:scale-[0.98] transition"
-          style="background: rgba(245,158,11,0.1);"
+          style="background: rgba(244,201,93,0.1);"
         >
           <span class="text-lg">⏸️</span>
           <div class="flex-1">
@@ -526,7 +591,7 @@
         </button>
       {/if}
 
-      <div class="my-1 mx-2" style="height: 1px; background: rgba(255,255,255,0.06);"></div>
+      <div class="my-1 mx-2" style="height: 1px; background: rgba(139,92,246,0.15);"></div>
 
       <button
         on:click={leaveTable}
@@ -542,10 +607,19 @@
     </div>
   {/if}
 
-  <!-- Poker Table -->
-  <PokerTable {gameState} {myUserId} {myAvatarId} theme="cash" {handResult} />
+  <!-- POKER TABLE -->
+  <PokerTable
+    {gameState}
+    {myUserId}
+    {myAvatarId}
+    theme={isTournament ? 'tournament' : 'cash'}
+    {handResult}
+    {isFinalTable}
+    tournamentTitle={isTournament ? 'Tournament' : ''}
+    onPlayerClick={openPlayerInfo}
+  />
 
-  <!-- Hand History Modal -->
+  <!-- MODALS -->
   <HandHistoryModal
     open={showHandHistory}
     onClose={() => (showHandHistory = false)}
@@ -556,7 +630,6 @@
     }}
   />
 
-  <!-- Hand Replay Modal -->
   <HandReplayModal
     open={showReplay}
     handId={replayHandId}
@@ -566,51 +639,73 @@
     }}
   />
 
-  <!-- Waiting -->
+  <PlayerInfoModal
+    open={showPlayerInfo}
+    player={selectedPlayer}
+    {myUserId}
+    onClose={() => {
+      showPlayerInfo = false;
+      selectedPlayer = null;
+    }}
+    onMute={mutePlayer}
+  />
+
+  <ChatModal
+    open={showChat}
+    {myUserId}
+    onClose={() => {
+      showChat = false;
+    }}
+  />
+
+  <!-- WAITING -->
   {#if !gameState || startingHand}
     <div
-      class="absolute top-[80%] left-1/2 -translate-x-1/2 z-20 rounded-2xl px-5 py-3 text-center"
-      style="background: rgba(0,0,0,0.85); border: 1px solid rgba(255,255,255,0.1);"
+      class="absolute top-[78%] left-1/2 -translate-x-1/2 z-20 rounded-2xl px-5 py-3 text-center"
+      style="background: rgba(0,0,0,0.88); border: 1px solid rgba(139,92,246,0.25);"
     >
       <p class="text-sm text-white/70">{$t('table.waitingPlayers')}</p>
-      <p class="text-xs text-amber-400 mt-1 font-bold">
+      <p class="text-xs text-gold mt-1 font-bold">
         {gameState?.seats?.filter((s: any) => s.stack > 0).length ?? 0} / 2
       </p>
     </div>
   {/if}
 
+  <!-- TOASTS -->
   {#if autoActionMsg}
     <div
-      class="absolute top-20 left-1/2 -translate-x-1/2 z-40 bg-amber-900/95 rounded-2xl px-4 py-2 border border-amber-700 max-w-[90%]"
+      class="absolute top-20 left-1/2 -translate-x-1/2 z-40 rounded-2xl px-4 py-2 max-w-[90%]"
+      style="background: rgba(0,0,0,0.92); border: 1px solid rgba(244,201,93,0.4);"
     >
-      <p class="text-xs font-bold text-amber-100 text-center">{autoActionMsg}</p>
+      <p class="text-xs font-bold text-gold text-center">{autoActionMsg}</p>
     </div>
   {/if}
 
-  {#if errorMsg}
+  {#if errorMsg && errorMsg !== 'Reconnecting…'}
     <div
-      class="absolute top-32 left-1/2 -translate-x-1/2 z-40 bg-red-900/95 rounded-2xl px-4 py-2 border border-red-700"
+      class="absolute top-32 left-1/2 -translate-x-1/2 z-40 rounded-2xl px-4 py-2 max-w-[90%]"
+      style="background: rgba(153,27,27,0.95); border: 1px solid rgba(220,38,38,0.5);"
     >
       <p class="text-xs font-bold text-red-200">{errorMsg}</p>
     </div>
   {/if}
 
-  <!-- 🔴 Pre-Action Panel -->
+  <!-- PRE-ACTION -->
   {#if showPreActions}
     <div
       class="absolute bottom-0 left-0 right-0 z-30"
-      style="padding: 12px 12px calc(16px + env(safe-area-inset-bottom)) 12px; max-width: 480px; margin: 0 auto;"
+      style="padding: 10px 12px calc(14px + env(safe-area-inset-bottom)) 12px; max-width: 480px; margin: 0 auto;"
     >
       <div
         class="rounded-2xl p-2"
-        style="background: rgba(0,0,0,0.88); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(12px);"
+        style="background: rgba(0,0,0,0.9); border: 1px solid rgba(139,92,246,0.2); backdrop-filter: blur(12px);"
       >
         <div class="flex items-center justify-between px-2 mb-1.5">
-          <span class="text-[9px] uppercase tracking-widest font-extrabold text-white/40"
-            >Pre-Action</span
-          >
+          <span class="text-[9px] uppercase tracking-widest font-extrabold text-white/40">
+            Pre-Action
+          </span>
           {#if preAction}
-            <span class="text-[9px] font-bold text-amber-400">Armed · Tap again to cancel</span>
+            <span class="text-[9px] font-bold text-gold"> Armed · Tap again to cancel </span>
           {/if}
         </div>
         <div class="flex gap-1.5">
@@ -628,13 +723,16 @@
             >
               <span
                 class="text-[16px] leading-none"
-                style="color: {preAction === pa.key ? 'white' : pa.color};">{pa.icon}</span
+                style="color: {preAction === pa.key ? 'white' : pa.color};"
               >
+                {pa.icon}
+              </span>
               <span
                 class="text-[9px] font-bold leading-none"
                 style="color: {preAction === pa.key ? 'white' : 'rgba(255,255,255,0.7)'};"
-                >{pa.label}</span
               >
+                {pa.label}
+              </span>
             </button>
           {/each}
         </div>
@@ -642,19 +740,19 @@
     </div>
   {/if}
 
-  <!-- Action Bar (when it's my turn) -->
+  <!-- ACTION BAR -->
   {#if gameState && !startingHand && !handResult && isMyTurn}
     <div
       class="absolute bottom-0 left-0 right-0 z-30"
-      style="padding: 12px 12px calc(16px + env(safe-area-inset-bottom)) 12px; max-width: 480px; margin: 0 auto;"
+      style="padding: 10px 12px calc(14px + env(safe-area-inset-bottom)) 12px; max-width: 480px; margin: 0 auto;"
     >
       {#if !sittingOut}
         {#if canUseBank}
           <div class="flex justify-center mb-2">
             <button
               on:click={useTimeBank}
-              class="rounded-full px-4 py-1.5 text-[11px] font-bold text-amber-300 active:scale-95"
-              style="background: rgba(0,0,0,0.85); border: 1px solid rgba(245,158,11,0.5); backdrop-filter: blur(10px);"
+              class="rounded-full px-4 py-1.5 text-[11px] font-bold text-gold active:scale-95"
+              style="background: rgba(0,0,0,0.85); border: 1px solid rgba(244,201,93,0.5); backdrop-filter: blur(10px);"
             >
               ⏱️ Use Time Bank
             </button>
@@ -663,15 +761,21 @@
 
         {#if canRaise}
           <div
-            class="rounded-2xl p-3 mb-3"
-            style="background: rgba(0,0,0,0.88); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(12px);"
+            class="rounded-2xl p-3 mb-2"
+            style="background: rgba(8,13,36,0.95); border: 1px solid rgba(139,92,246,0.3); backdrop-filter: blur(12px);"
           >
-            <div class="flex items-center justify-between mb-3 gap-2">
-              <span class="text-[13px] font-extrabold text-white/70 tabular-nums shrink-0"
-                >${fmt(minRaiseTo)}</span
+            <div class="flex items-center justify-between mb-3 gap-3">
+              <button
+                on:click={() => setRaise(raiseAmount - gameState.bigBlind)}
+                aria-label="Decrease"
+                class="w-9 h-9 rounded-full flex items-center justify-center text-white text-lg active:scale-95 shrink-0"
+                style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4);"
               >
+                −
+              </button>
+
               <div class="flex items-center gap-0.5 flex-1 justify-center">
-                <span class="text-[18px] font-extrabold text-amber-400/70">$</span>
+                <span class="text-[20px] font-extrabold text-gold/70">$</span>
                 <input
                   type="text"
                   inputmode="decimal"
@@ -679,13 +783,19 @@
                   on:focus={() => (raiseInputFocused = true)}
                   on:blur={commitRaiseInput}
                   on:keydown={handleRaiseKey}
-                  class="text-[20px] font-extrabold text-amber-400 tabular-nums bg-transparent border-b-2 border-amber-400/40 focus:border-amber-400 text-center outline-none"
+                  class="text-[22px] font-extrabold text-gold tabular-nums bg-transparent border-b-2 border-gold/40 focus:border-gold text-center outline-none"
                   style="width: 5.5rem;"
                 />
               </div>
-              <span class="text-[13px] font-extrabold text-white/50 tabular-nums shrink-0"
-                >${fmt(hardMax)}</span
+
+              <button
+                on:click={() => setRaise(raiseAmount + gameState.bigBlind)}
+                aria-label="Increase"
+                class="w-9 h-9 rounded-full flex items-center justify-center text-white text-lg active:scale-95 shrink-0"
+                style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4);"
               >
+                +
+              </button>
             </div>
 
             <input
@@ -701,30 +811,40 @@
 
             <div class="flex gap-1.5 mt-3">
               <button
-                on:click={() => setRaise(minRaiseTo)}
-                class="flex-1 rounded-lg py-1.5 text-[10px] font-bold text-white/70 active:scale-95"
-                style="background: rgba(255,255,255,0.06);">MIN</button
+                on:click={() => fractionRaise(1 / 3)}
+                class="flex-1 rounded-lg py-1.5 text-[10px] font-bold text-white/80 active:scale-95"
+                style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.25);"
               >
+                1/3 Pot
+              </button>
               <button
-                on:click={() => quickRaise(2)}
-                class="flex-1 rounded-lg py-1.5 text-[10px] font-bold text-white/70 active:scale-95"
-                style="background: rgba(255,255,255,0.06);">2×</button
+                on:click={() => fractionRaise(1 / 2)}
+                class="flex-1 rounded-lg py-1.5 text-[10px] font-bold text-white/80 active:scale-95"
+                style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.25);"
               >
+                1/2 Pot
+              </button>
               <button
-                on:click={() => quickRaise(3)}
-                class="flex-1 rounded-lg py-1.5 text-[10px] font-bold text-white/70 active:scale-95"
-                style="background: rgba(255,255,255,0.06);">3×</button
+                on:click={() => fractionRaise(2 / 3)}
+                class="flex-1 rounded-lg py-1.5 text-[10px] font-bold text-white/80 active:scale-95"
+                style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.25);"
               >
+                2/3 Pot
+              </button>
               <button
                 on:click={potRaise}
-                class="flex-1 rounded-lg py-1.5 text-[10px] font-bold text-amber-400 active:scale-95"
-                style="background: rgba(245,158,11,0.15);">POT</button
+                class="flex-1 rounded-lg py-1.5 text-[10px] font-bold text-gold active:scale-95"
+                style="background: rgba(244,201,93,0.15); border: 1px solid rgba(244,201,93,0.3);"
               >
+                Pot
+              </button>
               <button
                 on:click={allIn}
                 class="flex-1 rounded-lg py-1.5 text-[10px] font-bold text-red-300 active:scale-95"
-                style="background: rgba(220,38,38,0.2);">MAX</button
+                style="background: rgba(220,38,38,0.2); border: 1px solid rgba(220,38,38,0.35);"
               >
+                All-In
+              </button>
             </div>
           </div>
         {/if}
@@ -733,37 +853,38 @@
           <button
             on:click={() => doAction('FOLD')}
             class="flex-1 rounded-xl py-4 active:scale-[0.97] transition-all"
-            style="background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%); box-shadow: 0 5px 0 #7f1d1d, 0 6px 12px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.2);"
+            style="background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%); box-shadow: 0 4px 0 #7f1d1d, 0 6px 14px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.2);"
           >
-            <span class="text-[15px] font-extrabold text-white uppercase tracking-wider"
-              >{$t('table.fold')}</span
-            >
+            <span class="text-[15px] font-extrabold text-white uppercase tracking-wider">
+              FOLD
+            </span>
           </button>
 
           {#if canCheck}
             <button
               on:click={() => doAction('CHECK')}
               class="flex-1 rounded-xl py-4 active:scale-[0.97] transition-all"
-              style="background: linear-gradient(180deg, #3b82f6 0%, #1e40af 100%); box-shadow: 0 5px 0 #1e3a8a, 0 6px 12px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.2);"
+              style="background: linear-gradient(180deg, #22c55e 0%, #15803d 100%); box-shadow: 0 4px 0 #14532d, 0 6px 14px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.2);"
             >
-              <span class="text-[15px] font-extrabold text-white uppercase tracking-wider"
-                >{$t('table.check')}</span
-              >
+              <span class="text-[15px] font-extrabold text-white uppercase tracking-wider">
+                CHECK
+              </span>
             </button>
           {:else}
             <button
               on:click={() => doAction('CALL')}
               disabled={myStack === 0}
               class="flex-1 rounded-xl py-3 active:scale-[0.97] transition-all disabled:opacity-50"
-              style="background: linear-gradient(180deg, #3b82f6 0%, #1e40af 100%); box-shadow: 0 5px 0 #1e3a8a, 0 6px 12px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.2);"
+              style="background: linear-gradient(180deg, #22c55e 0%, #15803d 100%); box-shadow: 0 4px 0 #14532d, 0 6px 14px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.2);"
             >
-              <span class="block text-[11px] font-bold text-white/90 leading-none uppercase"
-                >{$t('table.call')}</span
-              >
+              <span class="block text-[11px] font-bold text-white/90 leading-none uppercase">
+                CALL
+              </span>
               <span
-                class="block text-[15px] font-extrabold text-white leading-tight tabular-nums mt-0.5"
-                >${fmt(toCall)}</span
+                class="block text-[16px] font-extrabold text-white leading-tight tabular-nums mt-0.5"
               >
+                ${fmt(toCall)}
+              </span>
             </button>
           {/if}
 
@@ -771,37 +892,38 @@
             <button
               on:click={doRaise}
               class="flex-1 rounded-xl py-3 active:scale-[0.97] transition-all"
-              style="background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%); box-shadow: 0 5px 0 #92400e, 0 6px 12px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.3);"
+              style="background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%); box-shadow: 0 4px 0 #1e3a8a, 0 6px 14px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.3);"
             >
-              <span class="block text-[11px] font-bold text-amber-950 leading-none uppercase"
-                >{$t('table.raise')}</span
-              >
+              <span class="block text-[11px] font-bold text-white/90 leading-none uppercase">
+                RAISE
+              </span>
               <span
-                class="block text-[15px] font-extrabold text-amber-950 leading-tight tabular-nums mt-0.5"
-                >${fmt(raiseAmount)}</span
+                class="block text-[16px] font-extrabold text-white leading-tight tabular-nums mt-0.5"
               >
+                ${fmt(raiseAmount)}
+              </span>
             </button>
           {:else if myStack > 0 && myStack <= toCall}
             <button
               on:click={allIn}
               class="flex-1 rounded-xl py-4 active:scale-[0.97] transition-all"
-              style="background: linear-gradient(180deg, #ef4444 0%, #991b1b 100%); box-shadow: 0 5px 0 #7f1d1d, 0 6px 12px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.2);"
+              style="background: linear-gradient(180deg, #ef4444 0%, #991b1b 100%); box-shadow: 0 4px 0 #7f1d1d, 0 6px 14px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.2);"
             >
-              <span class="text-[15px] font-extrabold text-white uppercase tracking-wider"
-                >ALL-IN</span
-              >
+              <span class="text-[15px] font-extrabold text-white uppercase tracking-wider">
+                ALL-IN
+              </span>
             </button>
           {/if}
         </div>
       {:else}
         <div
           class="rounded-2xl p-3 text-center"
-          style="background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4); backdrop-filter: blur(10px);"
+          style="background: rgba(244,201,93,0.15); border: 1px solid rgba(244,201,93,0.4); backdrop-filter: blur(10px);"
         >
-          <p class="text-xs font-bold text-amber-300">💤 Sitting Out — Auto-folding</p>
-          <button on:click={doSitIn} class="mt-2 text-[11px] text-white underline"
-            >Resume playing</button
-          >
+          <p class="text-xs font-bold text-gold">💤 Sitting Out — Auto-folding</p>
+          <button on:click={doSitIn} class="mt-2 text-[11px] text-white underline">
+            Resume playing
+          </button>
         </div>
       {/if}
     </div>
@@ -817,8 +939,8 @@
     border-radius: 9999px;
     background: linear-gradient(
       to right,
-      #dc2626 0%,
-      #dc2626 var(--raise-pct, 50%),
+      #f4c95d 0%,
+      #f4c95d var(--raise-pct, 50%),
       rgba(255, 255, 255, 0.12) var(--raise-pct, 50%),
       rgba(255, 255, 255, 0.12) 100%
     );
@@ -832,18 +954,18 @@
     height: 22px;
     border-radius: 50%;
     background: #ffffff;
-    border: 2px solid #ffffff;
+    border: 2px solid #f4c95d;
     cursor: pointer;
     box-shadow:
       0 2px 10px rgba(0, 0, 0, 0.8),
-      0 0 0 3px rgba(220, 38, 38, 0.4);
+      0 0 0 3px rgba(244, 201, 93, 0.35);
   }
   .raise-slider::-moz-range-thumb {
     width: 22px;
     height: 22px;
     border-radius: 50%;
     background: #ffffff;
-    border: 2px solid #ffffff;
+    border: 2px solid #f4c95d;
     cursor: pointer;
   }
 </style>

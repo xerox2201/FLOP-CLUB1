@@ -11,6 +11,11 @@
   import Events from './routes/Events.svelte';
   import Tournaments from './routes/Tournaments.svelte';
   import TournamentDetail from './routes/TournamentDetail.svelte';
+  import Achievements from './routes/Achievements.svelte';
+  import Shop from './routes/Shop.svelte';
+  import Notifications from './routes/Notifications.svelte';
+  import Settings from './routes/Settings.svelte';
+  import HelpCenter from './routes/HelpCenter.svelte';
   import BottomNav from './components/BottomNav.svelte';
   import Splash from './routes/Splash.svelte';
 
@@ -23,7 +28,12 @@
     | 'leaderboard'
     | 'events'
     | 'tournaments'
-    | 'tournament-detail';
+    | 'tournament-detail'
+    | 'achievements'
+    | 'shop'
+    | 'notifications'
+    | 'settings'
+    | 'help';
 
   let currentPage: Page = 'home';
   let activeTableId = 1;
@@ -33,7 +43,14 @@
   let tablesMode: 'all' | 'free' | 'real' = 'all';
   let tablesKey = 0;
 
-  $: hideBottomNav = currentPage === 'table' || currentPage === 'tournament-detail';
+  $: hideBottomNav =
+    currentPage === 'table' ||
+    currentPage === 'tournament-detail' ||
+    currentPage === 'achievements' ||
+    currentPage === 'shop' ||
+    currentPage === 'notifications' ||
+    currentPage === 'settings' ||
+    currentPage === 'help';
 
   onMount(async () => {
     await auth.init();
@@ -88,7 +105,7 @@
   <Login />
 {:else}
   {#if currentPage === 'home'}
-    <Home onNavigate={navigate} onQuickSeat={quickSeat} />
+    <Home onNavigate={navigate} onQuickSeat={quickSeat} onOpenTable={openTable} />
   {:else if currentPage === 'tables'}
     {#key tablesKey}
       <Tables initialVariant={tablesVariant} initialMode={tablesMode} onOpenTable={openTable} />
@@ -111,6 +128,16 @@
       onBack={() => navigate('tournaments')}
       onOpenTable={openTournamentTable}
     />
+  {:else if currentPage === 'achievements'}
+    <Achievements onBack={() => navigate('profile')} />
+  {:else if currentPage === 'shop'}
+    <Shop onBack={() => navigate('profile')} />
+  {:else if currentPage === 'notifications'}
+    <Notifications onBack={() => navigate('home')} />
+  {:else if currentPage === 'settings'}
+    <Settings onBack={() => navigate('profile')} />
+  {:else if currentPage === 'help'}
+    <HelpCenter onBack={() => navigate('profile')} />
   {/if}
 
   {#if !hideBottomNav}

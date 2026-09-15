@@ -4,7 +4,6 @@
   import Avatar from '../components/Avatar.svelte';
   import { api } from '../lib/api';
   import { auth } from '../stores/auth';
-  import { t } from '../i18n';
 
   export let onNavigate: (page: any) => void = () => {};
 
@@ -45,23 +44,20 @@
     return `in ${Math.floor(hrs / 24)}d`;
   }
 
-  function statusBadge(status: string): { text: string; cls: string } {
+  function statusBadge(status: string): { text: string; color: string } {
     switch (status) {
       case 'scheduled':
-        return { text: 'Upcoming', cls: 'bg-blue-900/60 text-blue-300 border-blue-700/40' };
+        return { text: 'UPCOMING', color: '#8b5cf6' };
       case 'registering':
-        return { text: 'Registering', cls: 'bg-amber-900/60 text-amber-300 border-amber-700/40' };
+        return { text: 'REGISTERING', color: '#22d3ee' };
       case 'running':
-        return {
-          text: '● LIVE',
-          cls: 'bg-emerald-900/60 text-emerald-300 border-emerald-700/40 animate-pulse',
-        };
+        return { text: '● LIVE', color: '#10b981' };
       case 'finished':
-        return { text: 'Finished', cls: 'bg-gray-700/60 text-gray-300 border-gray-600/40' };
+        return { text: 'FINISHED', color: '#6b7280' };
       case 'cancelled':
-        return { text: 'Cancelled', cls: 'bg-red-900/60 text-red-300 border-red-700/40' };
+        return { text: 'CANCELLED', color: '#ef4444' };
       default:
-        return { text: status, cls: 'bg-gray-700/60 text-gray-300 border-gray-600/40' };
+        return { text: status.toUpperCase(), color: '#6b7280' };
     }
   }
 
@@ -105,13 +101,11 @@
     const res = await api.registerEvent(selectedEvent.id);
     processing = false;
     if (res.ok) {
-      actionMsg = res.data?.already ? 'Already registered' : '✓ Registered successfully!';
+      actionMsg = res.data?.already ? 'Already registered' : '✓ Registered!';
       actionMsgType = 'success';
       await loadEvents();
       await openEvent(selectedEvent);
-      setTimeout(() => {
-        actionMsg = '';
-      }, 3000);
+      setTimeout(() => (actionMsg = ''), 3000);
     } else {
       const errMap: Record<string, string> = {
         event_full: 'Tournament is full',
@@ -120,9 +114,7 @@
       };
       actionMsg = '❌ ' + (errMap[res.error || ''] || 'Failed to register');
       actionMsgType = 'error';
-      setTimeout(() => {
-        actionMsg = '';
-      }, 4000);
+      setTimeout(() => (actionMsg = ''), 4000);
     }
   }
 
@@ -138,15 +130,11 @@
       actionMsgType = 'success';
       await loadEvents();
       await openEvent(selectedEvent);
-      setTimeout(() => {
-        actionMsg = '';
-      }, 3000);
+      setTimeout(() => (actionMsg = ''), 3000);
     } else {
       actionMsg = '❌ Failed to unregister';
       actionMsgType = 'error';
-      setTimeout(() => {
-        actionMsg = '';
-      }, 4000);
+      setTimeout(() => (actionMsg = ''), 4000);
     }
   }
 
@@ -154,6 +142,7 @@
     await loadEvents();
     refreshTimer = setInterval(loadEvents, 10000);
   });
+
   onDestroy(() => {
     if (refreshTimer) clearInterval(refreshTimer);
   });
@@ -162,18 +151,21 @@
 <div class="px-4 pb-28">
   <TopBar />
   <div class="flex items-center justify-between mt-3 mb-5">
-    <h1 class="text-2xl font-extrabold">{$t('events.title')}</h1>
-    <span class="text-[10px] glass rounded-full px-3 py-1 font-bold text-gold">
+    <h1 class="text-2xl font-extrabold">Events</h1>
+    <span
+      class="text-[10px] rounded-full px-3 py-1 font-bold text-gold"
+      style="background: rgba(244,201,93,0.15); border: 1px solid rgba(244,201,93,0.35);"
+    >
       {events.filter((e) => e.status === 'running' || e.status === 'registering').length} active
     </span>
   </div>
 
   {#if loading}
-    <p class="text-white/40 text-center py-12">{$t('common.loading')}</p>
+    <p class="text-white/40 text-center py-12">Loading…</p>
   {:else if events.length === 0}
     <div class="card text-center py-10">
       <p class="text-4xl mb-2">🎫</p>
-      <p class="text-white/50 text-sm">{$t('events.noEvents')}</p>
+      <p class="text-white/50 text-sm">No events scheduled</p>
     </div>
   {:else}
     <div class="space-y-3">
@@ -181,37 +173,44 @@
         {@const badge = statusBadge(ev.status)}
         <button
           on:click={() => openEvent(ev)}
-          class="card w-full text-left active:scale-[0.99] transition"
+          class="w-full text-left rounded-2xl p-3 active:scale-[0.98] transition"
+          style="background: linear-gradient(135deg, rgba(16,26,58,0.9), rgba(8,13,36,0.9)); border: 1px solid rgba(139,92,246,0.2);"
         >
           <div class="flex items-start justify-between mb-3">
             <div class="flex-1 min-w-0">
-              <p class="font-bold text-base leading-tight truncate">{ev.title}</p>
-              <p class="text-[10px] text-white/50 uppercase tracking-wider mt-0.5">{ev.variant}</p>
+              <p class="font-extrabold text-base leading-tight truncate text-white">
+                {ev.title}
+              </p>
+              <p class="text-[10px] text-white/50 uppercase tracking-wider mt-0.5">
+                {ev.variant}
+              </p>
             </div>
             <span
-              class="text-[10px] px-2 py-1 rounded-full font-bold border {badge.cls} shrink-0 ml-2"
-              >{badge.text}</span
+              class="text-[10px] px-2 py-1 rounded-full font-bold shrink-0 ml-2 uppercase tracking-wider"
+              style="background: {badge.color}25; color: {badge.color}; border: 1px solid {badge.color}50;"
             >
+              {badge.text}
+            </span>
           </div>
 
           <div class="grid grid-cols-3 gap-2 mb-3">
-            <div class="bg-black/30 rounded-xl p-2 text-center">
-              <p class="text-[9px] text-white/40 uppercase">Buy-in</p>
-              <p class="text-sm font-bold text-gold">
+            <div class="rounded-xl p-2 text-center" style="background: rgba(0,0,0,0.3);">
+              <p class="text-[9px] text-white/40 uppercase font-bold">Buy-in</p>
+              <p class="text-sm font-bold text-gold tabular-nums">
                 {Number(ev.buyin_usd) > 0 ? `$${fmt(ev.buyin_usd)}` : 'FREE'}
               </p>
             </div>
-            <div class="bg-black/30 rounded-xl p-2 text-center">
-              <p class="text-[9px] text-white/40 uppercase">Prize</p>
-              <p class="text-sm font-bold text-emerald-400">
+            <div class="rounded-xl p-2 text-center" style="background: rgba(0,0,0,0.3);">
+              <p class="text-[9px] text-white/40 uppercase font-bold">Prize</p>
+              <p class="text-sm font-bold text-emerald-400 tabular-nums">
                 ${fmt(
                   Number(ev.prize_pool_collected) > 0 ? ev.prize_pool_collected : ev.prize_pool_usd,
                 )}
               </p>
             </div>
-            <div class="bg-black/30 rounded-xl p-2 text-center">
-              <p class="text-[9px] text-white/40 uppercase">Players</p>
-              <p class="text-sm font-bold">
+            <div class="rounded-xl p-2 text-center" style="background: rgba(0,0,0,0.3);">
+              <p class="text-[9px] text-white/40 uppercase font-bold">Players</p>
+              <p class="text-sm font-bold text-white tabular-nums">
                 {ev.registered_count || 0}{ev.max_players ? `/${ev.max_players}` : ''}
               </p>
             </div>
@@ -230,16 +229,18 @@
   {/if}
 </div>
 
+<!-- Detail modal -->
 {#if selectedEvent}
   <div
-    class="fixed inset-0 z-50 bg-black/80 flex items-end sm:items-center justify-center"
+    class="fixed inset-0 z-50 bg-black/80 flex items-end sm:items-center justify-center backdrop-blur-sm"
     on:click={closeModal}
     role="button"
     tabindex="0"
     on:keydown={(e) => e.key === 'Escape' && closeModal()}
   >
     <div
-      class="glass-strong rounded-t-3xl sm:rounded-3xl p-5 max-w-[480px] w-full max-h-[92vh] overflow-y-auto no-scrollbar"
+      class="rounded-t-3xl sm:rounded-3xl p-5 max-w-[480px] w-full max-h-[92vh] overflow-y-auto no-scrollbar"
+      style="background: linear-gradient(180deg, #101a3a, #080d24); border: 1px solid rgba(139,92,246,0.3);"
       on:click|stopPropagation
       role="dialog"
       tabindex="-1"
@@ -248,25 +249,31 @@
 
       <div class="flex items-start justify-between mb-4">
         <div class="flex-1 min-w-0">
-          <h3 class="text-xl font-extrabold leading-tight">{selectedEvent.title}</h3>
+          <h3 class="text-xl font-extrabold leading-tight text-white">
+            {selectedEvent.title}
+          </h3>
           <p class="text-[10px] text-white/50 uppercase tracking-wider mt-0.5">
             {selectedEvent.variant}
           </p>
         </div>
-        <button on:click={closeModal} aria-label="Close" class="text-white/50 text-xl shrink-0 ml-2"
-          >✕</button
+        <button
+          on:click={closeModal}
+          aria-label="Close"
+          class="text-white/50 text-xl shrink-0 ml-2"
         >
+          ✕
+        </button>
       </div>
 
       <div class="grid grid-cols-3 gap-2 mb-4">
-        <div class="bg-black/30 rounded-xl p-2 text-center">
-          <p class="text-[9px] text-white/40 uppercase">Buy-in</p>
+        <div class="rounded-xl p-2 text-center" style="background: rgba(0,0,0,0.3);">
+          <p class="text-[9px] text-white/40 uppercase font-bold">Buy-in</p>
           <p class="text-sm font-bold text-gold">
             {Number(selectedEvent.buyin_usd) > 0 ? `$${fmt(selectedEvent.buyin_usd)}` : 'FREE'}
           </p>
         </div>
-        <div class="bg-black/30 rounded-xl p-2 text-center">
-          <p class="text-[9px] text-white/40 uppercase">Prize Pool</p>
+        <div class="rounded-xl p-2 text-center" style="background: rgba(0,0,0,0.3);">
+          <p class="text-[9px] text-white/40 uppercase font-bold">Prize Pool</p>
           <p class="text-sm font-bold text-emerald-400">
             ${fmt(
               Number(eventDetail?.event?.prize_pool_collected) > 0
@@ -275,9 +282,9 @@
             )}
           </p>
         </div>
-        <div class="bg-black/30 rounded-xl p-2 text-center">
-          <p class="text-[9px] text-white/40 uppercase">Players</p>
-          <p class="text-sm font-bold">
+        <div class="rounded-xl p-2 text-center" style="background: rgba(0,0,0,0.3);">
+          <p class="text-[9px] text-white/40 uppercase font-bold">Players</p>
+          <p class="text-sm font-bold text-white">
             {eventDetail?.event?.registered_count ||
               selectedEvent.registered_count ||
               0}{selectedEvent.max_players ? `/${selectedEvent.max_players}` : ''}
@@ -287,27 +294,27 @@
 
       <div class="space-y-2 mb-4 text-xs">
         <div class="flex justify-between">
-          <span class="text-white/50">Starts</span><span class="font-bold"
-            >{fmtDate(selectedEvent.starts_at)}</span
-          >
+          <span class="text-white/50">Starts</span>
+          <span class="font-bold text-white">{fmtDate(selectedEvent.starts_at)}</span>
         </div>
         <div class="flex justify-between">
-          <span class="text-white/50">Starting Stack</span><span class="font-bold"
-            >{selectedEvent.starting_stack || 1500}</span
-          >
+          <span class="text-white/50">Starting Stack</span>
+          <span class="font-bold text-white">{selectedEvent.starting_stack || 1500}</span>
         </div>
         <div class="flex justify-between">
-          <span class="text-white/50">Late Reg</span><span class="font-bold"
-            >Until Level {selectedEvent.late_reg_level || 3}</span
-          >
+          <span class="text-white/50">Late Reg</span>
+          <span class="font-bold text-white">Until Level {selectedEvent.late_reg_level || 3}</span>
         </div>
       </div>
 
       {#if actionMsg}
         <div
-          class="rounded-xl px-3 py-2 mb-3 {actionMsgType === 'success'
-            ? 'bg-emerald-900/40 border border-emerald-700/50'
-            : 'bg-red-900/40 border border-red-700/50'}"
+          class="rounded-xl px-3 py-2 mb-3"
+          style="background: {actionMsgType === 'success'
+            ? 'rgba(16,185,129,0.15)'
+            : 'rgba(239,68,68,0.15)'}; border: 1px solid {actionMsgType === 'success'
+            ? 'rgba(16,185,129,0.4)'
+            : 'rgba(239,68,68,0.4)'};"
         >
           <p class="text-xs {actionMsgType === 'success' ? 'text-emerald-200' : 'text-red-200'}">
             {actionMsg}
@@ -316,19 +323,31 @@
       {/if}
 
       {#if selectedEvent.status === 'finished'}
-        <div class="bg-gray-700/40 border border-white/10 rounded-xl p-3 text-center">
+        <div
+          class="rounded-xl p-3 text-center"
+          style="background: rgba(107,114,128,0.2); border: 1px solid rgba(107,114,128,0.4);"
+        >
           <p class="text-sm text-white/60">This tournament has finished</p>
         </div>
       {:else if selectedEvent.status === 'cancelled'}
-        <div class="bg-red-900/40 border border-red-700/50 rounded-xl p-3 text-center">
+        <div
+          class="rounded-xl p-3 text-center"
+          style="background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4);"
+        >
           <p class="text-sm text-red-200">This tournament was cancelled</p>
         </div>
       {:else if selectedEvent.status === 'running'}
-        <div class="bg-emerald-900/40 border border-emerald-700/50 rounded-xl p-3 text-center">
+        <div
+          class="rounded-xl p-3 text-center"
+          style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.4);"
+        >
           <p class="text-sm text-emerald-200 font-bold">● Tournament is live</p>
         </div>
       {:else if eventDetail && isRegistered(eventDetail)}
-        <div class="bg-emerald-900/30 border border-emerald-700/40 rounded-2xl p-3 mb-3">
+        <div
+          class="rounded-2xl p-3 mb-3"
+          style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.4);"
+        >
           <div class="flex items-center gap-2">
             <span class="text-lg">✓</span>
             <div class="flex-1">
@@ -342,7 +361,8 @@
         <button
           on:click={unregister}
           disabled={processing}
-          class="w-full bg-red-950/60 border border-red-800/50 hover:bg-red-900/60 text-red-300 py-3 rounded-2xl font-semibold transition disabled:opacity-50"
+          class="w-full py-3 rounded-2xl font-bold text-red-300 transition disabled:opacity-50"
+          style="background: rgba(220,38,38,0.15); border: 1px solid rgba(220,38,38,0.4);"
         >
           {processing ? 'Processing…' : 'Unregister (Refund)'}
         </button>
@@ -368,13 +388,15 @@
           <div class="space-y-1 max-h-[200px] overflow-y-auto no-scrollbar">
             {#each eventDetail.registrations as r}
               <div
-                class="flex items-center gap-2 bg-black/30 rounded-lg px-2 py-1.5 {r.user_id ===
-                $auth.user?.id
+                class="flex items-center gap-2 rounded-lg px-2 py-1.5 {r.user_id === $auth.user?.id
                   ? 'ring-1 ring-gold'
                   : ''}"
+                style="background: rgba(0,0,0,0.3);"
               >
                 <Avatar avatarId={r.avatar_id || 'spade'} size="sm" />
-                <span class="text-xs font-semibold flex-1 truncate">{r.display_name}</span>
+                <span class="text-xs font-semibold flex-1 truncate text-white/90"
+                  >{r.display_name}</span
+                >
                 {#if r.user_id === $auth.user?.id}
                   <span class="text-[9px] text-gold font-bold">YOU</span>
                 {/if}

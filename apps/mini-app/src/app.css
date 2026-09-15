@@ -2,26 +2,76 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   FLOP CLUB — Design Tokens
+   ============================================================ */
+:root {
+  /* Palette */
+  --navy: #080d24;
+  --dark-blue: #101a3a;
+  --royal-purple: #6d28d9;
+  --electric-violet: #8b5cf6;
+  --neon-turquoise: #19d3c5;
+  --cyan-blue: #22d3ee;
+  --gold: #f4c95d;
+  --gold-dark: #a87922;
+  --near-black: #050611;
+  --soft-white: #f4f7ff;
+
+  /* Surfaces */
+  --surface-1: rgba(16, 26, 58, 0.6);
+  --surface-2: rgba(24, 34, 72, 0.75);
+  --surface-3: rgba(32, 42, 88, 0.85);
+
+  /* Depth */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.6);
+  --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.7);
+
+  /* Glows */
+  --glow-cyan: 0 0 20px rgba(34, 211, 238, 0.4);
+  --glow-gold: 0 0 24px rgba(244, 201, 93, 0.35);
+  --glow-purple: 0 0 24px rgba(139, 92, 246, 0.3);
+
+  /* Radii */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+}
+
+/* ============================================================
+   Base
+   ============================================================ */
 * {
   -webkit-tap-highlight-color: transparent;
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
-  background: #0a0e1a;
-  color: #fff;
-  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--navy);
+  color: var(--soft-white);
+  font-family:
+    'Inter',
+    -apple-system,
+    system-ui,
+    sans-serif;
   overscroll-behavior: none;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
   background:
-    radial-gradient(ellipse at top, rgba(76, 29, 149, 0.25), transparent 60%),
-    radial-gradient(ellipse at bottom, rgba(30, 58, 138, 0.20), transparent 60%),
-    #0a0e1a;
+    radial-gradient(ellipse at 50% 0%, rgba(109, 40, 217, 0.18), transparent 55%),
+    radial-gradient(ellipse at 50% 100%, rgba(34, 211, 238, 0.08), transparent 60%),
+    radial-gradient(ellipse at 0% 50%, rgba(139, 92, 246, 0.1), transparent 60%),
+    var(--navy);
   background-attachment: fixed;
   min-height: 100dvh;
 }
@@ -34,51 +84,125 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.3);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.5);
+}
+
+/* ============================================================
+   Surfaces — Glass / Panels
+   ============================================================ */
 .glass {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: linear-gradient(
+    180deg,
+    rgba(32, 42, 88, 0.55) 0%,
+    rgba(16, 26, 58, 0.4) 100%
+  );
+  border: 1px solid rgba(139, 92, 246, 0.18);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    var(--shadow-md);
 }
 
 .glass-strong {
-  background: rgba(20, 25, 40, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: linear-gradient(
+    180deg,
+    rgba(24, 34, 72, 0.92) 0%,
+    rgba(12, 18, 46, 0.95) 100%
+  );
+  border: 1px solid rgba(139, 92, 246, 0.22);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    var(--shadow-lg);
 }
 
 .card {
   @apply rounded-3xl p-4;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(
+    180deg,
+    rgba(32, 42, 88, 0.5) 0%,
+    rgba(16, 26, 58, 0.35) 100%
+  );
+  border: 1px solid rgba(139, 92, 246, 0.15);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 4px 20px rgba(0, 0, 0, 0.35);
 }
 
+/* ============================================================
+   Buttons — 3D depth
+   ============================================================ */
 .btn-gold {
-  @apply font-bold py-3.5 px-6 rounded-2xl active:scale-[0.97] transition;
-  background: linear-gradient(180deg, #f5c842, #d4a017);
-  color: #0a0e1a;
-  box-shadow: 0 0 24px rgba(245, 200, 66, 0.35), 0 4px 12px rgba(0,0,0,0.3);
+  @apply font-bold py-3.5 px-6 rounded-2xl active:scale-[0.97] transition-all;
+  background: linear-gradient(180deg, #ffd97a 0%, var(--gold) 45%, var(--gold-dark) 100%);
+  color: var(--near-black);
+  border-top: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 4px 0 #7a5618,
+    0 8px 24px rgba(244, 201, 93, 0.4);
+}
+
+.btn-gold:active {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 2px 0 #7a5618,
+    0 4px 12px rgba(244, 201, 93, 0.3);
 }
 
 .btn-dark {
-  @apply font-semibold py-3 px-6 rounded-2xl active:scale-[0.97] transition;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  color: #fff;
+  @apply font-semibold py-3 px-6 rounded-2xl active:scale-[0.97] transition-all;
+  background: linear-gradient(180deg, rgba(139, 92, 246, 0.15), rgba(109, 40, 217, 0.08));
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  color: var(--soft-white);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
+.btn-cyan {
+  @apply font-bold py-3 px-6 rounded-2xl active:scale-[0.97] transition-all;
+  background: linear-gradient(180deg, #38e6ff 0%, var(--cyan-blue) 50%, #0e7f95 100%);
+  color: var(--near-black);
+  border-top: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 4px 0 #0a5a6b,
+    0 8px 20px rgba(34, 211, 238, 0.35);
+}
+
+/* ============================================================
+   Game cards (Home tiles)
+   ============================================================ */
 .game-card {
   @apply rounded-3xl p-4 relative overflow-hidden active:scale-[0.98] transition;
   min-height: 150px;
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(139, 92, 246, 0.22);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 6px 24px rgba(0, 0, 0, 0.45);
 }
 
 .game-card::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.65));
+  background: linear-gradient(180deg, transparent 40%, rgba(5, 6, 17, 0.75));
   pointer-events: none;
 }
 
@@ -87,9 +211,104 @@ body {
   z-index: 1;
 }
 
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+/* ============================================================
+   Premium / Metallic
+   ============================================================ */
+.text-gold-gradient {
+  background: linear-gradient(180deg, #ffe9a8 0%, var(--gold) 50%, var(--gold-dark) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.border-gold-royal {
+  border: 2px solid transparent;
+  background:
+    linear-gradient(var(--navy), var(--navy)) padding-box,
+    linear-gradient(135deg, #ffe9a8 0%, var(--gold) 30%, var(--gold-dark) 60%, #ffe9a8 100%) border-box;
+}
+
+.badge-gold {
+  background: linear-gradient(180deg, var(--gold) 0%, var(--gold-dark) 100%);
+  color: var(--near-black);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 2px 6px rgba(168, 121, 34, 0.5);
+}
+
+.glow-cyan {
+  box-shadow: var(--glow-cyan);
+}
+.glow-gold {
+  box-shadow: var(--glow-gold);
+}
+.glow-purple {
+  box-shadow: var(--glow-purple);
+}
+
+/* ============================================================
+   Felt & Table
+   ============================================================ */
+.felt-cash {
+  background: radial-gradient(ellipse at 50% 45%, #1a5c3a 0%, #0d3d24 55%, #072a1a 100%);
+}
+
+.felt-rim {
+  background: #050a0a;
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.95),
+    inset 0 0 30px rgba(0, 0, 0, 0.9),
+    0 0 0 2px rgba(30, 41, 59, 0.6),
+    0 0 0 6px rgba(0, 0, 0, 0.5);
+}
+
+/* Final table — royal gold rim */
+.felt-rim-final {
+  background: #050a0a;
+  box-shadow:
+    0 10px 50px rgba(0, 0, 0, 0.95),
+    inset 0 0 30px rgba(0, 0, 0, 0.9),
+    0 0 0 3px rgba(244, 201, 93, 0.85),
+    0 0 0 7px rgba(168, 121, 34, 0.7),
+    0 0 40px rgba(244, 201, 93, 0.5),
+    0 0 80px rgba(244, 201, 93, 0.25);
+}
+
+/* ============================================================
+   Utility
+   ============================================================ */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 
 .tabular-nums {
   font-variant-numeric: tabular-nums;
+}
+
+@keyframes pulse-gold {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.2);
+  }
+}
+
+.animate-pulse-gold {
+  animation: pulse-gold 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
