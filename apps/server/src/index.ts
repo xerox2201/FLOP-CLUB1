@@ -21,6 +21,9 @@ const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? '';
 const app = Fastify({ logger: true });
 const db = new Pool({ connectionString: DATABASE_URL });
 
+// 🔴 Expose db pool for HandPersister
+(globalThis as any).__dbPool = db;
+
 const redis = new Redis(REDIS_URL, {
   maxRetriesPerRequest: 3,
   retryStrategy(times) {

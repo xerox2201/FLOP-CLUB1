@@ -1,4 +1,4 @@
-import { Pool } from 'pg';
+ import { Pool } from 'pg';
 
 export type LedgerKind =
   | 'DEPOSIT'
@@ -47,7 +47,6 @@ export class LedgerService {
    * - اگه idempotencyKey تکراری باشه، تراکنش دوباره ثبت نمیشه
    */
   async record(input: LedgerTransactionInput): Promise<LedgerResult> {
-    // Validate: جمع باید صفر باشه
     const sum = input.entries.reduce((s, e) => s + e.amount, 0);
     if (Math.abs(sum) > 0.001) {
       return { ok: false, error: `Ledger mismatch: sum=${sum}` };
@@ -57,7 +56,6 @@ export class LedgerService {
       return { ok: false, error: 'No entries' };
     }
 
-    // چک idempotency
     if (input.idempotencyKey) {
       const existing = await this.db.query(
         'SELECT result FROM idempotency_keys WHERE key = $1',
@@ -76,13 +74,11 @@ export class LedgerService {
     try {
       await client.query('BEGIN');
 
-      // قفل حساب‌ها (به ترتیب، برای جلوگیری از deadlock)
       const ids = [...new Set(input.entries.map(e => e.accountId))].sort((a, b) => a - b);
       for (const id of ids) {
         await client.query('SELECT id FROM accounts WHERE id = $1 FOR UPDATE', [id]);
       }
 
-      // درج transaction
       const txRes = await client.query(
         `INSERT INTO transactions (kind, ref, meta, status, user_id, idempotency_key, amount, completed_at)
          VALUES ($1, $2, $3, 'completed', $4, $5, $6, NOW())
@@ -98,7 +94,6 @@ export class LedgerService {
       );
       const txId = txRes.rows[0].id;
 
-      // درج entries
       for (const entry of input.entries) {
         await client.query(
           `INSERT INTO entries (tx_id, account_id, amount, currency)
@@ -107,7 +102,6 @@ export class LedgerService {
         );
       }
 
-      // آپدیت wallet balance (cache)
       for (const entry of input.entries) {
         const accRes = await client.query('SELECT owner_user_id FROM accounts WHERE id = $1', [entry.accountId]);
         const userId = accRes.rows[0]?.owner_user_id;
@@ -119,7 +113,6 @@ export class LedgerService {
         }
       }
 
-      // ثبت idempotency
       if (input.idempotencyKey) {
         await client.query(
           `INSERT INTO idempotency_keys (key, user_id, result)

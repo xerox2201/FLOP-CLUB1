@@ -1,171 +1,220 @@
- -- ============================================================
--- 006_ledger_and_events.sql
--- Flop Club — Ledger, Events, Snapshots, Idempotency
--- ============================================================
+ import { Pool } from 'pg';
+import { LedgerService } from './ledger.js';
 
--- ============================================================
--- 1. HAND EVENTS (Event Sourcing برای Replay)
--- ============================================================
-CREATE TABLE IF NOT EXISTS hand_events (
-  id              BIGSERIAL PRIMARY KEY,
-  hand_id         BIGINT REFERENCES hands(id) ON DELETE CASCADE,
-  sequence        INT NOT NULL,
-  event_type      TEXT NOT NULL,
-  schema_version  INT DEFAULT 1,
-  payload         JSONB NOT NULL DEFAULT '{}',
-  created_at      TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(hand_id, sequence)
-);
-CREATE INDEX IF NOT EXISTS idx_hand_events_hand ON hand_events(hand_id, sequence);
+export interface HandStartInput {
+  tableId: number;
+  handNo: number;
+  variant: string;
+  mode: 'free' | 'real';
+  smallBlind: number;
+  bigBlind: number;
+  ante: number;
+  dealerSeat: number;
+  players: Array<{
+    userId: number;
+    displayName: string;
+    stack: number;
+    seat: number;
+  }>;
+}
 
--- ============================================================
--- 2. HAND SNAPSHOTS (هر ۱۰ event)
--- ============================================================
-CREATE TABLE IF NOT EXISTS hand_snapshots (
-  id              BIGSERIAL PRIMARY KEY,
-  hand_id         BIGINT REFERENCES hands(id) ON DELETE CASCADE,
-  sequence        INT NOT NULL,
-  state           JSONB NOT NULL,
-  created_at      TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(hand_id, sequence)
-);
-CREATE INDEX IF NOT EXISTS idx_hand_snapshots_hand ON hand_snapshots(hand_id, sequence);
+export interface HandResultInput {
+  handId: number;
+  pot: number;
+  rake: number;
+  winners: number[];
+  communityCards: any[];
+  showdownPlayers: any[];
+  playerStacks: Array<{ seat: number; userId: number; stack: number }>;
+}
 
--- ============================================================
--- 3. IDEMPOTENCY KEYS (جلوگیری از duplicate action)
--- ============================================================
-CREATE TABLE IF NOT EXISTS idempotency_keys (
-  key             TEXT PRIMARY KEY,
-  user_id         BIGINT REFERENCES users(id),
-  scope           TEXT NOT NULL DEFAULT 'default',
-  result          JSONB,
-  created_at      TIMESTAMPTZ DEFAULT NOW(),
-  expires_at      TIMESTAMPTZ
-);
-CREATE INDEX IF NOT EXISTS idx_idempotency_expires ON idempotency_keys(expires_at);
+export class HandPersister {
+  private ledger: LedgerService;
 
--- ============================================================
--- 4. EXTEND hands TABLE
--- ============================================================
-ALTER TABLE hands ADD COLUMN IF NOT EXISTS variant TEXT;
-ALTER TABLE hands ADD COLUMN IF NOT EXISTS dealer_seat INT;
-ALTER TABLE hands ADD COLUMN IF NOT EXISTS community_cards JSONB;
-ALTER TABLE hands ADD COLUMN IF NOT EXISTS winner_seats JSONB;
-ALTER TABLE hands ADD COLUMN IF NOT EXISTS engine_version TEXT DEFAULT 'poker-engine@0.3.0';
-ALTER TABLE hands ADD COLUMN IF NOT EXISTS small_blind NUMERIC(18,2);
-ALTER TABLE hands ADD COLUMN IF NOT EXISTS big_blind NUMERIC(18,2);
-ALTER TABLE hands ADD COLUMN IF NOT EXISTS ante NUMERIC(18,2) DEFAULT 0;
-ALTER TABLE hands ADD COLUMN IF NOT EXISTS player_count INT;
-ALTER TABLE hands ADD COLUMN IF NOT EXISTS finished BOOLEAN DEFAULT FALSE;
-ALTER TABLE hands ADD COLUMN IF NOT EXISTS mode TEXT; -- 'free' | 'real'
+  constructor(private db: Pool) {
+    this.ledger = new LedgerService(db);
+  }
 
--- ============================================================
--- 5. TABLE SEATS (persist state هر صندلی)
--- ============================================================
-CREATE TABLE IF NOT EXISTS table_seats (
-  id              BIGSERIAL PRIMARY KEY,
-  table_id        BIGINT REFERENCES poker_tables(id) ON DELETE CASCADE,
-  seat_index      INT NOT NULL,
-  user_id         BIGINT REFERENCES users(id),
-  stack           NUMERIC(18,2) DEFAULT 0,
-  status          TEXT DEFAULT 'EMPTY',
-  -- status: EMPTY | RESERVED | OCCUPIED | SITTING_OUT | DISCONNECTED | LEAVING
-  reserved_at     TIMESTAMPTZ,
-  joined_at       TIMESTAMPTZ DEFAULT NOW(),
-  updated_at      TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(table_id, seat_index)
-);
-CREATE INDEX IF NOT EXISTS idx_table_seats_table ON table_seats(table_id);
-CREATE INDEX IF NOT EXISTS idx_table_seats_user ON table_seats(user_id);
+  /**
+   * شروع یه دست جدید — INSERT توی hands و table_seats
+   */
+  async startHand(input: HandStartInput): Promise<number | null> {
+    try {
+      const res = await this.db.query(
+        `INSERT INTO hands 
+         (table_id, hand_no, variant, mode, small_blind, big_blind, ante, 
+          dealer_seat, server_seed_hash, player_count, started_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+         RETURNING id`,
+        [
+          input.tableId,
+          input.handNo,
+          input.variant,
+          input.mode,
+          input.smallBlind,
+          input.bigBlind,
+          input.ante,
+          input.dealerSeat,
+          'pending',
+          input.players.length,
+        ]
+      );
+      const handId = res.rows[0].id;
 
--- ============================================================
--- 6. AUTO-CREATE LEDGER ACCOUNT for هر user
--- ============================================================
-CREATE OR REPLACE FUNCTION create_user_account() RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO accounts (code, type, owner_user_id)
-  VALUES ('USER_' || NEW.id, 'user', NEW.id)
-  ON CONFLICT (code) DO NOTHING;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+      // UPSERT table_seats برای هر بازیکن
+      for (const p of input.players) {
+        await this.db.query(
+          `INSERT INTO table_seats (table_id, seat_index, user_id, stack, status, updated_at)
+           VALUES ($1, $2, $3, $4, 'OCCUPIED', NOW())
+           ON CONFLICT (table_id, seat_index) 
+           DO UPDATE SET user_id = $3, stack = $4, status = 'OCCUPIED', updated_at = NOW()`,
+          [input.tableId, p.seat, p.userId, p.stack]
+        );
+      }
 
-DROP TRIGGER IF EXISTS trg_create_user_account ON users;
-CREATE TRIGGER trg_create_user_account
-AFTER INSERT ON users
-FOR EACH ROW
-EXECUTE FUNCTION create_user_account();
+      return handId;
+    } catch (e: any) {
+      console.error('[hand-persister] startHand failed:', e.message);
+      return null;
+    }
+  }
 
--- Backfill existing users
-INSERT INTO accounts (code, type, owner_user_id)
-SELECT 'USER_' || id, 'user', id FROM users
-ON CONFLICT (code) DO NOTHING;
+  /**
+   * ثبت یه event — fire and forget
+   */
+  recordEvent(handId: number | null, sequence: number, eventType: string, payload: any): void {
+    if (!handId) return;
+    this.db.query(
+      `INSERT INTO hand_events (hand_id, sequence, event_type, payload)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (hand_id, sequence) DO NOTHING`,
+      [handId, sequence, eventType, JSON.stringify(payload || {})]
+    ).catch(e => console.error('[hand-persister] recordEvent failed:', e.message));
+  }
 
--- ============================================================
--- 7. SEED SYSTEM ACCOUNTS
--- ============================================================
-INSERT INTO accounts (code, type, owner_user_id) VALUES
-  ('HOUSE_RAKE',       'house',  NULL),
-  ('HOUSE_PRIZE_POOL', 'house',  NULL),
-  ('HOUSE_REFERRAL',   'house',  NULL),
-  ('HOUSE_BONUS',      'house',  NULL),
-  ('SYSTEM_ESCROW',    'system', NULL),
-  ('SYSTEM_DEPOSITS',  'system', NULL),
-  ('SYSTEM_WITHDRAWS', 'system', NULL)
-ON CONFLICT (code) DO NOTHING;
+  /**
+   * Snapshot هر ۱۰ event — fire and forget
+   */
+  saveSnapshot(handId: number | null, sequence: number, state: any): void {
+    if (!handId) return;
+    this.db.query(
+      `INSERT INTO hand_snapshots (hand_id, sequence, state)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (hand_id, sequence) DO NOTHING`,
+      [handId, sequence, JSON.stringify(state)]
+    ).catch(e => console.error('[hand-persister] saveSnapshot failed:', e.message));
+  }
 
--- ============================================================
--- 8. EXTEND transactions TABLE (idempotency, status, user)
--- ============================================================
-ALTER TABLE transactions ADD COLUMN IF NOT EXISTS idempotency_key TEXT;
-ALTER TABLE transactions ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'completed';
-ALTER TABLE transactions ADD COLUMN IF NOT EXISTS user_id BIGINT REFERENCES users(id);
-ALTER TABLE transactions ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT 'USD';
-ALTER TABLE transactions ADD COLUMN IF NOT EXISTS amount NUMERIC(18,2);
-ALTER TABLE transactions ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ DEFAULT NOW();
+  /**
+   * پایان دست — UPDATE hands + persist stacks + rake
+   */
+  async finishHand(
+    tableId: number,
+    handId: number | null,
+    input: HandResultInput,
+    mode: 'free' | 'real'
+  ): Promise<void> {
+    try {
+      // 1. UPDATE hands با نتیجه
+      if (handId) {
+        await this.db.query(
+          `UPDATE hands 
+           SET pot = $1, rake = $2, result = $3, community_cards = $4,
+               winner_seats = $5, finished = TRUE, ended_at = NOW()
+           WHERE id = $6`,
+          [
+            input.pot,
+            input.rake,
+            JSON.stringify({ winners: input.winners, showdownPlayers: input.showdownPlayers }),
+            JSON.stringify(input.communityCards || []),
+            JSON.stringify(input.winners),
+            handId,
+          ]
+        );
+      }
 
-CREATE INDEX IF NOT EXISTS idx_transactions_user ON transactions(user_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_transactions_kind ON transactions(kind, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_transactions_idem ON transactions(idempotency_key);
+      // 2. Persist stacks
+      if (mode === 'free') {
+        await this.persistFreeChips(input.playerStacks);
+      } else {
+        await this.persistRealMoney(input.playerStacks);
+      }
 
--- ============================================================
--- 9. EXTEND entries TABLE
--- ============================================================
-ALTER TABLE entries ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT 'USD';
-ALTER TABLE entries ADD COLUMN IF NOT EXISTS balance_after NUMERIC(18,2);
+      // 3. Record rake به ledger (فقط real money)
+      if (mode === 'real' && input.rake > 0) {
+        await this.recordRake(input.rake, handId);
+      }
+    } catch (e: any) {
+      console.error('[hand-persister] finishHand failed:', e.message);
+    }
+  }
 
-CREATE INDEX IF NOT EXISTS idx_entries_account ON entries(account_id, created_at DESC);
+  /**
+   * Play money: update free_chips + log
+   */
+  private async persistFreeChips(
+    stacks: Array<{ seat: number; userId: number; stack: number }>
+  ): Promise<void> {
+    for (const s of stacks) {
+      // خواندن balance قبلی
+      const old = await this.db.query(
+        'SELECT chips FROM free_chips WHERE user_id = $1',
+        [s.userId]
+      );
+      const oldBalance = Number(old.rows[0]?.chips ?? 0);
+      const newBalance = Math.round(s.stack);
+      const delta = newBalance - oldBalance;
 
--- ============================================================
--- 10. ADD INDEX on wallets
--- ============================================================
-CREATE INDEX IF NOT EXISTS idx_wallets_user ON wallets(user_id);
+      if (delta !== 0) {
+        await this.db.query(
+          'UPDATE free_chips SET chips = $1, total_hands = total_hands + 1 WHERE user_id = $2',
+          [newBalance, s.userId]
+        );
+        await this.db.query(
+          `INSERT INTO play_money_log (user_id, delta, reason, balance_after)
+           VALUES ($1, $2, $3, $4)`,
+          [s.userId, delta, 'hand_result', newBalance]
+        );
+      } else {
+        await this.db.query(
+          'UPDATE free_chips SET total_hands = total_hands + 1 WHERE user_id = $1',
+          [s.userId]
+        );
+      }
+    }
+  }
 
--- ============================================================
--- 11. PLAY MONEY — جدای از ledger (فقط audit log)
--- ============================================================
-CREATE TABLE IF NOT EXISTS play_money_log (
-  id              BIGSERIAL PRIMARY KEY,
-  user_id         BIGINT REFERENCES users(id),
-  delta           BIGINT NOT NULL,           -- مثبت/منفی
-  reason          TEXT NOT NULL,             -- 'daily_bonus', 'hand_win', 'hand_loss', 'tournament_entry', ...
-  ref             TEXT,                      -- hand_id / tournament_id
-  balance_after   BIGINT NOT NULL,
-  meta            JSONB DEFAULT '{}',
-  created_at      TIMESTAMPTZ DEFAULT NOW()
-);
-CREATE INDEX IF NOT EXISTS idx_play_money_log_user ON play_money_log(user_id, created_at DESC);
+  /**
+   * Real money: update wallets
+   */
+  private async persistRealMoney(
+    stacks: Array<{ seat: number; userId: number; stack: number }>
+  ): Promise<void> {
+    for (const s of stacks) {
+      await this.db.query(
+        `UPDATE wallets SET balance_usd = $1, updated_at = NOW() WHERE user_id = $2`,
+        [s.stack, s.userId]
+      );
+    }
+  }
 
--- ============================================================
--- 12. VERIFY
--- ============================================================
-DO $$
-BEGIN
-  RAISE NOTICE 'Migration 006 complete:';
-  RAISE NOTICE '  - hand_events, hand_snapshots, idempotency_keys added';
-  RAISE NOTICE '  - table_seats added';
-  RAISE NOTICE '  - accounts auto-create trigger installed';
-  RAISE NOTICE '  - 7 system accounts seeded';
-  RAISE NOTICE '  - transactions + entries extended';
-  RAISE NOTICE '  - play_money_log added';
-END $$;
+  /**
+   * ثبت rake به ledger
+   */
+  private async recordRake(rake: number, handId: number | null): Promise<void> {
+    const rakeAcc = await this.ledger.getAccountId('HOUSE_RAKE');
+    const escrowAcc = await this.ledger.getAccountId('SYSTEM_ESCROW');
+    if (!rakeAcc || !escrowAcc) return;
+
+    await this.ledger.record({
+      kind: 'RAKE',
+      ref: `hand_${handId}`,
+      meta: { handId },
+      entries: [
+        { accountId: escrowAcc, amount: -rake },
+        { accountId: rakeAcc, amount: +rake },
+      ],
+      idempotencyKey: `rake_hand_${handId}`,
+    });
+  }
+}

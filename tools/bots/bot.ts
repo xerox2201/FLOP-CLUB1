@@ -79,9 +79,6 @@ async function ensureUser(name: string, tgId: number): Promise<number> {
   return userId;
 }
 
-// ============================================================
-// ============ Decision Logic (Fixed for float drift) ========
-// ============================================================
 function decideAction(state: any, mySeat: any): { action: string; amount?: number } {
   const stack = Number(mySeat.stack) || 0;
   if (stack <= 0) return { action: 'FOLD' };
@@ -92,7 +89,6 @@ function decideAction(state: any, mySeat: any): { action: string; amount?: numbe
   const myBet = Number(mySeat.betThisStreet) || 0;
   const toCall = round2(Math.max(0, maxBet - myBet));
 
-  // 🔴 Safe min raise with buffer + round
   const safeMinRaise = round2(Math.max(minRaise, bigBlind));
   const minTotal = round2(maxBet + safeMinRaise);
 
@@ -101,7 +97,6 @@ function decideAction(state: any, mySeat: any): { action: string; amount?: numbe
 
   const r = Math.random();
 
-  // -------- No bet to call: check or raise --------
   if (toCall === 0) {
     if (canRaiseToMin && r < 0.12) {
       const extra = Math.floor(Math.random() * 3) * bigBlind;
@@ -114,14 +109,11 @@ function decideAction(state: any, mySeat: any): { action: string; amount?: numbe
     return { action: 'CHECK' };
   }
 
-  // -------- Facing a bet --------
   if (toCall > stack * 0.6) {
     return r < 0.9 ? { action: 'FOLD' } : { action: 'CALL' };
   }
 
-  // Occasional raise (only if we can make a valid raise)
   if (canRaiseToMin && r < 0.08) {
-    // 🔴 اضافه کردن bigBlind buffer برای float drift
     const raiseTo = round2(Math.min(minTotal + bigBlind, allInTotal));
     if (raiseTo + 0.0001 >= minTotal) {
       return { action: 'RAISE', amount: raiseTo };
@@ -358,7 +350,6 @@ async function main() {
                 const errMsg = `${bot.displayName} ${decision.action} failed: ${err}`;
                 stats.realErrors.push(errMsg);
                 console.error(`   ❌ ${errMsg}`);
-                // 🔴 Smart fallback: CALL if there's something to call, else CHECK
                 const maxBet2 = Math.max(...state.seats.map((s: any) => Number(s.betThisStreet) || 0));
                 const myBet2 = Number(mySeat.betThisStreet) || 0;
                 const toCall2 = maxBet2 - myBet2;
@@ -446,13 +437,13 @@ async function main() {
   console.log('');
   console.log('  ── Final Chip Totals ──');
   let finalTotal = 0;
-  let potInState = 0;
   if (lastState && lastState.seats) {
-    potInState = Number(lastState.pot) || 0;
+    // 🔴 pot شامل betThisStreet هست — فقط stack + pot
     for (const s of lastState.seats) {
-      console.log(`    ${s.displayName}: $${(s.stack || 0).toFixed(2)} (stack) + $${(s.betThisStreet || 0).toFixed(2)} (bet)`);
-      finalTotal += (s.stack || 0) + (s.betThisStreet || 0);
+      console.log(`    ${s.displayName}: $${(s.stack || 0).toFixed(2)}`);
+      finalTotal += (s.stack || 0);
     }
+    const potInState = Number(lastState.pot) || 0;
     if (potInState > 0) {
       console.log(`    [pot]: $${potInState.toFixed(2)}`);
       finalTotal += potInState;
