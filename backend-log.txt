@@ -1,0 +1,4 @@
+cd C:\projects\poker-platform
+# ترمینال Backend رو کپی کن (Ctrl+A, Ctrl+C)
+# بعد توی PowerShell:
+Get-Clipboard > backend-log.txt
