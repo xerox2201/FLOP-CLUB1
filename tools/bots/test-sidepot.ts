@@ -1,4 +1,4 @@
- import { PokerGame } from '../../packages/poker-engine/src/game.js';
+import { PokerGame } from '../../packages/poker-engine/src/game.js';
 
 async function main() {
   const game = new PokerGame(
@@ -12,10 +12,10 @@ async function main() {
       rakePct: 0,
     },
     [
-      { userId: 1, displayName: 'Ali',  stack: 100 },
+      { userId: 1, displayName: 'Ali', stack: 100 },
       { userId: 2, displayName: 'Sara', stack: 200 },
       { userId: 3, displayName: 'Reza', stack: 500 },
-    ]
+    ],
   );
 
   game.startHand([]);
@@ -35,23 +35,31 @@ async function main() {
   console.log('> Ali RAISE to $100 (all-in)');
   let r = game.act(0, 'raise', 100);
   console.log('Result:', r);
-  console.log(`Pot: $${game.state.pot}, phase: ${game.state.phase}, current: ${game.state.currentSeat}`);
+  console.log(
+    `Pot: $${game.state.pot}, phase: ${game.state.phase}, current: ${game.state.currentSeat}`,
+  );
 
   // Sara RE-RAISE to $200 (all-in)
   console.log('> Sara RAISE to $200 (all-in)');
   r = game.act(1, 'raise', 200);
   console.log('Result:', r);
-  console.log(`Pot: $${game.state.pot}, phase: ${game.state.phase}, current: ${game.state.currentSeat}`);
+  console.log(
+    `Pot: $${game.state.pot}, phase: ${game.state.phase}, current: ${game.state.currentSeat}`,
+  );
 
   // Reza CALL $200 (has $490 left after SB)
   console.log('> Reza CALL $200');
   r = game.act(2, 'call', 0);
   console.log('Result:', r);
-  console.log(`Pot: $${game.state.pot}, phase: ${game.state.phase}, current: ${game.state.currentSeat}`);
+  console.log(
+    `Pot: $${game.state.pot}, phase: ${game.state.phase}, current: ${game.state.currentSeat}`,
+  );
 
   console.log('\n=== AFTER PREFLOP ===');
   for (const s of game.state.seats) {
-    console.log(`${s.displayName}: stack=$${s.stack}, totalBet=$${s.totalBet}, allIn=${s.allIn}, folded=${s.folded}`);
+    console.log(
+      `${s.displayName}: stack=$${s.stack}, totalBet=$${s.totalBet}, allIn=${s.allIn}, folded=${s.folded}`,
+    );
   }
   console.log(`Pot: $${game.state.pot}, phase: ${game.state.phase}`);
   console.log(`Community: ${game.state.community.length} cards`);
@@ -90,7 +98,9 @@ async function main() {
 
     console.log('\n=== Showdown Players ===');
     for (const sp of result.showdownPlayers) {
-      console.log(`  ${sp.displayName}: ${sp.handName} | isWinner=${sp.isWinner} | payout=$${sp.payout}`);
+      console.log(
+        `  ${sp.displayName}: ${sp.handName} | isWinner=${sp.isWinner} | payout=$${sp.payout}`,
+      );
     }
 
     console.log('\n=== Final Stacks ===');
@@ -103,7 +113,7 @@ async function main() {
   }
 }
 
-main().catch(e => {
+main().catch((e) => {
   console.error('ERROR:', e);
   console.error(e.stack);
   process.exit(1);

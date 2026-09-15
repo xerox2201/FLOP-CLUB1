@@ -1,4 +1,4 @@
- import dotenv from 'dotenv';
+import dotenv from 'dotenv';
 import { io, Socket } from 'socket.io-client';
 import jwt from 'jsonwebtoken';
 import { Pool } from 'pg';
@@ -21,11 +21,7 @@ const VERBOSE = process.env.VERBOSE !== 'false';
 
 const db = new Pool({ connectionString: DATABASE_URL });
 
-const EXPECTED_ERRORS = new Set([
-  'hand_not_active',
-  'not_your_turn',
-  'not_active',
-]);
+const EXPECTED_ERRORS = new Set(['hand_not_active', 'not_your_turn', 'not_active']);
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
@@ -39,7 +35,7 @@ const stats = {
   realErrors: [] as string[],
   warnings: [] as string[],
   startTime: 0,
-  initialChips: 0,   // set dynamically
+  initialChips: 0, // set dynamically
   totalRake: 0,
   totalRebuy: 0,
   seenCardsPerHand: new Map<number, Set<string>>(),
@@ -71,7 +67,7 @@ async function ensureUser(name: string, tgId: number): Promise<number> {
   const inserted = await db.query(
     `INSERT INTO users (telegram_id, username, display_name, language)
      VALUES ($1, $2, $3, $4) RETURNING id`,
-    [tgId, `bot_${tgId}`, name, 'en']
+    [tgId, `bot_${tgId}`, name, 'en'],
   );
   const userId = inserted.rows[0].id;
   await db.query('INSERT INTO wallets (user_id, balance_usd) VALUES ($1, 0)', [userId]);
@@ -83,7 +79,7 @@ function decideAction(state: any, mySeat: any): { action: string; amount?: numbe
   const stack = Number(mySeat.stack) || 0;
   if (stack <= 0) return { action: 'FOLD' };
 
-  const bigBlind = Number(state.bigBlind) || 0.10;
+  const bigBlind = Number(state.bigBlind) || 0.1;
   const minRaise = Number(state.minRaise) || bigBlind;
   const maxBet = Math.max(...state.seats.map((s: any) => Number(s.betThisStreet) || 0));
   const myBet = Number(mySeat.betThisStreet) || 0;
@@ -134,8 +130,13 @@ async function createBot(index: number): Promise<BotState> {
   const userId = await ensureUser(name, tgId);
   const token = jwt.sign({ uid: userId, tg: tgId }, JWT_SECRET);
   return {
-    index, userId, displayName: name, token,
-    socket: null, seat: null, stack: 0,
+    index,
+    userId,
+    displayName: name,
+    token,
+    socket: null,
+    seat: null,
+    stack: 0,
     lastActedTurnKey: null,
     handsPlayed: new Set(),
     lastFinishedHand: 0,
@@ -186,7 +187,10 @@ function checkDuplicateCards(handNo: number, state: any) {
   }
 }
 
-async function connectBot(bot: BotState, onStateUpdate: (bot: BotState, state: any) => void): Promise<void> {
+async function connectBot(
+  bot: BotState,
+  onStateUpdate: (bot: BotState, state: any) => void,
+): Promise<void> {
   return new Promise((resolve, reject) => {
     const socket = io(API_URL, {
       auth: { token: bot.token, device: `bot_device_${bot.userId}` },
@@ -214,7 +218,9 @@ async function connectBot(bot: BotState, onStateUpdate: (bot: BotState, state: a
     });
 
     socket.on('table:state', (state: any) => {
-      try { onStateUpdate(bot, state); } catch (e: any) {
+      try {
+        onStateUpdate(bot, state);
+      } catch (e: any) {
         stats.realErrors.push(`${bot.displayName} state handler: ${e.message}`);
       }
     });
@@ -281,7 +287,10 @@ async function main() {
 
   function processQueue() {
     const fn = actionQueue.shift();
-    if (!fn) { processing = false; return; }
+    if (!fn) {
+      processing = false;
+      return;
+    }
     fn();
     const delay = DELAY_MIN + Math.random() * (DELAY_MAX - DELAY_MIN);
     setTimeout(processQueue, delay);
@@ -360,7 +369,9 @@ async function main() {
                 const errMsg = `${bot.displayName} ${decision.action} failed: ${err}`;
                 stats.realErrors.push(errMsg);
                 console.error(`   ❌ ${errMsg}`);
-                const maxBet2 = Math.max(...state.seats.map((s: any) => Number(s.betThisStreet) || 0));
+                const maxBet2 = Math.max(
+                  ...state.seats.map((s: any) => Number(s.betThisStreet) || 0),
+                );
                 const myBet2 = Number(mySeat.betThisStreet) || 0;
                 const toCall2 = maxBet2 - myBet2;
                 const fallback = toCall2 > 0 ? 'CALL' : 'CHECK';
@@ -371,7 +382,7 @@ async function main() {
                 });
               }
             }
-          }
+          },
         );
       });
     }
@@ -385,7 +396,7 @@ async function main() {
       console.error(`  ✗ ${bot.displayName}: ${e.message}`);
       stats.realErrors.push(`${bot.displayName}: ${e.message}`);
     }
-    await new Promise(r => setTimeout(r, 100));
+    await new Promise((r) => setTimeout(r, 100));
   }
   console.log(`  ✓ All bots connected`);
   console.log('');
@@ -395,14 +406,19 @@ async function main() {
   let lastReport = 0;
 
   while (stats.handsFinished < MAX_HANDS) {
-    await new Promise(r => setTimeout(r, 500));
+    await new Promise((r) => setTimeout(r, 500));
 
     const now = Date.now();
     if (now - lastReport > 5000) {
       lastReport = now;
       const elapsed = ((now - stats.startTime) / 1000).toFixed(0);
-      const hpm = stats.handsFinished > 0 ? (stats.handsFinished / (now - stats.startTime) * 60000).toFixed(1) : '0';
-      process.stdout.write(`\r  📊 Hands: ${stats.handsFinished}${MAX_HANDS === Infinity ? '' : '/' + MAX_HANDS}  |  Time: ${elapsed}s  |  Rate: ${hpm}/min  |  Real: ${stats.realErrors.length}  |  Race: ${stats.expectedErrors}  `);
+      const hpm =
+        stats.handsFinished > 0
+          ? ((stats.handsFinished / (now - stats.startTime)) * 60000).toFixed(1)
+          : '0';
+      process.stdout.write(
+        `\r  📊 Hands: ${stats.handsFinished}${MAX_HANDS === Infinity ? '' : '/' + MAX_HANDS}  |  Time: ${elapsed}s  |  Rate: ${hpm}/min  |  Real: ${stats.realErrors.length}  |  Race: ${stats.expectedErrors}  `,
+      );
     }
   }
 
@@ -414,8 +430,12 @@ async function main() {
   console.log(`  Duration:       ${elapsed}s`);
   console.log(`  Hands started:  ${stats.handsStarted}`);
   console.log(`  Hands finished: ${stats.handsFinished}`);
-  console.log(`  Rate:           ${(stats.handsFinished / (Date.now() - stats.startTime) * 60000).toFixed(1)} hands/min`);
-  console.log(`  Hand duration:  avg=${stats.lastHandDuration}ms  min=${stats.shortestHand}ms  max=${stats.longestHand}ms`);
+  console.log(
+    `  Rate:           ${((stats.handsFinished / (Date.now() - stats.startTime)) * 60000).toFixed(1)} hands/min`,
+  );
+  console.log(
+    `  Hand duration:  avg=${stats.lastHandDuration}ms  min=${stats.shortestHand}ms  max=${stats.longestHand}ms`,
+  );
   console.log('');
   console.log('  Actions:');
   for (const [k, v] of Object.entries(stats.actions)) {
@@ -434,7 +454,8 @@ async function main() {
     console.log('');
     console.log('  ── REAL Errors (first 30) ──');
     for (const e of stats.realErrors.slice(0, 30)) console.log(`    ❌ ${e}`);
-    if (stats.realErrors.length > 30) console.log(`    ... and ${stats.realErrors.length - 30} more`);
+    if (stats.realErrors.length > 30)
+      console.log(`    ... and ${stats.realErrors.length - 30} more`);
   }
 
   if (stats.warnings.length > 0) {
@@ -451,7 +472,7 @@ async function main() {
     // 🔴 pot شامل betThisStreet هست — فقط stack + pot
     for (const s of lastState.seats) {
       console.log(`    ${s.displayName}: $${(s.stack || 0).toFixed(2)}`);
-      finalTotal += (s.stack || 0);
+      finalTotal += s.stack || 0;
     }
     const potInState = Number(lastState.pot) || 0;
     if (potInState > 0) {

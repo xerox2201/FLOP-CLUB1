@@ -1,4 +1,4 @@
- <script lang="ts">
+<script lang="ts">
   import PlayingCard from './PlayingCard.svelte';
 
   export let result: any;
@@ -44,8 +44,12 @@
   }
 </script>
 
-<div class="fixed inset-0 z-40 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 pointer-events-none">
-  <div class="glass-strong rounded-3xl p-4 max-w-[420px] w-full border-2 border-gold/40 shadow-2xl max-h-[92vh] overflow-y-auto no-scrollbar">
+<div
+  class="fixed inset-0 z-40 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 pointer-events-none"
+>
+  <div
+    class="glass-strong rounded-3xl p-4 max-w-[420px] w-full border-2 border-gold/40 shadow-2xl max-h-[92vh] overflow-y-auto no-scrollbar"
+  >
     <div class="text-center mb-3">
       <div class="text-3xl mb-1">🏆</div>
       <p class="text-[10px] uppercase tracking-widest text-gold/70 font-bold">
@@ -57,20 +61,31 @@
       <div class="space-y-2">
         {#each result.showdownPlayers as p}
           {@const cards = cleanBest(p.best)}
-          <div class="rounded-2xl p-2 {p.isWinner ? 'bg-gold/15 border-2 border-gold/60' : 'bg-white/5 border border-white/10'}">
+          <div
+            class="rounded-2xl p-2 {p.isWinner
+              ? 'bg-gold/15 border-2 border-gold/60'
+              : 'bg-white/5 border border-white/10'}"
+          >
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center gap-1.5 min-w-0">
                 {#if p.isWinner}
                   <span class="text-base">👑</span>
                 {/if}
-                <span class="text-xs font-bold truncate {p.isWinner ? 'text-gold' : 'text-white/80'}">{p.displayName}</span>
+                <span
+                  class="text-xs font-bold truncate {p.isWinner ? 'text-gold' : 'text-white/80'}"
+                  >{p.displayName}</span
+                >
               </div>
-              <span class="text-[10px] font-bold shrink-0 ml-2 {p.isWinner ? 'text-gold' : 'text-white/50'}">{p.handName}</span>
+              <span
+                class="text-[10px] font-bold shrink-0 ml-2 {p.isWinner
+                  ? 'text-gold'
+                  : 'text-white/50'}">{p.handName}</span
+              >
             </div>
 
             <div class="flex items-center gap-1 justify-center">
               {#each cards as c}
-                <div class="{p.isWinner ? 'ring-1 ring-gold rounded-md' : ''}">
+                <div class={p.isWinner ? 'ring-1 ring-gold rounded-md' : ''}>
                   <PlayingCard rank={c.r} suit={c.s} size="sm" />
                 </div>
               {/each}
@@ -88,7 +103,9 @@
       <div class="text-center">
         <p class="text-xs text-white/50 mb-2">Everyone folded</p>
         <p class="font-extrabold text-lg text-gold mb-2">Winner</p>
-        <p class="text-2xl font-extrabold text-emerald-400 mb-2">+${fmt(result.payouts?.[0]?.amount || 0)}</p>
+        <p class="text-2xl font-extrabold text-emerald-400 mb-2">
+          +${fmt(result.payouts?.[0]?.amount || 0)}
+        </p>
         <p class="text-[10px] text-white/40 italic">Cards mucked</p>
       </div>
     {/if}

@@ -26,9 +26,10 @@ export class TonAdapter {
     } catch (e: any) {
       console.error('[ton] endpoint resolution failed:', e.message);
       // Fallback to toncenter
-      const fallback = TON_NETWORK === 'mainnet'
-        ? 'https://toncenter.com/api/v2/jsonRPC'
-        : 'https://testnet.toncenter.com/api/v2/jsonRPC';
+      const fallback =
+        TON_NETWORK === 'mainnet'
+          ? 'https://toncenter.com/api/v2/jsonRPC'
+          : 'https://testnet.toncenter.com/api/v2/jsonRPC';
       console.warn(`[ton] falling back to ${fallback}`);
       this.client = new TonClient({
         endpoint: fallback,

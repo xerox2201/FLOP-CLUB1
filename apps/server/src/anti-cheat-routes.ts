@@ -30,7 +30,7 @@ export async function registerAntiCheatRoutes(app: FastifyInstance, db: Pool) {
        FROM player_risk pr
        JOIN users u ON u.id = pr.user_id
        WHERE pr.score > 0
-       ORDER BY pr.score DESC LIMIT 100`
+       ORDER BY pr.score DESC LIMIT 100`,
     );
     return { users: res.rows };
   });
@@ -38,8 +38,12 @@ export async function registerAntiCheatRoutes(app: FastifyInstance, db: Pool) {
   app.get('/api/admin/anticheat/events', async (req, reply) => {
     if (!requireAdmin(req, reply)) return;
     const { resolved } = req.query as any;
-    const where = resolved === 'true' ? 'WHERE se.resolved = TRUE'
-                : resolved === 'false' ? 'WHERE se.resolved = FALSE' : '';
+    const where =
+      resolved === 'true'
+        ? 'WHERE se.resolved = TRUE'
+        : resolved === 'false'
+          ? 'WHERE se.resolved = FALSE'
+          : '';
     const res = await db.query(
       `SELECT se.id, se.user_id, se.other_user_id, se.type, se.severity,
               se.evidence, se.resolved, se.reviewer_note, se.created_at,
@@ -48,7 +52,7 @@ export async function registerAntiCheatRoutes(app: FastifyInstance, db: Pool) {
        JOIN users u ON u.id = se.user_id
        LEFT JOIN users u2 ON u2.id = se.other_user_id
        ${where}
-       ORDER BY se.created_at DESC LIMIT 200`
+       ORDER BY se.created_at DESC LIMIT 200`,
     );
     return { events: res.rows };
   });
@@ -59,10 +63,10 @@ export async function registerAntiCheatRoutes(app: FastifyInstance, db: Pool) {
       if (!requireAdmin(req, reply)) return;
       const res = await db.query(
         `SELECT * FROM player_actions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 100`,
-        [req.params.userId]
+        [req.params.userId],
       );
       return { actions: res.rows };
-    }
+    },
   );
 
   app.get<{ Params: { userId: string } }>(
@@ -71,10 +75,10 @@ export async function registerAntiCheatRoutes(app: FastifyInstance, db: Pool) {
       if (!requireAdmin(req, reply)) return;
       const res = await db.query(
         `SELECT ip, first_seen, last_seen FROM user_ips WHERE user_id = $1 ORDER BY last_seen DESC`,
-        [req.params.userId]
+        [req.params.userId],
       );
       return { ips: res.rows };
-    }
+    },
   );
 
   app.post<{ Params: { id: string }; Body: { note?: string } }>(
@@ -83,10 +87,10 @@ export async function registerAntiCheatRoutes(app: FastifyInstance, db: Pool) {
       if (!requireAdmin(req, reply)) return;
       await db.query(
         `UPDATE suspicious_events SET resolved = TRUE, reviewer_note = $1 WHERE id = $2`,
-        [req.body?.note ?? null, req.params.id]
+        [req.body?.note ?? null, req.params.id],
       );
       return { ok: true };
-    }
+    },
   );
 
   app.post<{ Params: { userId: string }; Body: { ban: boolean; reason?: string } }>(
@@ -98,17 +102,24 @@ export async function registerAntiCheatRoutes(app: FastifyInstance, db: Pool) {
       await db.query(
         `INSERT INTO suspicious_events (user_id, type, severity, evidence, resolved)
          VALUES ($1, $2, $3, $4, TRUE)`,
-        [req.params.userId, ban ? 'manual_ban' : 'manual_unban', 10, JSON.stringify({ reason: reason ?? 'admin action' })]
+        [
+          req.params.userId,
+          ban ? 'manual_ban' : 'manual_unban',
+          10,
+          JSON.stringify({ reason: reason ?? 'admin action' }),
+        ],
       );
       return { ok: true };
-    }
+    },
   );
 
   app.get('/api/admin/anticheat/stats', async (req, reply) => {
     if (!requireAdmin(req, reply)) return;
     const [total, byType, highRisk] = await Promise.all([
       db.query('SELECT COUNT(*) FROM suspicious_events WHERE resolved = FALSE'),
-      db.query(`SELECT type, COUNT(*) as count FROM suspicious_events WHERE resolved = FALSE GROUP BY type`),
+      db.query(
+        `SELECT type, COUNT(*) as count FROM suspicious_events WHERE resolved = FALSE GROUP BY type`,
+      ),
       db.query('SELECT COUNT(*) FROM player_risk WHERE score >= 65'),
     ]);
     return {

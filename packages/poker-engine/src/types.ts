@@ -46,10 +46,10 @@ export interface Seat {
 
 // 🔴 NEW: Side Pot
 export interface SidePot {
-  type: string;         // 'main' | 'side_1' | 'side_2'
-  label: string;        // 'Main Pot' | 'Side Pot 1'
-  amount: number;       // total contributed
-  netAmount: number;    // after rake
+  type: string; // 'main' | 'side_1' | 'side_2'
+  label: string; // 'Main Pot' | 'Side Pot 1'
+  amount: number; // total contributed
+  netAmount: number; // after rake
   eligibleSeats: number[];
   winnerSeats: number[];
   payouts: { seat: number; amount: number }[];
@@ -72,7 +72,7 @@ export interface GameState {
   minRaise: number;
   lastAggressor: number;
   winners?: number[];
-  sidePots?: SidePot[];   // 🔴 NEW
+  sidePots?: SidePot[]; // 🔴 NEW
   turnStartedAt: number;
   turnBankActive: boolean;
 
@@ -91,7 +91,7 @@ export interface HandResult {
   revealSeed: string;
   showdown: boolean;
   showdownPlayers: ShowdownPlayer[];
-  sidePots?: SidePot[];   // 🔴 NEW
+  sidePots?: SidePot[]; // 🔴 NEW
 }
 
 export interface ShowdownPlayer {

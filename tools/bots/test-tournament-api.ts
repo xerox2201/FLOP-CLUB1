@@ -28,7 +28,7 @@ async function main() {
 
   // 1. Get blind structures
   console.log('\n=== 1. Blind Structures ===');
-  const bs = await fetch(`${API}/api/blind-structures`).then(r => r.json());
+  const bs = await fetch(`${API}/api/blind-structures`).then((r) => r.json());
   console.table(bs.structures);
 
   // 2. Create tournament
@@ -50,7 +50,7 @@ async function main() {
       guaranteed: 0,
       blindStructureId: 5,
     }),
-  }).then(r => r.json());
+  }).then((r) => r.json());
   console.log(createRes);
 
   const tid = createRes.tournamentId;
@@ -61,19 +61,24 @@ async function main() {
     method: 'POST',
     headers,
     body: JSON.stringify({}),
-  }).then(r => r.json());
+  }).then((r) => r.json());
   console.log(regRes);
 
   // 4. List tournaments
   console.log('\n=== 4. List Tournaments ===');
-  const list = await fetch(`${API}/api/tournaments`).then(r => r.json());
-  console.table(list.tournaments.map((t: any) => ({
-    id: t.id, name: t.name, status: t.status, registered: t.registeredCount,
-  })));
+  const list = await fetch(`${API}/api/tournaments`).then((r) => r.json());
+  console.table(
+    list.tournaments.map((t: any) => ({
+      id: t.id,
+      name: t.name,
+      status: t.status,
+      registered: t.registeredCount,
+    })),
+  );
 
   // 5. Get details
   console.log('\n=== 5. Get Details ===');
-  const detail = await fetch(`${API}/api/tournaments/${tid}`).then(r => r.json());
+  const detail = await fetch(`${API}/api/tournaments/${tid}`).then((r) => r.json());
   console.log(`Name: ${detail.name}`);
   console.log(`Status: ${detail.status}`);
   console.log(`Registered: ${detail.registeredCount}`);
@@ -83,7 +88,7 @@ async function main() {
   console.log('\n✅ All tests complete');
 }
 
-main().catch(e => {
+main().catch((e) => {
   console.error('Error:', e);
   process.exit(1);
 });

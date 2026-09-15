@@ -1,4 +1,4 @@
- <script lang="ts">
+<script lang="ts">
   import PlayingCard from './PlayingCard.svelte';
   import PokerChip from './PokerChip.svelte';
   import Avatar from './Avatar.svelte';
@@ -12,9 +12,10 @@
   export let isEliminated: boolean = false;
   export let handResult: any = null;
 
-  $: feltGradient = theme === 'tournament'
-    ? 'radial-gradient(ellipse at 50% 45%, #5b21b6 0%, #3b0764 55%, #1e1b4b 100%)'
-    : 'radial-gradient(ellipse at 50% 45%, #1a5c3a 0%, #0d3d24 55%, #072a1a 100%)';
+  $: feltGradient =
+    theme === 'tournament'
+      ? 'radial-gradient(ellipse at 50% 45%, #5b21b6 0%, #3b0764 55%, #1e1b4b 100%)'
+      : 'radial-gradient(ellipse at 50% 45%, #1a5c3a 0%, #0d3d24 55%, #072a1a 100%)';
   $: rimColor = '#050a0a';
 
   function fmt(n: any): string {
@@ -87,7 +88,10 @@
     if (!winners || winners.length === 0) return null;
     if (!handResult?.showdownPlayers) return null;
 
-    const map: Record<number, { isWinner: boolean; handName: string; payout: number; best: any[] }> = {};
+    const map: Record<
+      number,
+      { isWinner: boolean; handName: string; payout: number; best: any[] }
+    > = {};
     for (const p of handResult.showdownPlayers) {
       map[p.seat] = {
         isWinner: !!p.isWinner,
@@ -155,14 +159,18 @@
         }
       }, 80);
 
-      setTimeout(() => { chipVisible = false; }, 2000);
+      setTimeout(() => {
+        chipVisible = false;
+      }, 2000);
     }
   }
 </script>
 
-<div class="absolute left-1/2 -translate-x-1/2 w-[92%] max-w-[420px]" style="top: 43%; transform: translate(-50%, -50%);">
+<div
+  class="absolute left-1/2 -translate-x-1/2 w-[92%] max-w-[420px]"
+  style="top: 43%; transform: translate(-50%, -50%);"
+>
   <div class="relative w-full" style="aspect-ratio: 1 / 1.15;">
-
     <!-- Outer rim -->
     <div
       class="absolute -inset-3 rounded-[50%]"
@@ -173,30 +181,61 @@
       "
     ></div>
 
-    <div class="absolute -inset-1 rounded-[50%]" style="background: linear-gradient(180deg, rgba(255,255,255,0.08), transparent 30%, transparent 70%, rgba(255,255,255,0.04));"></div>
+    <div
+      class="absolute -inset-1 rounded-[50%]"
+      style="background: linear-gradient(180deg, rgba(255,255,255,0.08), transparent 30%, transparent 70%, rgba(255,255,255,0.04));"
+    ></div>
 
     <!-- Felt -->
     <div class="absolute inset-0 rounded-[50%] overflow-hidden" style="background: {feltGradient};">
-      <div class="absolute inset-0 rounded-[50%]" style="box-shadow: inset 0 0 80px rgba(0,0,0,0.7);"></div>
-      <div class="absolute inset-0 rounded-[50%] opacity-30" style="background: radial-gradient(ellipse at 50% 30%, rgba(255,255,255,0.2), transparent 55%);"></div>
+      <div
+        class="absolute inset-0 rounded-[50%]"
+        style="box-shadow: inset 0 0 80px rgba(0,0,0,0.7);"
+      ></div>
+      <div
+        class="absolute inset-0 rounded-[50%] opacity-30"
+        style="background: radial-gradient(ellipse at 50% 30%, rgba(255,255,255,0.2), transparent 55%);"
+      ></div>
     </div>
 
     <!-- ============ POT ============ -->
     {#if gameState && totalPot > 0 && winners.length === 0}
       {#if sidePots.length > 1}
-        <div class="absolute top-[20%] left-1/2 -translate-x-1/2 z-[30] flex flex-col items-center gap-1">
+        <div
+          class="absolute top-[20%] left-1/2 -translate-x-1/2 z-[30] flex flex-col items-center gap-1"
+        >
           {#each sidePots as pot}
-            <div class="rounded-full px-3 py-0.5 flex items-center gap-1.5" style="background: #000; border: 2px solid {pot.type === 'main' ? '#d97706' : '#0891b2'}; box-shadow: 0 4px 12px rgba(0,0,0,0.9);">
-              <span class="text-[9px] uppercase tracking-widest font-extrabold {pot.type === 'main' ? 'text-amber-400/80' : 'text-cyan-400/80'}">{pot.label}</span>
-              <span class="text-[12px] font-extrabold {pot.type === 'main' ? 'text-amber-400' : 'text-cyan-400'} tabular-nums">${fmt(pot.amount)}</span>
+            <div
+              class="rounded-full px-3 py-0.5 flex items-center gap-1.5"
+              style="background: #000; border: 2px solid {pot.type === 'main'
+                ? '#d97706'
+                : '#0891b2'}; box-shadow: 0 4px 12px rgba(0,0,0,0.9);"
+            >
+              <span
+                class="text-[9px] uppercase tracking-widest font-extrabold {pot.type === 'main'
+                  ? 'text-amber-400/80'
+                  : 'text-cyan-400/80'}">{pot.label}</span
+              >
+              <span
+                class="text-[12px] font-extrabold {pot.type === 'main'
+                  ? 'text-amber-400'
+                  : 'text-cyan-400'} tabular-nums">${fmt(pot.amount)}</span
+              >
             </div>
           {/each}
         </div>
       {:else}
         <div class="absolute top-[22%] left-1/2 -translate-x-1/2 z-[30]">
-          <div class="rounded-full px-4 py-1 flex items-center gap-2" style="background: #000; border: 2px solid #d97706; box-shadow: 0 4px 16px rgba(0,0,0,0.9), 0 0 16px rgba(217,119,6,0.2);">
-            <span class="text-[10px] uppercase tracking-widest font-extrabold text-white/80">POT</span>
-            <span class="text-[14px] font-extrabold text-amber-400 tabular-nums">${fmt(totalPot)}</span>
+          <div
+            class="rounded-full px-4 py-1 flex items-center gap-2"
+            style="background: #000; border: 2px solid #d97706; box-shadow: 0 4px 16px rgba(0,0,0,0.9), 0 0 16px rgba(217,119,6,0.2);"
+          >
+            <span class="text-[10px] uppercase tracking-widest font-extrabold text-white/80"
+              >POT</span
+            >
+            <span class="text-[14px] font-extrabold text-amber-400 tabular-nums"
+              >${fmt(totalPot)}</span
+            >
           </div>
         </div>
       {/if}
@@ -249,21 +288,37 @@
 
             <div
               class="relative rounded-full p-[3px] bg-black {s.folded ? 'opacity-40' : ''}"
-              style="border: 3px solid {isWin ? '#10b981' : (isShowdownLose ? '#6b7280' : (isTurn ? '#f97316' : '#e5e7eb'))}; box-shadow: 0 4px 14px rgba(0,0,0,0.85){isWin ? ', 0 0 20px rgba(16,185,129,0.7)' : ''};"
+              style="border: 3px solid {isWin
+                ? '#10b981'
+                : isShowdownLose
+                  ? '#6b7280'
+                  : isTurn
+                    ? '#f97316'
+                    : '#e5e7eb'}; box-shadow: 0 4px 14px rgba(0,0,0,0.85){isWin
+                ? ', 0 0 20px rgba(16,185,129,0.7)'
+                : ''};"
             >
-              <div class="relative w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-amber-700 to-amber-900 flex items-center justify-center">
+              <div
+                class="relative w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-amber-700 to-amber-900 flex items-center justify-center"
+              >
                 <Avatar avatarId={s.avatarId || 'diamond'} size="md" />
               </div>
             </div>
 
             {#if s.folded}
-              <div class="absolute inset-0 flex items-center justify-center rounded-full bg-black/75">
+              <div
+                class="absolute inset-0 flex items-center justify-center rounded-full bg-black/75"
+              >
                 <span class="text-[8px] font-extrabold text-white">FOLD</span>
               </div>
             {/if}
 
             {#if gameState.dealerSeat === s.seat}
-              <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-white text-black text-[9px] font-extrabold flex items-center justify-center shadow-lg border-2 border-black/30 z-[15]">D</div>
+              <div
+                class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-white text-black text-[9px] font-extrabold flex items-center justify-center shadow-lg border-2 border-black/30 z-[15]"
+              >
+                D
+              </div>
             {/if}
 
             <!-- 🔴 Hole cards near avatar (at showdown) -->
@@ -281,17 +336,29 @@
           <!-- Nameplate -->
           <div
             class="mt-5 px-2.5 py-1 bg-white flex flex-col items-center relative z-[40]"
-            style="border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.9); border: 2px solid {isShowdownWin ? '#10b981' : (isShowdownLose ? '#ef4444' : 'rgba(0,0,0,0.3)')}; min-width: 76px;"
+            style="border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.9); border: 2px solid {isShowdownWin
+              ? '#10b981'
+              : isShowdownLose
+                ? '#ef4444'
+                : 'rgba(0,0,0,0.3)'}; min-width: 76px;"
           >
-            <p class="text-[10px] font-extrabold text-black leading-none whitespace-nowrap max-w-[100px] overflow-hidden text-ellipsis">{s.displayName}</p>
-            <p class="text-[10px] font-extrabold text-amber-600 leading-tight tabular-nums mt-0.5">${fmt(s.stack)}</p>
+            <p
+              class="text-[10px] font-extrabold text-black leading-none whitespace-nowrap max-w-[100px] overflow-hidden text-ellipsis"
+            >
+              {s.displayName}
+            </p>
+            <p class="text-[10px] font-extrabold text-amber-600 leading-tight tabular-nums mt-0.5">
+              ${fmt(s.stack)}
+            </p>
           </div>
 
           <!-- 🔴 WIN / LOSE badge (like reference) -->
           {#if isShowdown}
             <div
               class="mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold z-[45]"
-              style="background: {isShowdownWin ? '#10b981' : '#ef4444'}; color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.5);"
+              style="background: {isShowdownWin
+                ? '#10b981'
+                : '#ef4444'}; color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.5);"
             >
               {#if isShowdownWin}
                 <span>✓ WIN</span>
@@ -300,7 +367,10 @@
               {/if}
             </div>
             {#if payoutForSeat(s.seat) > 0}
-              <div class="mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold text-emerald-300 z-[45]" style="background: rgba(0,0,0,0.85);">
+              <div
+                class="mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold text-emerald-300 z-[45]"
+                style="background: rgba(0,0,0,0.85);"
+              >
                 +${fmt(payoutForSeat(s.seat))}
               </div>
             {/if}
@@ -314,9 +384,14 @@
               class="absolute -translate-x-1/2 -translate-y-1/2 z-[35] pointer-events-none"
               style="left: {chipOffset.x}%; top: {chipOffset.y}%;"
             >
-              <div class="flex items-center gap-1.5 rounded-full px-2.5 py-1 border-2 border-amber-500/60" style="background: rgba(0,0,0,0.92);">
+              <div
+                class="flex items-center gap-1.5 rounded-full px-2.5 py-1 border-2 border-amber-500/60"
+                style="background: rgba(0,0,0,0.92);"
+              >
                 <PokerChip amount={betAmount} size={14} />
-                <span class="text-[12px] font-extrabold text-amber-400 leading-none tabular-nums">${fmt(betAmount)}</span>
+                <span class="text-[12px] font-extrabold text-amber-400 leading-none tabular-nums"
+                  >${fmt(betAmount)}</span
+                >
               </div>
             </div>
           {/if}
@@ -338,7 +413,9 @@
 
     <!-- ============ Hero Cards ============ -->
     {#if gameState && mySeat && mySeat.hole && mySeat.hole.length > 0 && !isEliminated}
-      <div class="absolute top-[68%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex justify-center gap-2 z-30">
+      <div
+        class="absolute top-[68%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex justify-center gap-2 z-30"
+      >
         {#each mySeat.hole as c}
           <div class="drop-shadow-[0_6px_16px_rgba(0,0,0,0.95)]">
             <PlayingCard rank={c.r} suit={suitChar(c.s)} size="lg" />
@@ -354,7 +431,9 @@
       {@const isShowdownWin = showdownWin(mySeat.seat)}
       {@const isShowdownLose = showdownLose(mySeat.seat)}
 
-      <div class="absolute top-[92%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-30">
+      <div
+        class="absolute top-[92%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-30"
+      >
         <div class="relative">
           {#if isMyTurn}
             <div class="absolute -inset-[6px] pointer-events-none z-[5]">
@@ -371,22 +450,47 @@
           {/if}
 
           <div
-            class="relative rounded-full p-[3px] bg-black {mySeat.folded || isEliminated ? 'opacity-40' : ''}"
-            style="border: 3px solid {isWin ? '#10b981' : (isShowdownLose ? '#6b7280' : (isMyTurn ? '#f97316' : '#e5e7eb'))}; box-shadow: 0 4px 18px rgba(0,0,0,0.9){isWin ? ', 0 0 26px rgba(16,185,129,0.7)' : ''};"
+            class="relative rounded-full p-[3px] bg-black {mySeat.folded || isEliminated
+              ? 'opacity-40'
+              : ''}"
+            style="border: 3px solid {isWin
+              ? '#10b981'
+              : isShowdownLose
+                ? '#6b7280'
+                : isMyTurn
+                  ? '#f97316'
+                  : '#e5e7eb'}; box-shadow: 0 4px 18px rgba(0,0,0,0.9){isWin
+              ? ', 0 0 26px rgba(16,185,129,0.7)'
+              : ''};"
           >
-            <div class="relative w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-amber-700 to-amber-900 flex items-center justify-center">
+            <div
+              class="relative w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-amber-700 to-amber-900 flex items-center justify-center"
+            >
               <Avatar avatarId={myAvatarId} size="md" />
             </div>
           </div>
 
           {#if gameState.dealerSeat === mySeat.seat}
-            <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-white text-black text-[11px] font-extrabold flex items-center justify-center shadow-lg border-2 border-gray-400 z-[15]">D</div>
+            <div
+              class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-white text-black text-[11px] font-extrabold flex items-center justify-center shadow-lg border-2 border-gray-400 z-[15]"
+            >
+              D
+            </div>
           {/if}
         </div>
 
-        <div class="mt-3 px-3 py-1 bg-white flex flex-col items-center relative z-[50]" style="border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.9); border: 2px solid {isShowdownWin ? '#10b981' : (isShowdownLose ? '#ef4444' : 'rgba(0,0,0,0.3)')}; min-width: 86px;">
+        <div
+          class="mt-3 px-3 py-1 bg-white flex flex-col items-center relative z-[50]"
+          style="border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.9); border: 2px solid {isShowdownWin
+            ? '#10b981'
+            : isShowdownLose
+              ? '#ef4444'
+              : 'rgba(0,0,0,0.3)'}; min-width: 86px;"
+        >
           <p class="text-[11px] font-extrabold text-black leading-none">You</p>
-          <p class="text-[12px] font-extrabold text-amber-600 leading-tight tabular-nums mt-0.5">${fmt(mySeat.stack)}</p>
+          <p class="text-[12px] font-extrabold text-amber-600 leading-tight tabular-nums mt-0.5">
+            ${fmt(mySeat.stack)}
+          </p>
         </div>
 
         {#if isShowdown}
@@ -397,7 +501,10 @@
             {isShowdownWin ? '✓ WIN' : '✗ LOSE'}
           </div>
           {#if payoutForSeat(mySeat.seat) > 0}
-            <div class="mt-0.5 px-2 py-0.5 rounded-full text-[11px] font-extrabold text-emerald-300 z-[50]" style="background: rgba(0,0,0,0.85);">
+            <div
+              class="mt-0.5 px-2 py-0.5 rounded-full text-[11px] font-extrabold text-emerald-300 z-[50]"
+              style="background: rgba(0,0,0,0.85);"
+            >
               +${fmt(payoutForSeat(mySeat.seat))}
             </div>
           {/if}
@@ -407,19 +514,29 @@
         {/if}
 
         {#if mySeat.betThisStreet > 0 && !mySeat.folded && winners.length === 0}
-          <div class="mt-1 flex items-center gap-1 bg-black/85 rounded-full px-2 py-0.5 border border-amber-500/50">
+          <div
+            class="mt-1 flex items-center gap-1 bg-black/85 rounded-full px-2 py-0.5 border border-amber-500/50"
+          >
             <PokerChip amount={mySeat.betThisStreet} size={12} />
-            <span class="text-[10px] font-bold text-amber-400 leading-none tabular-nums">${fmt(mySeat.betThisStreet)}</span>
+            <span class="text-[10px] font-bold text-amber-400 leading-none tabular-nums"
+              >${fmt(mySeat.betThisStreet)}</span
+            >
           </div>
         {/if}
       </div>
     {/if}
 
     <!-- ============ Table Info + Seed ============ -->
-    <div class="absolute top-[4%] left-1/2 -translate-x-1/2 z-10 text-center pointer-events-none w-full px-2">
+    <div
+      class="absolute top-[4%] left-1/2 -translate-x-1/2 z-10 text-center pointer-events-none w-full px-2"
+    >
       {#if gameState}
         <p class="text-[9px] uppercase tracking-widest font-bold text-white/35">
-          {gameState?.variant === 'omaha4' ? "OMAHA 4" : gameState?.variant === 'omaha5' ? "OMAHA 5" : "HOLD'EM"}
+          {gameState?.variant === 'omaha4'
+            ? 'OMAHA 4'
+            : gameState?.variant === 'omaha5'
+              ? 'OMAHA 5'
+              : "HOLD'EM"}
         </p>
         <p class="text-[10px] font-mono text-white/30 tabular-nums leading-none mt-0.5">
           {gameState.phase ?? 'PREFLOP'} · Hand #{gameState.handNo ?? 0}
@@ -430,10 +547,17 @@
 </div>
 
 {#if gameState && theme === 'tournament'}
-  <div class="absolute top-14 left-0 right-0 z-20 flex flex-col items-center gap-1 pointer-events-none">
-    <div class="rounded-full px-3 py-0.5 flex items-center gap-2" style="background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.1);">
+  <div
+    class="absolute top-14 left-0 right-0 z-20 flex flex-col items-center gap-1 pointer-events-none"
+  >
+    <div
+      class="rounded-full px-3 py-0.5 flex items-center gap-2"
+      style="background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.1);"
+    >
       <span class="text-[9px] font-bold text-white/60">🎫</span>
-      <span class="text-[10px] font-bold text-white/90 truncate max-w-[140px]">{tournamentTitle}</span>
+      <span class="text-[10px] font-bold text-white/90 truncate max-w-[140px]"
+        >{tournamentTitle}</span
+      >
     </div>
   </div>
 {/if}
@@ -443,7 +567,14 @@
     animation: winnerPulse 1.2s ease-in-out infinite;
   }
   @keyframes winnerPulse {
-    0%, 100% { transform: scale(1); filter: brightness(1); }
-    50% { transform: scale(1.08); filter: brightness(1.2); }
+    0%,
+    100% {
+      transform: scale(1);
+      filter: brightness(1);
+    }
+    50% {
+      transform: scale(1.08);
+      filter: brightness(1.2);
+    }
   }
 </style>

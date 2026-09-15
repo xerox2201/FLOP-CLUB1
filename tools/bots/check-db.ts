@@ -14,7 +14,7 @@ async function main() {
 
   console.log('\n=== HANDS ===');
   const h = await db.query(
-    'SELECT id, hand_no, variant, mode, pot, rake, finished, player_count FROM hands ORDER BY id DESC LIMIT 10'
+    'SELECT id, hand_no, variant, mode, pot, rake, finished, player_count FROM hands ORDER BY id DESC LIMIT 10',
   );
   console.table(h.rows);
 
@@ -28,7 +28,7 @@ async function main() {
 
   console.log('\n=== LAST 10 EVENTS ===');
   const ev = await db.query(
-    'SELECT id, hand_id, sequence, event_type FROM hand_events ORDER BY id DESC LIMIT 10'
+    'SELECT id, hand_id, sequence, event_type FROM hand_events ORDER BY id DESC LIMIT 10',
   );
   console.table(ev.rows);
   console.log('\n=== HANDS WITH SIDE POTS ===');
@@ -44,14 +44,16 @@ async function main() {
   `);
   for (const row of sp.rows) {
     console.log(`Hand #${row.hand_no} (id=${row.id}) pot=$${row.pot}:`);
-    for (const p of (row.side_pots || [])) {
-      console.log(`  ${p.label}: $${p.amount} (net $${p.netAmount}) - winners: ${p.winnerSeats.join(',')}`);
+    for (const p of row.side_pots || []) {
+      console.log(
+        `  ${p.label}: $${p.amount} (net $${p.netAmount}) - winners: ${p.winnerSeats.join(',')}`,
+      );
     }
   }
 
   console.log('\n=== RAKE TRANSACTIONS ===');
   const t = await db.query(
-    "SELECT id, kind, amount, ref, user_id, status FROM transactions WHERE kind = 'RAKE' ORDER BY id DESC LIMIT 10"
+    "SELECT id, kind, amount, ref, user_id, status FROM transactions WHERE kind = 'RAKE' ORDER BY id DESC LIMIT 10",
   );
   console.table(t.rows);
 
@@ -60,21 +62,21 @@ async function main() {
   if (rakeAcc.rows[0]) {
     const bal = await db.query(
       'SELECT COALESCE(SUM(amount), 0)::numeric AS balance FROM entries WHERE account_id = $1',
-      [rakeAcc.rows[0].id]
+      [rakeAcc.rows[0].id],
     );
     console.log(`HOUSE_RAKE balance: $${Number(bal.rows[0].balance).toFixed(2)}`);
   }
 
   console.log('\n=== TABLE SEATS ===');
   const seats = await db.query(
-    'SELECT table_id, seat_index, user_id, stack, status FROM table_seats ORDER BY table_id, seat_index LIMIT 20'
+    'SELECT table_id, seat_index, user_id, stack, status FROM table_seats ORDER BY table_id, seat_index LIMIT 20',
   );
   console.table(seats.rows);
 
   await db.end();
 }
 
-main().catch(e => {
+main().catch((e) => {
   console.error('Error:', e.message);
   process.exit(1);
 });

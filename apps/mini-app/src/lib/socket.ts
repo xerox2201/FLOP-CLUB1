@@ -1,4 +1,4 @@
- import { io, Socket } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 import { API_URL } from './api';
 
 export interface TableState {
@@ -94,7 +94,7 @@ export class TableSocketIO {
           if (isReconnect) {
             this.emit({ type: 'reconnected', syncType: res.syncType || 'full' });
           }
-        }
+        },
       );
     });
 
@@ -159,7 +159,11 @@ export class TableSocketIO {
 
   private emit(event: SocketEvent): void {
     for (const l of this.listeners) {
-      try { l(event); } catch (e) { console.error(e); }
+      try {
+        l(event);
+      } catch (e) {
+        console.error(e);
+      }
     }
   }
 
@@ -198,7 +202,7 @@ export class TableSocketIO {
         if (res?.ok) {
           this.emit({ type: 'reconnected', syncType: res.syncType || 'full' });
         }
-      }
+      },
     );
   }
 

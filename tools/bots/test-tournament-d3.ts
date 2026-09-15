@@ -18,8 +18,8 @@ async function main() {
   const users = await db.query('SELECT id, telegram_id, display_name FROM users LIMIT 4');
   console.log(`Using ${users.rows.length} users`);
 
-  const tokens = users.rows.map(u =>
-    jwt.sign({ uid: u.id, tg: u.telegram_id }, JWT_SECRET, { expiresIn: '1h' })
+  const tokens = users.rows.map((u) =>
+    jwt.sign({ uid: u.id, tg: u.telegram_id }, JWT_SECRET, { expiresIn: '1h' }),
   );
 
   const headers = (i: number) => ({
@@ -41,7 +41,7 @@ async function main() {
       maxPlayers: 9,
       blindStructureId: 5,
     }),
-  }).then(r => r.json());
+  }).then((r) => r.json());
   const tid = createRes.tournamentId;
   console.log(`\n✅ Tournament #${tid}`);
 
@@ -51,7 +51,7 @@ async function main() {
       method: 'POST',
       headers: headers(i),
       body: JSON.stringify({}),
-    }).then(r => r.json());
+    }).then((r) => r.json());
     console.log(`  register user ${users.rows[i].id}: ${JSON.stringify(r)}`);
   }
 
@@ -60,16 +60,21 @@ async function main() {
     method: 'POST',
     headers: headers(0),
     body: JSON.stringify({}),
-  }).then(r => r.json());
+  }).then((r) => r.json());
   console.log(`\n✅ Started: ${JSON.stringify(startRes)}`);
 
   // 4. Check status
-  let detail = await fetch(`${API}/api/tournaments/${tid}`).then(r => r.json());
+  let detail = await fetch(`${API}/api/tournaments/${tid}`).then((r) => r.json());
   console.log(`\nStatus: ${detail.status}`);
   console.log(`Players: ${detail.players.length}`);
-  console.table(detail.players.map((p: any) => ({
-    name: p.displayName, stack: p.stack, table: p.tableNumber, seat: p.seat,
-  })));
+  console.table(
+    detail.players.map((p: any) => ({
+      name: p.displayName,
+      stack: p.stack,
+      table: p.tableNumber,
+      seat: p.seat,
+    })),
+  );
 
   // 5. Bust 3 users
   for (let i = 0; i < 3; i++) {
@@ -77,19 +82,22 @@ async function main() {
       method: 'POST',
       headers: headers(0),
       body: JSON.stringify({ userId: users.rows[i].id }),
-    }).then(r => r.json());
+    }).then((r) => r.json());
     console.log(`\n💀 Bust user=${users.rows[i].id}:`, JSON.stringify(bustRes));
   }
 
   // 6. Final
-  detail = await fetch(`${API}/api/tournaments/${tid}`).then(r => r.json());
+  detail = await fetch(`${API}/api/tournaments/${tid}`).then((r) => r.json());
   console.log(`\n🏁 Final status: ${detail.status}`);
-  console.log(`Winner:`, detail.players.find((p: any) => p.finalPosition === 1));
+  console.log(
+    `Winner:`,
+    detail.players.find((p: any) => p.finalPosition === 1),
+  );
 
   const payouts = await db.query(
     `SELECT user_id, status, final_position, payout_amount
      FROM tournament_entries WHERE tournament_id = $1 ORDER BY final_position`,
-    [tid]
+    [tid],
   );
   console.table(payouts.rows);
 
@@ -97,4 +105,7 @@ async function main() {
   console.log('\n✅ D3 test complete');
 }
 
-main().catch(e => { console.error(e); process.exit(1); });
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

@@ -59,8 +59,7 @@ class GameManager {
   private rooms: Map<number, TableRoom> = new Map();
   private persister: HandPersister | null = null;
   private tournamentHandEndCallback:
-    | ((tournamentId: number, room: TableRoom) => void | Promise<void>)
-    | null = null;
+    ((tournamentId: number, room: TableRoom) => void | Promise<void>) | null = null;
 
   private getPersister(): HandPersister {
     if (!this.persister) {
@@ -73,7 +72,7 @@ class GameManager {
   }
 
   setTournamentHandEndCallback(
-    cb: (tournamentId: number, room: TableRoom) => void | Promise<void>
+    cb: (tournamentId: number, room: TableRoom) => void | Promise<void>,
   ): void {
     this.tournamentHandEndCallback = cb;
     console.log('[game-manager] tournament callback registered');
@@ -119,7 +118,7 @@ class GameManager {
     // 🔴 If already scheduled for this exact seat, keep the existing timer
     if (room.turnTimer && room.lastScheduledSeat === currentSeat) {
       console.log(
-        `[timer] ${ts()} ↺ skip reschedule (seat ${currentSeat} already armed, reason=${reason})`
+        `[timer] ${ts()} ↺ skip reschedule (seat ${currentSeat} already armed, reason=${reason})`,
       );
       return;
     }
@@ -136,7 +135,7 @@ class GameManager {
     room.scheduledAt = Date.now();
 
     console.log(
-      `[timer] ${ts()} 🕐 gen=${myGen} seat ${currentSeat} (${seat.displayName}): ${Math.round(remaining / 1000)}s reason=${reason}`
+      `[timer] ${ts()} 🕐 gen=${myGen} seat ${currentSeat} (${seat.displayName}): ${Math.round(remaining / 1000)}s reason=${reason}`,
     );
 
     room.turnTimer = setTimeout(() => {
@@ -148,7 +147,7 @@ class GameManager {
       }
       console.log(`[timer] ${ts()} 🔥 fired gen=${myGen} seat=${r.game.state.currentSeat}`);
       this.autoAction(room.tableId, io).catch((e) =>
-        console.error('[timer] auto-action error:', e.message)
+        console.error('[timer] auto-action error:', e.message),
       );
     }, remaining);
   }
@@ -177,7 +176,7 @@ class GameManager {
     const action: 'fold' | 'check' = toCall > 0 ? 'fold' : 'check';
 
     console.log(
-      `[timer] ${ts()} ⏰ auto-${action} for seat ${currentSeat} (${seat.displayName}) toCall=${toCall}`
+      `[timer] ${ts()} ⏰ auto-${action} for seat ${currentSeat} (${seat.displayName}) toCall=${toCall}`,
     );
 
     room.busy = true;
@@ -204,7 +203,7 @@ class GameManager {
     actorSeat: number,
     action: string,
     amount: number,
-    source: 'user' | 'auto'
+    source: 'user' | 'auto',
   ): Promise<void> {
     try {
       this.clearAutoActionTimer(room);
@@ -222,14 +221,19 @@ class GameManager {
       if (room.currentHandId && !room.tournamentId) {
         room.currentSequence++;
         try {
-          this.getPersister().recordEvent(room.currentHandId, room.currentSequence, 'ACTION_TAKEN', {
-            seat: actorSeat,
-            userId: room.game.state.seats[actorSeat]?.userId,
-            action,
-            amount,
-            pot: room.game.state.pot,
-            phase: room.game.state.phase,
-          });
+          this.getPersister().recordEvent(
+            room.currentHandId,
+            room.currentSequence,
+            'ACTION_TAKEN',
+            {
+              seat: actorSeat,
+              userId: room.game.state.seats[actorSeat]?.userId,
+              action,
+              amount,
+              pot: room.game.state.pot,
+              phase: room.game.state.phase,
+            },
+          );
         } catch (e: any) {
           console.error('[game-manager] event persist error:', e.message);
         }
@@ -266,8 +270,7 @@ class GameManager {
       }));
 
       const totalPot =
-        handResult.rake +
-        handResult.payouts.reduce((sum: number, p: any) => sum + p.amount, 0);
+        handResult.rake + handResult.payouts.reduce((sum: number, p: any) => sum + p.amount, 0);
 
       if (room.currentHandId && !room.tournamentId) {
         try {
@@ -284,7 +287,7 @@ class GameManager {
               sidePots: handResult.sidePots || [],
               playerStacks,
             },
-            room.mode
+            room.mode,
           );
         } catch (e: any) {
           console.error('[game-manager] persister.finishHand error:', e.message);
@@ -363,7 +366,7 @@ class GameManager {
         ante: params.ante,
         rakePct: effectiveRakePct,
       },
-      []
+      [],
     );
 
     const room: TableRoom = {
@@ -406,10 +409,7 @@ class GameManager {
     blinds: { sb: number; bb: number; ante: number };
     players: Array<{ userId: number; displayName: string; stack: number; socketId?: string }>;
   }): TableRoom {
-    const virtualTableId = GameManager.getVirtualTableId(
-      params.tournamentId,
-      params.tableNumber
-    );
+    const virtualTableId = GameManager.getVirtualTableId(params.tournamentId, params.tableNumber);
 
     if (this.rooms.has(virtualTableId)) {
       return this.rooms.get(virtualTableId)!;
@@ -441,7 +441,7 @@ class GameManager {
     }
 
     console.log(
-      `[room] 🏆 tournament room created: T#${params.tournamentId} table ${params.tableNumber} → virtual ${virtualTableId} (${params.players.length} players)`
+      `[room] 🏆 tournament room created: T#${params.tournamentId} table ${params.tableNumber} → virtual ${virtualTableId} (${params.players.length} players)`,
     );
     return room;
   }
@@ -458,7 +458,9 @@ class GameManager {
       }
     }
     if (count > 0) {
-      console.log(`[room] 🎯 updated blinds T#${tournamentId} (${count} tables): ${sb}/${bb}${ante ? '+' + ante : ''}`);
+      console.log(
+        `[room] 🎯 updated blinds T#${tournamentId} (${count} tables): ${sb}/${bb}${ante ? '+' + ante : ''}`,
+      );
     }
   }
 
@@ -503,7 +505,7 @@ class GameManager {
     room.socketToPlayer.set(params.socketId, playerId);
 
     console.log(
-      `[room] ${params.displayName} joined table ${params.tableId}, size=${room.players.size}${info.tournamentStack ? ' (stack: ' + info.tournamentStack + ')' : ''}`
+      `[room] ${params.displayName} joined table ${params.tableId}, size=${room.players.size}${info.tournamentStack ? ' (stack: ' + info.tournamentStack + ')' : ''}`,
     );
     return room;
   }
@@ -587,7 +589,7 @@ class GameManager {
       const REBUY_AMOUNT = Number(process.env.REBUY_AMOUNT ?? 1000);
 
       for (const [, info] of room.players) {
-        const oldSeat = room.game.state.seats.find(s => s.userId === info.userId);
+        const oldSeat = room.game.state.seats.find((s) => s.userId === info.userId);
         let stack: number;
 
         if (isTournament) {
@@ -636,7 +638,7 @@ class GameManager {
           ante: room.blinds.ante,
           rakePct: room.rakePct,
         },
-        players
+        players,
       );
 
       if (prevDealerSeat >= 0) {
@@ -658,7 +660,7 @@ class GameManager {
       const dealerSeat = room.game.state.dealerSeat;
       const firstSeat = room.game.state.currentSeat;
       console.log(
-        `[hand] ${ts()} table ${tableId} hand #${room.handCounter} dealer=${dealerSeat} first=${firstSeat} SB=${room.blinds.sb} BB=${room.blinds.bb}`
+        `[hand] ${ts()} table ${tableId} hand #${room.handCounter} dealer=${dealerSeat} first=${firstSeat} SB=${room.blinds.sb} BB=${room.blinds.bb}`,
       );
 
       const handPlayers = room.game.state.seats
@@ -707,12 +709,7 @@ class GameManager {
     this.scheduleAutoAction(room, io, `startHand-#${room.handCounter}`);
   }
 
-  async act(
-    socketId: string,
-    actionType: string,
-    amount: number,
-    io: any
-  ): Promise<CommandResult> {
+  async act(socketId: string, actionType: string, amount: number, io: any): Promise<CommandResult> {
     const ctx = this.getPlayerBySocket(socketId);
     if (!ctx) return { ok: false, code: ErrorCode.NOT_IN_ROOM };
 
@@ -722,7 +719,7 @@ class GameManager {
       return { ok: false, code: ErrorCode.RATE_LIMITED };
     }
 
-    const seatIdx = room.game.state.seats.findIndex(s => s.userId === player.userId);
+    const seatIdx = room.game.state.seats.findIndex((s) => s.userId === player.userId);
     if (seatIdx === -1) return { ok: false, code: ErrorCode.NOT_SEATED };
 
     const actType = actionType.toLowerCase() as 'fold' | 'check' | 'call' | 'raise';
@@ -743,7 +740,7 @@ class GameManager {
     if (!ctx) return { ok: false, code: ErrorCode.NOT_IN_ROOM };
 
     const { room, player } = ctx;
-    const seatIdx = room.game.state.seats.findIndex(s => s.userId === player.userId);
+    const seatIdx = room.game.state.seats.findIndex((s) => s.userId === player.userId);
     if (seatIdx === -1) return { ok: false, code: ErrorCode.NOT_SEATED };
 
     const result = room.game.useTimeBank(seatIdx);

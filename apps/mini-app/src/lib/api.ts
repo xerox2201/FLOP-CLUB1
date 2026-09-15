@@ -18,10 +18,7 @@ class ApiClient {
     return localStorage.getItem('token');
   }
 
-  async request<T = any>(
-    path: string,
-    options: RequestInit = {}
-  ): Promise<ApiResponse<T>> {
+  async request<T = any>(path: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     const url = `${this.baseUrl}${path}`;
     const token = this.getToken();
 
@@ -119,22 +116,30 @@ class ApiClient {
     return this.request(`/api/hands/${handId}`);
   }
 
-  async getHandReplay(handId: number): Promise<ApiResponse<{ hand: any; initialSnapshot: any; events: any[] }>> {
+  async getHandReplay(
+    handId: number,
+  ): Promise<ApiResponse<{ hand: any; initialSnapshot: any; events: any[] }>> {
     return this.request(`/api/hands/${handId}/replay`);
   }
 
   // ============================================================
   // Wallet
   // ============================================================
-  async walletBalance(): Promise<ApiResponse<{ balance: number; freeChips: number; ton: any; hotWalletReady: boolean }>> {
+  async walletBalance(): Promise<
+    ApiResponse<{ balance: number; freeChips: number; ton: any; hotWalletReady: boolean }>
+  > {
     return this.request('/api/wallet/balance');
   }
 
-  async walletDepositInfo(): Promise<ApiResponse<{ depositAddress: string; memo: string; minDeposit: number; network: string }>> {
+  async walletDepositInfo(): Promise<
+    ApiResponse<{ depositAddress: string; memo: string; minDeposit: number; network: string }>
+  > {
     return this.request('/api/wallet/deposit-info');
   }
 
-  async walletHistory(): Promise<ApiResponse<{ tonTransactions: any[]; ledgerTransactions: any[] }>> {
+  async walletHistory(): Promise<
+    ApiResponse<{ tonTransactions: any[]; ledgerTransactions: any[] }>
+  > {
     return this.request('/api/wallet/history');
   }
 
@@ -148,7 +153,11 @@ class ApiClient {
   // ============================================================
   // Tournaments
   // ============================================================
-  async listTournaments(filter?: { status?: string; variant?: string; mode?: string }): Promise<ApiResponse<{ tournaments: any[] }>> {
+  async listTournaments(filter?: {
+    status?: string;
+    variant?: string;
+    mode?: string;
+  }): Promise<ApiResponse<{ tournaments: any[] }>> {
     const qs = new URLSearchParams();
     if (filter?.status) qs.set('status', filter.status);
     if (filter?.variant) qs.set('variant', filter.variant);

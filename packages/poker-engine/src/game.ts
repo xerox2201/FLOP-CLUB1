@@ -2,8 +2,15 @@ import crypto from 'crypto';
 import { evaluateHand, compareHands, type EvalResult } from './hand-evaluator.js';
 import { makeDeck, shuffleDeck } from './deck.js';
 import type {
-  Card, GameOptions, GameState, PlayerInit, HandResult,
-  ShowdownPlayer, ActionType, Seat, SidePot,
+  Card,
+  GameOptions,
+  GameState,
+  PlayerInit,
+  HandResult,
+  ShowdownPlayer,
+  ActionType,
+  Seat,
+  SidePot,
 } from './types.js';
 
 function round2(n: number): number {
@@ -19,22 +26,47 @@ export class PokerGame {
   constructor(opts: GameOptions, players: PlayerInit[]) {
     this.rakePct = opts.rakePct ?? 0.03;
     this.state = {
-      tableId: opts.tableId, variant: opts.variant, speed: opts.speed,
-      smallBlind: opts.smallBlind, bigBlind: opts.bigBlind, ante: opts.ante ?? 0,
-      handNo: 0, phase: 'waiting', dealerSeat: -1, currentSeat: -1, pot: 0,
-      community: [], seats: [], minRaise: opts.bigBlind, lastAggressor: -1,
-      winners: undefined, sidePots: undefined,
-      serverSeed: undefined, serverSeedHash: undefined,
-      clientSeed: crypto.randomBytes(16).toString('hex'), nonce: 0,
-      revealSeed: undefined, turnStartedAt: 0, turnBankActive: false,
+      tableId: opts.tableId,
+      variant: opts.variant,
+      speed: opts.speed,
+      smallBlind: opts.smallBlind,
+      bigBlind: opts.bigBlind,
+      ante: opts.ante ?? 0,
+      handNo: 0,
+      phase: 'waiting',
+      dealerSeat: -1,
+      currentSeat: -1,
+      pot: 0,
+      community: [],
+      seats: [],
+      minRaise: opts.bigBlind,
+      lastAggressor: -1,
+      winners: undefined,
+      sidePots: undefined,
+      serverSeed: undefined,
+      serverSeedHash: undefined,
+      clientSeed: crypto.randomBytes(16).toString('hex'),
+      nonce: 0,
+      revealSeed: undefined,
+      turnStartedAt: 0,
+      turnBankActive: false,
     };
 
     for (const p of players) {
       this.state.seats.push({
-        seat: this.state.seats.length, userId: p.userId, displayName: p.displayName,
-        stack: p.stack, hole: [], betThisStreet: 0, totalBet: 0,
-        folded: false, allIn: false, hasActed: false, revealed: false,
-        timeBankRemaining: 30, avatarId: p.avatarId ?? 'spade',
+        seat: this.state.seats.length,
+        userId: p.userId,
+        displayName: p.displayName,
+        stack: p.stack,
+        hole: [],
+        betThisStreet: 0,
+        totalBet: 0,
+        folded: false,
+        allIn: false,
+        hasActed: false,
+        revealed: false,
+        timeBankRemaining: 30,
+        avatarId: p.avatarId ?? 'spade',
       });
     }
   }
@@ -42,9 +74,14 @@ export class PokerGame {
   private combinations<T>(arr: T[], k: number): T[][] {
     const result: T[][] = [];
     const rec = (start: number, cur: T[]) => {
-      if (cur.length === k) { result.push([...cur]); return; }
+      if (cur.length === k) {
+        result.push([...cur]);
+        return;
+      }
       for (let i = start; i < arr.length; i++) {
-        cur.push(arr[i]); rec(i + 1, cur); cur.pop();
+        cur.push(arr[i]);
+        rec(i + 1, cur);
+        cur.pop();
       }
     };
     rec(0, []);
@@ -63,7 +100,10 @@ export class PokerGame {
       let bestHand = evaluateHand(bestCombo);
       for (const c of combos) {
         const h = evaluateHand(c);
-        if (compareHands(h, bestHand) > 0) { bestHand = h; bestCombo = c; }
+        if (compareHands(h, bestHand) > 0) {
+          bestHand = h;
+          bestCombo = c;
+        }
       }
       return bestCombo;
     }
@@ -77,7 +117,8 @@ export class PokerGame {
         const five = [...h, ...b];
         const hand = evaluateHand(five);
         if (!bestHand || compareHands(hand, bestHand) > 0) {
-          bestHand = hand; best = five;
+          bestHand = hand;
+          best = five;
         }
       }
     }
@@ -103,10 +144,10 @@ export class PokerGame {
 
   private calculatePots(): SidePot[] {
     const seats = this.state.seats;
-    const contributions = seats.map(s => ({ seat: s.seat, total: s.totalBet, folded: s.folded }));
-    const levels = [...new Set(
-      seats.filter(s => !s.folded && s.totalBet > 0).map(s => round2(s.totalBet))
-    )].sort((a, b) => a - b);
+    const contributions = seats.map((s) => ({ seat: s.seat, total: s.totalBet, folded: s.folded }));
+    const levels = [
+      ...new Set(seats.filter((s) => !s.folded && s.totalBet > 0).map((s) => round2(s.totalBet))),
+    ].sort((a, b) => a - b);
 
     if (levels.length === 0) return [];
 
@@ -130,8 +171,11 @@ export class PokerGame {
         pots.push({
           type: idx === 0 ? 'main' : `side_${idx}`,
           label: idx === 0 ? 'Main Pot' : `Side Pot ${idx}`,
-          amount: potAmount, netAmount: 0,
-          eligibleSeats: eligible, winnerSeats: [], payouts: [],
+          amount: potAmount,
+          netAmount: 0,
+          eligibleSeats: eligible,
+          winnerSeats: [],
+          payouts: [],
         });
       }
       prevLevel = level;
@@ -145,9 +189,7 @@ export class PokerGame {
   // Heads-up: BTN/SB first, BB last
   // ============================================================
   private preflopOrder(): number[] {
-    const active = this.state.seats
-      .filter((s) => !s.folded)
-      .map((s) => s.seat);
+    const active = this.state.seats.filter((s) => !s.folded).map((s) => s.seat);
 
     if (active.length === 0) return [];
 
@@ -155,17 +197,14 @@ export class PokerGame {
       // Heads-up preflop: BTN/SB acts first, BB acts last
       const dealerIdx = active.indexOf(this.state.dealerSeat);
       if (dealerIdx < 0) return active;
-      return [
-        active[dealerIdx],
-        active[(dealerIdx + 1) % active.length],
-      ];
+      return [active[dealerIdx], active[(dealerIdx + 1) % active.length]];
     }
 
     // Multi-way: find BB, then start from UTG (left of BB)
     const dealerIdx = active.indexOf(this.state.dealerSeat);
     if (dealerIdx < 0) return active;
     const bbIdx = (dealerIdx + 2) % active.length; // BB is 2 seats after BTN
-    const utgIdx = (bbIdx + 1) % active.length;    // UTG is left of BB
+    const utgIdx = (bbIdx + 1) % active.length; // UTG is left of BB
 
     const out: number[] = [];
     for (let i = 0; i < active.length; i++) {
@@ -180,9 +219,7 @@ export class PokerGame {
   // and proceeds clockwise. BTN acts last.
   // ============================================================
   private postflopOrder(): number[] {
-    const active = this.state.seats
-      .filter((s) => !s.folded)
-      .map((s) => s.seat);
+    const active = this.state.seats.filter((s) => !s.folded).map((s) => s.seat);
 
     if (active.length === 0) return [];
 
@@ -192,7 +229,7 @@ export class PokerGame {
       if (dealerIdx < 0) return active;
       return [
         active[(dealerIdx + 1) % active.length], // BB
-        active[dealerIdx],                        // BTN/SB
+        active[dealerIdx], // BTN/SB
       ];
     }
 
@@ -215,7 +252,10 @@ export class PokerGame {
   // ============================================================
   startHand(_: any[]): void {
     const seats = this.state.seats.filter((s) => s.stack > 0);
-    if (seats.length < 2) { this.state.phase = 'waiting'; return; }
+    if (seats.length < 2) {
+      this.state.phase = 'waiting';
+      return;
+    }
 
     this.state.handNo += 1;
     this.state.nonce = this.state.handNo;
@@ -234,8 +274,13 @@ export class PokerGame {
     this.state.serverSeed = undefined;
 
     for (const s of this.state.seats) {
-      s.hole = []; s.betThisStreet = 0; s.totalBet = 0;
-      s.folded = s.stack <= 0; s.allIn = false; s.hasActed = false; s.revealed = false;
+      s.hole = [];
+      s.betThisStreet = 0;
+      s.totalBet = 0;
+      s.folded = s.stack <= 0;
+      s.allIn = false;
+      s.hasActed = false;
+      s.revealed = false;
     }
 
     const activeSeats = this.state.seats.filter((s) => !s.folded);
@@ -257,10 +302,10 @@ export class PokerGame {
     if (activeCount === 2) {
       // Heads-up: BTN is SB, other is BB
       sbSeat = this.state.dealerSeat;
-      bbSeat = activeSeats.find(s => s.seat !== sbSeat)!.seat;
+      bbSeat = activeSeats.find((s) => s.seat !== sbSeat)!.seat;
     } else {
       // Multi-way: SB = left of BTN, BB = left of SB
-      const dealerIdx = activeSeats.findIndex(s => s.seat === this.state.dealerSeat);
+      const dealerIdx = activeSeats.findIndex((s) => s.seat === this.state.dealerSeat);
       sbSeat = activeSeats[(dealerIdx + 1) % activeCount].seat;
       bbSeat = activeSeats[(dealerIdx + 2) % activeCount].seat;
     }
@@ -274,7 +319,7 @@ export class PokerGame {
 
     // Deal hole cards starting from SB, clockwise
     const dealOrder: number[] = [];
-    const sbIdx = activeSeats.findIndex(s => s.seat === sbSeat);
+    const sbIdx = activeSeats.findIndex((s) => s.seat === sbSeat);
     for (let i = 0; i < activeSeats.length; i++) {
       dealOrder.push(activeSeats[(sbIdx + i) % activeSeats.length].seat);
     }
@@ -295,7 +340,7 @@ export class PokerGame {
     this.state.turnStartedAt = Date.now();
 
     console.log(
-      `[engine] hand #${this.state.handNo} dealer=${this.state.dealerSeat} SB=${sbSeat} BB=${bbSeat} first=${this.state.currentSeat}`
+      `[engine] hand #${this.state.handNo} dealer=${this.state.dealerSeat} SB=${sbSeat} BB=${bbSeat} first=${this.state.currentSeat}`,
     );
   }
 
@@ -312,7 +357,8 @@ export class PokerGame {
     const toCall = maxBet - seat.betThisStreet;
 
     if (action === 'fold') {
-      seat.folded = true; seat.hasActed = true;
+      seat.folded = true;
+      seat.hasActed = true;
     } else if (action === 'check') {
       if (toCall > 0) return { ok: false, error: 'cannot_check' };
       seat.hasActed = true;
@@ -370,7 +416,10 @@ export class PokerGame {
     seat.betThisStreet = round2(seat.betThisStreet + real);
     seat.totalBet = round2(seat.totalBet + real);
     this.state.pot = round2(this.state.pot + real);
-    if (seat.stack <= 0) { seat.stack = 0; seat.allIn = true; }
+    if (seat.stack <= 0) {
+      seat.stack = 0;
+      seat.allIn = true;
+    }
   }
 
   private advanceTurn(): void {
@@ -498,32 +547,46 @@ export class PokerGame {
       winner.stack = round2(winner.stack + payout);
       this.state.pot = 0;
       this.state.winners = [winner.seat];
-      this.state.sidePots = [{
-        type: 'main', label: 'Main Pot',
-        amount: round2(payout + rake), netAmount: payout,
-        eligibleSeats: [winner.seat], winnerSeats: [winner.seat],
-        payouts: [{ seat: winner.seat, amount: payout }],
-      }];
+      this.state.sidePots = [
+        {
+          type: 'main',
+          label: 'Main Pot',
+          amount: round2(payout + rake),
+          netAmount: payout,
+          eligibleSeats: [winner.seat],
+          winnerSeats: [winner.seat],
+          payouts: [{ seat: winner.seat, amount: payout }],
+        },
+      ];
       this.state.phase = 'showdown';
       this.state.revealSeed = this.serverSeed;
 
       return {
-        winners: [winner.seat], payouts: [{ seat: winner.seat, amount: payout }],
-        rake, revealSeed: this.serverSeed, showdown: false, showdownPlayers: [],
+        winners: [winner.seat],
+        payouts: [{ seat: winner.seat, amount: payout }],
+        rake,
+        revealSeed: this.serverSeed,
+        showdown: false,
+        showdownPlayers: [],
         sidePots: this.state.sidePots,
       };
     }
 
     const evaluations = active.map((s) => ({
-      seat: s, hand: this.evaluateSeat(s),
+      seat: s,
+      hand: this.evaluateSeat(s),
     }));
 
     const pots = this.calculatePots();
     if (pots.length === 0) {
       pots.push({
-        type: 'main', label: 'Main Pot',
-        amount: this.state.pot, netAmount: this.state.pot,
-        eligibleSeats: active.map(s => s.seat), winnerSeats: [], payouts: [],
+        type: 'main',
+        label: 'Main Pot',
+        amount: this.state.pot,
+        netAmount: this.state.pot,
+        eligibleSeats: active.map((s) => s.seat),
+        winnerSeats: [],
+        payouts: [],
       });
     }
 
@@ -542,7 +605,7 @@ export class PokerGame {
       }
       pot.netAmount = round2(pot.amount - rakeFromPot);
 
-      const eligibleEvals = evaluations.filter(e => pot.eligibleSeats.includes(e.seat.seat));
+      const eligibleEvals = evaluations.filter((e) => pot.eligibleSeats.includes(e.seat.seat));
       if (eligibleEvals.length === 0) continue;
 
       let best = eligibleEvals[0];
@@ -550,7 +613,7 @@ export class PokerGame {
         if (compareHands(e.hand, best.hand) > 0) best = e;
       }
 
-      const potWinners = eligibleEvals.filter(e => compareHands(e.hand, best.hand) === 0);
+      const potWinners = eligibleEvals.filter((e) => compareHands(e.hand, best.hand) === 0);
       const share = round2(pot.netAmount / potWinners.length);
 
       for (const w of potWinners) {
@@ -558,7 +621,7 @@ export class PokerGame {
         winnerSeatsSet.add(w.seat.seat);
         pot.winnerSeats.push(w.seat.seat);
         pot.payouts.push({ seat: w.seat.seat, amount: share });
-        const existing = allPayouts.find(p => p.seat === w.seat.seat);
+        const existing = allPayouts.find((p) => p.seat === w.seat.seat);
         if (existing) existing.amount = round2(existing.amount + share);
         else allPayouts.push({ seat: w.seat.seat, amount: share });
       }
@@ -579,25 +642,36 @@ export class PokerGame {
       best: this.extractBestFive(e.seat.hole),
       handName: e.hand.name,
       isWinner: winnerSeatsSet.has(e.seat.seat),
-      payout: allPayouts.find(p => p.seat === e.seat.seat)?.amount ?? 0,
+      payout: allPayouts.find((p) => p.seat === e.seat.seat)?.amount ?? 0,
     }));
 
     return {
-      winners: [...winnerSeatsSet], payouts: allPayouts,
-      rake: totalRake, revealSeed: this.serverSeed,
-      showdown: true, showdownPlayers, sidePots: pots,
+      winners: [...winnerSeatsSet],
+      payouts: allPayouts,
+      rake: totalRake,
+      revealSeed: this.serverSeed,
+      showdown: true,
+      showdownPlayers,
+      sidePots: pots,
     };
   }
 
   publicView(forUserId: number): any {
     return {
-      tableId: this.state.tableId, variant: this.state.variant,
-      speed: this.state.speed, handNo: this.state.handNo,
-      phase: this.state.phase, dealerSeat: this.state.dealerSeat,
-      currentSeat: this.state.currentSeat, pot: this.state.pot,
-      community: this.state.community, minRaise: this.state.minRaise,
-      smallBlind: this.state.smallBlind, bigBlind: this.state.bigBlind,
-      ante: this.state.ante, winners: this.state.winners,
+      tableId: this.state.tableId,
+      variant: this.state.variant,
+      speed: this.state.speed,
+      handNo: this.state.handNo,
+      phase: this.state.phase,
+      dealerSeat: this.state.dealerSeat,
+      currentSeat: this.state.currentSeat,
+      pot: this.state.pot,
+      community: this.state.community,
+      minRaise: this.state.minRaise,
+      smallBlind: this.state.smallBlind,
+      bigBlind: this.state.bigBlind,
+      ante: this.state.ante,
+      winners: this.state.winners,
       sidePots: this.state.sidePots,
       turnStartedAt: this.state.turnStartedAt,
       turnBankActive: this.state.turnBankActive,
@@ -607,14 +681,19 @@ export class PokerGame {
       revealSeed: this.state.revealSeed,
 
       seats: this.state.seats.map((s) => ({
-        seat: s.seat, userId: s.userId, displayName: s.displayName,
-        avatarId: s.avatarId, stack: s.stack,
-        betThisStreet: s.betThisStreet, totalBet: s.totalBet,
-        folded: s.folded, allIn: s.allIn, revealed: s.revealed,
+        seat: s.seat,
+        userId: s.userId,
+        displayName: s.displayName,
+        avatarId: s.avatarId,
+        stack: s.stack,
+        betThisStreet: s.betThisStreet,
+        totalBet: s.totalBet,
+        folded: s.folded,
+        allIn: s.allIn,
+        revealed: s.revealed,
         timeBankRemaining: s.timeBankRemaining,
-        hole: s.userId === forUserId || s.revealed
-          ? s.hole
-          : s.hole.map(() => ({ r: '?', s: '?' })),
+        hole:
+          s.userId === forUserId || s.revealed ? s.hole : s.hole.map(() => ({ r: '?', s: '?' })),
       })),
     };
   }

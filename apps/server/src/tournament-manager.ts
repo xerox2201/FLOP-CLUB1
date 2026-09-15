@@ -4,13 +4,7 @@ import { BlindStructureService } from './blind-structures.js';
 import { gameManager } from './game-manager.js';
 
 export type TournamentStatus =
-  | 'scheduled'
-  | 'registering'
-  | 'running'
-  | 'paused'
-  | 'final_table'
-  | 'finished'
-  | 'cancelled';
+  'scheduled' | 'registering' | 'running' | 'paused' | 'final_table' | 'finished' | 'cancelled';
 
 export type TournamentFormat = 'mtt' | 'sng' | 'freeroll' | 'satellite';
 
@@ -96,12 +90,24 @@ export class TournamentManager {
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
        RETURNING id`,
       [
-        config.name, config.variant, config.mode, config.format, config.speed,
-        config.buyIn, config.fee, config.startingStack,
-        config.minPlayers, config.maxPlayers, config.guaranteed,
-        config.scheduledStart || null, config.lateRegMin,
-        config.blindStructureId, status, config.isPrivate, config.createdBy,
-      ]
+        config.name,
+        config.variant,
+        config.mode,
+        config.format,
+        config.speed,
+        config.buyIn,
+        config.fee,
+        config.startingStack,
+        config.minPlayers,
+        config.maxPlayers,
+        config.guaranteed,
+        config.scheduledStart || null,
+        config.lateRegMin,
+        config.blindStructureId,
+        status,
+        config.isPrivate,
+        config.createdBy,
+      ],
     );
 
     const tournamentId = res.rows[0].id;
@@ -116,23 +122,23 @@ export class TournamentManager {
 
     if (maxPlayers <= 9) {
       structure = [
-        { position: 1, percentage: 0.50 },
-        { position: 2, percentage: 0.30 },
-        { position: 3, percentage: 0.20 },
+        { position: 1, percentage: 0.5 },
+        { position: 2, percentage: 0.3 },
+        { position: 3, percentage: 0.2 },
       ];
     } else if (maxPlayers <= 18) {
       structure = [
-        { position: 1, percentage: 0.40 },
+        { position: 1, percentage: 0.4 },
         { position: 2, percentage: 0.25 },
         { position: 3, percentage: 0.15 },
-        { position: 4, percentage: 0.10 },
+        { position: 4, percentage: 0.1 },
         { position: 5, percentage: 0.06 },
         { position: 6, percentage: 0.04 },
       ];
     } else if (maxPlayers <= 45) {
       structure = [
-        { position: 1, percentage: 0.30 },
-        { position: 2, percentage: 0.20 },
+        { position: 1, percentage: 0.3 },
+        { position: 2, percentage: 0.2 },
         { position: 3, percentage: 0.13 },
         { position: 4, percentage: 0.09 },
         { position: 5, percentage: 0.07 },
@@ -146,7 +152,7 @@ export class TournamentManager {
       structure = [
         { position: 1, percentage: 0.22 },
         { position: 2, percentage: 0.15 },
-        { position: 3, percentage: 0.10 },
+        { position: 3, percentage: 0.1 },
         { position: 4, percentage: 0.08 },
         { position: 5, percentage: 0.06 },
         { position: 6, percentage: 0.05 },
@@ -167,7 +173,7 @@ export class TournamentManager {
         `INSERT INTO tournament_payouts (tournament_id, position, percentage)
          VALUES ($1, $2, $3)
          ON CONFLICT (tournament_id, position) DO NOTHING`,
-        [tournamentId, s.position, s.percentage]
+        [tournamentId, s.position, s.percentage],
       );
     }
   }
@@ -190,7 +196,7 @@ export class TournamentManager {
 
     const existing = await this.db.query(
       'SELECT id, status FROM tournament_entries WHERE tournament_id = $1 AND user_id = $2',
-      [tournamentId, userId]
+      [tournamentId, userId],
     );
     if (existing.rows.length > 0 && existing.rows[0].status !== 'refunded') {
       return { ok: false, error: 'already_registered' };
@@ -224,7 +230,7 @@ export class TournamentManager {
          (tournament_id, user_id, status, starting_stack)
        VALUES ($1, $2, 'registered', $3)
        ON CONFLICT (tournament_id, user_id) DO UPDATE SET status = 'registered'`,
-      [tournamentId, userId, t.config.startingStack]
+      [tournamentId, userId, t.config.startingStack],
     );
 
     console.log(`[tournament] ✅ user=${userId} registered for #${tournamentId}`);
@@ -244,7 +250,7 @@ export class TournamentManager {
 
     const entry = await this.db.query(
       'SELECT id, status FROM tournament_entries WHERE tournament_id = $1 AND user_id = $2',
-      [tournamentId, userId]
+      [tournamentId, userId],
     );
     if (entry.rows.length === 0 || entry.rows[0].status !== 'registered') {
       return { ok: false, error: 'not_registered' };
@@ -270,7 +276,7 @@ export class TournamentManager {
 
     await this.db.query(
       `UPDATE tournament_entries SET status = 'refunded' WHERE tournament_id = $1 AND user_id = $2`,
-      [tournamentId, userId]
+      [tournamentId, userId],
     );
 
     console.log(`[tournament] user=${userId} unregistered from #${tournamentId}`);
@@ -294,7 +300,7 @@ export class TournamentManager {
        JOIN users u ON u.id = te.user_id
        WHERE te.tournament_id = $1 AND te.status = 'registered'
        ORDER BY te.registered_at ASC`,
-      [tournamentId]
+      [tournamentId],
     );
 
     if (entries.rows.length < t.config.minPlayers) {
@@ -315,7 +321,7 @@ export class TournamentManager {
            current_level = 1,
            level_started_at = NOW()
        WHERE id = $4`,
-      [prizePool, totalFee, entries.rows.length, tournamentId]
+      [prizePool, totalFee, entries.rows.length, tournamentId],
     );
 
     t.status = 'running';
@@ -338,7 +344,7 @@ export class TournamentManager {
         `INSERT INTO tournament_tables (tournament_id, table_number, max_seats, status)
          VALUES ($1, $2, $3, 'active')
          ON CONFLICT (tournament_id, table_number) DO NOTHING`,
-        [tournamentId, tableNumber, tableSize]
+        [tournamentId, tableNumber, tableSize],
       );
     }
 
@@ -364,12 +370,12 @@ export class TournamentManager {
         `INSERT INTO tournament_players
            (tournament_id, user_id, stack, table_number, seat, status)
          VALUES ($1, $2, $3, $4, $5, 'active')`,
-        [tournamentId, p.user_id, t.config.startingStack, tableNumber, seatIdx]
+        [tournamentId, p.user_id, t.config.startingStack, tableNumber, seatIdx],
       );
 
       await this.db.query(
         `UPDATE tournament_entries SET status = 'playing' WHERE tournament_id = $1 AND user_id = $2`,
-        [tournamentId, p.user_id]
+        [tournamentId, p.user_id],
       );
     }
 
@@ -379,7 +385,7 @@ export class TournamentManager {
         `INSERT INTO tournament_level_log (tournament_id, level, sb, bb, ante, players_remaining)
          VALUES ($1, 1, $2, $3, $4, $5)
          ON CONFLICT (tournament_id, level) DO NOTHING`,
-        [tournamentId, level1.sb, level1.bb, level1.ante, players.length]
+        [tournamentId, level1.sb, level1.bb, level1.ante, players.length],
       );
     }
 
@@ -388,7 +394,9 @@ export class TournamentManager {
 
     this.startBlindTimer(tournamentId);
 
-    console.log(`[tournament] ✅ #${tournamentId} started with ${players.length} players, ${numTables} tables`);
+    console.log(
+      `[tournament] ✅ #${tournamentId} started with ${players.length} players, ${numTables} tables`,
+    );
     return { ok: true };
   }
 
@@ -401,7 +409,7 @@ export class TournamentManager {
     for (const [tableNumber, table] of t.tables.entries()) {
       const players = table.seats
         .filter((s): s is number => s !== null)
-        .map(userId => {
+        .map((userId) => {
           const p = t.players.get(userId);
           return {
             userId,
@@ -409,7 +417,7 @@ export class TournamentManager {
             stack: p?.stack ?? t.config.startingStack,
           };
         })
-        .filter(p => p.stack > 0);
+        .filter((p) => p.stack > 0);
 
       if (players.length < 2) {
         console.log(`[tournament] table ${tableNumber} has < 2 players, skipping room creation`);
@@ -453,17 +461,17 @@ export class TournamentManager {
 
     await this.db.query(
       `UPDATE tournaments SET current_level = $1, level_started_at = NOW() WHERE id = $2`,
-      [t.currentLevel, tournamentId]
+      [t.currentLevel, tournamentId],
     );
 
     const level = await this.blindService.getLevel(t.config.blindStructureId, t.currentLevel);
     if (level) {
-      const activeCount = [...t.players.values()].filter(p => p.status === 'active').length;
+      const activeCount = [...t.players.values()].filter((p) => p.status === 'active').length;
       await this.db.query(
         `INSERT INTO tournament_level_log (tournament_id, level, sb, bb, ante, players_remaining)
          VALUES ($1, $2, $3, $4, $5, $6)
          ON CONFLICT (tournament_id, level) DO NOTHING`,
-        [tournamentId, t.currentLevel, level.sb, level.bb, level.ante, activeCount]
+        [tournamentId, t.currentLevel, level.sb, level.bb, level.ante, activeCount],
       );
 
       // Update blinds in game rooms
@@ -472,7 +480,9 @@ export class TournamentManager {
       if (this.io) {
         this.io.emit(`tournament:${tournamentId}:level`, {
           level: t.currentLevel,
-          sb: level.sb, bb: level.bb, ante: level.ante,
+          sb: level.sb,
+          bb: level.bb,
+          ante: level.ante,
           isBreak: level.isBreak,
         });
       }
@@ -484,7 +494,9 @@ export class TournamentManager {
   // ============================================================
   // LIST / GET
   // ============================================================
-  async list(filter: { status?: string; variant?: string; mode?: string; limit?: number } = {}): Promise<any[]> {
+  async list(
+    filter: { status?: string; variant?: string; mode?: string; limit?: number } = {},
+  ): Promise<any[]> {
     const conditions: string[] = [];
     const params: any[] = [];
     let idx = 1;
@@ -519,10 +531,10 @@ export class TournamentManager {
          scheduled_start ASC NULLS LAST,
          id DESC
        LIMIT $${idx}`,
-      params
+      params,
     );
 
-    return res.rows.map(r => this.serializeRow(r));
+    return res.rows.map((r) => this.serializeRow(r));
   }
 
   async get(tournamentId: number): Promise<any | null> {
@@ -531,7 +543,7 @@ export class TournamentManager {
          (SELECT COUNT(*) FROM tournament_entries WHERE tournament_id = t.id AND status = 'registered') AS registered_count,
          (SELECT COUNT(*) FROM tournament_players WHERE tournament_id = t.id AND status = 'active') AS active_count
        FROM tournaments t WHERE id = $1`,
-      [tournamentId]
+      [tournamentId],
     );
     if (res.rows.length === 0) return null;
 
@@ -542,18 +554,18 @@ export class TournamentManager {
        JOIN users u ON u.id = tp.user_id
        WHERE tp.tournament_id = $1
        ORDER BY tp.stack DESC`,
-      [tournamentId]
+      [tournamentId],
     );
 
     const payouts = await this.db.query(
       `SELECT position, percentage, fixed_amount FROM tournament_payouts
        WHERE tournament_id = $1 ORDER BY position ASC`,
-      [tournamentId]
+      [tournamentId],
     );
 
     return {
       ...base,
-      players: players.rows.map(p => ({
+      players: players.rows.map((p) => ({
         userId: p.user_id,
         displayName: p.display_name,
         stack: Number(p.stack),
@@ -561,11 +573,10 @@ export class TournamentManager {
         seat: p.seat,
         status: p.status,
         finalPosition: p.final_position,
-        virtualTableId: p.table_number != null
-          ? (1_000_000 + tournamentId * 1000 + p.table_number)
-          : null,
+        virtualTableId:
+          p.table_number != null ? 1_000_000 + tournamentId * 1000 + p.table_number : null,
       })),
-      payouts: payouts.rows.map(p => ({
+      payouts: payouts.rows.map((p) => ({
         position: p.position,
         percentage: Number(p.percentage),
         fixedAmount: p.fixed_amount ? Number(p.fixed_amount) : null,
@@ -608,7 +619,7 @@ export class TournamentManager {
   private async getPlayerCount(tournamentId: number): Promise<number> {
     const res = await this.db.query(
       `SELECT COUNT(*) AS c FROM tournament_entries WHERE tournament_id = $1 AND status IN ('registered','playing')`,
-      [tournamentId]
+      [tournamentId],
     );
     return Number(res.rows[0].c);
   }
@@ -656,7 +667,7 @@ export class TournamentManager {
     if (t.status === 'running' || t.status === 'final_table' || t.status === 'paused') {
       const players = await this.db.query(
         'SELECT * FROM tournament_players WHERE tournament_id = $1',
-        [tournamentId]
+        [tournamentId],
       );
       for (const p of players.rows) {
         t.players.set(p.user_id, {
@@ -672,7 +683,7 @@ export class TournamentManager {
 
       const tables = await this.db.query(
         'SELECT * FROM tournament_tables WHERE tournament_id = $1 AND status = $2',
-        [tournamentId, 'active']
+        [tournamentId, 'active'],
       );
       for (const tbl of tables.rows) {
         t.tables.set(tbl.table_number, {
@@ -693,15 +704,15 @@ export class TournamentManager {
   async eliminatePlayer(
     tournamentId: number,
     userId: number,
-    eliminatedBy?: number
+    eliminatedBy?: number,
   ): Promise<{ ok: boolean; finalPosition?: number; finished?: boolean }> {
-    const t = this.tournaments.get(tournamentId) ?? await this.loadFromDB(tournamentId);
+    const t = this.tournaments.get(tournamentId) ?? (await this.loadFromDB(tournamentId));
     if (!t) return { ok: false };
 
     const player = t.players.get(userId);
     if (!player || player.status !== 'active') return { ok: false };
 
-    const activeCount = [...t.players.values()].filter(p => p.status === 'active').length;
+    const activeCount = [...t.players.values()].filter((p) => p.status === 'active').length;
     const finalPosition = activeCount;
 
     player.status = 'eliminated';
@@ -712,14 +723,14 @@ export class TournamentManager {
       `UPDATE tournament_players
        SET status = 'eliminated', eliminated_at = NOW(), final_position = $1, eliminated_by = $2
        WHERE tournament_id = $3 AND user_id = $4`,
-      [finalPosition, eliminatedBy ?? null, tournamentId, userId]
+      [finalPosition, eliminatedBy ?? null, tournamentId, userId],
     );
 
     await this.db.query(
       `UPDATE tournament_entries
        SET status = 'eliminated', final_position = $1
        WHERE tournament_id = $2 AND user_id = $3`,
-      [finalPosition, tournamentId, userId]
+      [finalPosition, tournamentId, userId],
     );
 
     console.log(`[tournament] 💀 user=${userId} eliminated at position ${finalPosition}`);
@@ -732,7 +743,7 @@ export class TournamentManager {
       });
     }
 
-    const remaining = [...t.players.values()].filter(p => p.status === 'active');
+    const remaining = [...t.players.values()].filter((p) => p.status === 'active');
     if (remaining.length === 1) {
       const winner = remaining[0];
       winner.status = 'winner';
@@ -740,12 +751,12 @@ export class TournamentManager {
       await this.db.query(
         `UPDATE tournament_players SET status = 'winner', final_position = 1
          WHERE tournament_id = $1 AND user_id = $2`,
-        [tournamentId, winner.userId]
+        [tournamentId, winner.userId],
       );
       await this.db.query(
         `UPDATE tournament_entries SET status = 'won', final_position = 1
          WHERE tournament_id = $1 AND user_id = $2`,
-        [tournamentId, winner.userId]
+        [tournamentId, winner.userId],
       );
       await this.finishTournament(tournamentId);
       return { ok: true, finalPosition, finished: true };
@@ -765,9 +776,9 @@ export class TournamentManager {
     if (!t || t.status !== 'running') return;
 
     const tables = [...t.tables.values()];
-    const counts = tables.map(tbl => ({
+    const counts = tables.map((tbl) => ({
       tableNumber: tbl.tableNumber,
-      count: tbl.seats.filter(s => {
+      count: tbl.seats.filter((s) => {
         if (s === null) return false;
         const p = t.players.get(s);
         return p?.status === 'active';
@@ -776,8 +787,8 @@ export class TournamentManager {
 
     if (counts.length < 2) return;
 
-    const maxCount = Math.max(...counts.map(c => c.count));
-    const minCount = Math.min(...counts.map(c => c.count));
+    const maxCount = Math.max(...counts.map((c) => c.count));
+    const minCount = Math.min(...counts.map((c) => c.count));
 
     if (maxCount - minCount < 2) return;
 
@@ -804,7 +815,7 @@ export class TournamentManager {
 
     if (moveUserId === null) return;
 
-    const emptySeat = targetTable.seats.findIndex(s => s === null);
+    const emptySeat = targetTable.seats.findIndex((s) => s === null);
     if (emptySeat < 0) return;
 
     targetTable.seats[emptySeat] = moveUserId;
@@ -815,7 +826,7 @@ export class TournamentManager {
     await this.db.query(
       `UPDATE tournament_players SET table_number = $1, seat = $2
        WHERE tournament_id = $3 AND user_id = $4`,
-      [target.tableNumber, emptySeat, tournamentId, moveUserId]
+      [target.tableNumber, emptySeat, tournamentId, moveUserId],
     );
 
     if (this.io) {
@@ -835,7 +846,7 @@ export class TournamentManager {
     const t = this.tournaments.get(tournamentId);
     if (!t || t.status !== 'running') return;
 
-    const activePlayers = [...t.players.values()].filter(p => p.status === 'active');
+    const activePlayers = [...t.players.values()].filter((p) => p.status === 'active');
     const finalTableSize = 9;
 
     if (activePlayers.length <= finalTableSize && t.tables.size > 1) {
@@ -859,29 +870,28 @@ export class TournamentManager {
         await this.db.query(
           `UPDATE tournament_players SET table_number = $1, seat = $2
            WHERE tournament_id = $3 AND user_id = $4`,
-          [finalTableNumber, i, tournamentId, p.userId]
+          [finalTableNumber, i, tournamentId, p.userId],
         );
       }
 
       await this.db.query(
         `UPDATE tournament_tables SET status = 'closed' WHERE tournament_id = $1`,
-        [tournamentId]
+        [tournamentId],
       );
       await this.db.query(
         `INSERT INTO tournament_tables (tournament_id, table_number, max_seats, status, is_final)
          VALUES ($1, $2, $3, 'active', TRUE)`,
-        [tournamentId, finalTableNumber, finalTableSize]
+        [tournamentId, finalTableNumber, finalTableSize],
       );
 
       t.status = 'final_table';
-      await this.db.query(
-        `UPDATE tournaments SET status = 'final_table' WHERE id = $1`,
-        [tournamentId]
-      );
+      await this.db.query(`UPDATE tournaments SET status = 'final_table' WHERE id = $1`, [
+        tournamentId,
+      ]);
 
       if (this.io) {
         this.io.emit(`tournament:${tournamentId}:final_table`, {
-          players: activePlayers.map(p => ({ userId: p.userId, stack: p.stack })),
+          players: activePlayers.map((p) => ({ userId: p.userId, stack: p.stack })),
           tableNumber: finalTableNumber,
         });
       }
@@ -900,7 +910,7 @@ export class TournamentManager {
     const payoutsRes = await this.db.query(
       `SELECT position, percentage FROM tournament_payouts
        WHERE tournament_id = $1 ORDER BY position ASC`,
-      [tournamentId]
+      [tournamentId],
     );
 
     const totalPrize = t.totalPrizePool;
@@ -909,7 +919,7 @@ export class TournamentManager {
       const position = po.position;
       const percentage = Number(po.percentage);
 
-      const winner = [...t.players.values()].find(p => p.finalPosition === position);
+      const winner = [...t.players.values()].find((p) => p.finalPosition === position);
       if (!winner) continue;
 
       const amount = Math.round(totalPrize * percentage * 100) / 100;
@@ -935,13 +945,13 @@ export class TournamentManager {
         await this.db.query(
           `UPDATE tournament_entries SET status = 'cashed', payout_amount = $1
            WHERE tournament_id = $2 AND user_id = $3`,
-          [amount, tournamentId, winner.userId]
+          [amount, tournamentId, winner.userId],
         );
         console.log(`[tournament] 💰 prize pos=${position} user=${winner.userId} $${amount}`);
       }
     }
 
-    const winner = [...t.players.values()].find(p => p.finalPosition === 1);
+    const winner = [...t.players.values()].find((p) => p.finalPosition === 1);
     t.status = 'finished';
     t.finishedAt = Date.now();
 
@@ -949,7 +959,7 @@ export class TournamentManager {
       `UPDATE tournaments
        SET status = 'finished', finished_at = NOW(), winner_user_id = $1
        WHERE id = $2`,
-      [winner?.userId ?? null, tournamentId]
+      [winner?.userId ?? null, tournamentId],
     );
 
     if (t.levelTimer) {
@@ -973,12 +983,15 @@ export class TournamentManager {
   async handlePlayerBust(
     tournamentId: number,
     userId: number,
-    eliminatedBy?: number
+    eliminatedBy?: number,
   ): Promise<{ ok: boolean; finalPosition?: number; finished?: boolean }> {
     return this.eliminatePlayer(tournamentId, userId, eliminatedBy);
   }
 
-  async checkBustedPlayers(tournamentId: number, currentStacks: Map<number, number>): Promise<void> {
+  async checkBustedPlayers(
+    tournamentId: number,
+    currentStacks: Map<number, number>,
+  ): Promise<void> {
     const t = this.tournaments.get(tournamentId);
     if (!t) return;
 
@@ -991,7 +1004,7 @@ export class TournamentManager {
         p.stack = stack;
         await this.db.query(
           `UPDATE tournament_players SET stack = $1 WHERE tournament_id = $2 AND user_id = $3`,
-          [stack, tournamentId, userId]
+          [stack, tournamentId, userId],
         );
       }
     }
@@ -1001,7 +1014,7 @@ export class TournamentManager {
   // Called by game-manager after each hand
   // ============================================================
   async syncStacksAndEliminate(tournamentId: number, room: any): Promise<void> {
-    const t = this.tournaments.get(tournamentId) ?? await this.loadFromDB(tournamentId);
+    const t = this.tournaments.get(tournamentId) ?? (await this.loadFromDB(tournamentId));
     if (!t) return;
 
     const busted: number[] = [];
@@ -1015,7 +1028,7 @@ export class TournamentManager {
       p.stack = stack;
       await this.db.query(
         `UPDATE tournament_players SET stack = $1 WHERE tournament_id = $2 AND user_id = $3`,
-        [stack, tournamentId, userId]
+        [stack, tournamentId, userId],
       );
 
       if (stack <= 0) busted.push(userId);
@@ -1027,7 +1040,7 @@ export class TournamentManager {
 
     if (busted.length > 0) {
       console.log(
-        `[tournament] 🔄 synced stacks for #${tournamentId}, eliminated: [${busted.join(',')}]`
+        `[tournament] 🔄 synced stacks for #${tournamentId}, eliminated: [${busted.join(',')}]`,
       );
     }
   }

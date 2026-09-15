@@ -3,15 +3,14 @@ import { test, expect } from '@playwright/test';
 test.describe('Tournaments', () => {
   test('can open Tournaments tab and see list', async ({ page }) => {
     await page.goto('/?uid=111&name=Ali');
-    await expect(page.getByText(/quick seat|instant play/i).first())
-      .toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/quick seat|instant play/i).first()).toBeVisible({
+      timeout: 15000,
+    });
 
     const tab = page.getByText(/tourneys|tournaments/i).first();
     await tab.click();
 
-    await expect(
-      page.locator('h1:has-text("Tournaments")').first()
-    ).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('h1:has-text("Tournaments")').first()).toBeVisible({ timeout: 5000 });
   });
 
   test('shows tournament list or empty state', async ({ page }) => {

@@ -19,7 +19,7 @@ async function ensureUsers(db: Pool, n: number): Promise<any[]> {
     `SELECT id, telegram_id, display_name FROM users 
      WHERE id > 1 AND display_name NOT LIKE 'Test%'
      ORDER BY id ASC LIMIT $1`,
-    [n]
+    [n],
   );
 
   const existing = res.rows;
@@ -34,7 +34,7 @@ async function ensureUsers(db: Pool, n: number): Promise<any[]> {
         await db.query(
           `INSERT INTO users (telegram_id, display_name, avatar_id)
            VALUES ($1, $2, 'spade')`,
-          [tgId, name]
+          [tgId, name],
         );
       } catch (e: any) {
         console.log(`  user ${name} maybe exists: ${e.message}`);
@@ -44,7 +44,7 @@ async function ensureUsers(db: Pool, n: number): Promise<any[]> {
       `SELECT id, telegram_id, display_name FROM users 
        WHERE id > 1 AND display_name NOT LIKE 'Test%'
        ORDER BY id ASC LIMIT $1`,
-      [n]
+      [n],
     );
   }
 
@@ -57,7 +57,7 @@ async function main() {
   // 🧹 Cancel old running tournaments
   await db.query(
     `UPDATE tournaments SET status = 'cancelled' 
-     WHERE status IN ('running', 'final_table', 'registering', 'scheduled')`
+     WHERE status IN ('running', 'final_table', 'registering', 'scheduled')`,
   );
   console.log('🧹 Cancelled old tournaments');
 
@@ -73,8 +73,8 @@ async function main() {
     return;
   }
 
-  const tokens = users.map(u =>
-    jwt.sign({ uid: u.id, tg: u.telegram_id }, JWT_SECRET, { expiresIn: '24h' })
+  const tokens = users.map((u) =>
+    jwt.sign({ uid: u.id, tg: u.telegram_id }, JWT_SECRET, { expiresIn: '24h' }),
   );
 
   const headers = (i: number) => ({
@@ -96,7 +96,7 @@ async function main() {
       maxPlayers: 6,
       blindStructureId: 5,
     }),
-  }).then(r => r.json());
+  }).then((r) => r.json());
   const tid = createRes.tournamentId;
   console.log(`\n✅ Tournament #${tid} created (6-max)`);
 
@@ -106,7 +106,7 @@ async function main() {
       method: 'POST',
       headers: headers(i),
       body: JSON.stringify({}),
-    }).then(r => r.json());
+    }).then((r) => r.json());
     console.log(`  register user ${users[i].id} (${users[i].display_name}): ${JSON.stringify(r)}`);
   }
 
@@ -115,10 +115,10 @@ async function main() {
     method: 'POST',
     headers: headers(0),
     body: JSON.stringify({}),
-  }).then(r => r.json());
+  }).then((r) => r.json());
   console.log(`\n✅ Started: ${JSON.stringify(startRes)}`);
 
-  const detail = await fetch(`${API}/api/tournaments/${tid}`).then(r => r.json());
+  const detail = await fetch(`${API}/api/tournaments/${tid}`).then((r) => r.json());
   const firstPlayer = detail.players[0];
   console.log(`\n🎯 Status: ${detail.status}`);
   console.log(`🏆 Virtual Table ID: ${firstPlayer?.virtualTableId}`);
@@ -136,4 +136,7 @@ async function main() {
   await db.end();
 }
 
-main().catch(e => { console.error(e); process.exit(1); });
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

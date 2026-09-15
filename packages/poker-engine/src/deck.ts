@@ -1,4 +1,4 @@
- import type { Card, Suit, Rank } from './types.js';
+import type { Card, Suit, Rank } from './types.js';
 
 const SUITS: Suit[] = ['s', 'h', 'd', 'c'];
 const RANKS: Rank[] = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];

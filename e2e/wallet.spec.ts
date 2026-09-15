@@ -3,16 +3,16 @@ import { test, expect } from '@playwright/test';
 test.describe('Wallet', () => {
   test('can navigate to Wallet page', async ({ page }) => {
     await page.goto('/?uid=111&name=Ali');
-    await expect(page.getByText(/quick seat|instant play/i).first())
-      .toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/quick seat|instant play/i).first()).toBeVisible({
+      timeout: 15000,
+    });
 
     // کلیک روی تب Wallet
     const walletTab = page.getByText(/^wallet$/i).first();
     await walletTab.click();
 
     // صفحه Wallet باید بیاد
-    await expect(page.locator('h1:has-text("Wallet")').first())
-      .toBeVisible({ timeout: 5000 });
+    await expect(page.locator('h1:has-text("Wallet")').first()).toBeVisible({ timeout: 5000 });
   });
 
   test('shows balance and free chips', async ({ page }) => {

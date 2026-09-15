@@ -9,7 +9,7 @@ function newGame(numPlayers: number, stacks?: number[]) {
   }));
   return new PokerGame(
     { tableId: 1, variant: 'holdem', speed: 'regular', smallBlind: 10, bigBlind: 20, rakePct: 0 },
-    players
+    players,
   );
 }
 
@@ -28,7 +28,7 @@ describe('PokerGame — 6-max preflop order', () => {
     const order: number[] = [g.state.currentSeat];
     for (let i = 0; i < 5; i++) {
       const seat = g.state.currentSeat;
-      const maxBet = Math.max(...g.state.seats.map(s => s.betThisStreet));
+      const maxBet = Math.max(...g.state.seats.map((s) => s.betThisStreet));
       const toCall = maxBet - g.state.seats[seat].betThisStreet;
       g.act(seat, toCall > 0 ? 'call' : 'check', 0);
       if (g.state.phase !== 'preflop') break;
@@ -43,7 +43,7 @@ describe('PokerGame — 6-max preflop order', () => {
     // همه call/check کنن تا flop
     for (let i = 0; i < 6; i++) {
       const seat = g.state.currentSeat;
-      const maxBet = Math.max(...g.state.seats.map(s => s.betThisStreet));
+      const maxBet = Math.max(...g.state.seats.map((s) => s.betThisStreet));
       const toCall = maxBet - g.state.seats[seat].betThisStreet;
       g.act(seat, toCall > 0 ? 'call' : 'check', 0);
     }
@@ -90,11 +90,11 @@ describe('PokerGame — Side pots', () => {
     expect(result.sidePots!.length).toBeGreaterThanOrEqual(2);
 
     // Main pot = 100*3 = 300
-    const main = result.sidePots!.find(p => p.type === 'main');
+    const main = result.sidePots!.find((p) => p.type === 'main');
     expect(main?.amount).toBe(300);
 
     // Side pot = 100*2 = 200
-    const side = result.sidePots!.find(p => p.type === 'side_1');
+    const side = result.sidePots!.find((p) => p.type === 'side_1');
     expect(side?.amount).toBe(200);
   });
 });
@@ -112,7 +112,7 @@ describe('PokerGame — Chip conservation', () => {
     while (g.state.phase !== 'showdown' && safety < 100) {
       safety++;
       const seat = g.state.currentSeat;
-      const maxBet = Math.max(...g.state.seats.map(s => s.betThisStreet));
+      const maxBet = Math.max(...g.state.seats.map((s) => s.betThisStreet));
       const toCall = maxBet - g.state.seats[seat].betThisStreet;
       g.act(seat, toCall > 0 ? 'call' : 'check', 0);
     }

@@ -16,10 +16,13 @@
 </script>
 
 <div class="relative inline-block">
-  <div class="{sizeClass} rounded-full bg-gradient-to-br {av.gradient} flex items-center justify-center border-2 border-white/10 shadow-card">
+  <div
+    class="{sizeClass} rounded-full bg-gradient-to-br {av.gradient} flex items-center justify-center border-2 border-white/10 shadow-card"
+  >
     <span>{av.emoji}</span>
   </div>
   {#if showOnline}
-    <span class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-good rounded-full border-2 border-base"></span>
+    <span class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-good rounded-full border-2 border-base"
+    ></span>
   {/if}
 </div>

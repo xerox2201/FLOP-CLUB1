@@ -1,4 +1,4 @@
- <script lang="ts">
+<script lang="ts">
   import { onDestroy } from 'svelte';
 
   export let size: number = 60;
@@ -29,10 +29,15 @@
 
   function startTicker() {
     stopTicker();
-    tickInterval = setInterval(() => { elapsed = computeElapsed(); }, 100);
+    tickInterval = setInterval(() => {
+      elapsed = computeElapsed();
+    }, 100);
   }
   function stopTicker() {
-    if (tickInterval) { clearInterval(tickInterval); tickInterval = null; }
+    if (tickInterval) {
+      clearInterval(tickInterval);
+      tickInterval = null;
+    }
   }
 
   $: if (active && startedAt > 0) {
@@ -55,18 +60,34 @@
     class="absolute inset-0 pointer-events-none"
     style="transform: rotate(-90deg);"
   >
-    <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="rgba(0,0,0,0.7)" stroke-width={strokeWidth}/>
     <circle
-      cx={size/2} cy={size/2} r={radius}
-      fill="none" stroke={color} stroke-width={strokeWidth}
-      stroke-linecap="round" stroke-dasharray={circumference} stroke-dashoffset={dashOffset}
+      cx={size / 2}
+      cy={size / 2}
+      r={radius}
+      fill="none"
+      stroke="rgba(0,0,0,0.7)"
+      stroke-width={strokeWidth}
+    />
+    <circle
+      cx={size / 2}
+      cy={size / 2}
+      r={radius}
+      fill="none"
+      stroke={color}
+      stroke-width={strokeWidth}
+      stroke-linecap="round"
+      stroke-dasharray={circumference}
+      stroke-dashoffset={dashOffset}
       style="transition: stroke-dashoffset 0.1s linear;"
     />
   </svg>
 
   <!-- شمارنده‌ی عددی روی گوشه‌ی بالا-راست حلقه -->
   <div class="absolute -top-1 -right-1 z-10 pointer-events-none">
-    <div class="w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-extrabold text-white shadow-lg border-2 border-white/40" style="background: {color};">
+    <div
+      class="w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-extrabold text-white shadow-lg border-2 border-white/40"
+      style="background: {color};"
+    >
       {Math.ceil(remaining)}
     </div>
   </div>

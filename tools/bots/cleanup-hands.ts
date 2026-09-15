@@ -1,4 +1,4 @@
- import dotenv from 'dotenv';
+import dotenv from 'dotenv';
 import { Pool } from 'pg';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
@@ -26,7 +26,7 @@ async function main() {
 
   // Show active tables
   const active = await db.query(
-    `SELECT id, name, variant, mode FROM poker_tables WHERE is_active = TRUE ORDER BY id`
+    `SELECT id, name, variant, mode FROM poker_tables WHERE is_active = TRUE ORDER BY id`,
   );
   console.log('\nActive tables:');
   for (const row of active.rows) {
@@ -37,7 +37,7 @@ async function main() {
   console.log('\n✅ Done');
 }
 
-main().catch(e => {
+main().catch((e) => {
   console.error('Error:', e.message);
   process.exit(1);
 });

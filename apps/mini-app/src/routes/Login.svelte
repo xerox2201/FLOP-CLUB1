@@ -6,7 +6,11 @@
 
   async function enter() {
     busy = true;
-    try { await auth.init(); } catch (e) { console.error(e); }
+    try {
+      await auth.init();
+    } catch (e) {
+      console.error(e);
+    }
     busy = false;
   }
 </script>
@@ -19,9 +23,15 @@
   <h1 class="text-4xl font-extrabold text-gold tracking-wider mb-2">FLOP CLUB</h1>
   <p class="text-white/60 text-center mb-10">{$t('login.subtitle')}</p>
 
-  <button on:click={enter} disabled={busy} class="btn-gold w-full max-w-xs flex items-center justify-center gap-2">
+  <button
+    on:click={enter}
+    disabled={busy}
+    class="btn-gold w-full max-w-xs flex items-center justify-center gap-2"
+  >
     {#if busy}
-      <div class="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+      <div
+        class="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"
+      ></div>
       <span>{$t('login.signingIn')}</span>
     {:else}
       <span>🎮</span>
@@ -29,5 +39,7 @@
     {/if}
   </button>
 
-  <p class="text-[11px] text-white/30 mt-8 text-center max-w-xs leading-relaxed">{$t('login.terms')}</p>
+  <p class="text-[11px] text-white/30 mt-8 text-center max-w-xs leading-relaxed">
+    {$t('login.terms')}
+  </p>
 </div>

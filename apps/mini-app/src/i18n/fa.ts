@@ -1,6 +1,13 @@
 export default {
   nav: { home: 'خانه', tables: 'میزها', wallet: 'کیف', profile: 'من', leaderboard: 'رتبه‌ها' },
-  common: { loading: 'در حال بارگذاری…', save: 'ذخیره', cancel: 'لغو', ok: 'تأیید', back: 'بازگشت', soon: 'به‌زودی' },
+  common: {
+    loading: 'در حال بارگذاری…',
+    save: 'ذخیره',
+    cancel: 'لغو',
+    ok: 'تأیید',
+    back: 'بازگشت',
+    soon: 'به‌زودی',
+  },
   home: {
     instantPlay: 'بازی سریع',
     jumpIntoGame: 'ورود به بازی',

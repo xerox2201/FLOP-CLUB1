@@ -18,7 +18,7 @@ async function main() {
 
     // Check existing tables
     const existing = await db.query(
-      "SELECT id, name, variant FROM poker_tables WHERE is_active = TRUE ORDER BY id"
+      'SELECT id, name, variant FROM poker_tables WHERE is_active = TRUE ORDER BY id',
     );
     console.log('[migrate] Existing tables:');
     for (const row of existing.rows) {
@@ -33,7 +33,7 @@ async function main() {
       console.log('[migrate] ✅ Omaha tables already exist. Skipping insert.');
     } else {
       // Get max id
-      const maxId = await db.query("SELECT COALESCE(MAX(id), 0) as m FROM poker_tables");
+      const maxId = await db.query('SELECT COALESCE(MAX(id), 0) as m FROM poker_tables');
       const nextId = Number(maxId.rows[0].m) + 1;
       console.log(`[migrate] Max existing id: ${maxId.rows[0].m}, next: ${nextId}`);
 
@@ -43,9 +43,19 @@ async function main() {
           `INSERT INTO poker_tables (id, name, variant, mode, speed, blinds, min_buyin, max_buyin, rake_pct, seats, is_active)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
            RETURNING id`,
-          [nextId, 'Omaha 4 - Micro', 'omaha4', 'cash', 'regular',
-           JSON.stringify({ sb: 0.05, bb: 0.10, ante: 0 }),
-           5, 100, 0.03, 6, true]
+          [
+            nextId,
+            'Omaha 4 - Micro',
+            'omaha4',
+            'cash',
+            'regular',
+            JSON.stringify({ sb: 0.05, bb: 0.1, ante: 0 }),
+            5,
+            100,
+            0.03,
+            6,
+            true,
+          ],
         );
         console.log(`[migrate] ✅ Inserted Omaha4 with id=${res.rows[0].id}`);
       }
@@ -55,9 +65,19 @@ async function main() {
           `INSERT INTO poker_tables (id, name, variant, mode, speed, blinds, min_buyin, max_buyin, rake_pct, seats, is_active)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
            RETURNING id`,
-          [nextId + 1, 'Omaha 5 - Micro', 'omaha5', 'cash', 'regular',
-           JSON.stringify({ sb: 0.05, bb: 0.10, ante: 0 }),
-           5, 100, 0.03, 6, true]
+          [
+            nextId + 1,
+            'Omaha 5 - Micro',
+            'omaha5',
+            'cash',
+            'regular',
+            JSON.stringify({ sb: 0.05, bb: 0.1, ante: 0 }),
+            5,
+            100,
+            0.03,
+            6,
+            true,
+          ],
         );
         console.log(`[migrate] ✅ Inserted Omaha5 with id=${res.rows[0].id}`);
       }
@@ -65,7 +85,7 @@ async function main() {
 
     // Final listing
     const final = await db.query(
-      "SELECT id, name, variant FROM poker_tables WHERE is_active = TRUE ORDER BY id"
+      'SELECT id, name, variant FROM poker_tables WHERE is_active = TRUE ORDER BY id',
     );
     console.log('');
     console.log('[migrate] Final tables:');

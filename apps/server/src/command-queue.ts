@@ -22,10 +22,9 @@ export class CommandQueue {
 
     // 1. چک کن قبلاً پردازش شده؟
     try {
-      const existing = await this.db.query(
-        'SELECT result FROM idempotency_keys WHERE key = $1',
-        [commandId]
-      );
+      const existing = await this.db.query('SELECT result FROM idempotency_keys WHERE key = $1', [
+        commandId,
+      ]);
 
       if (existing.rows.length > 0) {
         return {
@@ -47,7 +46,7 @@ export class CommandQueue {
         `INSERT INTO idempotency_keys (key, user_id, scope, result, expires_at)
          VALUES ($1, $2, $3, $4, NOW() + INTERVAL '1 hour')
          ON CONFLICT (key) DO NOTHING`,
-        [commandId, userId, scope, JSON.stringify({ data: result.data ?? null })]
+        [commandId, userId, scope, JSON.stringify({ data: result.data ?? null })],
       );
     } catch (e: any) {
       console.error('[command-queue] save failed:', e.message);

@@ -52,10 +52,9 @@ export class LedgerService {
     }
 
     if (input.idempotencyKey) {
-      const existing = await this.db.query(
-        'SELECT result FROM idempotency_keys WHERE key = $1',
-        [input.idempotencyKey]
-      );
+      const existing = await this.db.query('SELECT result FROM idempotency_keys WHERE key = $1', [
+        input.idempotencyKey,
+      ]);
       if (existing.rows.length > 0) {
         return {
           ok: true,
@@ -69,7 +68,7 @@ export class LedgerService {
     try {
       await client.query('BEGIN');
 
-      const ids = [...new Set(input.entries.map(e => e.accountId))].sort((a, b) => a - b);
+      const ids = [...new Set(input.entries.map((e) => e.accountId))].sort((a, b) => a - b);
       for (const id of ids) {
         await client.query('SELECT id FROM accounts WHERE id = $1 FOR UPDATE', [id]);
       }
@@ -85,7 +84,7 @@ export class LedgerService {
           input.userId || null,
           input.idempotencyKey || null,
           Math.abs(input.entries.reduce((s, e) => s + (e.amount > 0 ? e.amount : 0), 0)),
-        ]
+        ],
       );
       const txId = txRes.rows[0].id;
 
@@ -93,17 +92,19 @@ export class LedgerService {
         await client.query(
           `INSERT INTO entries (tx_id, account_id, amount, currency)
            VALUES ($1, $2, $3, 'USD')`,
-          [txId, entry.accountId, entry.amount]
+          [txId, entry.accountId, entry.amount],
         );
       }
 
       for (const entry of input.entries) {
-        const accRes = await client.query('SELECT owner_user_id FROM accounts WHERE id = $1', [entry.accountId]);
+        const accRes = await client.query('SELECT owner_user_id FROM accounts WHERE id = $1', [
+          entry.accountId,
+        ]);
         const userId = accRes.rows[0]?.owner_user_id;
         if (userId) {
           await client.query(
             `UPDATE wallets SET balance_usd = balance_usd + $1, updated_at = NOW() WHERE user_id = $2`,
-            [entry.amount, userId]
+            [entry.amount, userId],
           );
         }
       }
@@ -112,7 +113,7 @@ export class LedgerService {
         await client.query(
           `INSERT INTO idempotency_keys (key, user_id, result)
            VALUES ($1, $2, $3)`,
-          [input.idempotencyKey, input.userId || null, JSON.stringify({ transactionId: txId })]
+          [input.idempotencyKey, input.userId || null, JSON.stringify({ transactionId: txId })],
         );
       }
 
@@ -129,7 +130,7 @@ export class LedgerService {
   async getBalance(accountId: number): Promise<number> {
     const res = await this.db.query(
       `SELECT COALESCE(SUM(amount), 0)::numeric AS balance FROM entries WHERE account_id = $1`,
-      [accountId]
+      [accountId],
     );
     return Number(res.rows[0].balance);
   }
@@ -154,7 +155,7 @@ export class LedgerService {
          VALUES ($1, 'user', $2)
          ON CONFLICT (code) DO UPDATE SET code = EXCLUDED.code
          RETURNING id`,
-        [code, userId]
+        [code, userId],
       );
       return res.rows[0]?.id ?? null;
     } catch (e: any) {
@@ -176,7 +177,7 @@ export class LedgerService {
        WHERE e.account_id = $1
        ORDER BY e.created_at DESC
        LIMIT $2 OFFSET $3`,
-      [accountId, limit, offset]
+      [accountId, limit, offset],
     );
     return res.rows;
   }

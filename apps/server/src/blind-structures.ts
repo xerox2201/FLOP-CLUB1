@@ -24,10 +24,10 @@ export class BlindStructureService {
        FROM blind_levels
        WHERE structure_id = $1
        ORDER BY level ASC`,
-      [structureId]
+      [structureId],
     );
 
-    const levels: BlindLevel[] = res.rows.map(r => ({
+    const levels: BlindLevel[] = res.rows.map((r) => ({
       level: r.level,
       sb: Number(r.small_blind),
       bb: Number(r.big_blind),
@@ -42,13 +42,16 @@ export class BlindStructureService {
 
   async getLevel(structureId: number, level: number): Promise<BlindLevel | null> {
     const levels = await this.getLevels(structureId);
-    return levels.find(l => l.level === level) ?? null;
+    return levels.find((l) => l.level === level) ?? null;
   }
 
   /**
    * Compute the current level based on elapsed seconds since tournament start
    */
-  async getLevelAtTime(structureId: number, elapsedSec: number): Promise<{
+  async getLevelAtTime(
+    structureId: number,
+    elapsedSec: number,
+  ): Promise<{
     level: number;
     levelData: BlindLevel | null;
     nextLevelIn: number;

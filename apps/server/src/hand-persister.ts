@@ -1,4 +1,4 @@
- import { Pool } from 'pg';
+import { Pool } from 'pg';
 import { LedgerService } from './ledger.js';
 
 export interface HandStartInput {
@@ -25,7 +25,7 @@ export interface HandResultInput {
   winners: number[];
   communityCards: any[];
   showdownPlayers: any[];
-  sidePots: any[];   // 🔴 NEW
+  sidePots: any[]; // 🔴 NEW
   playerStacks: Array<{ seat: number; userId: number; stack: number }>;
 }
 
@@ -55,7 +55,7 @@ export class HandPersister {
           input.dealerSeat,
           'pending',
           input.players.length,
-        ]
+        ],
       );
       const handId = res.rows[0].id;
 
@@ -76,7 +76,7 @@ export class HandPersister {
            VALUES ($1, $2, $3, $4, 'OCCUPIED', NOW())
            ON CONFLICT (table_id, seat_index) 
            DO UPDATE SET user_id = $3, stack = $4, status = 'OCCUPIED', updated_at = NOW()`,
-          [input.tableId, p.seat, p.userId, p.stack]
+          [input.tableId, p.seat, p.userId, p.stack],
         );
       }
 
@@ -89,29 +89,33 @@ export class HandPersister {
 
   recordEvent(handId: number | null, sequence: number, eventType: string, payload: any): void {
     if (!handId) return;
-    this.db.query(
-      `INSERT INTO hand_events (hand_id, sequence, event_type, payload)
+    this.db
+      .query(
+        `INSERT INTO hand_events (hand_id, sequence, event_type, payload)
        VALUES ($1, $2, $3, $4)
        ON CONFLICT (hand_id, sequence) DO NOTHING`,
-      [handId, sequence, eventType, JSON.stringify(payload || {})]
-    ).catch((e: any) => console.error('[hand-persister] recordEvent failed:', e.message));
+        [handId, sequence, eventType, JSON.stringify(payload || {})],
+      )
+      .catch((e: any) => console.error('[hand-persister] recordEvent failed:', e.message));
   }
 
   saveSnapshot(handId: number | null, sequence: number, state: any): void {
     if (!handId) return;
-    this.db.query(
-      `INSERT INTO hand_snapshots (hand_id, sequence, state)
+    this.db
+      .query(
+        `INSERT INTO hand_snapshots (hand_id, sequence, state)
        VALUES ($1, $2, $3)
        ON CONFLICT (hand_id, sequence) DO NOTHING`,
-      [handId, sequence, JSON.stringify(state)]
-    ).catch((e: any) => console.error('[hand-persister] saveSnapshot failed:', e.message));
+        [handId, sequence, JSON.stringify(state)],
+      )
+      .catch((e: any) => console.error('[hand-persister] saveSnapshot failed:', e.message));
   }
 
   async finishHand(
     tableId: number,
     handId: number | null,
     input: HandResultInput,
-    mode: 'free' | 'real'
+    mode: 'free' | 'real',
   ): Promise<void> {
     try {
       if (handId) {
@@ -126,12 +130,12 @@ export class HandPersister {
             JSON.stringify({
               winners: input.winners,
               showdownPlayers: input.showdownPlayers,
-              sidePots: input.sidePots || [],   // 🔴 NEW
+              sidePots: input.sidePots || [], // 🔴 NEW
             }),
             JSON.stringify(input.communityCards || []),
             JSON.stringify(input.winners),
             handId,
-          ]
+          ],
         );
       }
 
@@ -150,14 +154,13 @@ export class HandPersister {
   }
 
   private async persistFreeChips(
-    stacks: Array<{ seat: number; userId: number; stack: number }>
+    stacks: Array<{ seat: number; userId: number; stack: number }>,
   ): Promise<void> {
     for (const s of stacks) {
       try {
-        const old = await this.db.query(
-          'SELECT chips FROM free_chips WHERE user_id = $1',
-          [s.userId]
-        );
+        const old = await this.db.query('SELECT chips FROM free_chips WHERE user_id = $1', [
+          s.userId,
+        ]);
         const oldBalance = Number(old.rows[0]?.chips ?? 0);
         const newBalance = Math.round(s.stack);
         const delta = newBalance - oldBalance;
@@ -165,17 +168,17 @@ export class HandPersister {
         if (delta !== 0) {
           await this.db.query(
             'UPDATE free_chips SET chips = $1, total_hands = total_hands + 1 WHERE user_id = $2',
-            [newBalance, s.userId]
+            [newBalance, s.userId],
           );
           await this.db.query(
             `INSERT INTO play_money_log (user_id, delta, reason, balance_after)
              VALUES ($1, $2, $3, $4)`,
-            [s.userId, delta, 'hand_result', newBalance]
+            [s.userId, delta, 'hand_result', newBalance],
           );
         } else {
           await this.db.query(
             'UPDATE free_chips SET total_hands = total_hands + 1 WHERE user_id = $1',
-            [s.userId]
+            [s.userId],
           );
         }
       } catch (e: any) {
@@ -185,13 +188,13 @@ export class HandPersister {
   }
 
   private async persistRealMoney(
-    stacks: Array<{ seat: number; userId: number; stack: number }>
+    stacks: Array<{ seat: number; userId: number; stack: number }>,
   ): Promise<void> {
     for (const s of stacks) {
       try {
         await this.db.query(
           `UPDATE wallets SET balance_usd = $1, updated_at = NOW() WHERE user_id = $2`,
-          [s.stack, s.userId]
+          [s.stack, s.userId],
         );
       } catch (e: any) {
         console.error(`[hand-persister] persistRealMoney user ${s.userId} failed:`, e.message);
@@ -229,7 +232,7 @@ export class HandPersister {
         `SELECT sequence, state FROM hand_snapshots
          WHERE hand_id = $1 AND sequence <= $2
          ORDER BY sequence DESC LIMIT 1`,
-        [handId, targetSequence]
+        [handId, targetSequence],
       );
 
       if (snap.rows.length === 0) {
@@ -244,7 +247,7 @@ export class HandPersister {
         `SELECT sequence, event_type, payload FROM hand_events
          WHERE hand_id = $1 AND sequence > $2 AND sequence <= $3
          ORDER BY sequence ASC`,
-        [handId, startSeq, targetSequence]
+        [handId, startSeq, targetSequence],
       );
 
       return {
@@ -270,7 +273,7 @@ export class HandPersister {
          WHERE hand_id = $1 AND sequence > $2
          ORDER BY sequence ASC
          LIMIT 500`,
-        [handId, sinceSequence]
+        [handId, sinceSequence],
       );
       return res.rows;
     } catch (e: any) {

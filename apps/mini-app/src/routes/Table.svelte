@@ -1,4 +1,4 @@
- <script lang="ts">
+<script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import PokerTable from '../components/PokerTable.svelte';
   import PlayingCard from '../components/PlayingCard.svelte';
@@ -34,8 +34,6 @@
   let raiseInput = '0.00';
   let raiseInputFocused = false;
 
-  let handHistory: any[] = [];
-
   // 🔴 Pre-Action
   type PreActionKey = 'check_fold' | 'check' | 'call_any' | 'fold';
   type PreAction = PreActionKey | null;
@@ -46,9 +44,11 @@
   $: myUserId = $auth.user?.id;
   $: mySeat = gameState?.seats?.find((s: any) => s.userId === myUserId) ?? null;
   $: isMyTurn = !!(
-    gameState && mySeat &&
+    gameState &&
+    mySeat &&
     gameState.currentSeat === mySeat.seat &&
-    !mySeat.folded && !mySeat.allIn
+    !mySeat.folded &&
+    !mySeat.allIn
   );
 
   $: maxBet = gameState ? Math.max(0, ...gameState.seats.map((s: any) => s.betThisStreet)) : 0;
@@ -61,35 +61,38 @@
   $: hardMax = myStack + myBet;
   $: canRaise = isMyTurn && hardMax > maxBet && hardMax >= minRaiseTo;
 
-  $: timeRemaining = gameState && gameState.turnStartedAt
-    ? Math.max(0, (gameState.turnBaseLimit ?? 30) - (nowTick - gameState.turnStartedAt) / 1000)
-    : 30;
+  $: timeRemaining =
+    gameState && gameState.turnStartedAt
+      ? Math.max(0, (gameState.turnBaseLimit ?? 30) - (nowTick - gameState.turnStartedAt) / 1000)
+      : 30;
 
   $: canUseBank =
-    isMyTurn && mySeat &&
+    isMyTurn &&
+    mySeat &&
     mySeat.timeBankRemaining > 0 &&
     !gameState?.turnBankActive &&
     timeRemaining <= 5;
 
   $: if (isMyTurn && !raiseTouched) raiseAmount = Math.min(minRaiseTo, hardMax);
-  $: if (!isMyTurn) { raiseTouched = false; }
+  $: if (!isMyTurn) {
+    raiseTouched = false;
+  }
   $: if (raiseAmount < minRaiseTo) raiseAmount = minRaiseTo;
   $: if (raiseAmount > hardMax) raiseAmount = hardMax;
 
   $: if (!raiseInputFocused) raiseInput = raiseAmount.toFixed(2);
 
-  $: raisePercent = hardMax > minRaiseTo
-    ? ((raiseAmount - minRaiseTo) / (hardMax - minRaiseTo)) * 100
-    : 100;
+  $: raisePercent =
+    hardMax > minRaiseTo ? ((raiseAmount - minRaiseTo) / (hardMax - minRaiseTo)) * 100 : 100;
 
   $: myAvatarId = ($auth.user as any)?.avatar_id || 'spade';
 
   // 🔴 Pre-action definitions
   const PRE_ACTIONS: { key: PreActionKey; label: string; icon: string; color: string }[] = [
     { key: 'check_fold', label: 'Check/Fold', icon: '✓/✗', color: '#3b82f6' },
-    { key: 'check',      label: 'Check',      icon: '✓',    color: '#10b981' },
-    { key: 'call_any',   label: 'Call Any',   icon: '📞',   color: '#8b5cf6' },
-    { key: 'fold',       label: 'Fold',       icon: '✗',    color: '#ef4444' },
+    { key: 'check', label: 'Check', icon: '✓', color: '#10b981' },
+    { key: 'call_any', label: 'Call Any', icon: '📞', color: '#8b5cf6' },
+    { key: 'fold', label: 'Fold', icon: '✗', color: '#ef4444' },
   ];
 
   // 🔴 Show pre-action panel
@@ -102,7 +105,8 @@
     mySeat &&
     !mySeat.folded &&
     !mySeat.allIn &&
-    (gameState.phase !== 'showdown' && gameState.phase !== 'waiting');
+    gameState.phase !== 'showdown' &&
+    gameState.phase !== 'waiting';
 
   function fmt(n: any): string {
     return Number(Number(n || 0).toFixed(2)).toFixed(2);
@@ -117,7 +121,10 @@
 
   function connect() {
     const token = localStorage.getItem('token');
-    if (!token) { errorMsg = 'no_token'; return; }
+    if (!token) {
+      errorMsg = 'no_token';
+      return;
+    }
 
     socket = new TableSocketIO(tableId, token);
     socket.on((evt) => {
@@ -135,7 +142,10 @@
         reconnecting = false;
         reconnectSynced = true;
         autoActionMsg = '✅ Reconnected';
-        setTimeout(() => { autoActionMsg = ''; reconnectSynced = false; }, 2000);
+        setTimeout(() => {
+          autoActionMsg = '';
+          reconnectSynced = false;
+        }, 2000);
       } else if (evt.type === 'state') {
         gameState = evt.state;
         startingHand = false;
@@ -143,51 +153,16 @@
         handResult = evt.result;
         gameState = evt.state;
 
-        // 🔴 Reset pre-action immediately when hand ends
         resetPreAction();
 
-        try {
-          const winners: number[] = evt.result.winners || [];
-          const showdownPlayers: any[] = evt.result.showdownPlayers || [];
-          const payoutMap: Record<number, number> = {};
-          for (const po of (evt.result.payouts || [])) payoutMap[po.seat] = po.amount;
-
-          let winnerSnapshots: any[] = [];
-          if (showdownPlayers.length > 0) {
-            winnerSnapshots = showdownPlayers
-              .filter((p: any) => winners.includes(p.seat))
-              .map((p: any) => ({
-                displayName: p.displayName,
-                cards: (p.best || []).slice(0, 5),
-                handName: p.handName,
-                payout: payoutMap[p.seat] || 0,
-              }));
-          } else {
-            winnerSnapshots = winners.map((seatNum: number) => {
-              const s = evt.state?.seats?.find((x: any) => x.seat === seatNum);
-              return {
-                displayName: s?.displayName || `Seat ${seatNum}`,
-                cards: [],
-                handName: 'All folded',
-                payout: payoutMap[seatNum] || 0,
-              };
-            });
-          }
-
-          handHistory = [
-            {
-              handNo: evt.state?.handNo,
-              winners: winnerSnapshots,
-              isSplit: winners.length > 1,
-            },
-            ...handHistory,
-          ].slice(0, 2);
-        } catch (e) { /* ignore */ }
-
-        setTimeout(() => { handResult = null; }, 7000);
+        setTimeout(() => {
+          handResult = null;
+        }, 7000);
       } else if (evt.type === 'error') {
         errorMsg = evt.message;
-        setTimeout(() => { errorMsg = ''; }, 3000);
+        setTimeout(() => {
+          errorMsg = '';
+        }, 3000);
       }
     });
     socket.connect();
@@ -195,11 +170,15 @@
 
   onMount(() => {
     connect();
-    const interval = setInterval(() => { nowTick = Date.now(); }, 500);
+    const interval = setInterval(() => {
+      nowTick = Date.now();
+    }, 500);
     return () => clearInterval(interval);
   });
 
-  onDestroy(() => { if (socket) socket.close(); });
+  onDestroy(() => {
+    if (socket) socket.close();
+  });
 
   // 🔴 Helper to reset pre-action
   function resetPreAction() {
@@ -208,7 +187,12 @@
   }
 
   // 🔴 Reset on hand change (backup safety)
-  $: if (gameState?.handNo && gameState.handNo !== lastEndedHandNo && gameState.winners && gameState.winners.length > 0) {
+  $: if (
+    gameState?.handNo &&
+    gameState.handNo !== lastEndedHandNo &&
+    gameState.winners &&
+    gameState.winners.length > 0
+  ) {
     lastEndedHandNo = gameState.handNo;
     resetPreAction();
   }
@@ -238,7 +222,9 @@
         sent = true;
       } else {
         autoActionMsg = '⚠️ Cannot check';
-        setTimeout(() => { autoActionMsg = ''; }, 1500);
+        setTimeout(() => {
+          autoActionMsg = '';
+        }, 1500);
       }
     } else if (action === 'check_fold') {
       if (canCheck) {
@@ -266,11 +252,12 @@
       }
     }
 
-    // 🔴 ONE-SHOT: خاموش کردن بعد از fire
     if (sent) {
       preAction = null;
       lastFireKey = null;
-      setTimeout(() => { autoActionMsg = ''; }, 2000);
+      setTimeout(() => {
+        autoActionMsg = '';
+      }, 2000);
     }
   }
 
@@ -287,7 +274,9 @@
       preAction = pa;
       lastFireKey = null;
       autoActionMsg = `🎯 ${pa.replace('_', '/')} armed`;
-      setTimeout(() => { autoActionMsg = ''; }, 1500);
+      setTimeout(() => {
+        autoActionMsg = '';
+      }, 1500);
     }
   }
 
@@ -335,28 +324,36 @@
     setRaise(Math.min(potTotal, hardMax));
   }
 
-  function allIn() { setRaise(hardMax); }
+  function allIn() {
+    setRaise(hardMax);
+  }
 
   function useTimeBank() {
     if (!socket || !canUseBank) return;
     socket.useTimeBank();
   }
 
-  function toggleMenu() { showMenu = !showMenu; }
+  function toggleMenu() {
+    showMenu = !showMenu;
+  }
 
   function doSitOut() {
     sittingOut = true;
     showMenu = false;
     resetPreAction();
     autoActionMsg = '💤 Sitting out';
-    setTimeout(() => { autoActionMsg = ''; }, 2500);
+    setTimeout(() => {
+      autoActionMsg = '';
+    }, 2500);
   }
 
   function doSitIn() {
     sittingOut = false;
     showMenu = false;
     autoActionMsg = '▶️ Back in action';
-    setTimeout(() => { autoActionMsg = ''; }, 2000);
+    setTimeout(() => {
+      autoActionMsg = '';
+    }, 2000);
   }
 
   function leaveTable() {
@@ -367,16 +364,43 @@
   }
 </script>
 
-<div class="relative w-full bg-black overflow-hidden" style="height: 100dvh; max-height: 100dvh; padding-bottom: env(safe-area-inset-bottom);">
-
+<div
+  class="relative w-full bg-black overflow-hidden"
+  style="height: 100dvh; max-height: 100dvh; padding-bottom: env(safe-area-inset-bottom);"
+>
   <!-- Top bar -->
-  <div class="absolute top-0 left-0 right-0 z-40 flex items-start justify-between px-4" style="padding-top: max(16px, env(safe-area-inset-top));">
+  <div
+    class="absolute top-0 left-0 right-0 z-40 flex items-start justify-between px-4"
+    style="padding-top: max(16px, env(safe-area-inset-top));"
+  >
     <div class="flex items-center gap-2">
-      <button on:click={onBack} aria-label="Back" class="w-11 h-11 rounded-full flex items-center justify-center text-white text-xl active:scale-95" style="background: rgba(0,0,0,0.75); border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(10px);">←</button>
-      <button on:click={toggleMenu} aria-label="Settings" class="w-11 h-11 rounded-full flex items-center justify-center text-white active:scale-95 transition {showMenu ? 'ring-2 ring-amber-400' : ''}" style="background: rgba(0,0,0,0.75); border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(10px);">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="3"/>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      <button
+        on:click={onBack}
+        aria-label="Back"
+        class="w-11 h-11 rounded-full flex items-center justify-center text-white text-xl active:scale-95"
+        style="background: rgba(0,0,0,0.75); border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(10px);"
+        >←</button
+      >
+      <button
+        on:click={toggleMenu}
+        aria-label="Settings"
+        class="w-11 h-11 rounded-full flex items-center justify-center text-white active:scale-95 transition {showMenu
+          ? 'ring-2 ring-amber-400'
+          : ''}"
+        style="background: rgba(0,0,0,0.75); border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(10px);"
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <circle cx="12" cy="12" r="3" />
+          <path
+            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+          />
         </svg>
       </button>
     </div>
@@ -384,62 +408,38 @@
     <div class="flex flex-col items-end gap-1">
       <div class="flex items-center gap-2">
         <span class="text-[13px] font-extrabold text-white tracking-wider">LIVE</span>
-        <span class="w-3 h-3 rounded-full {connected ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}"></span>
+        <span
+          class="w-3 h-3 rounded-full {connected ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}"
+        ></span>
       </div>
       {#if gameState?.handNo}
-        <button on:click={() => showSeedModal = true} class="text-[10px] text-white/60 font-mono underline active:opacity-60">
+        <button
+          on:click={() => (showSeedModal = true)}
+          class="text-[10px] text-white/60 font-mono underline active:opacity-60"
+        >
           Hand #{gameState.handNo} 🔒
         </button>
       {/if}
     </div>
   </div>
 
-  <!-- Hand History (small) -->
-  {#if handHistory.length > 0}
-    <div class="absolute z-30 flex gap-1.5 pointer-events-none" style="top: max(72px, calc(env(safe-area-inset-top) + 60px)); left: 16px;">
-      {#each handHistory as h, i}
-        <div class="rounded-xl p-2 w-[140px]" style="background: rgba(0,0,0,0.88); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); opacity: {1 - i * 0.25};">
-          <div class="flex items-center justify-between mb-1">
-            <span class="text-[9px] font-mono text-white/50">Hand #{h.handNo}</span>
-            {#if h.isSplit}
-              <span class="text-[8px] font-bold text-blue-300 px-1 rounded" style="background: rgba(59,130,246,0.2);">SPLIT</span>
-            {/if}
-          </div>
-          {#each h.winners as w}
-            <div class="mb-1">
-              <div class="flex items-center gap-1 mb-0.5">
-                <span class="text-[10px]">🏆</span>
-                <span class="text-[10px] font-bold text-amber-400 truncate flex-1">{w.displayName}</span>
-              </div>
-              {#if w.cards.length > 0}
-                <div class="flex gap-0.5 justify-center my-1 flex-wrap">
-                  {#each w.cards as c}
-                    <div class="scale-[0.5] origin-center -mx-1.5">
-                      <PlayingCard rank={c.r} suit={suitChar(c.s)} size="sm" />
-                    </div>
-                  {/each}
-                </div>
-              {/if}
-              <div class="flex items-center justify-between">
-                <span class="text-[9px] font-bold text-white/50">{w.handName}</span>
-                {#if w.payout > 0}
-                  <span class="text-[9px] font-extrabold text-emerald-400 tabular-nums">+${fmt(w.payout)}</span>
-                {/if}
-              </div>
-            </div>
-          {/each}
-        </div>
-      {/each}
-    </div>
-  {/if}
-
   <!-- Seed Modal -->
   {#if showSeedModal && gameState}
-    <button aria-label="Close" class="fixed inset-0 z-[70] cursor-default" style="background: rgba(0,0,0,0.75); backdrop-filter: blur(4px);" on:click={() => showSeedModal = false}></button>
-    <div class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[80] rounded-2xl p-4 w-[90%] max-w-[380px]" style="background: rgba(15,23,42,0.98); border: 1px solid rgba(255,255,255,0.15);">
+    <button
+      aria-label="Close"
+      class="fixed inset-0 z-[70] cursor-default"
+      style="background: rgba(0,0,0,0.75); backdrop-filter: blur(4px);"
+      on:click={() => (showSeedModal = false)}
+    ></button>
+    <div
+      class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[80] rounded-2xl p-4 w-[90%] max-w-[380px]"
+      style="background: rgba(15,23,42,0.98); border: 1px solid rgba(255,255,255,0.15);"
+    >
       <div class="flex items-center justify-between mb-3">
         <h3 class="text-sm font-extrabold text-white">🔒 Provably Fair</h3>
-        <button on:click={() => showSeedModal = false} class="text-white/60 text-xl leading-none">×</button>
+        <button on:click={() => (showSeedModal = false)} class="text-white/60 text-xl leading-none"
+          >×</button
+        >
       </div>
       <div class="space-y-2 text-[11px] font-mono">
         <div>
@@ -473,10 +473,24 @@
 
   <!-- Menu -->
   {#if showMenu}
-    <button aria-label="Close menu" class="fixed inset-0 z-40 cursor-default" style="background: transparent;" on:click={() => showMenu = false}></button>
-    <div class="absolute z-50 rounded-2xl p-2 shadow-2xl" style="top: max(68px, calc(env(safe-area-inset-top) + 60px)); left: 16px; width: 240px; background: rgba(15, 23, 42, 0.98); border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(16px);">
-
-      <button on:click={() => { showMenu = false; showHandHistory = true; }} class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left active:scale-[0.98] transition" style="background: rgba(59,130,246,0.1);">
+    <button
+      aria-label="Close menu"
+      class="fixed inset-0 z-40 cursor-default"
+      style="background: transparent;"
+      on:click={() => (showMenu = false)}
+    ></button>
+    <div
+      class="absolute z-50 rounded-2xl p-2 shadow-2xl"
+      style="top: max(68px, calc(env(safe-area-inset-top) + 60px)); left: 16px; width: 240px; background: rgba(15, 23, 42, 0.98); border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(16px);"
+    >
+      <button
+        on:click={() => {
+          showMenu = false;
+          showHandHistory = true;
+        }}
+        class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left active:scale-[0.98] transition"
+        style="background: rgba(59,130,246,0.1);"
+      >
         <span class="text-lg">📜</span>
         <div class="flex-1">
           <p class="text-sm font-bold text-white">Hand History</p>
@@ -487,22 +501,43 @@
       <div class="my-1 mx-2" style="height: 1px; background: rgba(255,255,255,0.06);"></div>
 
       {#if sittingOut}
-        <button on:click={doSitIn} class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left active:scale-[0.98] transition" style="background: rgba(16,185,129,0.1);">
+        <button
+          on:click={doSitIn}
+          class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left active:scale-[0.98] transition"
+          style="background: rgba(16,185,129,0.1);"
+        >
           <span class="text-lg">▶️</span>
-          <div class="flex-1"><p class="text-sm font-bold text-white">Sit In</p><p class="text-[10px] text-white/50">Resume playing</p></div>
+          <div class="flex-1">
+            <p class="text-sm font-bold text-white">Sit In</p>
+            <p class="text-[10px] text-white/50">Resume playing</p>
+          </div>
         </button>
       {:else}
-        <button on:click={doSitOut} class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left active:scale-[0.98] transition" style="background: rgba(245,158,11,0.1);">
+        <button
+          on:click={doSitOut}
+          class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left active:scale-[0.98] transition"
+          style="background: rgba(245,158,11,0.1);"
+        >
           <span class="text-lg">⏸️</span>
-          <div class="flex-1"><p class="text-sm font-bold text-white">Sit Out</p><p class="text-[10px] text-white/50">Auto-fold next hands</p></div>
+          <div class="flex-1">
+            <p class="text-sm font-bold text-white">Sit Out</p>
+            <p class="text-[10px] text-white/50">Auto-fold next hands</p>
+          </div>
         </button>
       {/if}
 
       <div class="my-1 mx-2" style="height: 1px; background: rgba(255,255,255,0.06);"></div>
 
-      <button on:click={leaveTable} class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left active:scale-[0.98] transition" style="background: rgba(220,38,38,0.15);">
+      <button
+        on:click={leaveTable}
+        class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left active:scale-[0.98] transition"
+        style="background: rgba(220,38,38,0.15);"
+      >
         <span class="text-lg">🚪</span>
-        <div class="flex-1"><p class="text-sm font-bold text-red-300">Leave Table</p><p class="text-[10px] text-white/50">Return chips</p></div>
+        <div class="flex-1">
+          <p class="text-sm font-bold text-red-300">Leave Table</p>
+          <p class="text-[10px] text-white/50">Return chips</p>
+        </div>
       </button>
     </div>
   {/if}
@@ -513,7 +548,7 @@
   <!-- Hand History Modal -->
   <HandHistoryModal
     open={showHandHistory}
-    onClose={() => showHandHistory = false}
+    onClose={() => (showHandHistory = false)}
     onReplay={(handId) => {
       showHandHistory = false;
       replayHandId = handId;
@@ -525,12 +560,18 @@
   <HandReplayModal
     open={showReplay}
     handId={replayHandId}
-    onClose={() => { showReplay = false; replayHandId = null; }}
+    onClose={() => {
+      showReplay = false;
+      replayHandId = null;
+    }}
   />
 
   <!-- Waiting -->
   {#if !gameState || startingHand}
-    <div class="absolute top-[80%] left-1/2 -translate-x-1/2 z-20 rounded-2xl px-5 py-3 text-center" style="background: rgba(0,0,0,0.85); border: 1px solid rgba(255,255,255,0.1);">
+    <div
+      class="absolute top-[80%] left-1/2 -translate-x-1/2 z-20 rounded-2xl px-5 py-3 text-center"
+      style="background: rgba(0,0,0,0.85); border: 1px solid rgba(255,255,255,0.1);"
+    >
       <p class="text-sm text-white/70">{$t('table.waitingPlayers')}</p>
       <p class="text-xs text-amber-400 mt-1 font-bold">
         {gameState?.seats?.filter((s: any) => s.stack > 0).length ?? 0} / 2
@@ -539,23 +580,35 @@
   {/if}
 
   {#if autoActionMsg}
-    <div class="absolute top-20 left-1/2 -translate-x-1/2 z-40 bg-amber-900/95 rounded-2xl px-4 py-2 border border-amber-700 max-w-[90%]">
+    <div
+      class="absolute top-20 left-1/2 -translate-x-1/2 z-40 bg-amber-900/95 rounded-2xl px-4 py-2 border border-amber-700 max-w-[90%]"
+    >
       <p class="text-xs font-bold text-amber-100 text-center">{autoActionMsg}</p>
     </div>
   {/if}
 
   {#if errorMsg}
-    <div class="absolute top-32 left-1/2 -translate-x-1/2 z-40 bg-red-900/95 rounded-2xl px-4 py-2 border border-red-700">
+    <div
+      class="absolute top-32 left-1/2 -translate-x-1/2 z-40 bg-red-900/95 rounded-2xl px-4 py-2 border border-red-700"
+    >
       <p class="text-xs font-bold text-red-200">{errorMsg}</p>
     </div>
   {/if}
 
   <!-- 🔴 Pre-Action Panel -->
   {#if showPreActions}
-    <div class="absolute bottom-0 left-0 right-0 z-30" style="padding: 12px 12px calc(16px + env(safe-area-inset-bottom)) 12px; max-width: 480px; margin: 0 auto;">
-      <div class="rounded-2xl p-2" style="background: rgba(0,0,0,0.88); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(12px);">
+    <div
+      class="absolute bottom-0 left-0 right-0 z-30"
+      style="padding: 12px 12px calc(16px + env(safe-area-inset-bottom)) 12px; max-width: 480px; margin: 0 auto;"
+    >
+      <div
+        class="rounded-2xl p-2"
+        style="background: rgba(0,0,0,0.88); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(12px);"
+      >
         <div class="flex items-center justify-between px-2 mb-1.5">
-          <span class="text-[9px] uppercase tracking-widest font-extrabold text-white/40">Pre-Action</span>
+          <span class="text-[9px] uppercase tracking-widest font-extrabold text-white/40"
+            >Pre-Action</span
+          >
           {#if preAction}
             <span class="text-[9px] font-bold text-amber-400">Armed · Tap again to cancel</span>
           {/if}
@@ -565,10 +618,23 @@
             <button
               on:click={() => setPreAction(pa.key)}
               class="flex-1 rounded-xl py-2.5 active:scale-[0.97] transition-all flex flex-col items-center gap-0.5"
-              style="background: {preAction === pa.key ? pa.color : 'rgba(255,255,255,0.06)'}; border: {preAction === pa.key ? `2px solid ${pa.color}` : '2px solid transparent'}; box-shadow: {preAction === pa.key ? `0 0 14px ${pa.color}60` : 'none'};"
+              style="background: {preAction === pa.key
+                ? pa.color
+                : 'rgba(255,255,255,0.06)'}; border: {preAction === pa.key
+                ? `2px solid ${pa.color}`
+                : '2px solid transparent'}; box-shadow: {preAction === pa.key
+                ? `0 0 14px ${pa.color}60`
+                : 'none'};"
             >
-              <span class="text-[16px] leading-none" style="color: {preAction === pa.key ? 'white' : pa.color};">{pa.icon}</span>
-              <span class="text-[9px] font-bold leading-none" style="color: {preAction === pa.key ? 'white' : 'rgba(255,255,255,0.7)'};">{pa.label}</span>
+              <span
+                class="text-[16px] leading-none"
+                style="color: {preAction === pa.key ? 'white' : pa.color};">{pa.icon}</span
+              >
+              <span
+                class="text-[9px] font-bold leading-none"
+                style="color: {preAction === pa.key ? 'white' : 'rgba(255,255,255,0.7)'};"
+                >{pa.label}</span
+              >
             </button>
           {/each}
         </div>
@@ -578,34 +644,48 @@
 
   <!-- Action Bar (when it's my turn) -->
   {#if gameState && !startingHand && !handResult && isMyTurn}
-    <div class="absolute bottom-0 left-0 right-0 z-30" style="padding: 12px 12px calc(16px + env(safe-area-inset-bottom)) 12px; max-width: 480px; margin: 0 auto;">
+    <div
+      class="absolute bottom-0 left-0 right-0 z-30"
+      style="padding: 12px 12px calc(16px + env(safe-area-inset-bottom)) 12px; max-width: 480px; margin: 0 auto;"
+    >
       {#if !sittingOut}
         {#if canUseBank}
           <div class="flex justify-center mb-2">
-            <button on:click={useTimeBank} class="rounded-full px-4 py-1.5 text-[11px] font-bold text-amber-300 active:scale-95" style="background: rgba(0,0,0,0.85); border: 1px solid rgba(245,158,11,0.5); backdrop-filter: blur(10px);">
+            <button
+              on:click={useTimeBank}
+              class="rounded-full px-4 py-1.5 text-[11px] font-bold text-amber-300 active:scale-95"
+              style="background: rgba(0,0,0,0.85); border: 1px solid rgba(245,158,11,0.5); backdrop-filter: blur(10px);"
+            >
               ⏱️ Use Time Bank
             </button>
           </div>
         {/if}
 
         {#if canRaise}
-          <div class="rounded-2xl p-3 mb-3" style="background: rgba(0,0,0,0.88); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(12px);">
+          <div
+            class="rounded-2xl p-3 mb-3"
+            style="background: rgba(0,0,0,0.88); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(12px);"
+          >
             <div class="flex items-center justify-between mb-3 gap-2">
-              <span class="text-[13px] font-extrabold text-white/70 tabular-nums shrink-0">${fmt(minRaiseTo)}</span>
+              <span class="text-[13px] font-extrabold text-white/70 tabular-nums shrink-0"
+                >${fmt(minRaiseTo)}</span
+              >
               <div class="flex items-center gap-0.5 flex-1 justify-center">
                 <span class="text-[18px] font-extrabold text-amber-400/70">$</span>
                 <input
                   type="text"
                   inputmode="decimal"
                   bind:value={raiseInput}
-                  on:focus={() => raiseInputFocused = true}
+                  on:focus={() => (raiseInputFocused = true)}
                   on:blur={commitRaiseInput}
                   on:keydown={handleRaiseKey}
                   class="text-[20px] font-extrabold text-amber-400 tabular-nums bg-transparent border-b-2 border-amber-400/40 focus:border-amber-400 text-center outline-none"
                   style="width: 5.5rem;"
                 />
               </div>
-              <span class="text-[13px] font-extrabold text-white/50 tabular-nums shrink-0">${fmt(hardMax)}</span>
+              <span class="text-[13px] font-extrabold text-white/50 tabular-nums shrink-0"
+                >${fmt(hardMax)}</span
+              >
             </div>
 
             <input
@@ -620,46 +700,108 @@
             />
 
             <div class="flex gap-1.5 mt-3">
-              <button on:click={() => setRaise(minRaiseTo)} class="flex-1 rounded-lg py-1.5 text-[10px] font-bold text-white/70 active:scale-95" style="background: rgba(255,255,255,0.06);">MIN</button>
-              <button on:click={() => quickRaise(2)} class="flex-1 rounded-lg py-1.5 text-[10px] font-bold text-white/70 active:scale-95" style="background: rgba(255,255,255,0.06);">2×</button>
-              <button on:click={() => quickRaise(3)} class="flex-1 rounded-lg py-1.5 text-[10px] font-bold text-white/70 active:scale-95" style="background: rgba(255,255,255,0.06);">3×</button>
-              <button on:click={potRaise} class="flex-1 rounded-lg py-1.5 text-[10px] font-bold text-amber-400 active:scale-95" style="background: rgba(245,158,11,0.15);">POT</button>
-              <button on:click={allIn} class="flex-1 rounded-lg py-1.5 text-[10px] font-bold text-red-300 active:scale-95" style="background: rgba(220,38,38,0.2);">MAX</button>
+              <button
+                on:click={() => setRaise(minRaiseTo)}
+                class="flex-1 rounded-lg py-1.5 text-[10px] font-bold text-white/70 active:scale-95"
+                style="background: rgba(255,255,255,0.06);">MIN</button
+              >
+              <button
+                on:click={() => quickRaise(2)}
+                class="flex-1 rounded-lg py-1.5 text-[10px] font-bold text-white/70 active:scale-95"
+                style="background: rgba(255,255,255,0.06);">2×</button
+              >
+              <button
+                on:click={() => quickRaise(3)}
+                class="flex-1 rounded-lg py-1.5 text-[10px] font-bold text-white/70 active:scale-95"
+                style="background: rgba(255,255,255,0.06);">3×</button
+              >
+              <button
+                on:click={potRaise}
+                class="flex-1 rounded-lg py-1.5 text-[10px] font-bold text-amber-400 active:scale-95"
+                style="background: rgba(245,158,11,0.15);">POT</button
+              >
+              <button
+                on:click={allIn}
+                class="flex-1 rounded-lg py-1.5 text-[10px] font-bold text-red-300 active:scale-95"
+                style="background: rgba(220,38,38,0.2);">MAX</button
+              >
             </div>
           </div>
         {/if}
 
         <div class="flex gap-2">
-          <button on:click={() => doAction('FOLD')} class="flex-1 rounded-xl py-4 active:scale-[0.97] transition-all" style="background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%); box-shadow: 0 5px 0 #7f1d1d, 0 6px 12px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.2);">
-            <span class="text-[15px] font-extrabold text-white uppercase tracking-wider">{$t('table.fold')}</span>
+          <button
+            on:click={() => doAction('FOLD')}
+            class="flex-1 rounded-xl py-4 active:scale-[0.97] transition-all"
+            style="background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%); box-shadow: 0 5px 0 #7f1d1d, 0 6px 12px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.2);"
+          >
+            <span class="text-[15px] font-extrabold text-white uppercase tracking-wider"
+              >{$t('table.fold')}</span
+            >
           </button>
 
           {#if canCheck}
-            <button on:click={() => doAction('CHECK')} class="flex-1 rounded-xl py-4 active:scale-[0.97] transition-all" style="background: linear-gradient(180deg, #3b82f6 0%, #1e40af 100%); box-shadow: 0 5px 0 #1e3a8a, 0 6px 12px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.2);">
-              <span class="text-[15px] font-extrabold text-white uppercase tracking-wider">{$t('table.check')}</span>
+            <button
+              on:click={() => doAction('CHECK')}
+              class="flex-1 rounded-xl py-4 active:scale-[0.97] transition-all"
+              style="background: linear-gradient(180deg, #3b82f6 0%, #1e40af 100%); box-shadow: 0 5px 0 #1e3a8a, 0 6px 12px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.2);"
+            >
+              <span class="text-[15px] font-extrabold text-white uppercase tracking-wider"
+                >{$t('table.check')}</span
+              >
             </button>
           {:else}
-            <button on:click={() => doAction('CALL')} disabled={myStack === 0} class="flex-1 rounded-xl py-3 active:scale-[0.97] transition-all disabled:opacity-50" style="background: linear-gradient(180deg, #3b82f6 0%, #1e40af 100%); box-shadow: 0 5px 0 #1e3a8a, 0 6px 12px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.2);">
-              <span class="block text-[11px] font-bold text-white/90 leading-none uppercase">{$t('table.call')}</span>
-              <span class="block text-[15px] font-extrabold text-white leading-tight tabular-nums mt-0.5">${fmt(toCall)}</span>
+            <button
+              on:click={() => doAction('CALL')}
+              disabled={myStack === 0}
+              class="flex-1 rounded-xl py-3 active:scale-[0.97] transition-all disabled:opacity-50"
+              style="background: linear-gradient(180deg, #3b82f6 0%, #1e40af 100%); box-shadow: 0 5px 0 #1e3a8a, 0 6px 12px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.2);"
+            >
+              <span class="block text-[11px] font-bold text-white/90 leading-none uppercase"
+                >{$t('table.call')}</span
+              >
+              <span
+                class="block text-[15px] font-extrabold text-white leading-tight tabular-nums mt-0.5"
+                >${fmt(toCall)}</span
+              >
             </button>
           {/if}
 
           {#if canRaise}
-            <button on:click={doRaise} class="flex-1 rounded-xl py-3 active:scale-[0.97] transition-all" style="background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%); box-shadow: 0 5px 0 #92400e, 0 6px 12px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.3);">
-              <span class="block text-[11px] font-bold text-amber-950 leading-none uppercase">{$t('table.raise')}</span>
-              <span class="block text-[15px] font-extrabold text-amber-950 leading-tight tabular-nums mt-0.5">${fmt(raiseAmount)}</span>
+            <button
+              on:click={doRaise}
+              class="flex-1 rounded-xl py-3 active:scale-[0.97] transition-all"
+              style="background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%); box-shadow: 0 5px 0 #92400e, 0 6px 12px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.3);"
+            >
+              <span class="block text-[11px] font-bold text-amber-950 leading-none uppercase"
+                >{$t('table.raise')}</span
+              >
+              <span
+                class="block text-[15px] font-extrabold text-amber-950 leading-tight tabular-nums mt-0.5"
+                >${fmt(raiseAmount)}</span
+              >
             </button>
           {:else if myStack > 0 && myStack <= toCall}
-            <button on:click={allIn} class="flex-1 rounded-xl py-4 active:scale-[0.97] transition-all" style="background: linear-gradient(180deg, #ef4444 0%, #991b1b 100%); box-shadow: 0 5px 0 #7f1d1d, 0 6px 12px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.2);">
-              <span class="text-[15px] font-extrabold text-white uppercase tracking-wider">ALL-IN</span>
+            <button
+              on:click={allIn}
+              class="flex-1 rounded-xl py-4 active:scale-[0.97] transition-all"
+              style="background: linear-gradient(180deg, #ef4444 0%, #991b1b 100%); box-shadow: 0 5px 0 #7f1d1d, 0 6px 12px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.2);"
+            >
+              <span class="text-[15px] font-extrabold text-white uppercase tracking-wider"
+                >ALL-IN</span
+              >
             </button>
           {/if}
         </div>
       {:else}
-        <div class="rounded-2xl p-3 text-center" style="background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4); backdrop-filter: blur(10px);">
+        <div
+          class="rounded-2xl p-3 text-center"
+          style="background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4); backdrop-filter: blur(10px);"
+        >
           <p class="text-xs font-bold text-amber-300">💤 Sitting Out — Auto-folding</p>
-          <button on:click={doSitIn} class="mt-2 text-[11px] text-white underline">Resume playing</button>
+          <button on:click={doSitIn} class="mt-2 text-[11px] text-white underline"
+            >Resume playing</button
+          >
         </div>
       {/if}
     </div>
@@ -673,7 +815,13 @@
     width: 100%;
     height: 6px;
     border-radius: 9999px;
-    background: linear-gradient(to right, #dc2626 0%, #dc2626 var(--raise-pct, 50%), rgba(255, 255, 255, 0.12) var(--raise-pct, 50%), rgba(255, 255, 255, 0.12) 100%);
+    background: linear-gradient(
+      to right,
+      #dc2626 0%,
+      #dc2626 var(--raise-pct, 50%),
+      rgba(255, 255, 255, 0.12) var(--raise-pct, 50%),
+      rgba(255, 255, 255, 0.12) 100%
+    );
     outline: none;
     cursor: pointer;
   }
@@ -686,7 +834,9 @@
     background: #ffffff;
     border: 2px solid #ffffff;
     cursor: pointer;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.8), 0 0 0 3px rgba(220, 38, 38, 0.4);
+    box-shadow:
+      0 2px 10px rgba(0, 0, 0, 0.8),
+      0 0 0 3px rgba(220, 38, 38, 0.4);
   }
   .raise-slider::-moz-range-thumb {
     width: 22px;

@@ -27,7 +27,9 @@
       if (min < 60) return `in ${min}m`;
       const h = Math.floor(min / 60);
       return `in ${h}h ${min % 60}m`;
-    } catch { return '—'; }
+    } catch {
+      return '—';
+    }
   }
 
   const FILTERS: { key: Filter; label: string }[] = [
@@ -66,7 +68,10 @@
 
   function formatLabel(t: any): string {
     const map: Record<string, string> = {
-      sng: 'SNG', mtt: 'MTT', freeroll: 'FREEROLL', satellite: 'SAT',
+      sng: 'SNG',
+      mtt: 'MTT',
+      freeroll: 'FREEROLL',
+      satellite: 'SAT',
     };
     return map[t.format] || t.format.toUpperCase();
   }
@@ -96,17 +101,28 @@
   <div class="flex gap-1.5 mb-4 overflow-x-auto pb-1">
     {#each FILTERS as f}
       <button
-        on:click={() => { filter = f.key; loading = true; load(); }}
+        on:click={() => {
+          filter = f.key;
+          loading = true;
+          load();
+        }}
         class="px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap active:scale-95 transition"
-        style="background: {filter === f.key ? '#fbbf24' : 'rgba(255,255,255,0.06)'}; color: {filter === f.key ? 'black' : 'rgba(255,255,255,0.7)'};"
-      >{f.label}</button>
+        style="background: {filter === f.key
+          ? '#fbbf24'
+          : 'rgba(255,255,255,0.06)'}; color: {filter === f.key
+          ? 'black'
+          : 'rgba(255,255,255,0.7)'};">{f.label}</button
+      >
     {/each}
   </div>
 
   {#if loading}
     <div class="text-center py-12 text-white/40 text-sm">Loading…</div>
   {:else if error}
-    <div class="rounded-xl p-4 text-center" style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);">
+    <div
+      class="rounded-xl p-4 text-center"
+      style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);"
+    >
       <p class="text-red-300 text-sm">{error}</p>
     </div>
   {:else if tournaments.length === 0}
@@ -127,7 +143,8 @@
                 <span
                   class="text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase"
                   style="background: {statusColor(t.status)}22; color: {statusColor(t.status)};"
-                >{t.status.replace('_', ' ')}</span>
+                  >{t.status.replace('_', ' ')}</span
+                >
                 <span class="text-[9px] font-bold text-white/40">{formatLabel(t)}</span>
                 {#if t.mode === 'free'}
                   <span class="text-[9px] font-bold text-emerald-400">FREE</span>

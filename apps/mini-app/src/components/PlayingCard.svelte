@@ -17,7 +17,9 @@
 </script>
 
 <div
-  class="{sizeCls} bg-white flex flex-col items-center justify-center font-bold leading-none {isRed ? 'text-red-600' : 'text-black'}"
+  class="{sizeCls} bg-white flex flex-col items-center justify-center font-bold leading-none {isRed
+    ? 'text-red-600'
+    : 'text-black'}"
   style="
     transform: rotate({rotation}deg);
     box-shadow: 0 3px 8px rgba(0,0,0,0.7), inset 0 0 0 1px rgba(0,0,0,0.1);

@@ -16,10 +16,7 @@ export interface ParsedInitData {
   queryId?: string;
 }
 
-export function verifyTelegramInitData(
-  initData: string,
-  botToken: string
-): ParsedInitData | null {
+export function verifyTelegramInitData(initData: string, botToken: string): ParsedInitData | null {
   const params = new URLSearchParams(initData);
   const hash = params.get('hash');
   if (!hash) return null;
@@ -31,10 +28,7 @@ export function verifyTelegramInitData(
     .sort()
     .join('\n');
 
-  const secretKey = crypto
-    .createHmac('sha256', 'WebAppData')
-    .update(botToken)
-    .digest();
+  const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
 
   const calculatedHash = crypto
     .createHmac('sha256', secretKey)
@@ -64,15 +58,11 @@ export function signToken(payload: object, secret: string, expiresInSec = 604800
   const now = Math.floor(Date.now() / 1000);
   const body = { ...payload, iat: now, exp: now + expiresInSec };
 
-  const b64 = (o: object) =>
-    Buffer.from(JSON.stringify(o)).toString('base64url');
+  const b64 = (o: object) => Buffer.from(JSON.stringify(o)).toString('base64url');
 
   const h = b64(header);
   const p = b64(body);
-  const sig = crypto
-    .createHmac('sha256', secret)
-    .update(`${h}.${p}`)
-    .digest('base64url');
+  const sig = crypto.createHmac('sha256', secret).update(`${h}.${p}`).digest('base64url');
 
   return `${h}.${p}.${sig}`;
 }
@@ -80,10 +70,7 @@ export function signToken(payload: object, secret: string, expiresInSec = 604800
 export function verifyToken(token: string, secret: string): any | null {
   try {
     const [h, p, sig] = token.split('.');
-    const expected = crypto
-      .createHmac('sha256', secret)
-      .update(`${h}.${p}`)
-      .digest('base64url');
+    const expected = crypto.createHmac('sha256', secret).update(`${h}.${p}`).digest('base64url');
     if (sig !== expected) return null;
 
     const payload = JSON.parse(Buffer.from(p, 'base64url').toString());

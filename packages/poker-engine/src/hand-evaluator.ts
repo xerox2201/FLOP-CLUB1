@@ -26,9 +26,9 @@ export function evaluateHand(cards: Card[]): EvalResult {
 }
 
 function eval5(cards: Card[]): EvalResult {
-  const ranks = cards.map(c => rankValue(c.r)).sort((a, b) => b - a);
-  const suits = cards.map(c => c.s);
-  const isFlush = suits.every(s => s === suits[0]);
+  const ranks = cards.map((c) => rankValue(c.r)).sort((a, b) => b - a);
+  const suits = cards.map((c) => c.s);
+  const isFlush = suits.every((s) => s === suits[0]);
 
   const counts = new Map<number, number>();
   for (const r of ranks) counts.set(r, (counts.get(r) || 0) + 1);
@@ -39,7 +39,8 @@ function eval5(cards: Card[]): EvalResult {
   });
 
   const isStraight = checkStraight(ranks);
-  const isWheel = ranks[0] === 14 && ranks[1] === 5 && ranks[2] === 4 && ranks[3] === 3 && ranks[4] === 2;
+  const isWheel =
+    ranks[0] === 14 && ranks[1] === 5 && ranks[2] === 4 && ranks[3] === 3 && ranks[4] === 2;
 
   if (isFlush && isStraight && ranks[0] === 14) {
     return { rank: 10, tiebreak: [14], name: 'Royal Flush' };
@@ -68,7 +69,11 @@ function eval5(cards: Card[]): EvalResult {
   }
 
   if (groups[0][1] === 3) {
-    return { rank: 4, tiebreak: [groups[0][0], ...groups.slice(1).map(g => g[0])], name: 'Three of a Kind' };
+    return {
+      rank: 4,
+      tiebreak: [groups[0][0], ...groups.slice(1).map((g) => g[0])],
+      name: 'Three of a Kind',
+    };
   }
 
   if (groups[0][1] === 2 && groups[1][1] === 2) {
@@ -76,7 +81,11 @@ function eval5(cards: Card[]): EvalResult {
   }
 
   if (groups[0][1] === 2) {
-    return { rank: 2, tiebreak: [groups[0][0], ...groups.slice(1).map(g => g[0])], name: 'One Pair' };
+    return {
+      rank: 2,
+      tiebreak: [groups[0][0], ...groups.slice(1).map((g) => g[0])],
+      name: 'One Pair',
+    };
   }
 
   return { rank: 1, tiebreak: ranks, name: 'High Card' };
@@ -85,7 +94,14 @@ function eval5(cards: Card[]): EvalResult {
 function checkStraight(ranks: number[]): boolean {
   const unique = [...new Set(ranks)].sort((a, b) => b - a);
 
-  if (unique.length >= 5 && unique[0] === 14 && unique[1] === 5 && unique[2] === 4 && unique[3] === 3 && unique[4] === 2) {
+  if (
+    unique.length >= 5 &&
+    unique[0] === 14 &&
+    unique[1] === 5 &&
+    unique[2] === 4 &&
+    unique[3] === 3 &&
+    unique[4] === 2
+  ) {
     return true;
   }
   if (unique.length < 5) return false;
@@ -110,7 +126,10 @@ function combinations<T>(arr: T[], k: number): T[][] {
   const result: T[][] = [];
   const current: T[] = [];
   function recurse(start: number) {
-    if (current.length === k) { result.push([...current]); return; }
+    if (current.length === k) {
+      result.push([...current]);
+      return;
+    }
     for (let i = start; i < arr.length; i++) {
       current.push(arr[i]);
       recurse(i + 1);

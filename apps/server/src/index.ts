@@ -98,7 +98,7 @@ async function main() {
 
     const userRes = await db.query(
       'SELECT id, telegram_id, display_name, avatar_id, created_at FROM users WHERE id = $1',
-      [payload.uid]
+      [payload.uid],
     );
     if (userRes.rows.length === 0) return reply.code(404).send({ error: 'user_not_found' });
 
@@ -115,10 +115,7 @@ async function main() {
       console.error('[me] ledger error:', e.message);
     }
 
-    const chipsRes = await db.query(
-      'SELECT chips FROM free_chips WHERE user_id = $1',
-      [user.id]
-    );
+    const chipsRes = await db.query('SELECT chips FROM free_chips WHERE user_id = $1', [user.id]);
 
     return {
       user: {
@@ -155,10 +152,10 @@ async function main() {
                 min_buyin, max_buyin, seats, rake_pct, is_active
          FROM poker_tables
          WHERE is_active = TRUE
-         ORDER BY id ASC`
+         ORDER BY id ASC`,
       );
       return {
-        tables: res.rows.map(r => ({
+        tables: res.rows.map((r) => ({
           id: r.id,
           name: r.name,
           variant: r.variant,
@@ -248,7 +245,7 @@ async function upsertUser(telegramId: number, displayName: string): Promise<any>
     `INSERT INTO users (telegram_id, display_name, avatar_id)
      VALUES ($1, $2, 'spade')
      RETURNING id, telegram_id, display_name, avatar_id, created_at`,
-    [telegramId, displayName]
+    [telegramId, displayName],
   );
 
   const newUser = res.rows[0];
@@ -267,7 +264,7 @@ async function upsertUser(telegramId: number, displayName: string): Promise<any>
     await db.query(
       `INSERT INTO free_chips (user_id, chips) VALUES ($1, 1000)
        ON CONFLICT (user_id) DO NOTHING`,
-      [newUser.id]
+      [newUser.id],
     );
   } catch (e: any) {
     console.error('[user] free chips creation failed:', e.message);

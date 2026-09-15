@@ -28,13 +28,17 @@ async function main() {
     console.log('(احتمالاً همه all-in ها با هم برابر بودن)');
   } else {
     for (const row of res.rows) {
-      console.log(`Hand #${row.hand_no} (id=${row.id}) — pot=$${row.pot} rake=$${row.rake} players=${row.player_count}`);
+      console.log(
+        `Hand #${row.hand_no} (id=${row.id}) — pot=$${row.pot} rake=$${row.rake} players=${row.player_count}`,
+      );
       for (const p of row.result.sidePots) {
         const winnerNames = (row.result.showdownPlayers || [])
           .filter((sp: any) => p.winnerSeats.includes(sp.seat))
           .map((sp: any) => sp.displayName)
           .join(', ');
-        console.log(`  ${p.label.padEnd(12)} amount=$${p.amount}  net=$${p.netAmount}  eligible=[${p.eligibleSeats.join(',')}]  winners=[${winnerNames || p.winnerSeats.join(',')}]`);
+        console.log(
+          `  ${p.label.padEnd(12)} amount=$${p.amount}  net=$${p.netAmount}  eligible=[${p.eligibleSeats.join(',')}]  winners=[${winnerNames || p.winnerSeats.join(',')}]`,
+        );
       }
       console.log('');
     }
@@ -52,7 +56,7 @@ async function main() {
   await db.end();
 }
 
-main().catch(e => {
+main().catch((e) => {
   console.error('Error:', e.message);
   process.exit(1);
 });

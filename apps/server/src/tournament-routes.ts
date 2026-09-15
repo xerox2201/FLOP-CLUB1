@@ -15,9 +15,8 @@ function authUser(req: any): number | null {
 export async function registerTournamentRoutes(
   app: FastifyInstance,
   db: Pool,
-  tm: TournamentManager
+  tm: TournamentManager,
 ): Promise<void> {
-
   app.get<{ Querystring: { status?: string; variant?: string; mode?: string } }>(
     '/api/tournaments',
     async (req) => {
@@ -27,7 +26,7 @@ export async function registerTournamentRoutes(
         mode: req.query.mode,
       });
       return { tournaments: list };
-    }
+    },
   );
 
   app.get<{ Params: { id: string } }>('/api/tournaments/:id', async (req, reply) => {
@@ -123,7 +122,7 @@ export async function registerTournamentRoutes(
       const result = await tm.handlePlayerBust(id, userId, eliminatedBy);
       if (!result.ok) return reply.code(400).send({ error: 'not_eliminated' });
       return { ok: true, finalPosition: result.finalPosition, finished: result.finished };
-    }
+    },
   );
 
   // 🔴 D3: sync stacks
@@ -140,15 +139,15 @@ export async function registerTournamentRoutes(
       }
       await tm.checkBustedPlayers(id, map);
       return { ok: true };
-    }
+    },
   );
 
   app.get('/api/blind-structures', async () => {
     const res = await db.query(
-      'SELECT id, name, description, starting_stack, is_turbo, is_hyper FROM blind_structures ORDER BY id'
+      'SELECT id, name, description, starting_stack, is_turbo, is_hyper FROM blind_structures ORDER BY id',
     );
     return {
-      structures: res.rows.map(r => ({
+      structures: res.rows.map((r) => ({
         id: r.id,
         name: r.name,
         description: r.description,

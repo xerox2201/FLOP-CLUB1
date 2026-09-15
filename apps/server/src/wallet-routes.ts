@@ -50,13 +50,10 @@ export async function registerWalletRoutes(app: FastifyInstance, db: Pool): Prom
            COALESCE(SUM(CASE WHEN direction='deposit' AND status='confirmed' THEN amount_ton ELSE 0 END), 0) AS dep,
            COALESCE(SUM(CASE WHEN direction='withdraw' AND status IN ('confirmed','processing','pending') THEN amount_ton ELSE 0 END), 0) AS wd
          FROM ton_transactions WHERE user_id = $1`,
-        [userId]
+        [userId],
       );
 
-      const chips = await db.query(
-        `SELECT chips FROM free_chips WHERE user_id = $1`,
-        [userId]
-      );
+      const chips = await db.query(`SELECT chips FROM free_chips WHERE user_id = $1`, [userId]);
 
       return {
         balance: Number(balance),
@@ -86,13 +83,13 @@ export async function registerWalletRoutes(app: FastifyInstance, db: Pool): Prom
          WHERE user_id = $1
          ORDER BY id DESC
          LIMIT 50`,
-        [userId]
+        [userId],
       );
 
       const ledgerTxs = await ledger.getHistory(userId, 50);
 
       return {
-        tonTransactions: txs.rows.map(r => ({
+        tonTransactions: txs.rows.map((r) => ({
           id: r.id,
           direction: r.direction,
           amountTon: Number(r.amount_ton),
@@ -129,7 +126,7 @@ export async function registerWalletRoutes(app: FastifyInstance, db: Pool): Prom
       }
       // 🔴 Accept mainnet (EQ/UQ), testnet (kQ/0Q), and raw (0:/-1:)
       const validPrefixes = ['EQ', 'UQ', 'kQ', '0Q', 'Ef', 'Uf', 'kf', '0f', '0:', '-1:'];
-      if (!toAddress || !validPrefixes.some(p => toAddress.startsWith(p))) {
+      if (!toAddress || !validPrefixes.some((p) => toAddress.startsWith(p))) {
         return reply.code(400).send({ error: 'invalid_address' });
       }
       if (!tonAdapter.isReady()) {
@@ -176,7 +173,7 @@ export async function registerWalletRoutes(app: FastifyInstance, db: Pool): Prom
              (user_id, direction, amount_ton, amount_usd, to_address, status, ledger_tx_id, memo)
            VALUES ($1, 'withdraw', $2, $3, $4, 'pending', $5, $6)
            RETURNING id`,
-          [userId, amountTon, amountUsd, toAddress, ledgerResult.transactionId, `wd_${userId}`]
+          [userId, amountTon, amountUsd, toAddress, ledgerResult.transactionId, `wd_${userId}`],
         );
 
         const txId = tonResult.rows[0].id;
@@ -188,16 +185,16 @@ export async function registerWalletRoutes(app: FastifyInstance, db: Pool): Prom
             const txHash = await tonAdapter.sendTon(toAddress, amountTon - TON_WITHDRAW_FEE);
             await db.query(
               `UPDATE ton_transactions SET status='processing', tx_hash=$1 WHERE id=$2`,
-              [txHash, txId]
+              [txHash, txId],
             );
             console.log(`[wallet] withdraw sent: ${txHash}`);
             console.log(`[wallet] waiting for confirmation (checker runs every 15s)...`);
           } catch (e: any) {
             console.error('[wallet] withdraw send failed:', e.message);
-            await db.query(
-              `UPDATE ton_transactions SET status='failed', error=$1 WHERE id=$2`,
-              [e.message, txId]
-            );
+            await db.query(`UPDATE ton_transactions SET status='failed', error=$1 WHERE id=$2`, [
+              e.message,
+              txId,
+            ]);
             // Refund
             const escrowAcc2 = await ledger.getAccountId('SYSTEM_ESCROW');
             if (escrowAcc2) {
@@ -220,26 +217,23 @@ export async function registerWalletRoutes(app: FastifyInstance, db: Pool): Prom
         console.error('[wallet] withdraw failed:', e.message);
         return reply.code(500).send({ error: e.message });
       }
-    }
+    },
   );
 
   // GET /api/wallet/withdraw/:id
-  app.get<{ Params: { id: string } }>(
-    '/api/wallet/withdraw/:id',
-    async (req, reply) => {
-      const userId = authUser(req);
-      if (!userId) return reply.code(401).send({ error: 'notoken' });
+  app.get<{ Params: { id: string } }>('/api/wallet/withdraw/:id', async (req, reply) => {
+    const userId = authUser(req);
+    if (!userId) return reply.code(401).send({ error: 'notoken' });
 
-      const id = Number(req.params.id);
-      if (!id) return reply.code(400).send({ error: 'invalid_id' });
+    const id = Number(req.params.id);
+    if (!id) return reply.code(400).send({ error: 'invalid_id' });
 
-      const res = await db.query(
-        `SELECT id, direction, amount_ton, amount_usd, tx_hash, to_address, status, error, created_at, confirmed_at
+    const res = await db.query(
+      `SELECT id, direction, amount_ton, amount_usd, tx_hash, to_address, status, error, created_at, confirmed_at
          FROM ton_transactions WHERE id=$1 AND user_id=$2`,
-        [id, userId]
-      );
-      if (res.rows.length === 0) return reply.code(404).send({ error: 'not_found' });
-      return res.rows[0];
-    }
-  );
+      [id, userId],
+    );
+    if (res.rows.length === 0) return reply.code(404).send({ error: 'not_found' });
+    return res.rows[0];
+  });
 }

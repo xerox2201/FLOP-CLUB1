@@ -10,9 +10,14 @@
   let selectedMode: 'free' | 'real' = 'free';
 
   const variants = [
-    { id: 'holdem',  labelKey: 'games.holdem',  emoji: '♠️', color: 'from-blue-700 to-blue-950' },
-    { id: 'omaha4',  labelKey: 'games.omaha4',  emoji: '♦️', color: 'from-red-700 to-red-950' },
-    { id: 'omaha5',  labelKey: 'games.omaha5',  emoji: '♣️', color: 'from-emerald-700 to-emerald-950' },
+    { id: 'holdem', labelKey: 'games.holdem', emoji: '♠️', color: 'from-blue-700 to-blue-950' },
+    { id: 'omaha4', labelKey: 'games.omaha4', emoji: '♦️', color: 'from-red-700 to-red-950' },
+    {
+      id: 'omaha5',
+      labelKey: 'games.omaha5',
+      emoji: '♣️',
+      color: 'from-emerald-700 to-emerald-950',
+    },
   ];
 
   function confirm() {
@@ -33,15 +38,25 @@
 
       <div class="flex items-center justify-between mb-5">
         <h2 class="text-xl font-extrabold">{$t('quickSeat.title')}</h2>
-        <button on:click={onClose} aria-label="Close" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/70">✕</button>
+        <button
+          on:click={onClose}
+          aria-label="Close"
+          class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/70"
+          >✕</button
+        >
       </div>
 
-      <p class="text-xs uppercase tracking-wider text-white/50 font-bold mb-2">{$t('quickSeat.variant')}</p>
+      <p class="text-xs uppercase tracking-wider text-white/50 font-bold mb-2">
+        {$t('quickSeat.variant')}
+      </p>
       <div class="grid grid-cols-3 gap-2 mb-5">
         {#each variants as v}
           <button
-            on:click={() => selectedVariant = v.id}
-            class="rounded-2xl p-3 bg-gradient-to-br {v.color} flex flex-col items-center gap-1 transition {selectedVariant === v.id ? 'ring-2 ring-gold scale-105' : 'opacity-60'}"
+            on:click={() => (selectedVariant = v.id)}
+            class="rounded-2xl p-3 bg-gradient-to-br {v.color} flex flex-col items-center gap-1 transition {selectedVariant ===
+            v.id
+              ? 'ring-2 ring-gold scale-105'
+              : 'opacity-60'}"
           >
             <span class="text-3xl">{v.emoji}</span>
             <span class="text-xs font-bold">{$t(v.labelKey)}</span>
@@ -49,17 +64,23 @@
         {/each}
       </div>
 
-      <p class="text-xs uppercase tracking-wider text-white/50 font-bold mb-2">{$t('quickSeat.mode')}</p>
+      <p class="text-xs uppercase tracking-wider text-white/50 font-bold mb-2">
+        {$t('quickSeat.mode')}
+      </p>
       <div class="glass rounded-2xl p-1 flex gap-1 mb-5">
         <button
-          on:click={() => selectedMode = 'free'}
-          class="flex-1 py-3 rounded-xl text-sm font-bold transition {selectedMode === 'free' ? 'bg-emerald-600 text-white' : 'text-white/60'}"
+          on:click={() => (selectedMode = 'free')}
+          class="flex-1 py-3 rounded-xl text-sm font-bold transition {selectedMode === 'free'
+            ? 'bg-emerald-600 text-white'
+            : 'text-white/60'}"
         >
           🎁 {$t('quickSeat.free')}
         </button>
         <button
-          on:click={() => selectedMode = 'real'}
-          class="flex-1 py-3 rounded-xl text-sm font-bold transition {selectedMode === 'real' ? 'bg-gold text-black' : 'text-white/60'}"
+          on:click={() => (selectedMode = 'real')}
+          class="flex-1 py-3 rounded-xl text-sm font-bold transition {selectedMode === 'real'
+            ? 'bg-gold text-black'
+            : 'text-white/60'}"
         >
           💎 {$t('quickSeat.real')}
         </button>
@@ -67,7 +88,8 @@
 
       <div class="mb-5 text-center text-xs text-white/50">
         {#if selectedMode === 'free'}
-          {$t('home.freeChips')}: <span class="text-emerald-400 font-bold">{freeChips.toLocaleString()}</span>
+          {$t('home.freeChips')}:
+          <span class="text-emerald-400 font-bold">{freeChips.toLocaleString()}</span>
         {:else}
           <span class="text-gold">{$t('quickSeat.realNote')}</span>
         {/if}
@@ -75,7 +97,7 @@
 
       <button on:click={confirm} class="w-full btn-gold flex items-center justify-center gap-2">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/>
+          <path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z" />
         </svg>
         <span>{$t('quickSeat.findTable')}</span>
       </button>

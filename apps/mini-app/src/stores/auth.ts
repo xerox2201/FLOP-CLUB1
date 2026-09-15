@@ -1,4 +1,4 @@
- import { writable } from 'svelte/store';
+import { writable } from 'svelte/store';
 import { api } from '../lib/api';
 
 export interface User {
@@ -33,7 +33,7 @@ function createAuthStore() {
     subscribe,
 
     async init() {
-      update(s => ({ ...s, error: null }));
+      update((s) => ({ ...s, error: null }));
 
       const tg = (window as any).Telegram?.WebApp;
       if (tg) {
@@ -87,17 +87,17 @@ function createAuthStore() {
       try {
         const res = await api.authTelegram(authPayload);
         if (!res.ok || !res.data) {
-          update(s => ({ ...s, loading: false, error: res.error || 'auth_failed' }));
+          update((s) => ({ ...s, loading: false, error: res.error || 'auth_failed' }));
           return false;
         }
 
         localStorage.setItem('token', res.data.token);
-        update(s => ({ ...s, token: res.data!.token, user: res.data!.user }));
+        update((s) => ({ ...s, token: res.data!.token, user: res.data!.user }));
 
         await this.refresh();
         return true;
       } catch (e: any) {
-        update(s => ({ ...s, loading: false, error: e.message || 'network_error' }));
+        update((s) => ({ ...s, loading: false, error: e.message || 'network_error' }));
         return false;
       }
     },
@@ -105,7 +105,7 @@ function createAuthStore() {
     async refresh() {
       const res = await api.me();
       if (res.ok && res.data) {
-        update(s => ({
+        update((s) => ({
           ...s,
           user: res.data!.user,
           wallet: res.data!.wallet,
@@ -114,7 +114,7 @@ function createAuthStore() {
           error: null,
         }));
       } else {
-        update(s => ({ ...s, loading: false, error: res.error || 'refresh_failed' }));
+        update((s) => ({ ...s, loading: false, error: res.error || 'refresh_failed' }));
       }
     },
 

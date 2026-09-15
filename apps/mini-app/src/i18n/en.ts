@@ -1,6 +1,20 @@
 export default {
-  nav: { home: 'Home', tables: 'Tables', wallet: 'Wallet', profile: 'Me', leaderboard: 'Ranks', tournaments: 'Tourneys' },
-  common: { loading: 'Loading…', save: 'Save', cancel: 'Cancel', ok: 'OK', back: 'Back', soon: 'Coming soon' },
+  nav: {
+    home: 'Home',
+    tables: 'Tables',
+    wallet: 'Wallet',
+    profile: 'Me',
+    leaderboard: 'Ranks',
+    tournaments: 'Tourneys',
+  },
+  common: {
+    loading: 'Loading…',
+    save: 'Save',
+    cancel: 'Cancel',
+    ok: 'OK',
+    back: 'Back',
+    soon: 'Coming soon',
+  },
   home: {
     instantPlay: 'Instant Play',
     jumpIntoGame: 'Jump into a Game',

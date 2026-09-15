@@ -14,19 +14,19 @@ async function main() {
 
   console.log('\n=== BLIND STRUCTURES ===');
   const s = await db.query(
-    'SELECT id, name, starting_stack, is_turbo, is_hyper FROM blind_structures ORDER BY id'
+    'SELECT id, name, starting_stack, is_turbo, is_hyper FROM blind_structures ORDER BY id',
   );
   console.table(s.rows);
 
   console.log('\n=== BLIND LEVELS COUNT ===');
   const l = await db.query(
-    'SELECT structure_id, COUNT(*) as level_count, MIN(small_blind) as min_sb, MAX(big_blind) as max_bb FROM blind_levels GROUP BY structure_id ORDER BY structure_id'
+    'SELECT structure_id, COUNT(*) as level_count, MIN(small_blind) as min_sb, MAX(big_blind) as max_bb FROM blind_levels GROUP BY structure_id ORDER BY structure_id',
   );
   console.table(l.rows);
 
   console.log('\n=== SAMPLE LEVELS (Structure 1) ===');
   const lv = await db.query(
-    'SELECT level, small_blind, big_blind, ante, duration_sec, is_break FROM blind_levels WHERE structure_id = 1 ORDER BY level LIMIT 10'
+    'SELECT level, small_blind, big_blind, ante, duration_sec, is_break FROM blind_levels WHERE structure_id = 1 ORDER BY level LIMIT 10',
   );
   console.table(lv.rows);
 
@@ -38,7 +38,7 @@ async function main() {
   console.log('\n✅ Done');
 }
 
-main().catch(e => {
+main().catch((e) => {
   console.error('Error:', e.message);
   process.exit(1);
 });

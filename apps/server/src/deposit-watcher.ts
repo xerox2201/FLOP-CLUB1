@@ -8,9 +8,10 @@ const TON_WITHDRAW_FEE = Number(process.env.TON_WITHDRAW_FEE || 0.05);
 const POLL_INTERVAL_MS = 15_000;
 const TON_PRICE_USD = Number(process.env.TON_PRICE_USD || 5);
 
-const API_BASE = TON_NETWORK === 'mainnet'
-  ? 'https://toncenter.com/api/v2'
-  : 'https://testnet.toncenter.com/api/v2';
+const API_BASE =
+  TON_NETWORK === 'mainnet'
+    ? 'https://toncenter.com/api/v2'
+    : 'https://testnet.toncenter.com/api/v2';
 
 export class DepositWatcher {
   private ledger: LedgerService;
@@ -22,7 +23,9 @@ export class DepositWatcher {
   }
 
   start(): void {
-    console.log(`[deposit-watcher] starting. address=${TON_DEPOSIT_ADDRESS} interval=${POLL_INTERVAL_MS}ms`);
+    console.log(
+      `[deposit-watcher] starting. address=${TON_DEPOSIT_ADDRESS} interval=${POLL_INTERVAL_MS}ms`,
+    );
     this.tick();
     this.timer = setInterval(() => this.tick(), POLL_INTERVAL_MS);
   }
@@ -78,10 +81,9 @@ export class DepositWatcher {
     const txHash = tx.transaction_id?.hash;
     if (!txHash) return;
 
-    const existing = await this.db.query(
-      'SELECT id FROM ton_transactions WHERE tx_hash = $1',
-      [txHash]
-    );
+    const existing = await this.db.query('SELECT id FROM ton_transactions WHERE tx_hash = $1', [
+      txHash,
+    ]);
     if (existing.rows.length > 0) return;
 
     const inMsg = tx.in_msg;
@@ -105,7 +107,9 @@ export class DepositWatcher {
     }
 
     const amountUsd = Math.round(amountTon * TON_PRICE_USD * 100) / 100;
-    console.log(`[deposit-watcher] 💰 deposit: user=${userId} amount=${amountTon} TON ($${amountUsd})`);
+    console.log(
+      `[deposit-watcher] 💰 deposit: user=${userId} amount=${amountTon} TON ($${amountUsd})`,
+    );
 
     try {
       const tonRes = await this.db.query(
@@ -114,7 +118,7 @@ export class DepositWatcher {
          VALUES ($1, 'deposit', $2, $3, $4, $5, $6, $7, 'confirmed', 1, NOW())
          ON CONFLICT (tx_hash) DO NOTHING
          RETURNING id`,
-        [userId, amountTon, amountUsd, txHash, fromAddress, TON_DEPOSIT_ADDRESS, memo]
+        [userId, amountTon, amountUsd, txHash, fromAddress, TON_DEPOSIT_ADDRESS, memo],
       );
 
       if (tonRes.rows.length === 0) return;
@@ -138,10 +142,10 @@ export class DepositWatcher {
 
       if (!ledgerResult.ok) return;
 
-      await this.db.query(
-        'UPDATE ton_transactions SET ledger_tx_id = $1 WHERE id = $2',
-        [ledgerResult.transactionId, tonTxId]
-      );
+      await this.db.query('UPDATE ton_transactions SET ledger_tx_id = $1 WHERE id = $2', [
+        ledgerResult.transactionId,
+        tonTxId,
+      ]);
 
       console.log(`[deposit-watcher] ✅ credited user=${userId} $${amountUsd}`);
     } catch (e: any) {
@@ -160,7 +164,7 @@ export class DepositWatcher {
          AND status IN ('processing', 'pending')
          AND created_at > NOW() - INTERVAL '1 hour'
        ORDER BY id DESC
-       LIMIT 20`
+       LIMIT 20`,
     );
 
     if (pending.rows.length === 0) return;
@@ -194,7 +198,7 @@ export class DepositWatcher {
         console.log(`[deposit-watcher] ✅ withdrawal confirmed: id=${tx.id} amount=${inValue} TON`);
         await this.db.query(
           `UPDATE ton_transactions SET status = 'confirmed', confirmed_at = NOW() WHERE id = $1`,
-          [tx.id]
+          [tx.id],
         );
         return;
       }
@@ -203,7 +207,9 @@ export class DepositWatcher {
     // 🔴 Timeout: if older than 10 min and not found → refund
     const ageMin = (Date.now() / 1000 - createdAt) / 60;
     if (ageMin > 10 && tx.status === 'processing') {
-      console.warn(`[deposit-watcher] ⏱️ withdrawal timeout: id=${tx.id} age=${ageMin.toFixed(1)}min`);
+      console.warn(
+        `[deposit-watcher] ⏱️ withdrawal timeout: id=${tx.id} age=${ageMin.toFixed(1)}min`,
+      );
       await this.refundWithdrawal(tx);
     }
   }
@@ -232,7 +238,7 @@ export class DepositWatcher {
       if (result.ok) {
         await this.db.query(
           `UPDATE ton_transactions SET status = 'failed', error = 'timeout_no_confirmation' WHERE id = $1`,
-          [tx.id]
+          [tx.id],
         );
         console.log(`[deposit-watcher] 💸 refunded user=${userId} $${amountUsd}`);
       }

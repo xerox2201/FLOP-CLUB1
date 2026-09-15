@@ -15,9 +15,9 @@
   let pollTimer: any = null;
 
   $: myUserId = $auth.user?.id;
-  $: isRegistered = t?.players?.some((p: any) => p.userId === myUserId && p.status === 'active')
-    || false;
-      $: myTournamentPlayer = t?.players?.find((p: any) => p.userId === myUserId);
+  $: isRegistered =
+    t?.players?.some((p: any) => p.userId === myUserId && p.status === 'active') || false;
+  $: myTournamentPlayer = t?.players?.find((p: any) => p.userId === myUserId);
   $: myVirtualTableId = myTournamentPlayer?.virtualTableId ?? null;
   $: canGoToTable =
     !!myVirtualTableId &&
@@ -34,10 +34,14 @@
     if (!iso) return '—';
     try {
       return new Date(iso).toLocaleString('en-US', {
-        month: 'short', day: 'numeric',
-        hour: '2-digit', minute: '2-digit',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
       });
-    } catch { return '—'; }
+    } catch {
+      return '—';
+    }
   }
 
   function statusColor(status: string): string {
@@ -79,7 +83,9 @@
       toast = '❌ ' + e.message;
     } finally {
       acting = false;
-      setTimeout(() => { toast = ''; }, 3000);
+      setTimeout(() => {
+        toast = '';
+      }, 3000);
     }
   }
 
@@ -97,7 +103,9 @@
       toast = '❌ ' + e.message;
     } finally {
       acting = false;
-      setTimeout(() => { toast = ''; }, 3000);
+      setTimeout(() => {
+        toast = '';
+      }, 3000);
     }
   }
 
@@ -116,7 +124,9 @@
       toast = '❌ ' + e.message;
     } finally {
       acting = false;
-      setTimeout(() => { toast = ''; }, 3000);
+      setTimeout(() => {
+        toast = '';
+      }, 3000);
     }
   }
 
@@ -135,15 +145,18 @@
     <button
       on:click={onBack}
       class="w-10 h-10 rounded-full flex items-center justify-center text-white/70 active:scale-95"
-      style="background: rgba(255,255,255,0.06);"
-    >←</button>
+      style="background: rgba(255,255,255,0.06);">←</button
+    >
     <h1 class="text-lg font-extrabold flex-1 truncate">{t?.name || 'Tournament'}</h1>
   </div>
 
   {#if loading}
     <div class="text-center py-12 text-white/40 text-sm">Loading…</div>
   {:else if error}
-    <div class="rounded-xl p-4 text-center" style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);">
+    <div
+      class="rounded-xl p-4 text-center"
+      style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);"
+    >
       <p class="text-red-300 text-sm">{error}</p>
     </div>
   {:else if t}
@@ -153,7 +166,8 @@
         <span
           class="text-[10px] font-extrabold px-2 py-1 rounded uppercase"
           style="background: {statusColor(t.status)}22; color: {statusColor(t.status)};"
-        >{t.status.replace('_', ' ')}</span>
+          >{t.status.replace('_', ' ')}</span
+        >
         <span class="text-[10px] text-white/40 font-mono">#{t.id}</span>
       </div>
       <div class="text-3xl font-extrabold text-amber-400 tabular-nums">
@@ -245,7 +259,11 @@
                 {#if p.status === 'winner'}<span>👑</span>
                 {:else if p.status === 'eliminated'}<span class="opacity-40">💀</span>
                 {:else}<span class="w-4"></span>{/if}
-                <span class="text-[11px] {p.status === 'eliminated' ? 'text-white/40 line-through' : 'text-white/90'}">
+                <span
+                  class="text-[11px] {p.status === 'eliminated'
+                    ? 'text-white/40 line-through'
+                    : 'text-white/90'}"
+                >
                   {p.displayName}
                 </span>
                 {#if p.userId === myUserId}
@@ -270,7 +288,7 @@
           class="w-full rounded-xl py-3 font-extrabold text-black active:scale-[0.98] transition disabled:opacity-50"
           style="background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%); box-shadow: 0 5px 0 #92400e;"
         >
-          {acting ? '…' : (t.buyIn > 0 ? `Register · $${fmt(t.buyIn + t.fee)}` : 'Register — Free')}
+          {acting ? '…' : t.buyIn > 0 ? `Register · $${fmt(t.buyIn + t.fee)}` : 'Register — Free'}
         </button>
       {:else if canRegister && isRegistered}
         <button
@@ -303,12 +321,18 @@
           Table {myTournamentPlayer?.tableNumber} · Seat {myTournamentPlayer?.seat}
         </div>
       {:else if t.status === 'running' || t.status === 'final_table'}
-        <div class="rounded-xl p-3 text-center" style="background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3);">
+        <div
+          class="rounded-xl p-3 text-center"
+          style="background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3);"
+        >
           <p class="text-[11px] text-emerald-300">Tournament in progress</p>
           <p class="text-[10px] text-white/40 mt-1">You are eliminated</p>
         </div>
       {:else if t.status === 'finished'}
-        <div class="rounded-xl p-3 text-center" style="background: rgba(107,114,128,0.15); border: 1px solid rgba(107,114,128,0.3);">
+        <div
+          class="rounded-xl p-3 text-center"
+          style="background: rgba(107,114,128,0.15); border: 1px solid rgba(107,114,128,0.3);"
+        >
           <p class="text-[11px] text-white/60">Tournament finished</p>
         </div>
       {/if}
@@ -316,8 +340,10 @@
   {/if}
 
   {#if toast}
-    <div class="fixed top-20 left-1/2 -translate-x-1/2 z-40 rounded-2xl px-4 py-2 max-w-[90%]"
-         style="background: rgba(0,0,0,0.9); border: 1px solid rgba(255,255,255,0.15);">
+    <div
+      class="fixed top-20 left-1/2 -translate-x-1/2 z-40 rounded-2xl px-4 py-2 max-w-[90%]"
+      style="background: rgba(0,0,0,0.9); border: 1px solid rgba(255,255,255,0.15);"
+    >
       <p class="text-xs font-bold text-white">{toast}</p>
     </div>
   {/if}

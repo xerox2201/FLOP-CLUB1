@@ -35,7 +35,7 @@ export const ErrorCode = {
   RATE_LIMITED: 'RATE_LIMITED',
 } as const;
 
-export type ErrorCodeType = typeof ErrorCode[keyof typeof ErrorCode];
+export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
 
 export interface CommandResult<T = any> {
   ok: boolean;
@@ -46,7 +46,10 @@ export interface CommandResult<T = any> {
 }
 
 export class AppError extends Error {
-  constructor(public code: ErrorCodeType, message?: string) {
+  constructor(
+    public code: ErrorCodeType,
+    message?: string,
+  ) {
     super(message || code);
     this.name = 'AppError';
   }
