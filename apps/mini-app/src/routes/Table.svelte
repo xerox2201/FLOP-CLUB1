@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import PokerTable from '../components/PokerTable.svelte';
   import PlayingCard from '../components/PlayingCard.svelte';
+  import HandHistoryModal from '../components/HandHistoryModal.svelte';
   import { TableSocketIO, type TableState } from '../lib/socket';
   import { auth } from '../stores/auth';
   import { t } from '../i18n';
@@ -19,6 +20,7 @@
   let autoActionMsg = '';
   let startingHand = true;
   let showMenu = false;
+  let showHandHistory = false;
   let sittingOut = false;
   let handResult: any = null;
   let showSeedModal = false;
@@ -29,7 +31,6 @@
   let raiseInput = '0.00';
   let raiseInputFocused = false;
 
-  // 🔴 Hand History — last 2 hands with full snapshot
   let handHistory: any[] = [];
 
   $: myUserId = $auth.user?.id;
@@ -112,7 +113,6 @@
         handResult = evt.result;
         gameState = evt.state;
 
-        // 🔴 Snapshot for hand history
         try {
           const winners: number[] = evt.result.winners || [];
           const showdownPlayers: any[] = evt.result.showdownPlayers || [];
@@ -130,7 +130,6 @@
                 payout: payoutMap[p.seat] || 0,
               }));
           } else {
-            // Fold win — no showdown players
             winnerSnapshots = winners.map((seatNum: number) => {
               const s = evt.state?.seats?.find((x: any) => x.seat === seatNum);
               return {
@@ -269,7 +268,7 @@
     </div>
   </div>
 
-  <!-- 🔴 Hand History — هم‌ردیف تنظیمات، ۲ دست آخر با کارت -->
+  <!-- Hand History (small) -->
   {#if handHistory.length > 0}
     <div class="absolute z-30 flex gap-1.5 pointer-events-none" style="top: max(72px, calc(env(safe-area-inset-top) + 60px)); left: 16px;">
       {#each handHistory as h, i}
@@ -351,6 +350,17 @@
   {#if showMenu}
     <button aria-label="Close menu" class="fixed inset-0 z-40 cursor-default" style="background: transparent;" on:click={() => showMenu = false}></button>
     <div class="absolute z-50 rounded-2xl p-2 shadow-2xl" style="top: max(68px, calc(env(safe-area-inset-top) + 60px)); left: 16px; width: 240px; background: rgba(15, 23, 42, 0.98); border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(16px);">
+
+      <button on:click={() => { showMenu = false; showHandHistory = true; }} class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left active:scale-[0.98] transition" style="background: rgba(59,130,246,0.1);">
+        <span class="text-lg">📜</span>
+        <div class="flex-1">
+          <p class="text-sm font-bold text-white">Hand History</p>
+          <p class="text-[10px] text-white/50">View past hands</p>
+        </div>
+      </button>
+
+      <div class="my-1 mx-2" style="height: 1px; background: rgba(255,255,255,0.06);"></div>
+
       {#if sittingOut}
         <button on:click={doSitIn} class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left active:scale-[0.98] transition" style="background: rgba(16,185,129,0.1);">
           <span class="text-lg">▶️</span>
@@ -362,7 +372,9 @@
           <div class="flex-1"><p class="text-sm font-bold text-white">Sit Out</p><p class="text-[10px] text-white/50">Auto-fold next hands</p></div>
         </button>
       {/if}
+
       <div class="my-1 mx-2" style="height: 1px; background: rgba(255,255,255,0.06);"></div>
+
       <button on:click={leaveTable} class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left active:scale-[0.98] transition" style="background: rgba(220,38,38,0.15);">
         <span class="text-lg">🚪</span>
         <div class="flex-1"><p class="text-sm font-bold text-red-300">Leave Table</p><p class="text-[10px] text-white/50">Return chips</p></div>
@@ -370,8 +382,16 @@
     </div>
   {/if}
 
+  <!-- Poker Table -->
   <PokerTable {gameState} {myUserId} {myAvatarId} theme="cash" {handResult} />
 
+  <!-- Hand History Modal -->
+  <HandHistoryModal
+    open={showHandHistory}
+    onClose={() => showHandHistory = false}
+  />
+
+  <!-- Waiting -->
   {#if !gameState || startingHand}
     <div class="absolute top-[80%] left-1/2 -translate-x-1/2 z-20 rounded-2xl px-5 py-3 text-center" style="background: rgba(0,0,0,0.85); border: 1px solid rgba(255,255,255,0.1);">
       <p class="text-sm text-white/70">{$t('table.waitingPlayers')}</p>

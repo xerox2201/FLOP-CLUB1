@@ -1,4 +1,4 @@
-import dotenv from 'dotenv';
+ import dotenv from 'dotenv';
 import { Pool } from 'pg';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
@@ -11,22 +11,27 @@ const DATABASE_URL = process.env.DATABASE_URL || 'postgres://poker:pokerpass@loc
 
 async function main() {
   const db = new Pool({ connectionString: DATABASE_URL });
-  console.log('Cleaning up test data...\n');
+  console.log('Cleaning up duplicate tables...\n');
 
-  await db.query('TRUNCATE hand_events RESTART IDENTITY CASCADE');
-  console.log('✅ hand_events cleared');
+  // Deactivate duplicate tables (keep only lowest id per name+variant+mode)
+  const res = await db.query(`
+    UPDATE poker_tables pt
+    SET is_active = FALSE
+    WHERE pt.id NOT IN (
+      SELECT MIN(id) FROM poker_tables
+      GROUP BY name, variant, mode
+    )
+  `);
+  console.log(`✅ Deactivated ${res.rowCount} duplicate tables`);
 
-  await db.query('TRUNCATE hand_snapshots RESTART IDENTITY CASCADE');
-  console.log('✅ hand_snapshots cleared');
-
-  await db.query('TRUNCATE hands RESTART IDENTITY CASCADE');
-  console.log('✅ hands cleared');
-
-  await db.query('TRUNCATE table_seats RESTART IDENTITY CASCADE');
-  console.log('✅ table_seats cleared');
-
-  await db.query('TRUNCATE play_money_log RESTART IDENTITY CASCADE');
-  console.log('✅ play_money_log cleared');
+  // Show active tables
+  const active = await db.query(
+    `SELECT id, name, variant, mode FROM poker_tables WHERE is_active = TRUE ORDER BY id`
+  );
+  console.log('\nActive tables:');
+  for (const row of active.rows) {
+    console.log(`  id=${row.id} | ${row.name} | ${row.variant} | ${row.mode}`);
+  }
 
   await db.end();
   console.log('\n✅ Done');

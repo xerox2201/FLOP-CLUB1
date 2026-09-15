@@ -11,6 +11,7 @@ import { registerLeaderboardRoutes } from './leaderboard.js';
 import { registerEventsRoutes } from './events.js';
 import { registerAntiCheatRoutes } from './anti-cheat-routes.js';
 import { registerTableManagerRoutes } from './table-manager.js';
+import { registerHandsRoutes } from './hands-routes.js';
 
 const PORT = Number(process.env.PORT ?? 4000);
 const DATABASE_URL = process.env.DATABASE_URL ?? 'postgres://poker:pokerpass@localhost:5432/poker';
@@ -164,6 +165,7 @@ await registerLeaderboardRoutes(app, db);
 await registerEventsRoutes(app, db);
 await registerAntiCheatRoutes(app, db);
 await registerTableManagerRoutes(app, db);
+await registerHandsRoutes(app, db);
 
 try {
   await app.listen({ port: PORT, host: '0.0.0.0' });
