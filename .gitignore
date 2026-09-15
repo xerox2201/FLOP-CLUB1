@@ -32,3 +32,13 @@ Thumbs.db
 # Secrets
 *.pem
 *.key
+# Test artifacts
+coverage/
+*/coverage/
+**/coverage/
+playwright-report/
+test-results/
+.last-run.json
+
+# Test DB
+poker_test
