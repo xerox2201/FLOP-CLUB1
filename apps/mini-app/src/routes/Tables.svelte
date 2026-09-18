@@ -24,11 +24,11 @@
     return okMode && okVariant;
   });
 
-  function variantEmoji(v: string): string {
-    if (v === 'holdem') return '♠️';
-    if (v === 'omaha4') return '♦️';
-    if (v === 'omaha5') return '♣️';
-    return '🎴';
+  function variantSuit(v: string): string {
+    if (v === 'holdem') return '/cards/suit-spade.png';
+    if (v === 'omaha4') return '/cards/suit-diamond.png';
+    if (v === 'omaha5') return '/cards/suit-club.png';
+    return '/cards/suit-heart.png';
   }
 
   function variantLabel(v: string): string {
@@ -65,7 +65,7 @@
         box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
       "
     >
-      <span class="text-lg">🃏</span>
+      <img src="/cards/suit-spade.png" alt="" class="w-5 h-5 object-contain" />
     </div>
   </div>
 
@@ -129,7 +129,7 @@
   <div class="flex gap-2 mb-5 overflow-x-auto no-scrollbar pb-1">
     <button
       on:click={() => (filterVariant = 'all')}
-      class="flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-extrabold transition-all uppercase tracking-wider"
+      class="flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-extrabold transition-all uppercase tracking-wider inline-flex items-center justify-center"
       style="
         background: {filterVariant === 'all'
           ? 'linear-gradient(180deg, #ffffff, #d4d4d4)'
@@ -144,7 +144,7 @@
     </button>
     <button
       on:click={() => (filterVariant = 'holdem')}
-      class="flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-extrabold transition-all"
+      class="flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-extrabold transition-all inline-flex items-center gap-1.5"
       style="
         background: {filterVariant === 'holdem'
           ? 'linear-gradient(180deg, #3b82f6, #1e3a8a)'
@@ -158,11 +158,12 @@
           : ''}
       "
     >
-      ♠️ Hold'em
+      <img src="/cards/suit-spade.png" alt="" class="w-3.5 h-3.5 object-contain" />
+      <span>Hold'em</span>
     </button>
     <button
       on:click={() => (filterVariant = 'omaha4')}
-      class="flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-extrabold transition-all"
+      class="flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-extrabold transition-all inline-flex items-center gap-1.5"
       style="
         background: {filterVariant === 'omaha4'
           ? 'linear-gradient(180deg, #ef4444, #991b1b)'
@@ -176,11 +177,12 @@
           : ''}
       "
     >
-      ♦️ Omaha 4
+      <img src="/cards/suit-diamond.png" alt="" class="w-3.5 h-3.5 object-contain" />
+      <span>Omaha 4</span>
     </button>
     <button
       on:click={() => (filterVariant = 'omaha5')}
-      class="flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-extrabold transition-all"
+      class="flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-extrabold transition-all inline-flex items-center gap-1.5"
       style="
         background: {filterVariant === 'omaha5'
           ? 'linear-gradient(180deg, #10b981, #047857)'
@@ -194,7 +196,8 @@
           : ''}
       "
     >
-      ♣️ Omaha 5
+      <img src="/cards/suit-club.png" alt="" class="w-3.5 h-3.5 object-contain" />
+      <span>Omaha 5</span>
     </button>
   </div>
 
@@ -223,13 +226,13 @@
       "
     >
       <div
-        class="w-16 h-16 rounded-2xl mx-auto mb-3 flex items-center justify-center text-3xl"
+        class="w-16 h-16 rounded-2xl mx-auto mb-3 flex items-center justify-center"
         style="
           background: linear-gradient(180deg, rgba(212,175,55,0.15), rgba(168,122,21,0.08));
           border: 1px solid rgba(212,175,55,0.3);
         "
       >
-        🃏
+        <img src="/cards/suit-spade.png" alt="" class="w-8 h-8 object-contain opacity-70" />
       </div>
       <p class="text-white/60 text-sm font-bold">No tables found</p>
       <p class="text-white/40 text-[11px] mt-1">Try a different filter</p>
@@ -267,7 +270,7 @@
           <div class="flex items-center gap-3 p-3 pl-4 relative">
             <!-- Icon -->
             <div
-              class="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0 relative overflow-hidden"
+              class="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 relative overflow-hidden"
               style="
                 background:
                   radial-gradient(ellipse at 50% 40%, {accent}25 0%, transparent 70%),
@@ -278,7 +281,11 @@
                   0 2px 8px rgba(0,0,0,0.5);
               "
             >
-              <span class="relative z-10 drop-shadow-lg">{variantEmoji(table.variant)}</span>
+              <img
+                src={variantSuit(table.variant)}
+                alt=""
+                class="relative z-10 w-8 h-8 object-contain drop-shadow-lg"
+              />
             </div>
 
             <!-- Info -->
