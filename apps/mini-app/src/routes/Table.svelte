@@ -9,6 +9,8 @@
   import { TableSocketIO, type TableState } from '../lib/socket';
   import { auth } from '../stores/auth';
   import { t } from '../i18n';
+  import { playSound } from '../lib/sounds';
+  import { haptic } from '../lib/haptics';
 
   export let tableId: number = 1;
   export let onBack: () => void = () => {};
@@ -30,6 +32,11 @@
   let handResult: any = null;
   let showSeedModal = false;
   let nowTick = Date.now();
+
+  // Sound + Haptic triggers
+  let lastSoundHandNo = -1;
+  let lastSoundCommunityCount = 0;
+  let lastSoundWinnersKey = '';
 
   // 🔴 New: player info + chat
   let selectedPlayer: any = null;
@@ -192,12 +199,48 @@
           reconnectSynced = false;
         }, 2000);
       } else if (evt.type === 'state') {
-        gameState = evt.state;
+        const newState = evt.state;
+
+        // ===== SOUND + HAPTIC: New hand → deal sound =====
+        if (newState?.handNo && newState.handNo !== lastSoundHandNo) {
+          lastSoundHandNo = newState.handNo;
+          lastSoundCommunityCount = 0;
+          playSound('deal', 0.5);
+          haptic.light();
+        }
+
+        // ===== SOUND: Community cards appeared → flip =====
+        const ccCount = newState?.community?.length || 0;
+        if (ccCount > lastSoundCommunityCount) {
+          lastSoundCommunityCount = ccCount;
+          playSound('card-flip', 0.5);
+          haptic.light();
+        }
+
+        gameState = newState;
         startingHand = false;
       } else if (evt.type === 'hand_result') {
         handResult = evt.result;
         gameState = evt.state;
         resetPreAction();
+
+        // ===== SOUND + HAPTIC: Win/lose =====
+        const winners = evt.result?.winners || [];
+        const winnersKey = winners.join(',');
+        if (winnersKey && winnersKey !== lastSoundWinnersKey) {
+          lastSoundWinnersKey = winnersKey;
+          const mySeatNow = evt.state?.seats?.find((s: any) => s.userId === myUserId);
+          const iWon = mySeatNow && winners.includes(mySeatNow.seat);
+
+          if (iWon) {
+            playSound('win', 0.6);
+            haptic.success();
+          } else {
+            playSound('lose', 0.5);
+            haptic.error();
+          }
+        }
+
         setTimeout(() => {
           handResult = null;
         }, 7000);
@@ -323,12 +366,28 @@
     if (!socket || !isMyTurn) return;
     resetPreAction();
     socket.action(action, amount);
+
+    // ===== SOUND + HAPTIC per action =====
+    if (action === 'FOLD') {
+      playSound('button', 0.4);
+      haptic.light();
+    } else if (action === 'CALL') {
+      playSound('chip', 0.5);
+      haptic.medium();
+    } else {
+      playSound('button', 0.4);
+      haptic.light();
+    }
   }
 
   function doRaise() {
     if (!canRaise) return;
     resetPreAction();
     socket?.action('RAISE', Math.floor(raiseAmount * 100) / 100);
+
+    // ===== SOUND + HAPTIC: Raise =====
+    playSound('chip', 0.6);
+    haptic.medium();
   }
 
   function setRaise(v: number) {
@@ -477,7 +536,7 @@
   {#if reconnecting}
     <div
       class="absolute z-40 rounded-full px-3 py-1 flex items-center gap-1.5"
-      style="top: max(64px, calc(env(safe-area-inset-top) + 56px)); left: 50%; transform: translateX(-50%); background: rgba(239,68,68,0.9); border: 1px solid rgba(255,255,255,0.2);"
+      style="top: max(64px, calc(env(safe-area-inset-top) + 56px)); left:50%; transform: translateX(-50%); background: rgba(239,68,68,0.9); border: 1px solid rgba(255,255,255,0.2);"
     >
       <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
       <span class="text-[10px] font-bold text-white">Reconnecting…</span>
@@ -688,7 +747,7 @@
     >
       <p class="text-sm text-white/70">{$t('table.waitingPlayers')}</p>
       <p class="text-xs text-gold mt-1 font-bold">
-        {gameState?.seats?.filter((s: any) => s.stack > 0).length ?? 0} / 2
+        {gameState?.seats?.filter((s: any) => s.stack > 0).length ?? 0} /2
       </p>
     </div>
   {/if}
