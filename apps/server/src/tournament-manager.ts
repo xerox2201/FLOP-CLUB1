@@ -3,6 +3,7 @@ import { LedgerService } from './ledger.js';
 import { BlindStructureService } from './blind-structures.js';
 import { gameManager } from './game-manager.js';
 import { SeasonManager } from './season-manager.js';
+import { getAchievementsService } from './achievement-service.js';
 
 export type TournamentStatus =
   | 'scheduled'
@@ -1614,10 +1615,29 @@ constructor(private db: Pool) {
     }
 
     console.log(`[tournament] ✅ #${tournamentId} finished, winner=${winner?.userId}`);
+        // ============ ACHIEVEMENTS TRACKING ============
+    try {
+      const ach = getAchievementsService();
+      if (ach) {
+        for (const p of t.players.values()) {
+          if (!p.userId || p.finalPosition == null) continue;
+
+          await ach.track(p.userId, 'first_tourney', 1);
+
+          if (p.finalPosition === 1) {
+            await ach.track(p.userId, 'tourney_win', 1);
+            await ach.track(p.userId, 'champion', 1, 'increment');
+          }
+        }
+      }
+    } catch (e: any) {
+      console.error('[achievements] tournament track failed:', e.message);
+    }
+    // ============ END ACHIEVEMENTS ============
   }
 
   // ============================================================
-  // PUBLIC API
+  // PUBLIC API console.log("[tournament] ✅ #${tournamentId} finished, winner=${winner?.userId}");
   // ============================================================
   async handlePlayerBust(
     tournamentId: number,

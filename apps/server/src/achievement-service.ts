@@ -179,3 +179,19 @@ export class AchievementService {
     return { ok: true };
   }
 }
+
+// ============================================================
+// Singleton getter (lazy init from globalThis.__dbPool)
+// ============================================================
+let _instance: AchievementService | null = null;
+
+export function getAchievementsService(): AchievementService | null {
+  if (_instance) return _instance;
+  const db = (globalThis as any).__dbPool;
+  if (!db) {
+    console.warn('[achievements] db pool not set');
+    return null;
+  }
+  _instance = new AchievementService(db);
+  return _instance;
+}

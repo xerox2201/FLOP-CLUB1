@@ -2,6 +2,7 @@ import { PokerGame } from '../../../packages/poker-engine/src/game.js';
 import type { PlayerInit } from '../../../packages/poker-engine/src/types.js';
 import { HandPersister } from './hand-persister.js';
 import { ErrorCode, type CommandResult } from './errors.js';
+import { getAchievementsService } from './achievement-service.js';
 
 export interface PlayerInfo {
   userId: number;
@@ -263,6 +264,37 @@ class GameManager {
       }
 
       room.game.state.handNo = room.handCounter;
+            // ============ ACHIEVEMENTS TRACKING ============
+      try {
+        const ach = getAchievementsService();
+        if (ach) {
+          // Hands played (for every player at the table)
+          for (const s of room.game.state.seats) {
+            if (s.userId) {
+              await ach.track(s.userId, 'hand_100', 1, 'increment');
+              await ach.track(s.userId, 'hand_1000', 1, 'increment');
+            }
+          }
+
+          // Winners
+          for (const winnerSeat of handResult.winners || []) {
+            const seatInfo = room.game.state.seats.find((s: any) => s.seat === winnerSeat);
+            if (!seatInfo?.userId) continue;
+
+            await ach.track(seatInfo.userId, 'first_win', 1);
+
+            const payout = (handResult.payouts || []).find(
+              (p: any) => p.seat === winnerSeat,
+            );
+            if (payout?.amount) {
+              await ach.track(seatInfo.userId, 'big_pot', Number(payout.amount));
+            }
+          }
+        }
+      } catch (e: any) {
+        console.error('[achievements] hand track failed:', e.message);
+      }
+      // ============ END ACHIEVEMENTS ============
 
       const playerStacks = room.game.state.seats.map((s: any) => ({
         seat: s.seat,
