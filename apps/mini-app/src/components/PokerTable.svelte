@@ -59,7 +59,11 @@
   $: mySeat = heroIdx >= 0 ? allSeats[heroIdx] : null;
   $: opponents = allSeats.filter((s: any) => s.userId !== myUserId);
 
-  $: winners = gameState?.winners ?? [];
+  // ===== WINNERS: fallback to handResult if gameState.winners is cleared =====
+  $: winners = (gameState?.winners && gameState.winners.length > 0)
+    ? gameState.winners
+    : (handResult?.winners ?? []);
+
   $: sidePots = gameState?.sidePots ?? [];
 
   $: isMyTurn = !!(
@@ -72,7 +76,20 @@
   );
 
   $: totalPot = gameState?.pot ?? 0;
-  $: community = gameState?.community ?? [];
+
+  // ===== COMMUNITY: fallback to handResult during result window =====
+  $: community = (gameState?.community && gameState.community.length > 0)
+    ? gameState.community
+    : (handResult?.communityCards ?? []);
+
+  // ===== HERO HOLE: fallback to showdown data during result window =====
+  $: heroShowdownPlayer = handResult?.showdownPlayers?.find(
+    (p: any) => p.seat === mySeat?.seat
+  );
+  $: heroHole = (mySeat?.hole && mySeat.hole.length > 0)
+    ? mySeat.hole
+    : (heroShowdownPlayer?.hole ?? []);
+
   $: serverTime = gameState?.serverTime ?? Date.now();
   $: turnStartedAt = gameState?.turnStartedAt ?? 0;
   $: turnBaseLimit = gameState?.turnBaseLimit ?? 30;
@@ -88,17 +105,33 @@
     if (!handResult?.showdownPlayers) return null;
     const map: Record<number, { isWinner: boolean; handName: string; payout: number }> = {};
     for (const p of handResult.showdownPlayers) {
-      map[p.seat] = { isWinner: !!p.isWinner, handName: p.handName || '', payout: p.payout || 0 };
+      map[p.seat] = {
+        isWinner: !!p.isWinner,
+        handName: p.handName || '',
+        payout: p.payout || 0,
+      };
     }
     return map;
   })();
 
-  function isWinnerSeat(seat: number): boolean { return winners.includes(seat); }
-  function inShowdown(seat: number): boolean { return !!(showdownData && showdownData[seat]); }
-  function showdownWin(seat: number): boolean { return !!(showdownData && showdownData[seat]?.isWinner); }
-  function showdownLose(seat: number): boolean { return !!(showdownData && showdownData[seat] && !showdownData[seat].isWinner); }
-  function handName(seat: number): string { return showdownData?.[seat]?.handName || ''; }
-  function payoutForSeat(seat: number): number { return showdownData?.[seat]?.payout ?? 0; }
+  function isWinnerSeat(seat: number): boolean {
+    return winners.includes(seat);
+  }
+  function inShowdown(seat: number): boolean {
+    return !!(showdownData && showdownData[seat]);
+  }
+  function showdownWin(seat: number): boolean {
+    return !!(showdownData && showdownData[seat]?.isWinner);
+  }
+  function showdownLose(seat: number): boolean {
+    return !!(showdownData && showdownData[seat] && !showdownData[seat].isWinner);
+  }
+  function handName(seat: number): string {
+    return showdownData?.[seat]?.handName || '';
+  }
+  function payoutForSeat(seat: number): number {
+    return showdownData?.[seat]?.payout ?? 0;
+  }
 
   $: isFinal = isFinalTable;
 </script>
@@ -127,7 +160,7 @@
         <div class="absolute top-[30%] left-1/2 -translate-x-1/2 z-[25] flex flex-col items-center gap-1">
           {#each sidePots as pot}
             <div
-              class="rounded-full pl-1.5 pr-3 py-0.5 flex items-center gap-1.5"
+              class="rounded-full pl-1.5 pr-3 py-0.5 flex items-center gap-1.5 pot-glow"
               style="
                 background: rgba(0,0,0,0.92);
                 border: 1.5px solid {pot.type === 'main' ? '#d4af37' : '#3b82f6'};
@@ -148,7 +181,7 @@
       {:else}
         <div class="absolute top-[30%] left-1/2 -translate-x-1/2 z-[25]">
           <div
-            class="rounded-full pl-1 pr-3.5 py-0.5 flex items-center gap-2"
+            class="rounded-full pl-1 pr-3.5 py-0.5 flex items-center gap-2 pot-glow"
             style="
               background: linear-gradient(180deg, rgba(0,0,0,0.95), rgba(0,0,0,0.85));
               border: 1.5px solid #d4af37;
@@ -168,9 +201,13 @@
       <div class="absolute top-[48%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-2 z-[10]">
         {#each Array(5) as _, i}
           {#if community[i]}
-            <div class="animate-deal" style="animation-delay: {i * 0.1}s;">
-              <PlayingCard rank={community[i].r} suit={suitChar(community[i].s)} size="md" />
-            </div>
+            <PlayingCard
+              rank={community[i].r}
+              suit={suitChar(community[i].s)}
+              size="md"
+              dealFrom="top"
+              dealDelay={0}
+            />
           {:else}
             <div
               class="rounded-[7px]"
@@ -215,7 +252,7 @@
           {/if}
 
           <div
-            class="relative rounded-full p-[3px]"
+            class="relative rounded-full p-[3px] {isWin ? 'winner-glow' : ''} {s.allIn && !s.folded ? 'all-in-shake' : ''}"
             style="
               background: linear-gradient(180deg,
                 {isWin ? '#f4e5a8' : isTurn ? '#3b82f6' : '#1e3a8a'} 0%,
@@ -323,14 +360,22 @@
     {/each}
 
     <!-- ========== HERO HOLE CARDS ========== -->
-    {#if gameState && mySeat && mySeat.hole && mySeat.hole.length > 0 && !isEliminated}
-      <div class="absolute top-[72%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex justify-center gap-2 z-[30]">
-        {#each mySeat.hole as c, i}
-          <div class="animate-deal" style="animation-delay: {i * 0.15}s; filter: drop-shadow(0 10px 22px rgba(0,0,0,0.9));">
-            <PlayingCard rank={c.r} suit={suitChar(c.s)} size="md" />
-          </div>
-        {/each}
-      </div>
+    {#if gameState && mySeat && heroHole.length > 0 && !isEliminated}
+      {#key gameState.handNo}
+        <div class="absolute top-[72%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex justify-center gap-2 z-[30]">
+          {#each heroHole as c, i}
+            <div style="filter: drop-shadow(0 10px 22px rgba(0,0,0,0.9));">
+              <PlayingCard
+                rank={c.r}
+                suit={suitChar(c.s)}
+                size="md"
+                dealFrom="top-left"
+                dealDelay={i * 0.15}
+              />
+            </div>
+          {/each}
+        </div>
+      {/key}
     {/if}
 
     <!-- ========== HERO SEAT ========== -->
@@ -356,7 +401,7 @@
           {/if}
 
           <div
-            class="relative rounded-full p-[3px]"
+            class="relative rounded-full p-[3px] {isWin ? 'winner-glow' : ''} {mySeat.allIn && !mySeat.folded ? 'all-in-shake' : ''}"
             style="
               background: linear-gradient(180deg,
                 {isWin ? '#f4e5a8' : isMyTurn ? '#3b82f6' : '#1e3a8a'} 0%,
@@ -429,3 +474,46 @@
     {/if}
   </div>
 </div>
+
+<style>
+  /* ===== WINNER GLOW (avatar pulse) ===== */
+  @keyframes winner-glow-pulse {
+    0%, 100% {
+      filter: drop-shadow(0 0 6px rgba(244,201,93,0.6));
+      transform: scale(1);
+    }
+    50% {
+      filter: drop-shadow(0 0 22px rgba(244,201,93,1)) drop-shadow(0 0 40px rgba(212,175,55,0.6));
+      transform: scale(1.06);
+    }
+  }
+  :global(.winner-glow) {
+    animation: winner-glow-pulse 1.4s ease-in-out infinite;
+  }
+
+  /* ===== ALL-IN SHAKE ===== */
+  @keyframes all-in-shake-kf {
+    0%, 100% { transform: translateX(0); }
+    15% { transform: translateX(-2px); }
+    30% { transform: translateX(2px); }
+    45% { transform: translateX(-2px); }
+    60% { transform: translateX(2px); }
+    75% { transform: translateX(-1px); }
+  }
+  :global(.all-in-shake) {
+    animation: all-in-shake-kf 0.6s ease-in-out infinite;
+  }
+
+  /* ===== POT GLOW (soft pulse) ===== */
+  @keyframes pot-glow-kf {
+    0%, 100% {
+      filter: drop-shadow(0 0 6px rgba(244,201,93,0.5));
+    }
+    50% {
+      filter: drop-shadow(0 0 14px rgba(244,201,93,0.9));
+    }
+  }
+  :global(.pot-glow) {
+    animation: pot-glow-kf 1.6s ease-in-out infinite;
+  }
+</style>
