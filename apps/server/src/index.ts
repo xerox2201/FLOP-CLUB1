@@ -21,6 +21,7 @@ import { TournamentManager } from './tournament-manager.js';
 import { TournamentScheduler } from './tournament-scheduler.js';
 import { registerTournamentRoutes } from './tournament-routes.js';
 import { registerSettingsRoutes } from './settings-routes.js';
+import { registerOverviewRoutes } from './overview-routes.js';
 
 const PORT = Number(process.env.PORT ?? 4000);
 const DATABASE_URL = process.env.DATABASE_URL ?? 'postgres://poker:pokerpass@localhost:5432/poker';
@@ -194,7 +195,8 @@ async function main() {
   await registerWalletRoutes(app, db);
   await registerUsersRoutes(app, db);
   await registerBroadcastRoutes(app, db);
- await registerSettingsRoutes(app, db);
+  await registerSettingsRoutes(app, db);
+  await registerOverviewRoutes(app, db);
 
   // 🔴 Tournament Manager
   const tournamentManager = new TournamentManager(db);
