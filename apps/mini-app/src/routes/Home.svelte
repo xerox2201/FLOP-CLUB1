@@ -18,16 +18,70 @@
   $: chips = Number($auth.freeChips?.chips || 0);
 
   const games = [
-    { id: 'holdem', title: "Texas Hold'em", sub: 'No-Limit', emoji: '♠️', cards: [{ rank: 'A', suit: '♠' as const, rot: -12 }, { rank: 'K', suit: '♥' as const, rot: 8 }] },
-    { id: 'omaha4', title: 'Omaha', sub: '4 Hole Cards', emoji: '♦️', cards: [{ rank: 'A', suit: '♦' as const, rot: -14 }, { rank: 'K', suit: '♠' as const, rot: 6 }] },
-    { id: 'omaha5', title: '7-Card Stud', sub: 'Classic', emoji: '♣️', cards: [{ rank: 'A', suit: '♣' as const, rot: -10 }, { rank: 'K', suit: '♥' as const, rot: 10 }] },
-    { id: 'tourney', title: 'Short Deck', sub: '6+ Holdem', emoji: '🎴', cards: [{ rank: 'A', suit: '♥' as const, rot: -8 }, { rank: 'K', suit: '♦' as const, rot: 12 }] },
+    {
+      id: 'holdem',
+      title: "Texas Hold'em",
+      sub: 'No-Limit',
+      cards: [
+        { rank: 'A', suit: '♠' as const, rot: -12 },
+        { rank: 'K', suit: '♥' as const, rot: 8 },
+      ],
+    },
+    {
+      id: 'omaha4',
+      title: 'Omaha 4',
+      sub: 'Four Hole Cards',
+      cards: [
+        { rank: 'A', suit: '♦' as const, rot: -14 },
+        { rank: 'K', suit: '♠' as const, rot: 6 },
+      ],
+    },
+    {
+      id: 'omaha5',
+      title: 'Omaha 5',
+      sub: 'Five Hole Cards',
+      cards: [
+        { rank: 'A', suit: '♣' as const, rot: -10 },
+        { rank: 'K', suit: '♥' as const, rot: 10 },
+      ],
+    },
+    {
+      id: 'tourney',
+      title: 'Tournaments',
+      sub: 'Big Prize Pools',
+      cards: [
+        { rank: 'A', suit: '♥' as const, rot: -8 },
+        { rank: 'K', suit: '♦' as const, rot: 12 },
+      ],
+    },
   ];
 
   const features = [
-    { icon: '⚡', title: 'Fast Payouts', sub: 'Get your winnings quickly' },
-    { icon: '🌍', title: 'Global Players', sub: 'Play worldwide' },
-    { icon: '🛡️', title: 'Secure & Fair', sub: 'Trusted platform' },
+    {
+      id: 'fast',
+      title: 'Fast Payouts',
+      sub: 'Get your winnings quickly',
+      paths: ['M13 2L4.09 12.97a1 1 0 0 0 .78 1.63H10l-1 7.4 8.91-10.97a1 1 0 0 0-.78-1.63H12l1-7.4z'],
+    },
+    {
+      id: 'global',
+      title: 'Global Players',
+      sub: 'Play worldwide',
+      paths: [
+        'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z',
+        'M2 12h20',
+        'M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z',
+      ],
+    },
+    {
+      id: 'secure',
+      title: 'Secure & Fair',
+      sub: 'Trusted platform',
+      paths: [
+        'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z',
+        'M9 12l2 2 4-4',
+      ],
+    },
   ];
 
   async function loadData() {
@@ -88,7 +142,7 @@
           -webkit-background-clip: text;
           background-clip: text;
           -webkit-text-fill-color: transparent;
-          text-shadow: 0 4px 16px rgba(0,0,0,0.6);
+          filter: drop-shadow(0 4px 16px rgba(0,0,0,0.6));
         "
       >
         Play Poker<br />Win Big
@@ -107,7 +161,11 @@
         "
       >
         <span>Play Now</span>
-        <span>→</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14" />
+          <path d="M13 5l7 7-7 7" />
+        </svg>
       </button>
     </div>
   </div>
@@ -124,13 +182,18 @@
         "
       >
         <div
-          class="w-9 h-9 rounded-xl flex items-center justify-center text-lg mb-1.5"
+          class="w-9 h-9 rounded-xl flex items-center justify-center mb-1.5"
           style="
             background: rgba(212,175,55,0.15);
             border: 1px solid rgba(212,175,55,0.35);
           "
         >
-          {f.icon}
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+               stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            {#each f.paths as d}
+              <path {d} />
+            {/each}
+          </svg>
         </div>
         <p class="text-[10px] font-extrabold text-white leading-tight">{f.title}</p>
         <p class="text-[8px] text-white/50 leading-tight mt-0.5">{f.sub}</p>
@@ -141,8 +204,13 @@
   <!-- ============ POPULAR GAMES ============ -->
   <div class="flex items-center justify-between mb-3 px-4">
     <h2 class="text-base font-extrabold text-white">Popular Games</h2>
-    <button on:click={() => onNavigate('tables')} class="text-[10px] font-bold text-gold active:opacity-70">
-      See All →
+    <button on:click={() => onNavigate('tables')} class="text-[10px] font-bold text-gold active:opacity-70 flex items-center gap-1">
+      <span>See All</span>
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 12h14" />
+        <path d="M13 5l7 7-7 7" />
+      </svg>
     </button>
   </div>
 
@@ -199,15 +267,29 @@
       "
     >
       <div class="flex items-center gap-2.5">
-        <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
-             style="background: rgba(16,185,129,0.25); border: 1px solid rgba(16,185,129,0.5);">🎁</div>
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center"
+             style="background: rgba(16,185,129,0.25); border: 1px solid rgba(16,185,129,0.5);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+               stroke="#6ee7b7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 12v10H4V12" />
+            <path d="M2 7h20v5H2z" />
+            <path d="M12 22V7" />
+            <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
+            <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
+          </svg>
+        </div>
         <div class="text-left">
           <p class="text-[9px] font-extrabold uppercase tracking-widest" style="color: rgba(110,231,183,0.9);">Free Chips</p>
           <p class="text-lg font-extrabold text-white leading-tight tabular-nums">{chips.toLocaleString()}</p>
         </div>
       </div>
-      <div class="text-right">
-        <p class="text-[11px] font-extrabold" style="color: #6ee7b7;">Play Free →</p>
+      <div class="text-right flex items-center gap-1" style="color: #6ee7b7;">
+        <span class="text-[11px] font-extrabold">Play Free</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14" />
+          <path d="M13 5l7 7-7 7" />
+        </svg>
       </div>
     </button>
   </div>
@@ -219,7 +301,14 @@
         Live Tournaments
         <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
       </h2>
-      <button on:click={() => onNavigate('tournaments')} class="text-[10px] font-bold text-gold">See All →</button>
+      <button on:click={() => onNavigate('tournaments')} class="text-[10px] font-bold text-gold flex items-center gap-1">
+        <span>See All</span>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14" />
+          <path d="M13 5l7 7-7 7" />
+        </svg>
+      </button>
     </div>
 
     <div class="space-y-2 px-4">

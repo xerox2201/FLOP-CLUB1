@@ -14,49 +14,35 @@
   }
 </script>
 
-<div class="relative min-h-screen w-full overflow-hidden">
+<div class="relative min-h-screen w-full overflow-hidden" style="background: #05080f;">
   <!-- ============ BACKGROUND IMAGE ============ -->
   <img
-    src="/login-bg.png"
+    src="/login-bg.jpg"
     alt=""
     class="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
     draggable="false"
   />
 
-  <!-- ============ DARK OVERLAY ============ -->
+  <!-- ============ CINEMATIC VIGNETTE ============ -->
   <div
-    class="absolute inset-0"
+    class="absolute inset-0 pointer-events-none"
     style="
       background:
-        radial-gradient(ellipse at 50% 30%, rgba(7,14,27,0.4) 0%, rgba(7,14,27,0.85) 50%, rgba(5,8,15,0.98) 100%);
+        radial-gradient(ellipse at 50% 45%, transparent 0%, rgba(5,8,15,0.35) 55%, rgba(5,8,15,0.9) 100%),
+        linear-gradient(180deg, rgba(5,8,15,0.6) 0%, transparent 30%, transparent 60%, rgba(5,8,15,0.85) 100%);
     "
   ></div>
 
   <!-- ============ GOLD GLOW TOP ============ -->
   <div
-    class="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[600px] opacity-40 pointer-events-none"
-    style="background: radial-gradient(circle, rgba(212,175,55,0.35), transparent 60%);"
+    class="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[600px] opacity-30 pointer-events-none"
+    style="background: radial-gradient(circle, rgba(212,175,55,0.5), transparent 60%);"
   ></div>
 
   <!-- ============ CONTENT ============ -->
   <div class="relative z-10 flex flex-col items-center justify-between min-h-screen px-6 py-10">
-    <!-- TOP: Logo -->
-    <div class="flex flex-col items-center w-full mt-6">
-           <!-- Spade mark -->
-      <div class="relative mb-6">
-        <div
-          class="absolute inset-0 blur-3xl opacity-70 pointer-events-none"
-          style="background: radial-gradient(circle, #3b82f6, transparent 70%);"
-        ></div>
-        <img
-          src="/logo.png.png"
-          alt="Flop Club"
-          class="relative w-32 h-32 object-contain select-none"
-          style="filter: drop-shadow(0 8px 28px rgba(59,130,246,0.6));"
-          draggable="false"
-        />
-      </div>
-
+    <!-- TOP: Title -->
+    <div class="flex flex-col items-center w-full mt-10">
       <h1
         class="text-4xl font-extrabold tracking-[0.25em] text-center"
         style="
@@ -64,7 +50,7 @@
           -webkit-background-clip: text;
           background-clip: text;
           -webkit-text-fill-color: transparent;
-          text-shadow: 0 4px 24px rgba(212,175,55,0.4);
+          filter: drop-shadow(0 4px 24px rgba(212,175,55,0.5));
         "
       >
         FLOP CLUB
@@ -72,16 +58,62 @@
 
       <div class="flex items-center gap-3 mt-3">
         <div class="h-px w-12" style="background: linear-gradient(to right, transparent, #d4af37);"></div>
-        <p class="text-[10px] font-extrabold tracking-[0.4em] text-gold/80 uppercase">
+        <p class="text-[10px] font-extrabold tracking-[0.4em] text-gold/90 uppercase">
           Play · Compete · Win
         </p>
         <div class="h-px w-12" style="background: linear-gradient(to left, transparent, #d4af37);"></div>
       </div>
     </div>
 
-    <!-- MIDDLE: Tagline -->
-    <div class="flex flex-col items-center w-full max-w-sm text-center">
-      <p class="text-[13px] text-white/60 leading-relaxed">
+    <!-- MIDDLE: Cinematic slogan -->
+    <div class="flex flex-col items-center w-full max-w-md text-center">
+      <!-- MAKE OR BREAK — eyebrow -->
+      <div class="flex items-center gap-3 mb-4">
+        <div class="h-px w-8" style="background: linear-gradient(to right, transparent, rgba(212,175,55,0.7));"></div>
+        <p
+          class="text-[11px] font-extrabold tracking-[0.55em] uppercase"
+          style="
+            color: #d4af37;
+            text-shadow:
+              0 0 12px rgba(212,175,55,0.7),
+              0 0 24px rgba(212,175,55,0.4),
+              0 2px 6px rgba(0,0,0,1);
+          "
+        >
+          Make Or Break
+        </p>
+        <div class="h-px w-8" style="background: linear-gradient(to left, transparent, rgba(212,175,55,0.7));"></div>
+      </div>
+
+      <!-- HERO LINE — big cinematic -->
+      <h2
+        class="font-extrabold leading-[1.05] mb-4"
+        style="
+          font-size: clamp(28px, 8vw, 40px);
+          letter-spacing: -0.02em;
+          background: linear-gradient(180deg, #ffffff 0%, #f4e5a8 40%, #d4af37 100%);
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          filter: drop-shadow(0 4px 20px rgba(0,0,0,1)) drop-shadow(0 2px 4px rgba(0,0,0,1));
+        "
+      >
+        One Table.<br />One Decision.
+      </h2>
+
+      <!-- SUB — tagline -->
+      <p
+        class="text-[12px] font-semibold leading-relaxed tracking-wide"
+        style="
+          color: rgba(255,255,255,0.95);
+          text-shadow:
+            0 0 2px rgba(0,0,0,1),
+            0 0 6px rgba(0,0,0,1),
+            0 2px 8px rgba(0,0,0,1),
+            0 4px 16px rgba(0,0,0,1),
+            0 0 32px rgba(0,0,0,0.9);
+        "
+      >
         Real players. Real action.<br />The ultimate poker experience.
       </p>
     </div>
@@ -107,10 +139,13 @@
         {/if}
       </button>
 
-      <p class="text-[10px] text-white/35 mt-4 text-center leading-relaxed max-w-xs">
+      <p
+        class="text-[10px] text-white/60 mt-4 text-center leading-relaxed max-w-xs"
+        style="text-shadow: 0 1px 6px rgba(0,0,0,1);"
+      >
         By entering, you agree to our<br />
-        <span class="text-gold/70 font-bold">Terms of Service</span> &amp;
-        <span class="text-gold/70 font-bold">Fair Play Policy</span>
+        <span class="text-gold/90 font-bold">Terms of Service</span> &amp;
+        <span class="text-gold/90 font-bold">Fair Play Policy</span>
       </p>
     </div>
   </div>
