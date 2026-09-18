@@ -375,7 +375,8 @@
       playSound('chip', 0.5);
       haptic.medium();
     } else {
-      playSound('button', 0.4);
+      // CHECK
+      playSound('check', 0.5);
       haptic.light();
     }
   }

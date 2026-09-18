@@ -2,7 +2,7 @@
 // Sound Effects Manager
 // ============================================================
 
-type SoundName = 'chip' | 'deal' | 'card-flip' | 'win' | 'lose' | 'button';
+type SoundName = 'chip' | 'deal' | 'card-flip' | 'win' | 'lose' | 'button' | 'check';
 
 const SOUND_FILES: Record<SoundName, string> = {
   chip: '/sounds/chip.wav',
@@ -11,6 +11,7 @@ const SOUND_FILES: Record<SoundName, string> = {
   win: '/sounds/win.wav',
   lose: '/sounds/lose.wav',
   button: '/sounds/button.wav',
+  check: '/sounds/check.wav',
 };
 
 const cache: Partial<Record<SoundName, HTMLAudioElement>> = {};
