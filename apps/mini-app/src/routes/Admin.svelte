@@ -15,7 +15,7 @@
 
   let stats: any = null;
   let tournaments: any[] = [];
-    let blindStructures: any[] = [];
+  let blindStructures: any[] = [];
   let templates: any[] = [];
   let showTemplateForm = false;
   let creatingTemplate = false;
@@ -110,9 +110,8 @@
         fetch(`${API}/api/blind-structures`).then((r) => r.json()),
       ]);
       stats = s;
-            tournaments = t.tournaments || [];
+      tournaments = t.tournaments || [];
 
-      // Also load templates
       const tplRes = await fetch(`${API}/api/admin/tournament-templates`, {
         headers: headers(),
       }).then((r) => r.json());
@@ -235,6 +234,7 @@
       error = data.error || 'resume_failed';
     }
   }
+
   async function createTemplate() {
     if (!tform.name.trim()) {
       error = 'Template name is required';
@@ -300,9 +300,14 @@
     if (!iso) return '—';
     try {
       return new Date(iso).toLocaleString('en-US', {
-        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
       });
-    } catch { return '—'; }
+    } catch {
+      return '—';
+    }
   }
 
   function logout() {
@@ -343,9 +348,16 @@
       class="w-10 h-10 rounded-full flex items-center justify-center text-white/70 active:scale-95"
       style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.25);"
     >
-      ←
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 18l-6-6 6-6" />
+      </svg>
     </button>
-    <h1 class="text-xl font-extrabold flex-1">🛠️ Admin Panel</h1>
+    <h1 class="text-xl font-extrabold flex-1 flex items-center gap-2">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+      </svg>
+      <span>Admin Panel</span>
+    </h1>
     {#if authed}
       <button
         on:click={logout}
@@ -360,7 +372,10 @@
   {#if !authed}
     <div class="card space-y-3 mt-8">
       <div class="text-center mb-2">
-        <p class="text-4xl mb-2">🔒</p>
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-2">
+          <rect x="3" y="11" width="18" height="11" rx="2" />
+          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        </svg>
         <p class="text-sm text-white/60">Enter admin secret to continue</p>
       </div>
       <input
@@ -429,15 +444,30 @@
         on:click={() => (showCreate = !showCreate)}
         class="flex-1 btn-gold flex items-center justify-center gap-2"
       >
-        {showCreate ? '✕ Close' : '+ Create Tournament'}
+        {#if showCreate}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+            <path d="M6 6l12 12M18 6L6 18" />
+          </svg>
+          <span>Close</span>
+        {:else}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          <span>Create Tournament</span>
+        {/if}
       </button>
       <button
         on:click={loadAll}
         aria-label="Refresh"
-        class="w-12 rounded-xl text-white/70 active:scale-95"
+        class="w-12 rounded-xl text-white/70 active:scale-95 flex items-center justify-center"
         style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3);"
       >
-        🔄
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 4v6h-6" />
+          <path d="M1 20v-6h6" />
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10" />
+          <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14" />
+        </svg>
       </button>
     </div>
 
@@ -678,8 +708,12 @@
         </div>
 
         <div class="rounded-xl p-3 space-y-2" style="background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.25);">
-          <p class="text-[10px] uppercase tracking-wider text-cyan font-bold">
-            🎟️ Satellite (optional)
+          <p class="text-[10px] uppercase tracking-wider text-cyan font-bold flex items-center gap-1.5">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 9a3 3 0 0 0 0 6v3a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-3a3 3 0 0 0 0-6V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z" />
+              <path d="M13 5v2M13 11v2M13 17v2" />
+            </svg>
+            <span>Satellite (optional)</span>
           </p>
 
           <div>
@@ -728,7 +762,16 @@
           disabled={creating || !form.name.trim()}
           class="w-full btn-gold disabled:opacity-40"
         >
-          {creating ? 'Creating…' : '✓ Create Tournament'}
+          {#if creating}
+            <span>Creating…</span>
+          {:else}
+            <span class="inline-flex items-center justify-center gap-1.5">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12l4 4 10-10" />
+              </svg>
+              Create Tournament
+            </span>
+          {/if}
         </button>
 
         {#if error}
@@ -771,8 +814,11 @@
                   </span>
                 {/if}
                 {#if t.satelliteTargetId}
-                  <span class="text-[9px] text-pink-400 font-mono">
-                    🎟️→#{t.satelliteTargetId}×{t.seatsAwarded}
+                  <span class="text-[9px] text-pink-400 font-mono inline-flex items-center gap-0.5">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M2 9a3 3 0 0 0 0 6v3a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-3a3 3 0 0 0 0-6V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z" />
+                    </svg>
+                    →#{t.satelliteTargetId}×{t.seatsAwarded}
                   </span>
                 {/if}
               </div>
@@ -799,42 +845,71 @@
             {#if (t.status === 'registering' || t.status === 'scheduled') && t.registeredCount >= t.minPlayers}
               <button
                 on:click={() => startTournament(t.id)}
-                class="flex-1 rounded-lg py-1.5 text-[11px] font-bold text-white active:scale-95"
+                class="flex-1 rounded-lg py-1.5 text-[11px] font-bold text-white active:scale-95 inline-flex items-center justify-center gap-1"
                 style="background: linear-gradient(180deg, #22c55e, #15803d);"
               >
-                🚀 Start
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+                  <path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+                  <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+                  <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
+                </svg>
+                Start
               </button>
             {/if}
             {#if t.status === 'running' || t.status === 'final_table'}
               <button
                 on:click={() => pauseTournament(t.id)}
-                class="flex-1 rounded-lg py-1.5 text-[11px] font-bold text-white active:scale-95"
+                class="flex-1 rounded-lg py-1.5 text-[11px] font-bold text-white active:scale-95 inline-flex items-center justify-center gap-1"
                 style="background: linear-gradient(180deg, #f59e0b, #b45309);"
               >
-                ⏸️ Pause
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="6" y="4" width="4" height="16" rx="1" />
+                  <rect x="14" y="4" width="4" height="16" rx="1" />
+                </svg>
+                Pause
               </button>
             {/if}
             {#if t.status === 'paused'}
               <button
                 on:click={() => resumeTournament(t.id)}
-                class="flex-1 rounded-lg py-1.5 text-[11px] font-bold text-white active:scale-95"
+                class="flex-1 rounded-lg py-1.5 text-[11px] font-bold text-white active:scale-95 inline-flex items-center justify-center gap-1"
                 style="background: linear-gradient(180deg, #22c55e, #15803d);"
               >
-                ▶️ Resume
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M6 4l14 8-14 8V4z" />
+                </svg>
+                Resume
               </button>
             {/if}
             {#if t.status !== 'finished' && t.status !== 'cancelled'}
               <button
                 on:click={() => cancelTournament(t.id)}
-                class="flex-1 rounded-lg py-1.5 text-[11px] font-bold text-red-300 active:scale-95"
+                class="flex-1 rounded-lg py-1.5 text-[11px] font-bold text-red-300 active:scale-95 inline-flex items-center justify-center gap-1"
                 style="background: rgba(220,38,38,0.15); border: 1px solid rgba(220,38,38,0.35);"
               >
-                ❌ Cancel
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M15 9l-6 6M9 9l6 6" />
+                </svg>
+                Cancel
               </button>
             {/if}
             {#if t.status === 'finished' || t.status === 'cancelled'}
-              <div class="flex-1 text-center text-[10px] text-white/40 py-1.5">
-                {t.status === 'finished' ? '🏁 Finished' : '❌ Cancelled'}
+              <div class="flex-1 text-center text-[10px] text-white/40 py-1.5 inline-flex items-center justify-center gap-1">
+                {#if t.status === 'finished'}
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <path d="M4 21V4" />
+                    <path d="M4 4h14l-3 4 3 4H4" />
+                  </svg>
+                  Finished
+                {:else}
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M15 9l-6 6M9 9l6 6" />
+                  </svg>
+                  Cancelled
+                {/if}
               </div>
             {/if}
           </div>
@@ -844,16 +919,24 @@
 
     {#if tournaments.length === 0 && !loading}
       <div class="card text-center py-8">
-        <p class="text-3xl mb-2">🎫</p>
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(212,175,55,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-2">
+          <path d="M2 9a3 3 0 0 0 0 6v3a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-3a3 3 0 0 0 0-6V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z" />
+          <path d="M13 5v2M13 11v2M13 17v2" />
+        </svg>
         <p class="text-white/50 text-sm">No tournaments yet</p>
       </div>
     {/if}
-        <!-- ============================================================ -->
+
+    <!-- ============================================================ -->
     <!-- D6.1: RECURRING TEMPLATES -->
     <!-- ============================================================ -->
     <div class="flex items-center justify-between mt-6 mb-3">
-      <h2 class="text-base font-extrabold px-1 text-white/90">
-        🗓️ Recurring Tournaments
+      <h2 class="text-base font-extrabold px-1 text-white/90 flex items-center gap-1.5">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" />
+          <path d="M16 2v4M8 2v4M3 10h18" />
+        </svg>
+        Recurring Tournaments
       </h2>
       <button
         on:click={() => (showTemplateForm = !showTemplateForm)}
@@ -1050,7 +1133,16 @@
           disabled={creatingTemplate || !tform.name.trim()}
           class="w-full btn-gold disabled:opacity-40"
         >
-          {creatingTemplate ? 'Creating…' : '✓ Create Template'}
+          {#if creatingTemplate}
+            <span>Creating…</span>
+          {:else}
+            <span class="inline-flex items-center justify-center gap-1.5">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12l4 4 10-10" />
+              </svg>
+              Create Template
+            </span>
+          {/if}
         </button>
 
         {#if error}
@@ -1061,7 +1153,10 @@
 
     {#if templates.length === 0}
       <div class="card text-center py-6 mb-4">
-        <p class="text-2xl mb-1">🗓️</p>
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(212,175,55,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-1">
+          <rect x="3" y="4" width="18" height="18" rx="2" />
+          <path d="M16 2v4M8 2v4M3 10h18" />
+        </svg>
         <p class="text-white/50 text-xs">No recurring templates yet</p>
       </div>
     {:else}
@@ -1105,24 +1200,36 @@
             <div class="flex gap-2">
               <button
                 on:click={() => toggleTemplate(tpl.id, !tpl.isActive)}
-                class="flex-1 rounded-lg py-1.5 text-[11px] font-bold active:scale-95"
+                class="flex-1 rounded-lg py-1.5 text-[11px] font-bold active:scale-95 inline-flex items-center justify-center gap-1"
                 style="background: {tpl.isActive ? 'rgba(245,158,11,0.15)' : 'linear-gradient(180deg, #22c55e, #15803d)'}; color: {tpl.isActive ? '#fcd34d' : 'white'}; border: 1px solid {tpl.isActive ? 'rgba(245,158,11,0.35)' : 'transparent'};"
               >
-                {tpl.isActive ? '⏸️ Pause' : '▶️ Activate'}
+                {#if tpl.isActive}
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="6" y="4" width="4" height="16" rx="1" />
+                    <rect x="14" y="4" width="4" height="16" rx="1" />
+                  </svg>
+                  Pause
+                {:else}
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M6 4l14 8-14 8V4z" />
+                  </svg>
+                  Activate
+                {/if}
               </button>
               <button
                 on:click={() => deleteTemplate(tpl.id)}
-                class="rounded-lg px-3 py-1.5 text-[11px] font-bold text-red-300 active:scale-95"
+                class="rounded-lg px-3 py-1.5 text-[11px] font-bold text-red-300 active:scale-95 flex items-center justify-center"
                 style="background: rgba(220,38,38,0.15); border: 1px solid rgba(220,38,38,0.35);"
               >
-                🗑️
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                </svg>
               </button>
             </div>
           </div>
         {/each}
       </div>
     {/if}
-
   {/if}
 
   {#if toast}
