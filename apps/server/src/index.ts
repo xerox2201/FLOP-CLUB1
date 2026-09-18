@@ -1,5 +1,6 @@
 import './env.js';
 
+import { registerUsersRoutes } from './users-routes.js';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { Server as SocketIOServer } from 'socket.io';
@@ -190,6 +191,7 @@ async function main() {
   await registerTableManagerRoutes(app, db);
   await registerHandsRoutes(app, db);
   await registerWalletRoutes(app, db);
+  await registerUsersRoutes(app, db);
 
   // 🔴 Tournament Manager
   const tournamentManager = new TournamentManager(db);
