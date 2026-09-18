@@ -1,10 +1,30 @@
 <script lang="ts">
+  import { requestAdmin } from '../stores/admin';
   import { auth } from '../stores/auth';
   import { api } from '../lib/api';
   import TopBar from '../components/TopBar.svelte';
   import Avatar from '../components/Avatar.svelte';
   import AvatarFramePicker from '../components/AvatarFramePicker.svelte';
   import { AVATARS } from '../lib/avatars';
+
+  // ============ SECRET ADMIN GESTURE (20 taps in 5s) ============
+  let adminTapCount = 0;
+  let adminTapTimer: any = null;
+
+  function handleVersionTap() {
+    adminTapCount++;
+    if (adminTapTimer) clearTimeout(adminTapTimer);
+
+    if (adminTapCount >= 20) {
+      adminTapCount = 0;
+      requestAdmin();
+      return;
+    }
+
+    adminTapTimer = setTimeout(() => {
+      adminTapCount = 0;
+    }, 5000);
+  }
 
   export let onNavigate: (page: any) => void = () => {};
 
@@ -53,7 +73,10 @@
       class="w-10 h-10 rounded-2xl flex items-center justify-center active:scale-95 transition"
       style="background: linear-gradient(180deg, rgba(30,58,138,0.4), rgba(15,31,58,0.7)); border: 1.5px solid rgba(96,165,250,0.3);"
     >
-      ⚙️
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+      </svg>
     </button>
   </div>
 
@@ -75,7 +98,7 @@
 
     <!-- Avatar centered -->
     <div class="relative flex flex-col items-center">
-            <div class="relative">
+      <div class="relative">
         <div
           class="absolute -inset-4 rounded-full opacity-60 pointer-events-none"
           style="background: radial-gradient(circle, rgba(212,175,55,0.5) 0%, transparent 70%); filter: blur(16px);"
@@ -201,11 +224,21 @@
       </button>
     {/each}
 
-    
-
     <button on:click={() => auth.logout()} class="w-full flex items-center gap-3 px-4 py-3 text-left active:bg-white/5">
       <span class="text-lg w-7">🚪</span>
       <span class="flex-1 text-sm font-bold text-red-400">Logout</span>
     </button>
   </div>
+
+  <!-- Hidden version text (20-tap secret admin) -->
+  <p
+    class="text-center text-[8px] text-white/15 mt-8 mb-2 select-none cursor-default"
+    on:click={handleVersionTap}
+    on:keydown={(e) => e.key === 'Enter' && handleVersionTap()}
+    role="button"
+    tabindex="-1"
+    aria-hidden="true"
+  >
+    Flop Club v1.0.0
+  </p>
 </div>

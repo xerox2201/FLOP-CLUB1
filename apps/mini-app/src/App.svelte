@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { adminRequested } from './stores/admin';
   import { onMount } from 'svelte';
   import { auth } from './stores/auth';
   import { initRealtime } from './lib/realtime';
+  import { adminRequested } from './stores/admin';
   import Login from './routes/Login.svelte';
   import Home from './routes/Home.svelte';
   import Tables from './routes/Tables.svelte';
@@ -23,6 +23,7 @@
   import SideNav from './components/SideNav.svelte';
   import BottomNav from './components/BottomNav.svelte';
   import ToastStack from './components/ToastStack.svelte';
+  import AdminPrompt from './components/AdminPrompt.svelte';
   import Splash from './routes/Splash.svelte';
 
   type Page =
@@ -51,19 +52,13 @@
   let splashElapsed = false;
   $: forceSplash = $auth.loading || !splashElapsed;
 
-    onMount(async () => {
+  onMount(async () => {
     setTimeout(() => { splashElapsed = true; }, 3000);
     await auth.init();
     const token = localStorage.getItem('token');
     if (token) initRealtime(token);
 
-    // ============ SECRET ADMIN URL ============
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('admin') === '1') {
-      currentPage = 'admin';
-    }
-
-    // ============ SECRET 5-TAP ADMIN ============
+    // ============ SECRET ADMIN (after password prompt) ============
     adminRequested.subscribe((v) => {
       if (v) {
         currentPage = 'admin';
@@ -147,12 +142,10 @@
   <Login />
 {:else}
   <div class="relative flex" style="min-height: 100dvh;">
-    <!-- ============ SIDE NAV (desktop) ============ -->
     {#if !hideNav}
       <SideNav current={currentPage as any} onNavigate={navigate} />
     {/if}
 
-    <!-- ============ MAIN CONTENT ============ -->
     <main
       class="flex-1 relative"
       class:with-side={!hideNav}
@@ -201,7 +194,6 @@
       </div>
     </main>
 
-    <!-- ============ BOTTOM NAV (mobile) ============ -->
     {#if !hideNav}
       <BottomNav current={currentPage as any} onNavigate={navigate} />
     {/if}
@@ -209,6 +201,9 @@
     <ToastStack />
   </div>
 {/if}
+
+<!-- Admin password prompt (global) -->
+<AdminPrompt />
 
 <style>
   @media (min-width: 1024px) {
