@@ -1,6 +1,7 @@
 <script lang="ts">
   import { auth } from '../stores/auth';
   import Avatar from './Avatar.svelte';
+  import { requestAdmin } from '../stores/admin';
 
   export let onOpenSettings: () => void = () => {};
   export let onOpenWallet: () => void = () => {};
@@ -8,6 +9,25 @@
   $: user = $auth.user;
   $: wallet = $auth.wallet;
   $: avatarId = (user as any)?.avatar_id || 'spade';
+
+  // ============ SECRET ADMIN GESTURE ============
+  let tapCount = 0;
+  let tapTimer: any = null;
+
+  function handleAvatarTap() {
+    tapCount++;
+    if (tapTimer) clearTimeout(tapTimer);
+
+    if (tapCount >= 5) {
+      tapCount = 0;
+      requestAdmin();
+      return;
+    }
+
+    tapTimer = setTimeout(() => {
+      tapCount = 0;
+    }, 1500);
+  }
 </script>
 
 <div class="flex items-center justify-between gap-3 px-1 pt-3 pb-1">
@@ -33,9 +53,16 @@
     </span>
   </button>
 
-  <!-- User -->
-  <div class="flex items-center gap-2">
-    <span class="font-bold text-sm max-w-[80px] truncate text-white/90">
+  <!-- User (5-tap = admin access) -->
+  <div
+    class="flex items-center gap-2"
+    on:click={handleAvatarTap}
+    on:keydown={(e) => e.key === 'Enter' && handleAvatarTap()}
+    role="button"
+    tabindex="0"
+    aria-label="Player profile"
+  >
+    <span class="font-bold text-sm max-w-[80px] truncate text-white/90 select-none">
       {user?.display_name || 'Player'}
     </span>
     <Avatar {avatarId} size="md" showOnline={true} />

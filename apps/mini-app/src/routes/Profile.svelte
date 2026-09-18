@@ -201,11 +201,7 @@
       </button>
     {/each}
 
-    <button on:click={() => onNavigate('admin')} class="w-full flex items-center gap-3 px-4 py-3 text-left active:bg-white/5" style="border-bottom: 1px solid rgba(212,175,55,0.08);">
-      <span class="text-lg w-7">🛠️</span>
-      <span class="flex-1 text-sm font-bold text-red-300">Admin Panel</span>
-      <span class="text-red-300 text-sm">›</span>
-    </button>
+    
 
     <button on:click={() => auth.logout()} class="w-full flex items-center gap-3 px-4 py-3 text-left active:bg-white/5">
       <span class="text-lg w-7">🚪</span>

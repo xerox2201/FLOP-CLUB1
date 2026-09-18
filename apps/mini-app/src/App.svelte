@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { adminRequested } from './stores/admin';
   import { onMount } from 'svelte';
   import { auth } from './stores/auth';
   import { initRealtime } from './lib/realtime';
@@ -50,11 +51,26 @@
   let splashElapsed = false;
   $: forceSplash = $auth.loading || !splashElapsed;
 
-  onMount(async () => {
+    onMount(async () => {
     setTimeout(() => { splashElapsed = true; }, 3000);
     await auth.init();
     const token = localStorage.getItem('token');
     if (token) initRealtime(token);
+
+    // ============ SECRET ADMIN URL ============
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('admin') === '1') {
+      currentPage = 'admin';
+    }
+
+    // ============ SECRET 5-TAP ADMIN ============
+    adminRequested.subscribe((v) => {
+      if (v) {
+        currentPage = 'admin';
+        adminRequested.set(false);
+        window.scrollTo({ top: 0 });
+      }
+    });
   });
 
   function navigate(page: Page) {
