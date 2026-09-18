@@ -25,6 +25,7 @@
     return '♣';
   }
 
+  // ===== Seat angles =====
   const BASE_ANGLES: Record<number, number[]> = {
     2: [90, 270],
     3: [90, 210, 330],
@@ -53,13 +54,14 @@
     return { x: (dx / len) * dist, y: (dy / len) * dist };
   }
 
+  // ===== Reactive state =====
   $: allSeats = gameState?.seats ?? [];
   $: totalSeats = allSeats.length;
   $: heroIdx = allSeats.findIndex((s: any) => s.userId === myUserId);
   $: mySeat = heroIdx >= 0 ? allSeats[heroIdx] : null;
   $: opponents = allSeats.filter((s: any) => s.userId !== myUserId);
 
-  // ===== WINNERS: fallback to handResult if gameState.winners is cleared =====
+  // Winners: fallback to handResult if gameState.winners is cleared
   $: winners = (gameState?.winners && gameState.winners.length > 0)
     ? gameState.winners
     : (handResult?.winners ?? []);
@@ -77,12 +79,12 @@
 
   $: totalPot = gameState?.pot ?? 0;
 
-  // ===== COMMUNITY: fallback to handResult during result window =====
+  // Community: fallback to handResult during result window
   $: community = (gameState?.community && gameState.community.length > 0)
     ? gameState.community
     : (handResult?.communityCards ?? []);
 
-  // ===== HERO HOLE: fallback to showdown data during result window =====
+  // Hero hole: fallback to showdown data during result window
   $: heroShowdownPlayer = handResult?.showdownPlayers?.find(
     (p: any) => p.seat === mySeat?.seat
   );
@@ -100,6 +102,7 @@
     return seatPos(rotated, totalSeats);
   }
 
+  // Showdown data
   $: showdownData = (() => {
     if (!winners || winners.length === 0) return null;
     if (!handResult?.showdownPlayers) return null;
@@ -133,14 +136,63 @@
     return showdownData?.[seat]?.payout ?? 0;
   }
 
+  // ===== Winner announcement data =====
+  $: winnerPlayer = handResult?.showdownPlayers?.find((p: any) => p.isWinner);
+  $: winnerIsMe = winnerPlayer?.userId === myUserId;
+  $: winnerDisplayName = winnerIsMe ? 'You' : (() => {
+    const s = allSeats.find((x: any) => x.seat === winnerPlayer?.seat);
+    return s?.displayName || 'Winner';
+  })();
+
+  // ===== Winning card highlight =====
+  $: winningCardKeys = new Set(
+    (winnerPlayer?.bestCards ?? []).map((c: any) => `${c.r}${c.s}`)
+  );
+
+  function isWinningCard(c: any): boolean {
+    return winningCardKeys.has(`${c.r}${c.s}`);
+  }
+
+  // ===== Chip fly animation =====
+  let chipFlies: { id: number; fromX: number; fromY: number; toX: number; toY: number; delay: number }[] = [];
+  let chipFlyIdCounter = 0;
+
+  $: if (winners.length > 0 && totalPot > 0) {
+    const flies: typeof chipFlies = [];
+    for (const winnerSeat of winners) {
+      const winnerSeatInfo = allSeats.find((s: any) => s.seat === winnerSeat);
+      if (!winnerSeatInfo) continue;
+
+      let toX = 50;
+      let toY = 42;
+      if (winnerSeat === mySeat?.seat) {
+        toX = 50; toY = 85;
+      } else {
+        const pos = oppPos(winnerSeat);
+        toX = pos.x; toY = pos.y;
+      }
+
+      const payout = showdownData?.[winnerSeat]?.payout ?? 0;
+      if (payout > 0) {
+        flies.push({
+          id: ++chipFlyIdCounter,
+          fromX: 50, fromY: 42,
+          toX, toY,
+          delay: 0.3,
+        });
+      }
+    }
+    chipFlies = flies;
+  } else {
+    chipFlies = [];
+  }
+
   $: isFinal = isFinalTable;
 </script>
-
 <div
   class="absolute left-1/2 -translate-x-1/2 w-[120%] max-w-[600px]"
   style="top: 42%; transform: translate(-50%, -50%);"
 >
-  <!-- TABLE CONTAINER -->
   <div class="relative w-full" style="aspect-ratio: 4 / 3;">
 
     <!-- Table image -->
@@ -153,6 +205,71 @@
         filter: drop-shadow(0 20px 48px rgba(0,0,0,0.9)) {isFinal ? 'drop-shadow(0 0 40px rgba(212,175,55,0.4))' : ''};
       "
     />
+
+    <!-- ========== WINNER ANNOUNCEMENT (above table) ========== -->
+    {#if winnerPlayer && winners.length > 0}
+      <div class="absolute top-[8%] left-1/2 -translate-x-1/2 z-[70] winner-announce pointer-events-none">
+        <div
+          class="rounded-2xl px-5 py-3 text-center winner-glow-card"
+          style="
+            background: linear-gradient(180deg, rgba(8,13,36,0.98), rgba(5,8,15,0.98));
+            border: 2px solid #d4af37;
+            box-shadow: 0 0 40px rgba(212,175,55,0.6), 0 12px 40px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,235,170,0.3);
+            min-width: 200px;
+          "
+        >
+          <p class="text-[9px] uppercase tracking-[0.35em] text-gold/80 font-bold mb-1">
+            {winners.length > 1 ? 'Winners' : 'Winner'}
+          </p>
+          <p class="text-xl font-extrabold text-white leading-tight" style="text-shadow: 0 2px 10px rgba(0,0,0,0.9);">
+            {winnerDisplayName}
+          </p>
+          {#if winnerPlayer.handName}
+            <p class="text-[12px] text-gold font-bold mt-0.5" style="text-shadow: 0 1px 6px rgba(0,0,0,0.9);">
+              {winnerPlayer.handName}
+            </p>
+          {/if}
+          {#if winnerPlayer.payout > 0}
+            <p class="text-[18px] font-extrabold text-emerald-400 tabular-nums mt-1" style="text-shadow: 0 0 12px rgba(16,185,129,0.6);">
+              +${fmt(winnerPlayer.payout)}
+            </p>
+          {/if}
+        </div>
+      </div>
+    {/if}
+
+    <!-- ========== HAND COMPARISON (top-right corner) ========== -->
+    {#if handResult?.showdownPlayers && handResult.showdownPlayers.length > 1 && winners.length > 0}
+      <div class="absolute top-[18%] right-[2%] z-[65] comparison-panel">
+        <div
+          class="rounded-xl p-2 space-y-1"
+          style="
+            background: rgba(5,8,15,0.94);
+            border: 1px solid rgba(212,175,55,0.35);
+            backdrop-filter: blur(10px);
+            min-width: 140px;
+          "
+        >
+          <p class="text-[8px] uppercase tracking-[0.25em] text-white/40 font-bold px-1">Showdown</p>
+          {#each handResult.showdownPlayers as p}
+            <div
+              class="flex items-center justify-between px-2 py-1 rounded-lg"
+              style="
+                background: {p.isWinner ? 'linear-gradient(90deg, rgba(244,201,93,0.2), rgba(244,201,93,0.05))' : 'rgba(255,255,255,0.03)'};
+                border: 1px solid {p.isWinner ? 'rgba(244,201,93,0.5)' : 'transparent'};
+              "
+            >
+              <span class="text-[10px] font-bold truncate" style="color: {p.isWinner ? '#f4e5a8' : 'rgba(255,255,255,0.6)'};">
+                {p.userId === myUserId ? 'You' : (allSeats.find((s: any) => s.seat === p.seat)?.displayName ?? '?')}
+              </span>
+              <span class="text-[9px] font-mono ml-2 shrink-0" style="color: {p.isWinner ? '#d4af37' : 'rgba(255,255,255,0.4)'};">
+                {p.handName}
+              </span>
+            </div>
+          {/each}
+        </div>
+      </div>
+    {/if}
 
     <!-- ========== POT DISPLAY ========== -->
     {#if gameState && totalPot > 0 && winners.length === 0}
@@ -196,18 +313,40 @@
       {/if}
     {/if}
 
+    <!-- ========== CHIP FLY TO WINNER ========== -->
+    {#each chipFlies as fly (fly.id)}
+      <div
+        class="chip-fly"
+        style="
+          --from-x: {fly.fromX}%;
+          --from-y: {fly.fromY}%;
+          --to-x: {fly.toX}%;
+          --to-y: {fly.toY}%;
+          animation-delay: {fly.delay}s;
+        "
+      >
+        <PokerChip amount={Math.min(totalPot, 100)} size={22} />
+      </div>
+    {/each}
+
     <!-- ========== COMMUNITY CARDS ========== -->
     {#if gameState}
       <div class="absolute top-[48%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-2 z-[10]">
         {#each Array(5) as _, i}
           {#if community[i]}
-            <PlayingCard
-              rank={community[i].r}
-              suit={suitChar(community[i].s)}
-              size="md"
-              dealFrom="top"
-              dealDelay={0}
-            />
+            {@const isWin = isWinningCard(community[i])}
+            <div class="relative">
+              <PlayingCard
+                rank={community[i].r}
+                suit={suitChar(community[i].s)}
+                size="md"
+                dealFrom="top"
+                dealDelay={0}
+              />
+              {#if isWin && winners.length > 0}
+                <div class="absolute -inset-1 rounded-lg winning-card-glow pointer-events-none z-[15]"></div>
+              {/if}
+            </div>
           {:else}
             <div
               class="rounded-[7px]"
@@ -223,8 +362,7 @@
         {/each}
       </div>
     {/if}
-
-    <!-- ========== OPPONENTS ========== -->
+        <!-- ========== OPPONENTS ========== -->
     {#each opponents as s}
       {@const pos = oppPos(s.seat)}
       {@const isTurn = gameState?.currentSeat === s.seat && !s.folded && !s.allIn && winners.length === 0}
@@ -245,8 +383,8 @@
       >
         <div class="relative">
           {#if isTurn}
-            <div class="absolute -inset-[10px] pointer-events-none z-[2]">
-              <TimerRing size={78} strokeWidth={4} startedAt={turnStartedAt}
+            <div class="absolute -inset-[8px] pointer-events-none z-[2]">
+              <TimerRing size={72} strokeWidth={4} startedAt={turnStartedAt}
                          limitSec={turnBaseLimit} {serverTime} active={true} color="#3b82f6" />
             </div>
           {/if}
@@ -267,7 +405,6 @@
             </div>
           </div>
 
-          <!-- FOLD badge -->
           {#if s.folded}
             <div class="absolute -bottom-1.5 left-1/2 -translate-x-1/2 z-[6]">
               <span
@@ -279,7 +416,6 @@
             </div>
           {/if}
 
-          <!-- ALL-IN badge -->
           {#if s.allIn && !s.folded}
             <div class="absolute -top-2 left-1/2 -translate-x-1/2 z-[6]">
               <span
@@ -291,7 +427,6 @@
             </div>
           {/if}
 
-          <!-- Dealer button -->
           {#if gameState?.dealerSeat === s.seat}
             <div
               class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-[26px] h-[26px] rounded-full flex items-center justify-center text-[12px] font-extrabold z-[15]"
@@ -364,7 +499,8 @@
       {#key gameState.handNo}
         <div class="absolute top-[72%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex justify-center gap-2 z-[30]">
           {#each heroHole as c, i}
-            <div style="filter: drop-shadow(0 10px 22px rgba(0,0,0,0.9));">
+            {@const isWinCard = isWinningCard(c)}
+            <div class="relative" style="filter: drop-shadow(0 10px 22px rgba(0,0,0,0.9));">
               <PlayingCard
                 rank={c.r}
                 suit={suitChar(c.s)}
@@ -372,6 +508,9 @@
                 dealFrom="top-left"
                 dealDelay={i * 0.15}
               />
+              {#if isWinCard && winners.length > 0}
+                <div class="absolute -inset-1 rounded-lg winning-card-glow pointer-events-none z-[15]"></div>
+              {/if}
             </div>
           {/each}
         </div>
@@ -394,8 +533,8 @@
       >
         <div class="relative">
           {#if isMyTurn}
-            <div class="absolute -inset-[10px] pointer-events-none z-[2]">
-              <TimerRing size={88} strokeWidth={4} startedAt={turnStartedAt}
+            <div class="absolute -inset-[8px] pointer-events-none z-[2]">
+              <TimerRing size={84} strokeWidth={4} startedAt={turnStartedAt}
                          limitSec={turnBaseLimit} {serverTime} active={true} color="#3b82f6" />
             </div>
           {/if}
@@ -476,7 +615,100 @@
 </div>
 
 <style>
-  /* ===== WINNER GLOW (avatar pulse) ===== */
+  /* ===== WINNER ANNOUNCEMENT ===== */
+  @keyframes winner-announce-in {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -20px) scale(0.85);
+    }
+    60% {
+      opacity: 1;
+      transform: translate(-50%, 0) scale(1.05);
+    }
+    100% {
+      opacity: 1;
+      transform: translate(-50%, 0) scale(1);
+    }
+  }
+  .winner-announce {
+    animation: winner-announce-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  @keyframes winner-glow-card-kf {
+    0%, 100% {
+      box-shadow: 0 0 40px rgba(212,175,55,0.6), 0 12px 40px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,235,170,0.3);
+    }
+    50% {
+      box-shadow: 0 0 70px rgba(212,175,55,1), 0 12px 40px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,235,170,0.5);
+    }
+  }
+  .winner-glow-card {
+    animation: winner-glow-card-kf 1.6s ease-in-out infinite;
+  }
+
+  /* ===== COMPARISON PANEL ===== */
+  @keyframes comparison-in {
+    from {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  .comparison-panel {
+    animation: comparison-in 0.4s ease-out 0.2s both;
+  }
+
+  /* ===== CHIP FLY ===== */
+  @keyframes chip-fly-kf {
+    0% {
+      left: var(--from-x);
+      top: var(--from-y);
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.5) rotate(0deg);
+    }
+    15% {
+      opacity: 1;
+    }
+    50% {
+      left: calc((var(--from-x) + var(--to-x)) / 2);
+      top: calc((var(--from-y) + var(--to-y)) / 2 - 15%);
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1.3) rotate(180deg);
+    }
+    100% {
+      left: var(--to-x);
+      top: var(--to-y);
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.6) rotate(360deg);
+    }
+  }
+  .chip-fly {
+    position: absolute;
+    z-index: 55;
+    pointer-events: none;
+    animation: chip-fly-kf 1.1s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  /* ===== WINNING CARD GLOW ===== */
+  @keyframes winning-card-glow-kf {
+    0%, 100% {
+      box-shadow: 0 0 10px rgba(244,201,93,0.7), 0 0 0 2px rgba(244,201,93,0.9);
+      transform: scale(1);
+    }
+    50% {
+      box-shadow: 0 0 28px rgba(244,201,93,1), 0 0 0 3px rgba(244,201,93,1);
+      transform: scale(1.05);
+    }
+  }
+  .winning-card-glow {
+    animation: winning-card-glow-kf 1.4s ease-in-out infinite;
+    border-radius: 8px;
+  }
+
+  /* ===== WINNER AVATAR GLOW ===== */
   @keyframes winner-glow-pulse {
     0%, 100% {
       filter: drop-shadow(0 0 6px rgba(244,201,93,0.6));
@@ -504,7 +736,7 @@
     animation: all-in-shake-kf 0.6s ease-in-out infinite;
   }
 
-  /* ===== POT GLOW (soft pulse) ===== */
+  /* ===== POT GLOW ===== */
   @keyframes pot-glow-kf {
     0%, 100% {
       filter: drop-shadow(0 0 6px rgba(244,201,93,0.5));
