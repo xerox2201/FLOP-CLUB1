@@ -398,7 +398,7 @@
             >
               <!-- Rank icon -->
               <div
-                class="w-7 h-7 rounded-lg flex items-center justify-center text-sm shrink-0"
+                class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
                 style="
                   background: {isWinner
                     ? 'linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15)'
@@ -409,9 +409,16 @@
                 "
               >
                 {#if isWinner}
-                  <span style="filter: drop-shadow(0 1px 1px rgba(0,0,0,0.4));">👑</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="#0a0800"
+                       style="filter: drop-shadow(0 1px 1px rgba(0,0,0,0.4));">
+                    <path d="M3 7l4 5 5-7 5 7 4-5v12H3V7z" />
+                  </svg>
                 {:else if isElim}
-                  <span class="text-xs opacity-60">💀</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                       stroke="rgba(255,255,255,0.6)" stroke-width="3" stroke-linecap="round">
+                    <path d="M6 6l12 12" />
+                    <path d="M18 6L6 18" />
+                  </svg>
                 {:else}
                   <span class="text-[10px] font-extrabold text-white/50 tabular-nums">
                     {p.seat}
@@ -474,26 +481,37 @@
 
     <!-- ============ ACTIONS ============ -->
     <div class="space-y-2 mt-4">
-        <!-- D5.1: Pause/Resume (admin) -->
-    {#if t.status === 'running' || t.status === 'final_table'}
-      <button
-        on:click={doPause}
-        disabled={acting}
-        class="btn w-full disabled:opacity-50"
-        style="padding: 12px; background: linear-gradient(180deg, #f59e0b, #b45309); color: white; font-size: 13px;"
-      >
-        ⏸️ Pause Tournament (Admin)
-      </button>
-    {:else if t.status === 'paused'}
-      <button
-        on:click={doResume}
-        disabled={acting}
-        class="btn btn-success w-full disabled:opacity-50"
-        style="padding: 14px; font-size: 14px;"
-      >
-        ▶️ Resume Tournament
-      </button>
-    {/if}
+      <!-- D5.1: Pause/Resume (admin) -->
+      {#if t.status === 'running' || t.status === 'final_table'}
+        <button
+          on:click={doPause}
+          disabled={acting}
+          class="btn w-full disabled:opacity-50"
+          style="padding: 12px; background: linear-gradient(180deg, #f59e0b, #b45309); color: white; font-size: 13px;"
+        >
+          <span class="flex items-center justify-center gap-2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <rect x="6" y="4" width="4" height="16" rx="1" />
+              <rect x="14" y="4" width="4" height="16" rx="1" />
+            </svg>
+            <span>Pause Tournament (Admin)</span>
+          </span>
+        </button>
+      {:else if t.status === 'paused'}
+        <button
+          on:click={doResume}
+          disabled={acting}
+          class="btn btn-success w-full disabled:opacity-50"
+          style="padding: 14px; font-size: 14px;"
+        >
+          <span class="flex items-center justify-center gap-2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M6 4l14 8-14 8V4z" />
+            </svg>
+            <span>Resume Tournament</span>
+          </span>
+        </button>
+      {/if}
 
       {#if canRegister && !isRegistered}
         <button
@@ -502,7 +520,16 @@
           class="btn btn-gold w-full disabled:opacity-50"
           style="padding: 16px; font-size: 14px;"
         >
-          {acting ? '…' : t.buyIn > 0 ? `🎟️ Register · $${fmt(t.buyIn + t.fee)}` : '🎟️ Register — Free'}
+          <span class="flex items-center justify-center gap-2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M2 9a3 3 0 0 0 0 6v3a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-3a3 3 0 0 0 0-6V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z" />
+              <path d="M13 5v2" />
+              <path d="M13 17v2" />
+              <path d="M13 11v2" />
+            </svg>
+            <span>{acting ? '…' : t.buyIn > 0 ? `Register · $${fmt(t.buyIn + t.fee)}` : 'Register — Free'}</span>
+          </span>
         </button>
       {:else if canRegister && isRegistered}
         <button
@@ -511,7 +538,14 @@
           class="btn btn-danger w-full disabled:opacity-50"
           style="padding: 14px;"
         >
-          {acting ? '…' : '↩️ Unregister'}
+          <span class="flex items-center justify-center gap-2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M9 14L4 9l5-5" />
+              <path d="M4 9h10a6 6 0 0 1 6 6v5" />
+            </svg>
+            <span>{acting ? '…' : 'Unregister'}</span>
+          </span>
         </button>
         {#if canStart}
           <button
@@ -520,7 +554,12 @@
             class="btn btn-success w-full disabled:opacity-50"
             style="padding: 14px;"
           >
-            🚀 Start Now
+            <span class="flex items-center justify-center gap-2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M6 4l14 8-14 8V4z" />
+              </svg>
+              <span>Start Now</span>
+            </span>
           </button>
         {/if}
       {:else if canGoToTable}
@@ -529,7 +568,14 @@
           class="btn btn-success w-full animate-gold-pulse"
           style="padding: 18px; font-size: 15px;"
         >
-          🎰 Go to Your Table
+          <span class="flex items-center justify-center gap-2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" />
+              <circle cx="12" cy="12" r="4.5" />
+            </svg>
+            <span>Go to Your Table</span>
+          </span>
         </button>
         <div class="text-[10px] text-center text-white/50">
           Table {myTournamentPlayer?.tableNumber} · Seat {myTournamentPlayer?.seat}
@@ -553,7 +599,14 @@
             border: 1.5px solid rgba(107,114,128,0.3);
           "
         >
-          <p class="text-[12px] text-white/60 font-extrabold">🏁 Tournament finished</p>
+          <div class="flex items-center justify-center gap-2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                 stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+              <path d="M4 21V4" />
+              <path d="M4 4h14l-3 4 3 4H4" />
+            </svg>
+            <p class="text-[12px] text-white/60 font-extrabold">Tournament finished</p>
+          </div>
         </div>
       {/if}
     </div>
