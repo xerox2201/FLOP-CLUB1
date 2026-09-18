@@ -1,5 +1,5 @@
 import './env.js';
-
+import { registerBroadcastRoutes } from './broadcast-routes.js';
 import { registerUsersRoutes } from './users-routes.js';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
@@ -192,6 +192,7 @@ async function main() {
   await registerHandsRoutes(app, db);
   await registerWalletRoutes(app, db);
   await registerUsersRoutes(app, db);
+  await registerBroadcastRoutes(app, db);
 
   // 🔴 Tournament Manager
   const tournamentManager = new TournamentManager(db);
