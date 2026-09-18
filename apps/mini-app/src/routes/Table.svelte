@@ -110,13 +110,35 @@
   const PRE_ACTIONS: {
     key: PreActionKey;
     label: string;
-    icon: string;
+    paths: string[];
     color: string;
   }[] = [
-    { key: 'check_fold', label: 'Check/Fold', icon: '✓/✗', color: '#3b82f6' },
-    { key: 'check', label: 'Check', icon: '✓', color: '#10b981' },
-    { key: 'call_any', label: 'Call Any', icon: '📞', color: '#8b5cf6' },
-    { key: 'fold', label: 'Fold', icon: '✗', color: '#ef4444' },
+    {
+      key: 'check_fold',
+      label: 'Check/Fold',
+      color: '#3b82f6',
+      paths: ['M3 12l4 4 9-9', 'M15 4l5 5', 'M20 4l-5 5'],
+    },
+    {
+      key: 'check',
+      label: 'Check',
+      color: '#10b981',
+      paths: ['M5 12l4 4 10-10'],
+    },
+    {
+      key: 'call_any',
+      label: 'Call Any',
+      color: '#8b5cf6',
+      paths: [
+        'M3 5.5C3 4.1 4.1 3 5.5 3h2.3c.5 0 .9.3 1 .8l.7 3.2c.1.4 0 .8-.4 1L7.5 9.5c1 2 2.5 3.5 4.5 4.5l1.5-1.6c.2-.3.6-.4 1-.3l3.2.7c.5.1.8.5.8 1v2.3c0 1.4-1.1 2.5-2.5 2.5C8.6 19.1 3 13.4 3 5.5z',
+      ],
+    },
+    {
+      key: 'fold',
+      label: 'Fold',
+      color: '#ef4444',
+      paths: ['M6 6l12 12', 'M18 6L6 18'],
+    },
   ];
 
   $: showPreActions =
@@ -712,23 +734,41 @@
           {#each PRE_ACTIONS as pa}
             <button
               on:click={() => setPreAction(pa.key)}
-              class="flex-1 rounded-xl py-2.5 active:scale-[0.97] transition-all flex flex-col items-center gap-0.5"
+              class="flex-1 rounded-xl py-2.5 active:scale-[0.97] transition-all flex flex-col items-center gap-1 relative overflow-hidden"
               style="background: {preAction === pa.key
                 ? pa.color
                 : 'rgba(255,255,255,0.06)'}; border: {preAction === pa.key
                 ? `2px solid ${pa.color}`
                 : '2px solid transparent'}; box-shadow: {preAction === pa.key
-                ? `0 0 14px ${pa.color}60`
-                : 'none'};"
+                ? `0 0 18px ${pa.color}80, inset 0 1px 0 rgba(255,255,255,0.25)`
+                : 'inset 0 1px 0 rgba(255,255,255,0.04)'};"
             >
-              <span
-                class="text-[16px] leading-none"
-                style="color: {preAction === pa.key ? 'white' : pa.color};"
+              {#if preAction === pa.key}
+                <span
+                  class="absolute inset-0 rounded-xl animate-pulse pointer-events-none"
+                  style="background: radial-gradient(circle at 50% 100%, {pa.color}55 0%, transparent 70%);"
+                ></span>
+              {/if}
+
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={preAction === pa.key ? '#ffffff' : pa.color}
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="relative"
+                style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));"
               >
-                {pa.icon}
-              </span>
+                {#each pa.paths as d}
+                  <path {d} />
+                {/each}
+              </svg>
+
               <span
-                class="text-[9px] font-bold leading-none"
+                class="text-[9px] font-bold leading-none relative"
                 style="color: {preAction === pa.key ? 'white' : 'rgba(255,255,255,0.7)'};"
               >
                 {pa.label}
