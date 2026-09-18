@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { auth } from './stores/auth';
+  import { initRealtime } from './lib/realtime';
   import Login from './routes/Login.svelte';
   import Home from './routes/Home.svelte';
   import Tables from './routes/Tables.svelte';
@@ -16,24 +17,17 @@
   import Notifications from './routes/Notifications.svelte';
   import Settings from './routes/Settings.svelte';
   import HelpCenter from './routes/HelpCenter.svelte';
+  import Admin from './routes/Admin.svelte';
+  import MyTournaments from './routes/MyTournaments.svelte';
+  import SideNav from './components/SideNav.svelte';
   import BottomNav from './components/BottomNav.svelte';
+  import ToastStack from './components/ToastStack.svelte';
   import Splash from './routes/Splash.svelte';
 
   type Page =
-    | 'home'
-    | 'tables'
-    | 'wallet'
-    | 'profile'
-    | 'table'
-    | 'leaderboard'
-    | 'events'
-    | 'tournaments'
-    | 'tournament-detail'
-    | 'achievements'
-    | 'shop'
-    | 'notifications'
-    | 'settings'
-    | 'help';
+    | 'home' | 'tables' | 'wallet' | 'profile' | 'table' | 'leaderboard'
+    | 'events' | 'tournaments' | 'tournament-detail' | 'achievements'
+    | 'my-tournaments' | 'shop' | 'notifications' | 'settings' | 'help' | 'admin';
 
   let currentPage: Page = 'home';
   let activeTableId = 1;
@@ -43,17 +37,24 @@
   let tablesMode: 'all' | 'free' | 'real' = 'all';
   let tablesKey = 0;
 
-  $: hideBottomNav =
+  $: hideNav =
     currentPage === 'table' ||
-    currentPage === 'tournament-detail' ||
     currentPage === 'achievements' ||
+    currentPage === 'my-tournaments' ||
     currentPage === 'shop' ||
     currentPage === 'notifications' ||
     currentPage === 'settings' ||
-    currentPage === 'help';
+    currentPage === 'help' ||
+    currentPage === 'admin';
+
+  let splashElapsed = false;
+  $: forceSplash = $auth.loading || !splashElapsed;
 
   onMount(async () => {
+    setTimeout(() => { splashElapsed = true; }, 3000);
     await auth.init();
+    const token = localStorage.getItem('token');
+    if (token) initRealtime(token);
   });
 
   function navigate(page: Page) {
@@ -99,48 +100,109 @@
   }
 </script>
 
-{#if $auth.loading}
+<!-- ============ OUTER BACKGROUND ============ -->
+<div
+  class="fixed inset-0 -z-10"
+  style="background: #05080f;"
+>
+  <div
+    class="absolute inset-0"
+    style="
+      background-image: url('/bg-pattern.png');
+      background-size: 600px auto;
+      background-repeat: repeat;
+      opacity: 0.35;
+    "
+  ></div>
+  <div
+    class="absolute inset-0"
+    style="
+      background:
+        radial-gradient(ellipse at 50% -10%, rgba(30,58,138,0.5) 0%, transparent 55%),
+        radial-gradient(ellipse at 50% 110%, rgba(212,175,55,0.12) 0%, transparent 55%),
+        linear-gradient(180deg, rgba(7,14,27,0.55) 0%, rgba(5,8,15,0.9) 100%);
+    "
+  ></div>
+</div>
+
+{#if forceSplash}
   <Splash />
 {:else if !$auth.user}
   <Login />
 {:else}
-  {#if currentPage === 'home'}
-    <Home onNavigate={navigate} onQuickSeat={quickSeat} onOpenTable={openTable} />
-  {:else if currentPage === 'tables'}
-    {#key tablesKey}
-      <Tables initialVariant={tablesVariant} initialMode={tablesMode} onOpenTable={openTable} />
-    {/key}
-  {:else if currentPage === 'wallet'}
-    <Wallet />
-  {:else if currentPage === 'profile'}
-    <Profile onNavigate={navigate} />
-  {:else if currentPage === 'table'}
-    <Table tableId={activeTableId} onBack={backFromTable} />
-  {:else if currentPage === 'leaderboard'}
-    <Leaderboard />
-  {:else if currentPage === 'events'}
-    <Events onNavigate={navigate} />
-  {:else if currentPage === 'tournaments'}
-    <Tournaments onOpenTournament={openTournament} />
-  {:else if currentPage === 'tournament-detail' && activeTournamentId !== null}
-    <TournamentDetail
-      tournamentId={activeTournamentId}
-      onBack={() => navigate('tournaments')}
-      onOpenTable={openTournamentTable}
-    />
-  {:else if currentPage === 'achievements'}
-    <Achievements onBack={() => navigate('profile')} />
-  {:else if currentPage === 'shop'}
-    <Shop onBack={() => navigate('profile')} />
-  {:else if currentPage === 'notifications'}
-    <Notifications onBack={() => navigate('home')} />
-  {:else if currentPage === 'settings'}
-    <Settings onBack={() => navigate('profile')} />
-  {:else if currentPage === 'help'}
-    <HelpCenter onBack={() => navigate('profile')} />
-  {/if}
+  <div class="relative flex" style="min-height: 100dvh;">
+    <!-- ============ SIDE NAV (desktop) ============ -->
+    {#if !hideNav}
+      <SideNav current={currentPage as any} onNavigate={navigate} />
+    {/if}
 
-  {#if !hideBottomNav}
-    <BottomNav current={currentPage as any} onNavigate={navigate} />
-  {/if}
+    <!-- ============ MAIN CONTENT ============ -->
+    <main
+      class="flex-1 relative"
+      class:with-side={!hideNav}
+      style="min-height: 100dvh;"
+    >
+      <div class="mx-auto" style="max-width: 520px;">
+        {#if currentPage === 'home'}
+          <Home onNavigate={navigate} onQuickSeat={quickSeat} onOpenTable={openTable} />
+        {:else if currentPage === 'tables'}
+          {#key tablesKey}
+            <Tables initialVariant={tablesVariant} initialMode={tablesMode} onOpenTable={openTable} />
+          {/key}
+        {:else if currentPage === 'wallet'}
+          <Wallet />
+        {:else if currentPage === 'profile'}
+          <Profile onNavigate={navigate} />
+        {:else if currentPage === 'table'}
+          <Table tableId={activeTableId} onBack={backFromTable} />
+        {:else if currentPage === 'leaderboard'}
+          <Leaderboard />
+        {:else if currentPage === 'events'}
+          <Events onNavigate={navigate} />
+        {:else if currentPage === 'tournaments'}
+          <Tournaments onOpenTournament={openTournament} />
+        {:else if currentPage === 'tournament-detail' && activeTournamentId !== null}
+          <TournamentDetail
+            tournamentId={activeTournamentId}
+            onBack={() => navigate('tournaments')}
+            onOpenTable={openTournamentTable}
+          />
+        {:else if currentPage === 'achievements'}
+          <Achievements onBack={() => navigate('profile')} />
+        {:else if currentPage === 'my-tournaments'}
+          <MyTournaments onBack={() => navigate('profile')} />
+        {:else if currentPage === 'shop'}
+          <Shop onBack={() => navigate('profile')} />
+        {:else if currentPage === 'notifications'}
+          <Notifications onBack={() => navigate('home')} />
+        {:else if currentPage === 'settings'}
+          <Settings onBack={() => navigate('profile')} />
+        {:else if currentPage === 'help'}
+          <HelpCenter onBack={() => navigate('profile')} />
+        {:else if currentPage === 'admin'}
+          <Admin onBack={() => navigate('profile')} />
+        {/if}
+      </div>
+    </main>
+
+    <!-- ============ BOTTOM NAV (mobile) ============ -->
+    {#if !hideNav}
+      <BottomNav current={currentPage as any} onNavigate={navigate} />
+    {/if}
+
+    <ToastStack />
+  </div>
 {/if}
+
+<style>
+  @media (min-width: 1024px) {
+    :global(main.with-side) {
+      margin-left: 240px;
+    }
+  }
+  @media (max-width: 1023px) {
+    :global(main.with-side) {
+      padding-bottom: 90px;
+    }
+  }
+</style>

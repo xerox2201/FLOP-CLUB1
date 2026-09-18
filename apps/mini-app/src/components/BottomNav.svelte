@@ -34,7 +34,7 @@
     {
       id: 'wallet' as Page,
       key: 'nav.wallet',
-      path: 'M3 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7zm14 5h3v2h-3a11 11 0 0 1 0-2z',
+      path: 'M3 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7zm14 5h3v2h-3a1 1 0 0 1 0-2z',
     },
     {
       id: 'profile' as Page,
@@ -44,11 +44,16 @@
   ];
 </script>
 
-<nav class="fixed bottom-0 left-0 right-0 z-40">
+<nav class="fixed bottom-0 left-0 right-0 z-40 lg:hidden">
   <div class="max-w-[480px] mx-auto px-3 pb-2 pt-2">
     <div
-      class="glass-strong rounded-3xl flex items-center justify-around py-1.5"
-      style="box-shadow: 0 -4px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06);"
+      class="rounded-3xl flex items-center justify-around py-1.5"
+      style="
+        background: linear-gradient(180deg, rgba(7,14,27,0.95) 0%, rgba(5,8,15,0.98) 100%);
+        border: 1px solid rgba(212,175,55,0.25);
+        box-shadow: 0 -4px 30px rgba(0,0,0,0.6), 0 0 30px rgba(212,175,55,0.1), inset 0 1px 0 rgba(255,255,255,0.06);
+        backdrop-filter: blur(16px);
+      "
     >
       {#each items as item}
         <button
@@ -72,10 +77,7 @@
           </svg>
           <span class="text-[9px] font-bold">{$t(item.key)}</span>
           {#if current === item.id}
-            <span
-              class="w-1 h-1 rounded-full bg-gold"
-              style="box-shadow: 0 0 6px rgba(244,201,93,0.8);"
-            ></span>
+            <span class="w-1 h-1 rounded-full bg-gold" style="box-shadow: 0 0 6px rgba(244,201,93,0.8);"></span>
           {/if}
         </button>
       {/each}

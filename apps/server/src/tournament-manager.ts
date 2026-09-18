@@ -2,9 +2,16 @@ import { Pool } from 'pg';
 import { LedgerService } from './ledger.js';
 import { BlindStructureService } from './blind-structures.js';
 import { gameManager } from './game-manager.js';
+import { SeasonManager } from './season-manager.js';
 
 export type TournamentStatus =
-  'scheduled' | 'registering' | 'running' | 'paused' | 'final_table' | 'finished' | 'cancelled';
+  | 'scheduled'
+  | 'registering'
+  | 'running'
+  | 'paused'
+  | 'final_table'
+  | 'finished'
+  | 'cancelled';
 
 export type TournamentFormat = 'mtt' | 'sng' | 'freeroll' | 'satellite';
 
@@ -23,6 +30,13 @@ export interface TournamentConfig {
   guaranteed: number;
   scheduledStart?: Date | null;
   lateRegMin: number;
+  lateRegLevel: number;
+  allowReEntry: boolean;
+  maxReEntries: number;
+  isBounty: boolean;
+  bountyAmount: number;
+  satelliteTargetId: number | null;
+  seatsAwarded: number;
   blindStructureId: number;
   isPrivate: boolean;
   createdBy: number;
@@ -52,6 +66,10 @@ export interface Tournament {
   totalPrizePool: number;
   totalRake: number;
   levelTimer: NodeJS.Timeout | null;
+  pausedAt?: number;
+  pausedRemainingSec?: number;
+  autoStartTimer?: NodeJS.Timeout | null;
+  lateRegClosed?: boolean;
 }
 
 export class TournamentManager {
@@ -60,9 +78,12 @@ export class TournamentManager {
   private tournaments: Map<number, Tournament> = new Map();
   private io: any = null;
 
-  constructor(private db: Pool) {
+    private seasons: SeasonManager;
+
+constructor(private db: Pool) {
     this.ledger = new LedgerService(db);
     this.blindService = new BlindStructureService(db);
+    this.seasons = new SeasonManager(db);
   }
 
   setIO(io: any): void {
@@ -85,9 +106,11 @@ export class TournamentManager {
     const res = await this.db.query(
       `INSERT INTO tournaments
          (name, variant, mode, format, speed, buy_in, fee, starting_stack,
-          min_players, max_players, guaranteed, scheduled_start, late_reg_min,
-          blind_structure_id, status, is_private, created_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+          min_players, max_players, guaranteed, scheduled_start, late_reg_min, late_reg_level,
+          blind_structure_id, status, is_private, created_by,
+          allow_re_entry, max_re_entries, is_bounty, bounty_amount,
+          satellite_target_id, seats_awarded)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)
        RETURNING id`,
       [
         config.name,
@@ -103,10 +126,17 @@ export class TournamentManager {
         config.guaranteed,
         config.scheduledStart || null,
         config.lateRegMin,
+        config.lateRegLevel,
         config.blindStructureId,
         status,
         config.isPrivate,
         config.createdBy,
+        config.allowReEntry,
+        config.maxReEntries,
+        config.isBounty,
+        config.bountyAmount,
+        config.satelliteTargetId ?? null,
+        config.seatsAwarded ?? 0,
       ],
     );
 
@@ -117,44 +147,57 @@ export class TournamentManager {
     return tournamentId;
   }
 
-  private async setupPayoutStructure(tournamentId: number, maxPlayers: number): Promise<void> {
-    let structure: Array<{ position: number; percentage: number }> = [];
-
-    if (maxPlayers <= 9) {
-      structure = [
-        { position: 1, percentage: 0.5 },
-        { position: 2, percentage: 0.3 },
-        { position: 3, percentage: 0.2 },
+  // ============================================================
+  // PAYOUT STRUCTURE
+  // ============================================================
+  private computePayoutStructure(
+    numPlayers: number,
+  ): Array<{ position: number; percentage: number }> {
+    if (numPlayers <= 2)
+      return [
+        { position: 1, percentage: 0.65 },
+        { position: 2, percentage: 0.35 },
       ];
-    } else if (maxPlayers <= 18) {
-      structure = [
+    if (numPlayers <= 4)
+      return [
+        { position: 1, percentage: 0.55 },
+        { position: 2, percentage: 0.3 },
+        { position: 3, percentage: 0.15 },
+      ];
+    if (numPlayers <= 6)
+      return [
+        { position: 1, percentage: 0.45 },
+        { position: 2, percentage: 0.3 },
+        { position: 3, percentage: 0.15 },
+        { position: 4, percentage: 0.1 },
+      ];
+    if (numPlayers <= 9)
+      return [
         { position: 1, percentage: 0.4 },
         { position: 2, percentage: 0.25 },
         { position: 3, percentage: 0.15 },
         { position: 4, percentage: 0.1 },
-        { position: 5, percentage: 0.06 },
-        { position: 6, percentage: 0.04 },
+        { position: 5, percentage: 0.05 },
+        { position: 6, percentage: 0.05 },
       ];
-    } else if (maxPlayers <= 45) {
-      structure = [
+    if (numPlayers <= 18)
+      return [
+        { position: 1, percentage: 0.35 },
+        { position: 2, percentage: 0.22 },
+        { position: 3, percentage: 0.14 },
+        { position: 4, percentage: 0.1 },
+        { position: 5, percentage: 0.07 },
+        { position: 6, percentage: 0.05 },
+        { position: 7, percentage: 0.04 },
+        { position: 8, percentage: 0.03 },
+      ];
+    if (numPlayers <= 45)
+      return [
         { position: 1, percentage: 0.3 },
         { position: 2, percentage: 0.2 },
-        { position: 3, percentage: 0.13 },
+        { position: 3, percentage: 0.12 },
         { position: 4, percentage: 0.09 },
         { position: 5, percentage: 0.07 },
-        { position: 6, percentage: 0.06 },
-        { position: 7, percentage: 0.05 },
-        { position: 8, percentage: 0.04 },
-        { position: 9, percentage: 0.03 },
-        { position: 10, percentage: 0.03 },
-      ];
-    } else {
-      structure = [
-        { position: 1, percentage: 0.22 },
-        { position: 2, percentage: 0.15 },
-        { position: 3, percentage: 0.1 },
-        { position: 4, percentage: 0.08 },
-        { position: 5, percentage: 0.06 },
         { position: 6, percentage: 0.05 },
         { position: 7, percentage: 0.04 },
         { position: 8, percentage: 0.035 },
@@ -162,17 +205,36 @@ export class TournamentManager {
         { position: 10, percentage: 0.025 },
         { position: 11, percentage: 0.02 },
         { position: 12, percentage: 0.02 },
-        { position: 13, percentage: 0.015 },
-        { position: 14, percentage: 0.015 },
-        { position: 15, percentage: 0.015 },
       ];
-    }
+    return [
+      { position: 1, percentage: 0.3 },
+      { position: 2, percentage: 0.2 },
+      { position: 3, percentage: 0.12 },
+      { position: 4, percentage: 0.08 },
+      { position: 5, percentage: 0.06 },
+      { position: 6, percentage: 0.05 },
+      { position: 7, percentage: 0.04 },
+      { position: 8, percentage: 0.035 },
+      { position: 9, percentage: 0.03 },
+      { position: 10, percentage: 0.025 },
+      { position: 11, percentage: 0.02 },
+      { position: 12, percentage: 0.015 },
+      { position: 13, percentage: 0.015 },
+      { position: 14, percentage: 0.005 },
+      { position: 15, percentage: 0.005 },
+    ];
+  }
+
+  private async setupPayoutStructure(tournamentId: number, numPlayers: number): Promise<void> {
+    await this.db.query('DELETE FROM tournament_payouts WHERE tournament_id = $1', [tournamentId]);
+
+    const structure = this.computePayoutStructure(numPlayers);
 
     for (const s of structure) {
       await this.db.query(
         `INSERT INTO tournament_payouts (tournament_id, position, percentage)
          VALUES ($1, $2, $3)
-         ON CONFLICT (tournament_id, position) DO NOTHING`,
+         ON CONFLICT (tournament_id, position) DO UPDATE SET percentage = EXCLUDED.percentage`,
         [tournamentId, s.position, s.percentage],
       );
     }
@@ -181,11 +243,28 @@ export class TournamentManager {
   // ============================================================
   // REGISTER
   // ============================================================
-  async register(tournamentId: number, userId: number): Promise<{ ok: boolean; error?: string }> {
+  async register(
+    tournamentId: number,
+    userId: number,
+  ): Promise<{ ok: boolean; error?: string }> {
     const t = await this.loadFromDB(tournamentId);
     if (!t) return { ok: false, error: 'tournament_not_found' };
 
-    if (t.status !== 'registering' && t.status !== 'scheduled') {
+    // 🔴 Sync currentLevel + status from DB FIRST
+    try {
+      const dbRow = await this.db.query(
+        'SELECT current_level, status FROM tournaments WHERE id = $1',
+        [tournamentId],
+      );
+      if (dbRow.rows.length > 0) {
+        t.currentLevel = dbRow.rows[0].current_level;
+        t.status = dbRow.rows[0].status as any;
+      }
+    } catch (e: any) {
+      console.error('[tournament] sync failed:', e.message);
+    }
+
+    if (t.status !== 'registering' && t.status !== 'scheduled' && t.status !== 'running') {
       return { ok: false, error: 'registration_closed' };
     }
 
@@ -194,15 +273,101 @@ export class TournamentManager {
       return { ok: false, error: 'tournament_full' };
     }
 
-    const existing = await this.db.query(
-      'SELECT id, status FROM tournament_entries WHERE tournament_id = $1 AND user_id = $2',
-      [tournamentId, userId],
-    );
-    if (existing.rows.length > 0 && existing.rows[0].status !== 'refunded') {
-      return { ok: false, error: 'already_registered' };
+    // Allow registration during 'running' if late reg is open
+    const isLateReg =
+      t.status === 'running' &&
+      t.config.lateRegLevel > 0 &&
+      t.currentLevel <= t.config.lateRegLevel &&
+      !t.lateRegClosed;
+
+    if (t.status === 'running' && !isLateReg) {
+      return { ok: false, error: 'registration_closed' };
     }
 
-    if (t.config.mode === 'real' && (t.config.buyIn > 0 || t.config.fee > 0)) {
+    if (isLateReg) {
+      console.log(
+        `[tournament] 🕐 late reg: user=${userId} joining #${tournamentId} at level ${t.currentLevel}/${t.config.lateRegLevel}`,
+      );
+    }
+
+    const existing = await this.db.query(
+      'SELECT id, status, re_entry_count FROM tournament_entries WHERE tournament_id = $1 AND user_id = $2',
+      [tournamentId, userId],
+    );
+
+    let isReEntry = false;
+    let newReEntryCount = 0;
+
+    if (existing.rows.length > 0) {
+      const e = existing.rows[0];
+
+      // Check if player is busted (stack=0) in tournament_players
+      let isBusted = false;
+      if (e.status === 'playing') {
+        const pRow = await this.db.query(
+          'SELECT stack FROM tournament_players WHERE tournament_id = $1 AND user_id = $2',
+          [tournamentId, userId],
+        );
+        if (pRow.rows.length > 0 && Number(pRow.rows[0].stack) <= 0) {
+          isBusted = true;
+          await this.db.query(
+            `UPDATE tournament_entries SET status = 'eliminated' WHERE tournament_id = $1 AND user_id = $2`,
+            [tournamentId, userId],
+          );
+          await this.db.query(
+            `UPDATE tournament_players SET status = 'eliminated', eliminated_at = NOW()
+             WHERE tournament_id = $1 AND user_id = $2`,
+            [tournamentId, userId],
+          );
+          const tPlayer = t.players.get(userId);
+          if (tPlayer) tPlayer.status = 'eliminated';
+          e.status = 'eliminated';
+        }
+      }
+
+      const eligibleForReEntry =
+        (e.status === 'eliminated' || isBusted) &&
+        t.config.allowReEntry &&
+        isLateReg;
+
+      if (e.status === 'refunded') {
+        // allow fresh registration
+      } else if (eligibleForReEntry) {
+        if (e.re_entry_count >= t.config.maxReEntries) {
+          return { ok: false, error: 'max_re_entries_reached' };
+        }
+        isReEntry = true;
+        newReEntryCount = (e.re_entry_count ?? 0) + 1;
+      } else {
+        return { ok: false, error: 'already_registered' };
+      }
+    }
+
+    // 🔴 D5.4: Check if user has an unused satellite ticket for this tournament
+    let hasTicket = false;
+    try {
+      const ticketRes = await this.db.query(
+        `SELECT id FROM satellite_tickets
+         WHERE user_id = $1 AND target_tournament_id = $2 AND used = FALSE
+         ORDER BY id ASC LIMIT 1`,
+        [userId, tournamentId],
+      );
+      if (ticketRes.rows.length > 0) {
+        hasTicket = true;
+        const ticketId = ticketRes.rows[0].id;
+        await this.db.query(
+          `UPDATE satellite_tickets SET used = TRUE, used_at = NOW() WHERE id = $1`,
+          [ticketId],
+        );
+        console.log(
+          `[tournament] 🎟️ user=${userId} used satellite ticket #${ticketId} for #${tournamentId}`,
+        );
+      }
+    } catch (e: any) {
+      console.error('[tournament] ticket check failed:', e.message);
+    }
+
+    if (!hasTicket && t.config.mode === 'real' && (t.config.buyIn > 0 || t.config.fee > 0)) {
       const total = t.config.buyIn + t.config.fee;
       const userAcc = await this.ledger.getUserAccountId(userId);
       const entryAcc = await this.ledger.getAccountId('SYSTEM_TOURNAMENT_ENTRY');
@@ -217,7 +382,9 @@ export class TournamentManager {
           { accountId: userAcc, amount: -total },
           { accountId: entryAcc, amount: total },
         ],
-        idempotencyKey: `tourney_entry_${tournamentId}_${userId}`,
+        idempotencyKey: isReEntry
+          ? `tourney_reentry_${tournamentId}_${userId}_${newReEntryCount}`
+          : `tourney_entry_${tournamentId}_${userId}`,
       });
 
       if (!ledgerResult.ok) {
@@ -225,22 +392,55 @@ export class TournamentManager {
       }
     }
 
-    await this.db.query(
-      `INSERT INTO tournament_entries
-         (tournament_id, user_id, status, starting_stack)
-       VALUES ($1, $2, 'registered', $3)
-       ON CONFLICT (tournament_id, user_id) DO UPDATE SET status = 'registered'`,
-      [tournamentId, userId, t.config.startingStack],
-    );
+    if (isReEntry) {
+      await this.db.query(
+        `UPDATE tournament_entries
+         SET status = 'registered', re_entry_count = $1
+         WHERE tournament_id = $2 AND user_id = $3`,
+        [newReEntryCount, tournamentId, userId],
+      );
+    } else {
+      await this.db.query(
+        `INSERT INTO tournament_entries
+           (tournament_id, user_id, status, starting_stack)
+         VALUES ($1, $2, 'registered', $3)
+         ON CONFLICT (tournament_id, user_id) DO UPDATE SET status = 'registered'`,
+        [tournamentId, userId, t.config.startingStack],
+      );
+    }
 
-    console.log(`[tournament] ✅ user=${userId} registered for #${tournamentId}`);
+    // Late reg OR re-entry → add to table
+    if (isLateReg || isReEntry) {
+      try {
+        if (isReEntry) {
+          const oldPlayer = t.players.get(userId);
+          if (oldPlayer) oldPlayer.status = 'active';
+          await this.db.query(
+            `UPDATE tournament_players
+             SET status = 'active', stack = $1, eliminated_at = NULL, final_position = NULL
+             WHERE tournament_id = $2 AND user_id = $3`,
+            [t.config.startingStack, tournamentId, userId],
+          );
+        }
+        await this.addLateRegPlayerToTable(tournamentId, userId, t);
+      } catch (e: any) {
+        console.error('[tournament] addLateRegPlayerToTable failed:', e.message);
+      }
+    }
+
+    console.log(
+      `[tournament] ✅ user=${userId} registered for #${tournamentId}${isLateReg ? ' (late)' : ''}${isReEntry ? ' (re-entry#' + newReEntryCount + ')' : ''}${hasTicket ? ' (ticket)' : ''}`,
+    );
     return { ok: true };
   }
 
   // ============================================================
   // UNREGISTER
   // ============================================================
-  async unregister(tournamentId: number, userId: number): Promise<{ ok: boolean; error?: string }> {
+  async unregister(
+    tournamentId: number,
+    userId: number,
+  ): Promise<{ ok: boolean; error?: string }> {
     const t = await this.loadFromDB(tournamentId);
     if (!t) return { ok: false, error: 'tournament_not_found' };
 
@@ -306,6 +506,8 @@ export class TournamentManager {
     if (entries.rows.length < t.config.minPlayers) {
       return { ok: false, error: 'not_enough_players' };
     }
+
+    await this.setupPayoutStructure(tournamentId, entries.rows.length);
 
     const totalBuyIn = entries.rows.length * t.config.buyIn;
     const totalFee = entries.rows.length * t.config.fee;
@@ -389,14 +591,19 @@ export class TournamentManager {
       );
     }
 
-    // Create game rooms
     await this.createGameRooms(tournamentId, t);
-
     this.startBlindTimer(tournamentId);
 
     console.log(
       `[tournament] ✅ #${tournamentId} started with ${players.length} players, ${numTables} tables`,
     );
+
+    if (this.io) {
+      this.io.emit(`tournament:${tournamentId}:started`, {
+        players: players.length,
+        tables: numTables,
+      });
+    }
     return { ok: true };
   }
 
@@ -435,9 +642,110 @@ export class TournamentManager {
     }
   }
 
+  // ============================================================
+  // LATE REG / RE-ENTRY: add player to smallest table
+  // ============================================================
+  private async addLateRegPlayerToTable(
+    tournamentId: number,
+    userId: number,
+    t: Tournament,
+  ): Promise<void> {
+    const uRes = await this.db.query('SELECT display_name FROM users WHERE id = $1', [userId]);
+    const displayName = uRes.rows[0]?.display_name ?? `Player ${userId}`;
+
+    const counts: { tableNumber: number; count: number }[] = [];
+    for (const [num, tbl] of t.tables.entries()) {
+      const active = tbl.seats.filter((s) => {
+        if (s === null) return false;
+        const p = t.players.get(s);
+        return p?.status === 'active';
+      }).length;
+      counts.push({ tableNumber: num, count: active });
+    }
+    if (counts.length === 0) {
+      console.log(`[tournament] late reg: no tables available for user=${userId}`);
+      return;
+    }
+    counts.sort((a, b) => a.count - b.count);
+
+    let targetTableNum = counts[0].tableNumber;
+    let emptySeat = -1;
+    for (const c of counts) {
+      const tbl = t.tables.get(c.tableNumber);
+      if (!tbl) continue;
+      const idx = tbl.seats.findIndex((s) => s === null);
+      if (idx >= 0) {
+        targetTableNum = c.tableNumber;
+        emptySeat = idx;
+        break;
+      }
+    }
+    if (emptySeat < 0) {
+      console.log(`[tournament] late reg: no empty seat for user=${userId}`);
+      return;
+    }
+
+    const startStack = t.config.startingStack;
+    t.players.set(userId, {
+      userId,
+      displayName,
+      stack: startStack,
+      tableNumber: targetTableNum,
+      seat: emptySeat,
+      status: 'active',
+    });
+    const tbl = t.tables.get(targetTableNum)!;
+    tbl.seats[emptySeat] = userId;
+
+    await this.db.query(
+      `INSERT INTO tournament_players
+         (tournament_id, user_id, stack, table_number, seat, status)
+       VALUES ($1, $2, $3, $4, $5, 'active')`,
+      [tournamentId, userId, startStack, targetTableNum, emptySeat],
+    );
+    await this.db.query(
+      `UPDATE tournament_entries SET status = 'playing' WHERE tournament_id = $1 AND user_id = $2`,
+      [tournamentId, userId],
+    );
+
+    const virtualTableId = 1_000_000 + tournamentId * 1000 + targetTableNum;
+    const room = gameManager.getRoom(virtualTableId);
+    if (room) {
+      const playerId = `user_${userId}`;
+      room.players.set(playerId, {
+        userId,
+        playerId,
+        displayName,
+        socketId: '',
+        tournamentStack: startStack,
+      });
+      console.log(
+        `[tournament] 🕐 late reg: added user=${userId} to table ${targetTableNum} seat ${emptySeat} (vTable=${virtualTableId})`,
+      );
+    } else {
+      console.log(
+        `[tournament] late reg: room ${virtualTableId} not found; player will join via socket`,
+      );
+    }
+
+    if (this.io) {
+      this.io.emit(`tournament:${tournamentId}:late_register`, {
+        userId,
+        displayName,
+        tableNumber: targetTableNum,
+        seat: emptySeat,
+        stack: startStack,
+      });
+    }
+  }
+
+  // ============================================================
+  // TIMERS
+  // ============================================================
   private startBlindTimer(tournamentId: number): void {
     const t = this.tournaments.get(tournamentId);
     if (!t) return;
+    if (t.status === 'paused') return;
 
     if (t.levelTimer) clearTimeout(t.levelTimer);
 
@@ -454,8 +762,14 @@ export class TournamentManager {
 
   private async advanceLevel(tournamentId: number): Promise<void> {
     const t = this.tournaments.get(tournamentId);
-    if (!t || t.status !== 'running') return;
+    if (!t) return;
+    if (t.status === 'paused') {
+      console.log(`[tournament] ⏸️ advanceLevel skipped (#${tournamentId} is paused)`);
+      return;
+    }
+    if (t.status !== 'running' && t.status !== 'final_table') return;
 
+    const prevLevel = t.currentLevel;
     t.currentLevel += 1;
     t.levelStartedAt = Date.now();
 
@@ -465,30 +779,220 @@ export class TournamentManager {
     );
 
     const level = await this.blindService.getLevel(t.config.blindStructureId, t.currentLevel);
-    if (level) {
-      const activeCount = [...t.players.values()].filter((p) => p.status === 'active').length;
-      await this.db.query(
-        `INSERT INTO tournament_level_log (tournament_id, level, sb, bb, ante, players_remaining)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         ON CONFLICT (tournament_id, level) DO NOTHING`,
-        [tournamentId, t.currentLevel, level.sb, level.bb, level.ante, activeCount],
-      );
 
-      // Update blinds in game rooms
-      gameManager.updateRoomBlinds(tournamentId, level.sb, level.bb, level.ante);
+    if (!level) {
+      this.startBlindTimer(tournamentId);
+      return;
+    }
 
+    // BREAK handling
+    if (level.isBreak) {
+      console.log(`[tournament] ☕ #${tournamentId} entered BREAK at level ${t.currentLevel}`);
       if (this.io) {
-        this.io.emit(`tournament:${tournamentId}:level`, {
+        this.io.emit(`tournament:${tournamentId}:break_start`, {
           level: t.currentLevel,
-          sb: level.sb,
-          bb: level.bb,
-          ante: level.ante,
-          isBreak: level.isBreak,
+          durationSec: level.durationSec,
+        });
+      }
+      this.startBlindTimer(tournamentId);
+      return;
+    }
+
+    const activeCount = [...t.players.values()].filter((p) => p.status === 'active').length;
+    await this.db.query(
+      `INSERT INTO tournament_level_log (tournament_id, level, sb, bb, ante, players_remaining)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (tournament_id, level) DO NOTHING`,
+      [tournamentId, t.currentLevel, level.sb, level.bb, level.ante, activeCount],
+    );
+
+    gameManager.updateRoomBlinds(tournamentId, level.sb, level.bb, level.ante);
+
+    // Late reg close check
+    if (
+      !t.lateRegClosed &&
+      t.config.lateRegLevel > 0 &&
+      prevLevel <= t.config.lateRegLevel &&
+      t.currentLevel > t.config.lateRegLevel
+    ) {
+      t.lateRegClosed = true;
+      console.log(`[tournament] 🔒 late registration CLOSED at level ${t.currentLevel}`);
+      if (this.io) {
+        this.io.emit(`tournament:${tournamentId}:late_reg_closed`, {
+          closedAtLevel: t.currentLevel,
+          totalPlayers: t.players.size,
         });
       }
     }
 
+    // Break end
+    const prevLevelData = await this.blindService.getLevel(
+      t.config.blindStructureId,
+      prevLevel,
+    );
+    if (prevLevelData?.isBreak && this.io) {
+      this.io.emit(`tournament:${tournamentId}:break_end`, {
+        newLevel: t.currentLevel,
+        sb: level.sb,
+        bb: level.bb,
+        ante: level.ante,
+      });
+    }
+
+    if (this.io) {
+      this.io.emit(`tournament:${tournamentId}:level`, {
+        level: t.currentLevel,
+        sb: level.sb,
+        bb: level.bb,
+        ante: level.ante,
+        isBreak: false,
+      });
+    }
+
     this.startBlindTimer(tournamentId);
+  }
+
+  // ============================================================
+  // AUTO-START SCHEDULER
+  // ============================================================
+  startAutoStartScheduler(intervalMs: number = 30_000): void {
+    console.log(`[tournament] 🚀 auto-start scheduler running (every ${intervalMs / 1000}s)`);
+    this.tickAutoStart().catch((e) => console.error('[auto-start] tick error:', e.message));
+    const timer = setInterval(() => {
+      this.tickAutoStart().catch((e) => console.error('[auto-start] tick error:', e.message));
+    }, intervalMs);
+    if (timer.unref) timer.unref();
+  }
+
+  private async tickAutoStart(): Promise<void> {
+    try {
+      const res = await this.db.query(
+        `SELECT id, name, scheduled_start FROM tournaments
+         WHERE status = 'scheduled'
+           AND scheduled_start IS NOT NULL
+           AND scheduled_start <= NOW()
+         ORDER BY scheduled_start ASC
+         LIMIT 20`,
+      );
+      for (const row of res.rows) {
+        const result = await this.start(row.id);
+        if (result.ok) {
+          console.log(`[tournament] 🚀 auto-started #${row.id} "${row.name}"`);
+        } else {
+          console.log(`[tournament] ⏳ auto-start #${row.id} deferred: ${result.error}`);
+        }
+      }
+    } catch (e: any) {
+      console.error('[auto-start] error:', e.message);
+    }
+  }
+
+  // ============================================================
+  // PAUSE / RESUME
+  // ============================================================
+  async pause(tournamentId: number): Promise<{ ok: boolean; error?: string }> {
+    const t = this.tournaments.get(tournamentId) ?? (await this.loadFromDB(tournamentId));
+    if (!t) return { ok: false, error: 'tournament_not_found' };
+    if (t.status !== 'running' && t.status !== 'final_table') {
+      return { ok: false, error: 'not_running' };
+    }
+
+    const level = await this.blindService.getLevel(t.config.blindStructureId, t.currentLevel);
+    let remainingSec = 0;
+    if (level) {
+      const elapsed = (Date.now() - t.levelStartedAt) / 1000;
+      remainingSec = Math.max(0, level.durationSec - elapsed);
+    }
+
+    t.pausedAt = Date.now();
+    t.pausedRemainingSec = remainingSec;
+
+    if (t.levelTimer) {
+      clearTimeout(t.levelTimer);
+      t.levelTimer = null;
+    }
+
+    const prevStatus = t.status;
+    t.status = 'paused';
+
+    await this.db.query(`UPDATE tournaments SET status = 'paused' WHERE id = $1`, [tournamentId]);
+
+    if (this.io) {
+      this.io.emit(`tournament:${tournamentId}:paused`, {
+        pausedAt: t.pausedAt,
+        remainingSec: Math.round(remainingSec),
+        prevStatus,
+      });
+    }
+
+    console.log(
+      `[tournament] ⏸️ #${tournamentId} paused at level ${t.currentLevel} (${Math.round(remainingSec)}s remaining)`,
+    );
+    return { ok: true };
+  }
+
+  async resume(tournamentId: number): Promise<{ ok: boolean; error?: string }> {
+    const t = this.tournaments.get(tournamentId) ?? (await this.loadFromDB(tournamentId));
+    if (!t) return { ok: false, error: 'tournament_not_found' };
+    if (t.status !== 'paused') return { ok: false, error: 'not_paused' };
+
+    t.status = 'running';
+    t.levelStartedAt = Date.now();
+    t.pausedAt = undefined;
+
+    await this.db.query(
+      `UPDATE tournaments SET status = 'running', level_started_at = NOW() WHERE id = $1`,
+      [tournamentId],
+    );
+
+    if (t.levelTimer) clearTimeout(t.levelTimer);
+    const remainingMs = (t.pausedRemainingSec ?? 0) * 1000;
+    if (remainingMs > 0) {
+      t.levelTimer = setTimeout(() => {
+        this.advanceLevel(tournamentId).catch((e) =>
+          console.error('[tournament] advanceLevel after resume failed:', e.message),
+        );
+      }, remainingMs);
+      console.log(
+        `[tournament] ▶️ #${tournamentId} resumed with ${Math.round(remainingMs / 1000)}s on level ${t.currentLevel}`,
+      );
+    } else {
+      await this.advanceLevel(tournamentId);
+      console.log(`[tournament] ▶️ #${tournamentId} resumed, level advanced`);
+    }
+    t.pausedRemainingSec = undefined;
+
+    if (this.io) {
+      this.io.emit(`tournament:${tournamentId}:resumed`, {
+        currentLevel: t.currentLevel,
+      });
+    }
+
+    return { ok: true };
+  }
+
+  getStatus(tournamentId: number): TournamentStatus | null {
+    const t = this.tournaments.get(tournamentId);
+    return t ? t.status : null;
+  }
+
+  // ============================================================
+  // D5.4: SATELLITE TICKETS
+  // ============================================================
+  async getUserTickets(userId: number): Promise<any[]> {
+    const res = await this.db.query(
+      `SELECT st.id, st.target_tournament_id, st.source_tournament_id, st.position,
+              st.used, st.created_at,
+              tgt.name AS target_name, tgt.scheduled_start AS target_start,
+              src.name AS source_name
+       FROM satellite_tickets st
+       LEFT JOIN tournaments tgt ON tgt.id = st.target_tournament_id
+       LEFT JOIN tournaments src ON src.id = st.source_tournament_id
+       WHERE st.user_id = $1
+       ORDER BY st.id DESC LIMIT 50`,
+      [userId],
+    );
+    return res.rows;
   }
 
   // ============================================================
@@ -505,7 +1009,9 @@ export class TournamentManager {
       conditions.push(`status = $${idx++}`);
       params.push(filter.status);
     } else {
-      conditions.push(`status IN ('scheduled', 'registering', 'running', 'final_table')`);
+      conditions.push(
+        `status IN ('scheduled', 'registering', 'running', 'final_table', 'paused')`,
+      );
     }
 
     if (filter.variant) {
@@ -527,7 +1033,7 @@ export class TournamentManager {
        FROM tournaments t
        WHERE ${conditions.join(' AND ')}
        ORDER BY 
-         CASE status WHEN 'running' THEN 0 WHEN 'final_table' THEN 1 WHEN 'registering' THEN 2 WHEN 'scheduled' THEN 3 ELSE 4 END,
+         CASE status WHEN 'running' THEN 0 WHEN 'final_table' THEN 1 WHEN 'paused' THEN 2 WHEN 'registering' THEN 3 WHEN 'scheduled' THEN 4 ELSE 5 END,
          scheduled_start ASC NULLS LAST,
          id DESC
        LIMIT $${idx}`,
@@ -549,7 +1055,7 @@ export class TournamentManager {
 
     const base = this.serializeRow(res.rows[0]);
     const players = await this.db.query(
-      `SELECT tp.user_id, u.display_name, tp.stack, tp.table_number, tp.seat, tp.status, tp.final_position
+      `SELECT tp.user_id, u.display_name, tp.stack, tp.table_number, tp.seat, tp.status, tp.final_position, tp.bounty_earned
        FROM tournament_players tp
        JOIN users u ON u.id = tp.user_id
        WHERE tp.tournament_id = $1
@@ -573,6 +1079,7 @@ export class TournamentManager {
         seat: p.seat,
         status: p.status,
         finalPosition: p.final_position,
+        bountyEarned: Number(p.bounty_earned ?? 0),
         virtualTableId:
           p.table_number != null ? 1_000_000 + tournamentId * 1000 + p.table_number : null,
       })),
@@ -600,6 +1107,13 @@ export class TournamentManager {
       guaranteed: Number(r.guaranteed),
       scheduledStart: r.scheduled_start,
       lateRegMin: r.late_reg_min,
+      lateRegLevel: r.late_reg_level ?? 0,
+      allowReEntry: r.allow_re_entry ?? false,
+      maxReEntries: r.max_re_entries ?? 1,
+      isBounty: r.is_bounty ?? false,
+      bountyAmount: Number(r.bounty_amount ?? 0),
+      satelliteTargetId: r.satellite_target_id ? Number(r.satellite_target_id) : null,
+      seatsAwarded: Number(r.seats_awarded ?? 0),
       blindStructureId: r.blind_structure_id,
       currentLevel: r.current_level,
       levelStartedAt: r.level_started_at,
@@ -650,6 +1164,13 @@ export class TournamentManager {
         guaranteed: Number(r.guaranteed),
         scheduledStart: r.scheduled_start,
         lateRegMin: r.late_reg_min,
+        lateRegLevel: r.late_reg_level ?? 0,
+        allowReEntry: r.allow_re_entry ?? false,
+        maxReEntries: r.max_re_entries ?? 1,
+        isBounty: r.is_bounty ?? false,
+        bountyAmount: Number(r.bounty_amount ?? 0),
+        satelliteTargetId: r.satellite_target_id ? Number(r.satellite_target_id) : null,
+        seatsAwarded: Number(r.seats_awarded ?? 0),
         blindStructureId: r.blind_structure_id,
         isPrivate: r.is_private,
         createdBy: r.created_by,
@@ -666,13 +1187,13 @@ export class TournamentManager {
 
     if (t.status === 'running' || t.status === 'final_table' || t.status === 'paused') {
       const players = await this.db.query(
-        'SELECT * FROM tournament_players WHERE tournament_id = $1',
+        'SELECT tp.*, u.display_name FROM tournament_players tp JOIN users u ON u.id = tp.user_id WHERE tp.tournament_id = $1',
         [tournamentId],
       );
       for (const p of players.rows) {
         t.players.set(p.user_id, {
           userId: p.user_id,
-          displayName: '',
+          displayName: p.display_name ?? '',
           stack: Number(p.stack),
           tableNumber: p.table_number,
           seat: p.seat,
@@ -699,7 +1220,7 @@ export class TournamentManager {
   }
 
   // ============================================================
-  // D3: ELIMINATION
+  // ELIMINATION
   // ============================================================
   async eliminatePlayer(
     tournamentId: number,
@@ -740,6 +1261,7 @@ export class TournamentManager {
         userId,
         finalPosition,
         remaining: activeCount - 1,
+        eliminatedBy: eliminatedBy ?? null,
       });
     }
 
@@ -769,7 +1291,7 @@ export class TournamentManager {
   }
 
   // ============================================================
-  // D3: TABLE BALANCING
+  // TABLE BALANCING
   // ============================================================
   private async rebalanceIfNeeded(tournamentId: number): Promise<void> {
     const t = this.tournaments.get(tournamentId);
@@ -840,7 +1362,7 @@ export class TournamentManager {
   }
 
   // ============================================================
-  // D3: FINAL TABLE
+  // FINAL TABLE
   // ============================================================
   private async checkAndConsolidate(tournamentId: number): Promise<void> {
     const t = this.tournaments.get(tournamentId);
@@ -899,13 +1421,17 @@ export class TournamentManager {
   }
 
   // ============================================================
-  // D4: FINISH + PAYOUTS
+  // FINISH + PAYOUTS (D5.4: supports satellite mode)
   // ============================================================
   private async finishTournament(tournamentId: number): Promise<void> {
     const t = this.tournaments.get(tournamentId);
     if (!t) return;
 
-    console.log(`[tournament] 🏁 finishing #${tournamentId}`);
+    const isFree = t.config.mode === 'free';
+    const isSatellite = !!(t.config.satelliteTargetId && t.config.seatsAwarded > 0);
+    console.log(
+      `[tournament] 🏁 finishing #${tournamentId} (mode=${t.config.mode}${isSatellite ? ', SATELLITE' : ''})`,
+    );
 
     const payoutsRes = await this.db.query(
       `SELECT position, percentage FROM tournament_payouts
@@ -914,41 +1440,152 @@ export class TournamentManager {
     );
 
     const totalPrize = t.totalPrizePool;
+    const prizeAcc = !isFree ? await this.ledger.getAccountId('SYSTEM_TOURNAMENT_PRIZE') : null;
 
-    for (const po of payoutsRes.rows) {
-      const position = po.position;
-      const percentage = Number(po.percentage);
+    // 🔴 D5.4: Satellite mode — award tickets instead of money
+    if (isSatellite) {
+      const sorted = [...t.players.values()]
+        .filter((p) => p.finalPosition != null)
+        .sort((a, b) => (a.finalPosition ?? 999) - (b.finalPosition ?? 999));
 
-      const winner = [...t.players.values()].find((p) => p.finalPosition === position);
-      if (!winner) continue;
+      const seatWinners = sorted.slice(0, t.config.seatsAwarded);
 
-      const amount = Math.round(totalPrize * percentage * 100) / 100;
-      if (amount <= 0) continue;
+      for (const winner of seatWinners) {
+        try {
+          await this.db.query(
+            `INSERT INTO satellite_tickets
+               (user_id, target_tournament_id, source_tournament_id, position)
+             VALUES ($1, $2, $3, $4)
+             ON CONFLICT (target_tournament_id, source_tournament_id, position) DO NOTHING`,
+            [winner.userId, t.config.satelliteTargetId, tournamentId, winner.finalPosition],
+          );
 
-      const prizeAcc = await this.ledger.getAccountId('SYSTEM_TOURNAMENT_PRIZE');
-      const userAcc = await this.ledger.getUserAccountId(winner.userId);
-      if (!prizeAcc || !userAcc) continue;
+          await this.db.query(
+            `UPDATE tournament_entries SET status = 'qualified', payout_amount = 0
+             WHERE tournament_id = $1 AND user_id = $2`,
+            [tournamentId, winner.userId],
+          );
 
-      const result = await this.ledger.record({
-        kind: 'TOURNAMENT_PRIZE',
-        userId: winner.userId,
-        ref: `tourney_${tournamentId}_prize_pos_${position}`,
-        meta: { tournamentId, position, percentage },
-        entries: [
-          { accountId: prizeAcc, amount: -amount },
-          { accountId: userAcc, amount: amount },
-        ],
-        idempotencyKey: `tourney_prize_${tournamentId}_${winner.userId}`,
-      });
+          if (this.io) {
+            this.io.emit(`tournament:${tournamentId}:ticket_won`, {
+              userId: winner.userId,
+              targetTournamentId: t.config.satelliteTargetId,
+              position: winner.finalPosition,
+            });
+          }
 
-      if (result.ok) {
+          console.log(
+            `[satellite] 🎟️ #${tournamentId}: user=${winner.userId} (pos ${winner.finalPosition}) → ticket to #${t.config.satelliteTargetId}`,
+          );
+        } catch (e: any) {
+          console.error('[satellite] ticket award failed:', e.message);
+        }
+      }
+    } else {
+      // Normal payout loop
+      for (const po of payoutsRes.rows) {
+        const position = po.position;
+        const percentage = Number(po.percentage);
+
+        const winner = [...t.players.values()].find((p) => p.finalPosition === position);
+        if (!winner) {
+          console.log(
+            `[tournament] ⚠️ position ${position} unclaimed (${(percentage * 100).toFixed(1)}% = $${(totalPrize * percentage).toFixed(2)} stays in prize account)`,
+          );
+          continue;
+        }
+
+        const amount = Math.round(totalPrize * percentage * 100) / 100;
+        if (amount <= 0) continue;
+
+        if (isFree) {
+          try {
+            await this.db.query(
+              `INSERT INTO free_chips (user_id, chips) VALUES ($1, $2)
+               ON CONFLICT (user_id) DO UPDATE SET chips = free_chips.chips + $2`,
+              [winner.userId, amount],
+            );
+            await this.db.query(
+              `INSERT INTO play_money_log (user_id, delta, reason, balance_after)
+               VALUES ($1, $2, 'tournament_prize',
+                 (SELECT chips FROM free_chips WHERE user_id = $1))`,
+              [winner.userId, amount],
+            );
+            console.log(
+              `[tournament] 🎁 free chips pos=${position} user=${winner.userId} +${amount}`,
+            );
+          } catch (e: any) {
+            console.error('[tournament] free chips award failed:', e.message);
+          }
+        } else {
+          const userAcc = await this.ledger.getUserAccountId(winner.userId);
+          if (!prizeAcc || !userAcc) {
+            console.error(
+              `[tournament] ❌ missing accounts for user=${winner.userId}`,
+            );
+            continue;
+          }
+
+          const result = await this.ledger.record({
+            kind: 'TOURNAMENT_PRIZE',
+            userId: winner.userId,
+            ref: `tourney_${tournamentId}_prize_pos_${position}`,
+            meta: { tournamentId, position, percentage },
+            entries: [
+              { accountId: prizeAcc, amount: -amount },
+              { accountId: userAcc, amount: amount },
+            ],
+            idempotencyKey: `tourney_prize_${tournamentId}_${winner.userId}`,
+          });
+
+          if (result.ok) {
+            console.log(`[tournament] 💰 prize pos=${position} user=${winner.userId} $${amount}`);
+          } else {
+            console.error(`[tournament] ❌ ledger failed:`, result.error);
+          }
+        }
+
         await this.db.query(
           `UPDATE tournament_entries SET status = 'cashed', payout_amount = $1
            WHERE tournament_id = $2 AND user_id = $3`,
           [amount, tournamentId, winner.userId],
         );
-        console.log(`[tournament] 💰 prize pos=${position} user=${winner.userId} $${amount}`);
       }
+    }
+    // 🔴 D6.2: Award tournament points for the current season
+    try {
+      const season = await this.seasons.ensureActiveSeason();
+
+      // Attach this tournament to the season if not already
+      if (!t.config.id) {
+        // no-op; the tournament may have been created outside the manager
+      }
+      await this.db.query(
+        `UPDATE tournaments SET season_id = $1 WHERE id = $2 AND season_id IS NULL`,
+        [season.id, tournamentId],
+      );
+
+      const totalPlayers = [...t.players.values()].length;
+      const buyIn = t.config.buyIn;
+
+      for (const p of t.players.values()) {
+        const pos = p.finalPosition;
+        if (!pos) continue;
+        const pts = this.seasons.computePoints(pos, totalPlayers, buyIn);
+        if (pts <= 0) continue;
+        await this.db.query(
+          `UPDATE tournament_entries
+           SET points_earned = $1
+           WHERE tournament_id = $2 AND user_id = $3`,
+          [pts, tournamentId, p.userId],
+        );
+      }
+
+      console.log(
+        `[season] 📊 #${tournamentId}: awarded points to ${totalPlayers} players (season #${season.id})`,
+      );
+    } catch (e: any) {
+      console.error('[season] points award failed:', e.message);
     }
 
     const winner = [...t.players.values()].find((p) => p.finalPosition === 1);
@@ -971,6 +1608,8 @@ export class TournamentManager {
       this.io.emit(`tournament:${tournamentId}:finished`, {
         winner: winner?.userId,
         prizePool: totalPrize,
+        mode: t.config.mode,
+        isSatellite,
       });
     }
 
@@ -1011,9 +1650,13 @@ export class TournamentManager {
   }
 
   // ============================================================
-  // Called by game-manager after each hand
+  // Sync after each hand
   // ============================================================
-  async syncStacksAndEliminate(tournamentId: number, room: any): Promise<void> {
+  async syncStacksAndEliminate(
+    tournamentId: number,
+    room: any,
+    handResult?: any,
+  ): Promise<void> {
     const t = this.tournaments.get(tournamentId) ?? (await this.loadFromDB(tournamentId));
     if (!t) return;
 
@@ -1034,8 +1677,56 @@ export class TournamentManager {
       if (stack <= 0) busted.push(userId);
     }
 
+    // Determine killer
+    let killerUserId: number | undefined;
+    if (handResult && Array.isArray(handResult.winners) && handResult.winners.length > 0) {
+      const winnerSeat = handResult.winners[0];
+      const winnerSeatObj = room.game.state.seats[winnerSeat];
+      if (winnerSeatObj) killerUserId = winnerSeatObj.userId;
+    }
+
     for (const userId of busted) {
-      await this.eliminatePlayer(tournamentId, userId);
+      const killer = killerUserId && killerUserId !== userId ? killerUserId : undefined;
+      await this.eliminatePlayer(tournamentId, userId, killer);
+
+      if (t.config.isBounty && t.config.bountyAmount > 0 && killer) {
+        const killerPlayer = t.players.get(killer);
+        if (
+          killerPlayer &&
+          (killerPlayer.status === 'active' || killerPlayer.status === 'winner')
+        ) {
+          const bounty = t.config.bountyAmount;
+          const newStack = Math.round((killerPlayer.stack + bounty) * 100) / 100;
+          killerPlayer.stack = newStack;
+
+          await this.db.query(
+            `UPDATE tournament_players
+             SET stack = $1, bounty_earned = bounty_earned + $2
+             WHERE tournament_id = $3 AND user_id = $4`,
+            [newStack, bounty, tournamentId, killer],
+          );
+
+          const killerSeatIdx = room.game.state.seats.findIndex(
+            (s: any) => s.userId === killer,
+          );
+          if (killerSeatIdx >= 0) {
+            room.game.state.seats[killerSeatIdx].stack = newStack;
+          }
+
+          console.log(
+            `[tournament] 💰 bounty: ${killerPlayer.displayName} +$${bounty} (killed user=${userId})`,
+          );
+
+          if (this.io) {
+            this.io.emit(`tournament:${tournamentId}:bounty`, {
+              killerUserId: killer,
+              victimUserId: userId,
+              amount: bounty,
+              newStack,
+            });
+          }
+        }
+      }
     }
 
     if (busted.length > 0) {

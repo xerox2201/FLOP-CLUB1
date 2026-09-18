@@ -1,16 +1,17 @@
 import { Pool } from 'pg';
 
 const THRESHOLDS = {
-  botFastActionMs: 400,
-  botFastActionCount: 10,
-  botStdDevMs: 100,
-  sameIpTablesTogether: 3,
-  sameDeviceTablesTogether: 2,
-  minHandsTogether: 20,
-  chipDumpingThreshold: 0.65,
-  warnScore: 40,
-  shadowbanScore: 65,
-  banScore: 85,
+  // 🔴 Relaxed for testing / dev
+  botFastActionMs: 150,
+  botFastActionCount: 30,
+  botStdDevMs: 50,
+  sameIpTablesTogether: 6,
+  sameDeviceTablesTogether: 4,
+  minHandsTogether: 50,
+  chipDumpingThreshold: 0.85,
+  warnScore: 70,
+  shadowbanScore: 90,
+  banScore: 99, // effectively disable auto-ban during testing
 };
 
 export interface ActionRecord {

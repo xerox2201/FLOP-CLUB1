@@ -1,177 +1,237 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
-  import TopBar from '../components/TopBar.svelte';
-  import Avatar from '../components/Avatar.svelte';
-  import { api } from '../lib/api';
-  import { t } from '../i18n';
+  import { onMount } from 'svelte'
+  import { api } from '../lib/api'
 
-  let loading = true;
-  let period: any = null;
-  let entries: any[] = [];
-  let myEntry: any = null;
-  let myRank: number | null = null;
-  let displayPrizePool = 0;
-  let refreshTimer: any = null;
-
-  function fmt(n: any): string {
-    return Number(Number(n).toFixed(2)).toFixed(2);
+  type Entry = {
+    rank: number
+    userId: string
+    name: string
+    avatar: string
+    frame?: string
+    points: number
   }
 
-  function medal(rank: number): string {
-    if (rank === 1) return '🥇';
-    if (rank === 2) return '🥈';
-    if (rank === 3) return '🥉';
-    return `#${rank}`;
-  }
-
-  function handsLabel(n: number): string {
-    return n === 1 ? 'hand' : 'hands';
-  }
-
-  async function loadAll() {
-    const [cur, me] = await Promise.all([api.leaderboardCurrent(), api.leaderboardMe()]);
-    if (cur.ok && cur.data) {
-      period = cur.data.period;
-      entries = cur.data.entries;
-      displayPrizePool = cur.data.livePrizePool ?? 0;
-    }
-    if (me.ok && me.data) {
-      myEntry = me.data.entry;
-      myRank = me.data.liveRank;
-    }
-    loading = false;
-  }
-
-  async function refresh() {
-    const res = await api.leaderboardCurrent();
-    if (res.ok && res.data) {
-      entries = res.data.entries;
-      period = res.data.period;
-      displayPrizePool = res.data.livePrizePool ?? 0;
-    }
-  }
+  let entries: Entry[] = []
+  let loading = true
 
   onMount(async () => {
-    await loadAll();
-    refreshTimer = setInterval(refresh, 5000);
-  });
+    try {
+      const res = await api.get('/api/leaderboard/season')
+      entries = res?.entries ?? res ?? []
+    } catch (e) {
+      console.error('[Leaderboard] load failed', e)
+      entries = []
+    } finally {
+      loading = false
+    }
+  })
 
-  onDestroy(() => {
-    if (refreshTimer) clearInterval(refreshTimer);
-  });
+  const first  = $derived(entries[0] ?? null)
+  const second = $derived(entries[1] ?? null)
+  const third  = $derived(entries[2] ?? null)
+  const rest   = $derived(entries.slice(3))
+
+  function medalFor(rank: 1 | 2 | 3) {
+    if (rank === 1) return 'medal-gold'
+    if (rank === 2) return 'medal-silver'
+    return 'medal-bronze'
+  }
 </script>
 
-<div class="px-4 pb-28">
-  <TopBar />
-  <div class="flex items-center justify-between mt-3 mb-4">
-    <h1 class="text-2xl font-extrabold">{$t('leaderboard.title')}</h1>
-    {#if period}
-      <span
-        class="text-[9px] rounded-full px-2.5 py-1 font-mono text-white/60"
-        style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.25);"
-      >
-        {period.period_start?.slice(5, 10)} → {period.period_end?.slice(5, 10)}
-      </span>
-    {/if}
-  </div>
-
-  {#if period}
-    <div
-      class="rounded-3xl p-4 mb-5 relative overflow-hidden"
-      style="background: linear-gradient(135deg, rgba(244,201,93,0.2), rgba(168,121,34,0.08)); border: 1px solid rgba(244,201,93,0.35); box-shadow: 0 8px 24px rgba(0,0,0,0.4);"
-    >
-      <div
-        class="absolute -top-8 -right-8 w-40 h-40 rounded-full opacity-25"
-        style="background: radial-gradient(circle, #f4c95d, transparent 70%);"
-      ></div>
-
-      <div class="flex items-center gap-2 mb-1 relative">
-        <p class="text-[10px] uppercase tracking-widest text-gold/80 font-bold">
-          {$t('leaderboard.prizePool')}
-        </p>
-        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span class="text-[9px] text-emerald-300 font-bold">LIVE</span>
-      </div>
-      <p class="text-5xl font-extrabold text-gold-gradient tabular-nums leading-tight">
-        ${fmt(displayPrizePool)}
-      </p>
-      <p class="text-[11px] text-white/60 mt-2 relative">
-        {$t('leaderboard.top30Paid')}
-      </p>
-    </div>
-  {/if}
+<div class="lb-page">
+  <header class="page-header">
+    <h1>لیدربورد فصل</h1>
+  </header>
 
   {#if loading}
-    <p class="text-white/40 text-center py-12">{$t('common.loading')}</p>
+    <div class="state">در حال بارگذاری…</div>
   {:else if entries.length === 0}
-    <div class="card text-center py-10">
-      <p class="text-4xl mb-2">🏅</p>
-      <p class="text-white/50 text-sm">{$t('leaderboard.noData')}</p>
-    </div>
+    <div class="state">هنوز امتیازی ثبت نشده</div>
   {:else}
-    <div class="space-y-2">
-      {#each entries as e (e.user_id)}
-        {@const isMe = e.user_id === myEntry?.user_id}
-        {@const rank = e.rank || 0}
-        <div
-          class="rounded-2xl p-3 flex items-center gap-3 {isMe ? 'ring-2 ring-gold' : ''}"
-          style="background: {rank === 1
-            ? 'linear-gradient(135deg, rgba(244,201,93,0.15), rgba(168,121,34,0.05))'
-            : rank <= 3
-              ? 'linear-gradient(135deg, rgba(139,92,246,0.12), rgba(109,40,217,0.04))'
-              : 'rgba(16,26,58,0.6)'}; border: 1px solid {rank === 1
-            ? 'rgba(244,201,93,0.4)'
-            : 'rgba(139,92,246,0.15)'};"
-        >
-          <div
-            class="text-lg font-extrabold w-9 text-center shrink-0 {rank === 1
-              ? 'text-gold'
-              : rank <= 3
-                ? 'text-white'
-                : 'text-white/50'}"
-          >
-            {medal(rank)}
-          </div>
-          <Avatar avatarId={e.avatar_id || 'spade'} size="sm" />
-          <div class="flex-1 min-w-0">
-            <p class="font-bold text-sm truncate text-white">
-              {e.display_name}
-            </p>
-            <p class="text-[10px] text-white/50">
-              {e.hands_played}
-              {handsLabel(e.hands_played)}
-            </p>
-          </div>
-          <div class="text-right shrink-0">
-            <p class="text-sm font-bold text-emerald-400 tabular-nums">
-              +${fmt(e.total_won_usd)}
-            </p>
-            {#if e.prize_usd > 0}
-              <p class="text-[10px] text-gold font-bold tabular-nums">
-                🏆 ${fmt(e.prize_usd)}
-              </p>
-            {/if}
-          </div>
-        </div>
-      {/each}
-    </div>
-  {/if}
+    <div class="podium">
+      <!-- نفر دوم -->
+      <div class="slot slot-2">
+        {#if second}
+          <span class="medal {medalFor(2)}" aria-hidden="true"></span>
+          <img class="avatar" src={second.avatar} alt={second.name} />
+          <span class="name">{second.name}</span>
+          <span class="points">{second.points.toLocaleString()}</span>
+        {:else}
+          <div class="empty-slot">—</div>
+        {/if}
+      </div>
 
-  {#if myEntry || myRank}
-    <div
-      class="fixed bottom-20 left-4 right-4 max-w-[480px] mx-auto rounded-2xl p-3 flex items-center gap-3 z-30"
-      style="background: rgba(8,13,36,0.95); border: 1px solid rgba(244,201,93,0.4); backdrop-filter: blur(16px); box-shadow: 0 8px 24px rgba(0,0,0,0.6);"
-    >
-      <span class="text-gold font-extrabold text-lg tabular-nums">
-        {myRank ? `#${myRank}` : '—'}
-      </span>
-      <div class="flex-1">
-        <p class="text-xs font-bold text-white">{$t('leaderboard.yourRank')}</p>
-        <p class="text-[10px] text-white/50">
-          {myEntry?.hands_played || 0}
-          {handsLabel(myEntry?.hands_played || 0)} · +${fmt(myEntry?.total_won_usd || 0)}
-        </p>
+      <!-- نفر اول -->
+      <div class="slot slot-1">
+        {#if first}
+          <img class="crown" src="/crown.png" alt="" aria-hidden="true" />
+          <span class="medal {medalFor(1)}" aria-hidden="true"></span>
+          <img class="avatar avatar-lg" src={first.avatar} alt={first.name} />
+          <span class="name">{first.name}</span>
+          <span class="points">{first.points.toLocaleString()}</span>
+        {:else}
+          <div class="empty-slot">—</div>
+        {/if}
+      </div>
+
+      <!-- نفر سوم -->
+      <div class="slot slot-3">
+        {#if third}
+          <span class="medal {medalFor(3)}" aria-hidden="true"></span>
+          <img class="avatar" src={third.avatar} alt={third.name} />
+          <span class="name">{third.name}</span>
+          <span class="points">{third.points.toLocaleString()}</span>
+        {:else}
+          <div class="empty-slot">—</div>
+        {/if}
       </div>
     </div>
+
+    {#if rest.length > 0}
+      <ul class="rest-list">
+        {#each rest as e (e.userId)}
+          <li class="rest-item">
+            <span class="rank">{e.rank}</span>
+            <img class="avatar-sm" src={e.avatar} alt={e.name} />
+            <span class="name">{e.name}</span>
+            <span class="points">{e.points.toLocaleString()}</span>
+          </li>
+        {/each}
+      </ul>
+    {/if}
   {/if}
 </div>
+
+<style>
+  .lb-page {
+    padding: 1rem 1rem 5rem;
+    min-height: 100%;
+    background: url('/bg-pattern.png') center/cover no-repeat, var(--color-bg, #0e0e10);
+  }
+  .page-header { margin-bottom: 1.5rem; }
+  .page-header h1 {
+    font-family: 'Sora', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-align: center;
+  }
+  .state { text-align: center; padding: 3rem 1rem; opacity: 0.6; }
+
+  .podium {
+    display: grid;
+    grid-template-columns: 1fr 1.15fr 1fr;
+    align-items: end;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.75rem 0.5rem 1rem;
+    border-radius: 16px 16px 0 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.01));
+    border: 1px solid rgba(255,255,255,0.08);
+    border-bottom: none;
+    position: relative;
+    min-height: 120px;
+    justify-content: flex-end;
+  }
+  .slot-1 { min-height: 170px; }
+  .slot-2 { min-height: 145px; }
+  .slot-3 { min-height: 120px; }
+
+  .empty-slot {
+    opacity: 0.25;
+    font-size: 1.5rem;
+    align-self: center;
+  }
+
+  .avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 2px solid rgba(212,175,55,0.5);
+    object-fit: cover;
+  }
+  .avatar-lg {
+    width: 60px;
+    height: 60px;
+    border-color: #d4af37;
+    box-shadow: 0 0 16px rgba(212,175,55,0.35);
+  }
+  .name {
+    font-size: 0.78rem;
+    font-weight: 600;
+    max-width: 90%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .points {
+    font-size: 0.72rem;
+    color: #d4af37;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .crown {
+    position: absolute;
+    top: -22px;
+    width: 32px;
+    height: 32px;
+    filter: drop-shadow(0 2px 6px rgba(212,175,55,0.6));
+  }
+
+  /* medals sprite — فرض: medals.png افقی 3x1 */
+  .medal {
+    width: 28px;
+    height: 28px;
+    background-image: url('/medals.png');
+    background-size: 300% 100%;
+    background-repeat: no-repeat;
+    flex-shrink: 0;
+  }
+  .medal-gold   { background-position:   0% 0; }
+  .medal-silver { background-position:  50% 0; }
+  .medal-bronze { background-position: 100% 0; }
+
+  .rest-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .rest-item {
+    display: grid;
+    grid-template-columns: 32px 40px 1fr auto;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 0.875rem;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .rank {
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-align: center;
+    opacity: 0.75;
+  }
+  .avatar-sm {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+  .rest-item .name {
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+  .rest-item .points {
+    font-size: 0.85rem;
+    color: #d4af37;
+    font-weight: 700;
+  }
+</style>

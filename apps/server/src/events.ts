@@ -143,9 +143,9 @@ export async function registerEventsRoutes(app: FastifyInstance, db: Pool) {
     return { ok: true };
   });
 
-  app.post<{ Body: any }>('/api/admin/events', async (req, reply) => {
+  app.post<{ Body: Record<string, any> }>('/api/admin/events', async (req, reply) => {
     if (!isAdmin(req)) return reply.code(403).send({ error: 'forbidden' });
-    const b = req.body ?? {};
+    const b: Record<string, any> = req.body ?? {};
     if (!b.title || !b.variant || !b.starts_at)
       return reply.code(400).send({ error: 'missing_fields' });
     const blind =

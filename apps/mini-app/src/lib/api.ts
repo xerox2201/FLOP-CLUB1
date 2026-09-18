@@ -1,4 +1,4 @@
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+export const API_URL = '';
 
 export interface ApiResponse<T = any> {
   ok: boolean;
@@ -97,6 +97,18 @@ class ApiClient {
     return this.request(`/api/leaderboard?period=${period}`);
   }
 
+  async getSeasonLeaderboard(): Promise<ApiResponse<any>> {
+    return this.request('/api/leaderboard/season');
+  }
+
+  async getMySeasonRank(): Promise<ApiResponse<any>> {
+    return this.request('/api/leaderboard/season/me');
+  }
+
+  async getMyTournaments(filter: string = 'all', limit: number = 50): Promise<ApiResponse<any>> {
+    return this.request(`/api/my/tournaments?filter=${filter}&limit=${limit}`);
+  }
+
   async events(): Promise<ApiResponse<any>> {
     return this.request('/api/events');
   }
@@ -125,21 +137,15 @@ class ApiClient {
   // ============================================================
   // Wallet
   // ============================================================
-  async walletBalance(): Promise<
-    ApiResponse<{ balance: number; freeChips: number; ton: any; hotWalletReady: boolean }>
-  > {
+  async walletBalance(): Promise<ApiResponse<any>> {
     return this.request('/api/wallet/balance');
   }
 
-  async walletDepositInfo(): Promise<
-    ApiResponse<{ depositAddress: string; memo: string; minDeposit: number; network: string }>
-  > {
+  async walletDepositInfo(): Promise<ApiResponse<any>> {
     return this.request('/api/wallet/deposit-info');
   }
 
-  async walletHistory(): Promise<
-    ApiResponse<{ tonTransactions: any[]; ledgerTransactions: any[] }>
-  > {
+  async walletHistory(): Promise<ApiResponse<any>> {
     return this.request('/api/wallet/history');
   }
 

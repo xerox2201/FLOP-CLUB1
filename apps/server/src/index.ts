@@ -17,6 +17,7 @@ import { tonAdapter } from './ton.js';
 import { DepositWatcher } from './deposit-watcher.js';
 import { gameManager } from './game-manager.js';
 import { TournamentManager } from './tournament-manager.js';
+import { TournamentScheduler } from './tournament-scheduler.js';
 import { registerTournamentRoutes } from './tournament-routes.js';
 
 const PORT = Number(process.env.PORT ?? 4000);
@@ -82,7 +83,9 @@ async function main() {
       }
     }
 
-    const dbUser = await upsertUser(parsed.user.id, parsed.user.first_name || parsed.user.username);
+    const displayName =
+      parsed.user.first_name || parsed.user.username || `User${parsed.user.id}`;
+    const dbUser = await upsertUser(parsed.user.id, displayName);
     const token = signToken({ uid: dbUser.id, tg: parsed.user.id }, JWT_SECRET);
     return { token, user: dbUser };
   });
@@ -190,11 +193,12 @@ async function main() {
 
   // 🔴 Tournament Manager
   const tournamentManager = new TournamentManager(db);
-  await registerTournamentRoutes(app, db, tournamentManager);
+    const scheduler = new TournamentScheduler(db, tournamentManager);
+  await registerTournamentRoutes(app, db, tournamentManager, scheduler);
 
   // 🔴 Wire game-manager ↔ tournament-manager
-  gameManager.setTournamentHandEndCallback(async (tournamentId, room) => {
-    await tournamentManager.syncStacksAndEliminate(tournamentId, room);
+  gameManager.setTournamentHandEndCallback(async (tournamentId, room, handResult) => {
+    await tournamentManager.syncStacksAndEliminate(tournamentId, room, handResult);
   });
 
   // ============================================================
@@ -219,6 +223,11 @@ async function main() {
   console.log('🔌 Socket.IO attached');
 
   tournamentManager.setIO(io);
+
+  // 🔴 D5.1: Start auto-start scheduler (checks every 30s for scheduled tournaments)
+  tournamentManager.startAutoStartScheduler(30_000);
+    // 🔴 D6.1: Start recurring tournament scheduler (checks every 60s)
+  scheduler.start(60_000);
 
   // ============================================================
   // Deposit watcher

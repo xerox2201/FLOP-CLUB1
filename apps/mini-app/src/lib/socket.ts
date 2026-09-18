@@ -1,5 +1,6 @@
 import { io, Socket } from 'socket.io-client';
-import { API_URL } from './api';
+
+const API_URL = '';
 
 export interface TableState {
   seats: any[];

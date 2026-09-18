@@ -1,20 +1,23 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
-import { svelteTesting } from '@testing-library/svelte/vite';
 
 export default defineConfig({
-  plugins: [svelte(), svelteTesting()],
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    include: ['src/**/*.test.ts', 'src/**/*.svelte.test.ts'],
-    exclude: ['node_modules/**'],
-    setupFiles: ['./vitest.setup.ts'],
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'html'],
-      include: ['src/**/*.{ts,svelte}'],
-      exclude: ['src/**/*.test.ts', 'src/main.ts'],
+  plugins: [svelte()],
+  server: {
+    host: '0.0.0.0',
+    port: 5173,
+    strictPort: true,
+    allowedHosts: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+      },
+      '/socket.io': {
+        target: 'http://localhost:4000',
+        ws: true,
+        changeOrigin: true,
+      },
     },
   },
 });

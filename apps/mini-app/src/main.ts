@@ -1,28 +1,10 @@
-import './app.css';
-import { mount } from 'svelte';
-import App from './App.svelte';
+import { mount } from 'svelte'
+import './app.css'
+import App from './App.svelte'
 
-// 🔴 TON Connect (optional — fails silently if blocked)
-(async () => {
-  try {
-    const { TonConnectUI } = await import('@tonconnect/ui');
+const target = document.getElementById('app')
+if (!target) throw new Error('#app not found')
 
-    const tonConnectUI = new TonConnectUI({
-      manifestUrl: `${window.location.origin}/tonconnect-manifest.json`,
-      uiPreferences: { theme: 'DARK' },
-    });
+const app = mount(App, { target })
 
-    (window as any).tonConnectUI = tonConnectUI;
-    console.log('[tonconnect] initialized');
-  } catch (e: any) {
-    console.warn('[tonconnect] init failed (network?):', e.message);
-    (window as any).tonConnectUI = null;
-  }
-})();
-
-// 🔴 Svelte 5 mount
-const app = mount(App, {
-  target: document.getElementById('app')!,
-});
-
-export default app;
+export default app

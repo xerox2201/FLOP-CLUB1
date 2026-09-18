@@ -59,7 +59,8 @@ class GameManager {
   private rooms: Map<number, TableRoom> = new Map();
   private persister: HandPersister | null = null;
   private tournamentHandEndCallback:
-    ((tournamentId: number, room: TableRoom) => void | Promise<void>) | null = null;
+    | ((tournamentId: number, room: TableRoom, handResult?: any) => void | Promise<void>)
+    | null = null;
 
   private getPersister(): HandPersister {
     if (!this.persister) {
@@ -72,7 +73,7 @@ class GameManager {
   }
 
   setTournamentHandEndCallback(
-    cb: (tournamentId: number, room: TableRoom) => void | Promise<void>,
+    cb: (tournamentId: number, room: TableRoom, handResult?: any) => void | Promise<void>,
   ): void {
     this.tournamentHandEndCallback = cb;
     console.log('[game-manager] tournament callback registered');
@@ -318,7 +319,7 @@ class GameManager {
 
       if (room.tournamentId && this.tournamentHandEndCallback) {
         try {
-          await this.tournamentHandEndCallback(room.tournamentId, room);
+          await this.tournamentHandEndCallback(room.tournamentId, room, handResult);
         } catch (e: any) {
           console.error('[game-manager] tournament callback error:', e.message);
         }

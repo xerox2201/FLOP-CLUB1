@@ -47,7 +47,7 @@ export async function registerTableManagerRoutes(app: FastifyInstance, db: Pool)
     return { tables };
   });
 
-  app.post<{ Body: any }>('/api/admin/tables', async (req, reply) => {
+  app.post<{ Body: Record<string, any> }>('/api/admin/tables', async (req, reply) => {
     if (!isAdmin(req)) return reply.code(403).send({ error: 'forbidden' });
     const b = req.body ?? {};
     if (!b.name || !b.variant || !b.mode) return reply.code(400).send({ error: 'missing_fields' });
@@ -84,7 +84,7 @@ export async function registerTableManagerRoutes(app: FastifyInstance, db: Pool)
   app.patch<{ Params: { id: string }; Body: any }>('/api/admin/tables/:id', async (req, reply) => {
     if (!isAdmin(req)) return reply.code(403).send({ error: 'forbidden' });
     const { id } = req.params;
-    const b = req.body ?? {};
+    const b: Record<string, any> = req.body ?? {};
     const existing = await db.query('SELECT * FROM poker_tables WHERE id = $1', [id]);
     if (existing.rows.length === 0) return reply.code(404).send({ error: 'table_not_found' });
     const cur = existing.rows[0];

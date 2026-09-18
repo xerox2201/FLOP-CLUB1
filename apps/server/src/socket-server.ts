@@ -67,8 +67,14 @@ export function setupSocketServer(io: SocketIOServer, db: Pool): void {
           if (isTournament) {
             const existingRoom = gameManager.getRoom(tableId);
             if (!existingRoom) {
-              console.warn(`[socket] tournament table ${tableId} not found in gameManager`);
-              return ack?.({ ok: false, code: 'TOURNAMENT_TABLE_NOT_FOUND' });
+              console.warn(
+                `[socket] tournament table ${tableId} not found in gameManager (stale client)`,
+              );
+              return ack?.({
+                ok: false,
+                code: 'STALE_TOURNAMENT',
+                hint: 'This table no longer exists. Please go back to Tournaments list.',
+              });
             }
             table = {
               id: tableId,

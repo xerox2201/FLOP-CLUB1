@@ -31,7 +31,7 @@ console.log(`\n${passed}/${tests.length} passed\n`);
 console.log('--- Game Simulation ---');
 
 const game = new PokerGame(
-  { tableId: 1, variant: 'holdem', smallBlind: 5, bigBlind: 10, rakePct: 0.03 },
+  { tableId: 1, variant: 'holdem', speed: 'regular', smallBlind: 5, bigBlind: 10, rakePct: 0.03 },
   [
     { userId: 1, displayName: 'Ali', stack: 1000 },
     { userId: 2, displayName: 'Sara', stack: 1000 },
@@ -47,7 +47,7 @@ while (game.state.phase !== 'showdown' && safety < 100) {
   const seatIdx = game.state.currentSeat;
   const maxBet = Math.max(...game.state.seats.map((s) => s.betThisStreet));
   const toCall = maxBet - game.state.seats[seatIdx].betThisStreet;
-  const res = toCall > 0 ? game.act(seatIdx, 'call') : game.act(seatIdx, 'check');
+  const res = toCall > 0 ? game.act(seatIdx, 'call', 0) : game.act(seatIdx, 'check', 0);
   if (!res.ok) console.log(`Error: ${res.error}`);
 }
 
