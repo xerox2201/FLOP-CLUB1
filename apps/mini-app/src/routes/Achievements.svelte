@@ -64,6 +64,7 @@
           'Content-Type': 'application/json',
           ...(t ? { Authorization: `Bearer ${t}` } : {}),
         },
+        body: '{}',
       });
       const data = await res.json();
       if (res.ok) {
@@ -223,24 +224,29 @@
 
           <!-- Badge icon -->
           <div
-            class="relative w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden"
+            class="relative w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden"
             style="
               background: {a.unlocked
-                ? 'radial-gradient(ellipse at 50% 40%, rgba(244,201,93,0.25) 0%, transparent 70%), rgba(0,0,0,0.4)'
-                : 'rgba(0,0,0,0.35)'};
-              border: 1.5px solid {a.unlocked ? 'rgba(244,201,93,0.5)' : 'rgba(255,255,255,0.08)'};
+                ? 'radial-gradient(ellipse at 50% 40%, rgba(244,201,93,0.4) 0%, rgba(168,121,34,0.15) 60%, transparent 100%), linear-gradient(180deg, #1a2a4a, #0a1428)'
+                : 'linear-gradient(180deg, rgba(30,42,74,0.6), rgba(10,20,40,0.8))'};
+              border: 1.5px solid {a.unlocked ? 'rgba(244,201,93,0.7)' : 'rgba(255,255,255,0.12)'};
+              {a.unlocked ? 'box-shadow: 0 0 20px rgba(244,201,93,0.4), inset 0 1px 0 rgba(255,255,255,0.15);' : 'box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);'}
             "
           >
             <img
               src={a.icon}
               alt=""
-              class="w-11 h-11 object-contain relative"
-              style="filter: {a.unlocked ? 'drop-shadow(0 2px 6px rgba(244,201,93,0.6))' : 'grayscale(1) opacity(0.35)'};"
+              class="w-14 h-14 object-contain relative"
+              style="
+                filter: {a.unlocked
+                  ? 'drop-shadow(0 2px 8px rgba(244,201,93,0.8)) drop-shadow(0 0 12px rgba(244,201,93,0.4)) brightness(1.15) contrast(1.1)'
+                  : 'grayscale(1) opacity(0.4)'};
+              "
             />
 
-            {#if !a.unlocked && a.progress === 0}
-              <div class="absolute inset-0 flex items-center justify-center" style="background: rgba(0,0,0,0.4);">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2.5" stroke-linecap="round">
+            {#if !a.unlocked}
+              <div class="absolute inset-0 flex items-center justify-center pointer-events-none" style="background: rgba(5,8,15,0.55); backdrop-filter: blur(1px);">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2.5" stroke-linecap="round">
                   <rect x="4" y="11" width="16" height="10" rx="2" />
                   <path d="M8 11V7a4 4 0 0 1 8 0v4" />
                 </svg>
