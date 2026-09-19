@@ -14,7 +14,9 @@
   export let onPlayerClick: (userId: number) => void = () => {};
 
   function fmt(n: any): string {
-    return Number(Number(n || 0).toFixed(2)).toFixed(2);
+    const num = Number(n || 0);
+    if (num === Math.floor(num)) return String(Math.floor(num));
+    return num.toFixed(2);
   }
 
   function suitChar(s: string): '♠' | '♥' | '♦' | '♣' {
@@ -42,18 +44,18 @@
 
   function getSizes(total: number): Sizes {
     if (total <= 2)
-      return { avatar: 62, nameW: 88, nameFont: 11, stackFont: 11, betChip: 14, betFont: 10, cardSize: 'md', potTop: 22, potFont: 14, timerExtra: 14 };
+      return { avatar: 62, nameW: 88, nameFont: 11, stackFont: 11, betChip: 14, betFont: 10, cardSize: 'md', potTop: 28, potFont: 14, timerExtra: 14 };
     if (total === 3)
-      return { avatar: 58, nameW: 84, nameFont: 11, stackFont: 11, betChip: 14, betFont: 10, cardSize: 'md', potTop: 22, potFont: 14, timerExtra: 12 };
+      return { avatar: 58, nameW: 84, nameFont: 11, stackFont: 11, betChip: 14, betFont: 10, cardSize: 'md', potTop: 28, potFont: 14, timerExtra: 12 };
     if (total === 4)
-      return { avatar: 52, nameW: 78, nameFont: 10, stackFont: 10, betChip: 12, betFont: 9, cardSize: 'md', potTop: 22, potFont: 13, timerExtra: 12 };
+      return { avatar: 52, nameW: 78, nameFont: 10, stackFont: 10, betChip: 12, betFont: 9, cardSize: 'md', potTop: 28, potFont: 13, timerExtra: 12 };
     if (total === 5)
-      return { avatar: 48, nameW: 72, nameFont: 10, stackFont: 10, betChip: 12, betFont: 9, cardSize: 'sm', potTop: 22, potFont: 13, timerExtra: 10 };
+      return { avatar: 48, nameW: 72, nameFont: 10, stackFont: 10, betChip: 12, betFont: 9, cardSize: 'sm', potTop: 28, potFont: 13, timerExtra: 10 };
     if (total === 6)
-      return { avatar: 44, nameW: 68, nameFont: 10, stackFont: 9, betChip: 12, betFont: 9, cardSize: 'sm', potTop: 22, potFont: 12, timerExtra: 10 };
+      return { avatar: 44, nameW: 68, nameFont: 10, stackFont: 9, betChip: 12, betFont: 9, cardSize: 'sm', potTop: 28, potFont: 12, timerExtra: 10 };
     if (total === 7)
-      return { avatar: 40, nameW: 62, nameFont: 9, stackFont: 9, betChip: 10, betFont: 8, cardSize: 'sm', potTop: 22, potFont: 12, timerExtra: 8 };
-    return { avatar: 38, nameW: 58, nameFont: 9, stackFont: 9, betChip: 10, betFont: 8, cardSize: 'sm', potTop: 22, potFont: 12, timerExtra: 8 };
+      return { avatar: 40, nameW: 62, nameFont: 9, stackFont: 9, betChip: 10, betFont: 8, cardSize: 'sm', potTop: 28, potFont: 12, timerExtra: 8 };
+    return { avatar: 38, nameW: 58, nameFont: 9, stackFont: 9, betChip: 10, betFont: 8, cardSize: 'sm', potTop: 28, potFont: 12, timerExtra: 8 };
   }
 
   // ============================================================
@@ -62,8 +64,8 @@
   function seatPos(rotatedIdx: number, total: number): { x: number; y: number } {
     const angleDeg = 90 + (rotatedIdx * 360) / total;
     const rad = (angleDeg * Math.PI) / 180;
-    const rx = 37;
-    const ry = 30;
+    const rx = 42;
+    const ry = 37;
     return {
       x: 50 + Math.cos(rad) * rx,
       y: 50 + Math.sin(rad) * ry,
@@ -71,13 +73,19 @@
   }
 
   // Bet chip offset — outside the player seat, toward center
-  function betPos(pos: { x: number; y: number }, S: Sizes): { x: string; y: string } {
+    function betPos(pos: { x: number; y: number }, S: Sizes): { x: string; y: string } {
     const dx = 50 - pos.x;
     const dy = 50 - pos.y;
     const dist = Math.sqrt(dx * dx + dy * dy) || 1;
     const ux = dx / dist;
     const uy = dy / dist;
-    const offPx = S.avatar / 2 + 60;
+
+    // Side players push further toward center
+    const isHorizontal = Math.abs(ux) > Math.abs(uy);
+    const offPx = isHorizontal
+      ? S.avatar / 2 + 60
+      : S.avatar / 2 + 32;
+
     return {
       x: `calc(${pos.x}% + ${ux * offPx}px)`,
       y: `calc(${pos.y}% + ${uy * offPx}px)`,
@@ -209,8 +217,13 @@
      CONTAINER — 16:10 landscape
      ============================================================ -->
 <div
-  class="absolute left-1/2 -translate-x-1/2 w-full max-w-[700px] px-1"
-  style="top: 44%; transform: translate(-50%, -50%);"
+  class="absolute left-1/2 -translate-x-1/2 w-full px-3"
+  style="
+    top: 50%;
+    transform: translate(-50%, -50%);
+    max-width: min(1100px, calc((100dvh - 180px) * 1.6));
+  "
+>
 >
   <div class="relative w-full" style="aspect-ratio: 16 / 10;">
 
@@ -288,7 +301,7 @@
         <div class="absolute left-1/2 -translate-x-1/2 z-[15] flex flex-col items-center gap-0.5" style="top: {S.potTop}%;">
           {#each sidePots as pot}
             <div
-              class="rounded-full pl-1.5 pr-2.5 py-0.5 flex items-center gap-1 pot-glow"
+              class="rounded-full pl-1.5 pr-2.5 py-0.5 flex items-center gap-1"
               style="background: rgba(0,0,0,0.92); border: 1.5px solid {pot.type === 'main' ? '#d4af37' : '#3b82f6'};"
             >
               <span class="text-[7px] uppercase tracking-widest font-extrabold" style="color: {pot.type === 'main' ? '#d4af37' : '#3b82f6'};">
@@ -303,16 +316,15 @@
       {:else}
         <div class="absolute left-1/2 -translate-x-1/2 z-[15]" style="top: {S.potTop}%;">
           <div
-            class="rounded-full pl-1 pr-2.5 py-0.5 flex items-center gap-1.5 pot-glow"
+            class="rounded-full px-3 py-0.5 flex items-center gap-2"
             style="
               background: linear-gradient(180deg, rgba(0,0,0,0.95), rgba(0,0,0,0.85));
               border: 1.5px solid #d4af37;
               box-shadow: 0 3px 14px rgba(0,0,0,0.9), 0 0 16px rgba(212,175,55,0.3);
             "
           >
-            <PokerChip amount={totalPot} size={12} />
-            <span class="text-[8px] uppercase tracking-widest font-extrabold text-white/60">POT</span>
-            <span class="font-extrabold text-gold-gradient tabular-nums" style="font-size: {S.potFont}px;">
+            <span class="text-[8px] uppercase tracking-widest font-extrabold text-gold/70">POT</span>
+            <span class="font-black text-gold tabular-nums" style="font-size: {S.potFont}px;">
               ${fmt(totalPot)}
             </span>
           </div>
@@ -320,24 +332,18 @@
       {/if}
     {/if}
 
-    <!-- ========== CENTER LOGO ========== -->
+    <!-- ========== CENTER LOGO (below community cards) ========== -->
     <div
-      class="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-[5] pointer-events-none flex flex-col items-center"
-      style="top: 34%;"
+      class="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-[5] pointer-events-none"
+      style="top: 60%;"
     >
       <img
         src="/logo-flop-club.png"
         alt=""
         class="object-contain select-none"
-        style="width: 32px; height: 32px; opacity: 0.3;"
+        style="width: 56px; height: 56px; opacity: 0.6;"
         draggable="false"
       />
-      <p
-        class="font-extrabold select-none mt-0.5"
-        style="font-family: 'Sora', sans-serif; font-size: 6px; letter-spacing: 0.35em; color: rgba(212,175,55,0.4); padding-left: 0.35em;"
-      >
-        FLOP CLUB
-      </p>
     </div>
 
     <!-- ========== CHIP FLY ========== -->
@@ -426,16 +432,28 @@
       <!-- BET CHIP -->
       {#if betAmount > 0 && !s.folded && winners.length === 0}
         <div
-          class="absolute -translate-x-1/2 -translate-y-1/2 z-[22] pointer-events-none"
+          class="absolute -translate-x-1/2 -translate-y-1/2 z-[22] pointer-events-none chip-enter"
           style="left: {bPos.x}; top: {bPos.y};"
         >
           <div
-            class="flex items-center gap-1 rounded-full pl-1 pr-2 py-0.5"
-            style="background: rgba(0,0,0,0.92); border: 1px solid rgba(212,175,55,0.6);"
+            class="flex items-center justify-center rounded-full"
+            style="
+              height: 20px;
+              min-width: 30px;
+              padding: 0 8px;
+              background: linear-gradient(180deg, #f4e5a8 0%, #d4af37 55%, #a87a15 100%);
+              box-shadow:
+                0 2px 6px rgba(0,0,0,0.9),
+                inset 0 1px 0 rgba(255,255,255,0.6),
+                inset 0 -1px 0 rgba(0,0,0,0.3);
+              border: 1px solid rgba(122,86,10,0.9);
+            "
           >
-            <PokerChip amount={betAmount} size={S.betChip} />
-            <span class="font-extrabold text-gold-gradient leading-none tabular-nums" style="font-size: {S.betFont}px;">
-              ${fmt(betAmount)}
+            <span
+              class="font-black text-black tabular-nums leading-none"
+              style="font-size: 10px; letter-spacing: -0.02em;"
+            >
+              {fmt(betAmount)}
             </span>
           </div>
         </div>
@@ -495,11 +513,28 @@
 
         <!-- Hero bet chip -->
         {#if mySeat.betThisStreet > 0 && !mySeat.folded && winners.length === 0}
-          <div class="mt-0.5 flex items-center gap-1 bg-black/85 rounded-full px-1.5 py-0.5 mx-auto w-fit" style="border: 1px solid rgba(212,175,55,0.5);">
-            <PokerChip amount={mySeat.betThisStreet} size={S.betChip} />
-            <span class="font-bold text-gold-gradient leading-none tabular-nums" style="font-size: {S.betFont}px;">
-              ${fmt(mySeat.betThisStreet)}
-            </span>
+          <div class="mt-1 flex justify-center chip-enter">
+            <div
+              class="flex items-center justify-center rounded-full"
+              style="
+                height: 20px;
+                min-width: 30px;
+                padding: 0 8px;
+                background: linear-gradient(180deg, #f4e5a8 0%, #d4af37 55%, #a87a15 100%);
+                box-shadow:
+                  0 2px 6px rgba(0,0,0,0.9),
+                  inset 0 1px 0 rgba(255,255,255,0.6),
+                  inset 0 -1px 0 rgba(0,0,0,0.3);
+                border: 1px solid rgba(122,86,10,0.9);
+              "
+            >
+              <span
+                class="font-black text-black tabular-nums leading-none"
+                style="font-size: 10px; letter-spacing: -0.02em;"
+              >
+                {fmt(mySeat.betThisStreet)}
+              </span>
+            </div>
           </div>
         {/if}
       </div>
@@ -508,7 +543,14 @@
 </div>
 
 <style>
-  @keyframes winner-announce-in {
+  @keyframes chip-enter-kf {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+    60% { opacity: 1; transform: translate(-50%, -50%) scale(1.12); }
+    100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  }
+  .chip-enter { animation: chip-enter-kf 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+@keyframes winner-announce-in {
     0% { opacity: 0; transform: translate(-50%, -20px) scale(0.85); }
     60% { opacity: 1; transform: translate(-50%, 0) scale(1.05); }
     100% { opacity: 1; transform: translate(-50%, 0) scale(1); }
@@ -544,9 +586,5 @@
   }
   .winning-card-glow { animation: winning-card-glow-kf 1.4s ease-in-out infinite; border-radius: 6px; }
 
-  @keyframes pot-glow-kf {
-    0%, 100% { filter: drop-shadow(0 0 6px rgba(244,201,93,0.5)); }
-    50% { filter: drop-shadow(0 0 14px rgba(244,201,93,0.9)); }
-  }
-  :global(.pot-glow) { animation: pot-glow-kf 1.6s ease-in-out infinite; }
+
 </style>
