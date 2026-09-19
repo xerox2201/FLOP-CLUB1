@@ -483,7 +483,7 @@
 
 <div
   class="relative w-full bg-navy overflow-hidden"
-  style="height: 100dvh; max-height: 100dvh; padding-bottom: env(safe-area-inset-bottom);"
+  style="height: 100dvh; min-height: 100dvh; max-height: 100dvh; padding-bottom: env(safe-area-inset-bottom);"
 >
   <!-- HEADER -->
   <div

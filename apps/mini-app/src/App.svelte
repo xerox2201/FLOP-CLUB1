@@ -151,7 +151,10 @@
       class:with-side={!hideNav}
       style="min-height: 100dvh;"
     >
-      <div class="mx-auto" style="max-width: 520px;">
+            <div
+        class="mx-auto"
+        style="max-width: {currentPage === 'table' ? '100%' : '520px'};"
+      >
         {#if currentPage === 'home'}
           <Home onNavigate={navigate} onQuickSeat={quickSeat} onOpenTable={openTable} />
         {:else if currentPage === 'tables'}
