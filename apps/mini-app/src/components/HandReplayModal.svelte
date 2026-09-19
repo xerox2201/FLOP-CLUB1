@@ -28,26 +28,24 @@
     return '♣';
   }
 
-  // 🔴 Layout بهتر برای تعداد بازیکن مختلف
   const ANGLE_MAP: Record<number, number[]> = {
-    2: [270, 90],
-    3: [270, 30, 150],
-    4: [270, 0, 90, 180],
-    5: [270, 340, 60, 120, 200],
-    6: [270, 330, 30, 90, 150, 210],
+    2: [90, 270],
+    3: [90, 210, 330],
+    4: [90, 180, 270, 0],
+    5: [90, 162, 234, 306, 18],
+    6: [90, 150, 210, 270, 330, 30],
+    7: [90, 141, 193, 244, 296, 347, 38],
+    8: [90, 135, 180, 225, 270, 315, 0, 45],
+    9: [90, 130, 170, 210, 250, 290, 330, 10, 50],
   };
 
   function seatPos(idx: number, total: number): { x: number; y: number } {
     const angles = ANGLE_MAP[total] || ANGLE_MAP[6];
-    const deg = angles[idx] ?? 270;
+    const deg = angles[idx] ?? 90;
     const rad = (deg * Math.PI) / 180;
-    // 🔴 ry کاهش پیدا کرد تا بازیکن‌ها از لبه دورتر بشن
-    const rx = 38;
-    const ry = 30;
-    return {
-      x: 50 + Math.cos(rad) * rx,
-      y: 50 + Math.sin(rad) * ry,
-    };
+    const rx = total === 2 ? 36 : 42;
+    const ry = total === 2 ? 32 : 34;
+    return { x: 50 + Math.cos(rad) * rx, y: 50 + Math.sin(rad) * ry };
   }
 
   async function load() {
@@ -225,34 +223,65 @@
   <button
     aria-label="Close"
     class="fixed inset-0 z-[85] cursor-default"
-    style="background: rgba(0,0,0,0.85); backdrop-filter: blur(4px);"
+    style="background: rgba(5,8,15,0.88); backdrop-filter: blur(6px);"
     on:click={onClose}
   ></button>
 
   <div
-    class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[90] flex flex-col w-[96%] max-w-[440px] rounded-2xl overflow-hidden"
-    style="height: 88vh; max-height: 780px; background: #0f172a; border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 20px 60px rgba(0,0,0,0.9);"
+    class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[90] flex flex-col w-[96%] max-w-[440px] rounded-3xl overflow-hidden"
+    style="
+      height: 90vh;
+      max-height: 780px;
+      background: linear-gradient(180deg, rgba(15,31,58,0.98), rgba(7,14,27,1));
+      border: 1.5px solid rgba(212,175,55,0.35);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.95), 0 0 40px rgba(212,175,55,0.12);
+    "
   >
     <!-- Header -->
-    <div class="flex items-center gap-2 px-3 py-2.5 border-b border-white/10 shrink-0">
+    <div
+      class="flex items-center gap-2 px-3 py-2.5 shrink-0"
+      style="border-bottom: 1px solid rgba(212,175,55,0.15);"
+    >
       <button
         on:click={onClose}
-        class="w-8 h-8 rounded-full flex items-center justify-center text-white/70 active:scale-95"
-        style="background: rgba(255,255,255,0.06);">←</button
+        aria-label="Back"
+        class="w-9 h-9 rounded-xl flex items-center justify-center text-white/70 active:scale-95"
+        style="background: rgba(30,58,138,0.4); border: 1px solid rgba(96,165,250,0.3);"
       >
-      <h2 class="text-sm font-extrabold text-white flex-1">🎬 Hand Replay</h2>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M15 18l-6-6 6-6" />
+        </svg>
+      </button>
+
+      <div class="flex-1 flex items-center gap-2">
+        <div
+          class="w-7 h-7 rounded-lg flex items-center justify-center"
+          style="background: linear-gradient(180deg, rgba(212,175,55,0.2), rgba(168,122,21,0.1)); border: 1px solid rgba(212,175,55,0.4);"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="#d4af37">
+            <path d="M6 4l14 8-14 8V4z" />
+          </svg>
+        </div>
+        <h2 class="text-sm font-extrabold text-white tracking-wide">Hand Replay</h2>
+      </div>
+
       {#if replay?.hand}
-        <span class="text-[10px] font-mono text-white/50">Hand #{replay.hand.hand_no}</span>
+        <span
+          class="text-[10px] font-mono px-2 py-1 rounded-md"
+          style="background: rgba(0,0,0,0.4); color: rgba(255,255,255,0.6);"
+        >
+          #{replay.hand.hand_no}
+        </span>
       {/if}
     </div>
 
     {#if loading}
       <div class="flex-1 flex items-center justify-center">
-        <div class="text-white/50 text-sm">Loading…</div>
+        <div class="w-8 h-8 border-2 border-gold/30 border-t-gold rounded-full animate-spin"></div>
       </div>
     {:else if error}
       <div class="flex-1 flex items-center justify-center p-4">
-        <div class="text-red-300 text-sm">{error}</div>
+        <p class="text-red-300 text-sm font-bold">{error}</p>
       </div>
     {:else if currentState && replay?.hand}
       <!-- Table -->
@@ -262,7 +291,16 @@
             <!-- Outer rim -->
             <div
               class="absolute -inset-2 rounded-[50%]"
-              style="background: #050a0a; box-shadow: 0 8px 30px rgba(0,0,0,0.9), inset 0 0 20px rgba(0,0,0,0.9);"
+              style="
+                background: linear-gradient(180deg, #2a2a2a, #0a0a0a);
+                box-shadow: 0 8px 30px rgba(0,0,0,0.9), inset 0 0 20px rgba(0,0,0,0.9);
+              "
+            ></div>
+
+            <!-- Gold trim -->
+            <div
+              class="absolute -inset-1 rounded-[50%]"
+              style="border: 2px solid rgba(212,175,55,0.5); box-shadow: inset 0 0 20px rgba(212,175,55,0.15);"
             ></div>
 
             <!-- Felt -->
@@ -270,44 +308,35 @@
               class="absolute inset-0 rounded-[50%] overflow-hidden"
               style="background: radial-gradient(ellipse at 50% 45%, #1a5c3a 0%, #0d3d24 55%, #072a1a 100%);"
             >
-              <div
-                class="absolute inset-0 rounded-[50%]"
-                style="box-shadow: inset 0 0 60px rgba(0,0,0,0.7);"
-              ></div>
+              <div class="absolute inset-0 rounded-[50%]" style="box-shadow: inset 0 0 60px rgba(0,0,0,0.7);"></div>
             </div>
 
-            <!-- 🔴 Community cards - وسط میز -->
-            <div
-              class="absolute top-[42%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-1 z-[5]"
-            >
+            <!-- Community cards -->
+            <div class="absolute top-[44%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-1 z-[5]">
               {#each Array(5) as _, i}
                 {#if currentState.community[i]}
-                  <div class="scale-[0.7] origin-center">
-                    <PlayingCard
-                      rank={currentState.community[i].r}
-                      suit={suitChar(currentState.community[i].s)}
-                      size="sm"
-                    />
+                  <div class="scale-[0.75] origin-center">
+                    <PlayingCard rank={currentState.community[i].r} suit={suitChar(currentState.community[i].s)} size="sm" />
                   </div>
                 {:else}
-                  <div class="w-7 h-11 rounded-md bg-black/30 border border-white/5"></div>
+                  <div class="w-8 h-12 rounded-md" style="background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.06);"></div>
                 {/if}
               {/each}
             </div>
 
-            <!-- 🔴 Pot - زیر community cards -->
+            <!-- Pot -->
             {#if currentState.pot > 0}
               <div class="absolute top-[62%] left-1/2 -translate-x-1/2 z-[10]">
                 <div
                   class="rounded-full px-3 py-0.5 flex items-center gap-1.5"
-                  style="background: rgba(0,0,0,0.92); border: 1.5px solid #d97706; box-shadow: 0 2px 10px rgba(0,0,0,0.9);"
+                  style="
+                    background: rgba(0,0,0,0.92);
+                    border: 1.5px solid #d4af37;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.9);
+                  "
                 >
-                  <span class="text-[8px] uppercase tracking-widest font-extrabold text-white/70"
-                    >POT</span
-                  >
-                  <span class="text-[11px] font-extrabold text-amber-400 tabular-nums"
-                    >${fmt(currentState.pot)}</span
-                  >
+                  <span class="text-[8px] uppercase tracking-widest font-extrabold text-white/70">POT</span>
+                  <span class="text-[11px] font-extrabold text-gold tabular-nums">${fmt(currentState.pot)}</span>
                 </div>
               </div>
             {/if}
@@ -322,84 +351,90 @@
               >
                 <div class="relative">
                   <div
-                    class="rounded-full p-[2px] bg-black {p.folded ? 'opacity-30' : ''}"
-                    style="border: 2.5px solid {p.isWinner
-                      ? '#fbbf24'
-                      : isActor
-                        ? '#f97316'
-                        : '#e5e7eb'}; box-shadow: 0 3px 10px rgba(0,0,0,0.9){p.isWinner
-                      ? ', 0 0 18px rgba(251,191,36,0.9)'
-                      : ''}{isActor ? ', 0 0 14px rgba(249,115,22,0.8)' : ''};"
+                    class="rounded-full p-[2px]"
+                    style="
+                      background: linear-gradient(180deg,
+                        {p.isWinner ? '#f4e5a8' : isActor ? '#3b82f6' : '#1e3a8a'} 0%,
+                        {p.isWinner ? '#d4af37' : isActor ? '#1e3a8a' : '#0f1f3a'} 50%,
+                        {p.isWinner ? '#a87a15' : isActor ? '#1e3a8a' : '#05080f'} 100%);
+                      box-shadow: 0 3px 10px rgba(0,0,0,0.9){p.isWinner ? ', 0 0 18px rgba(212,175,55,0.9)' : ''}{isActor ? ', 0 0 14px rgba(59,130,246,0.8)' : ''};
+                      {p.folded ? 'opacity: 0.35; filter: grayscale(0.7);' : ''}
+                    "
                   >
-                    <div
-                      class="relative w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-amber-700 to-amber-900 flex items-center justify-center"
-                    >
+                    <div class="relative w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-[#1a3a5c] to-[#05080f] flex items-center justify-center">
                       <Avatar avatarId="spade" size="sm" />
-                      {#if p.isWinner}
-                        <div
-                          class="absolute inset-0 rounded-full flex items-center justify-center"
-                          style="background: linear-gradient(135deg, #fbbf24, #b45309);"
-                        >
-                          <span class="text-[8px] font-black text-black">WIN</span>
-                        </div>
-                      {/if}
                     </div>
                   </div>
                   {#if p.folded}
-                    <div
-                      class="absolute inset-0 flex items-center justify-center rounded-full bg-black/75"
-                    >
-                      <span class="text-[7px] font-extrabold text-white">FOLD</span>
+                    <div class="absolute -bottom-1 left-1/2 -translate-x-1/2">
+                      <span
+                        class="text-[7px] font-extrabold text-white/90 px-1.5 py-0.5 rounded-full tracking-wider"
+                        style="background: linear-gradient(180deg, #4b5563, #1f2937);"
+                      >
+                        FOLD
+                      </span>
+                    </div>
+                  {/if}
+                  {#if p.allIn}
+                    <div class="absolute -top-1.5 left-1/2 -translate-x-1/2">
+                      <span
+                        class="text-[7px] font-extrabold text-white px-1.5 py-0.5 rounded-full tracking-wider"
+                        style="background: linear-gradient(180deg, #ef4444, #991b1b); border: 1px solid #fca5a5;"
+                      >
+                        ALL-IN
+                      </span>
                     </div>
                   {/if}
                 </div>
+
                 <div
-                  class="mt-1 px-1.5 py-0.5 bg-white flex flex-col items-center"
-                  style="border-radius: 4px; box-shadow: 0 2px 6px rgba(0,0,0,0.8); min-width: 56px;"
+                  class="mt-1 px-2 py-0.5 flex flex-col items-center rounded-md"
+                  style="
+                    background: linear-gradient(180deg, #f5f5f5 0%, #d4d4d4 100%);
+                    border: 1.5px solid {p.isWinner ? '#d4af37' : 'rgba(0,0,0,0.5)'};
+                    min-width: 60px;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.8);
+                  "
                 >
-                  <p
-                    class="text-[9px] font-extrabold text-black leading-none whitespace-nowrap max-w-[72px] overflow-hidden text-ellipsis"
-                  >
+                  <p class="text-[9px] font-extrabold text-black leading-none whitespace-nowrap max-w-[72px] overflow-hidden text-ellipsis">
                     {p.displayName}
                   </p>
-                  <p class="text-[9px] font-extrabold text-amber-600 leading-tight tabular-nums">
+                  <p class="text-[9px] font-extrabold leading-tight tabular-nums" style="color: #a87a15;">
                     ${fmt(p.stack)}
                   </p>
                 </div>
+
                 {#if p.betThisStreet > 0 && !p.folded}
                   <div
-                    class="mt-0.5 px-1.5 py-0.5 rounded-full text-[8px] font-bold text-amber-400 tabular-nums"
-                    style="background: rgba(0,0,0,0.9); border: 1px solid rgba(245,158,11,0.5);"
+                    class="mt-0.5 px-1.5 py-0.5 rounded-full text-[8px] font-bold tabular-nums"
+                    style="
+                      background: rgba(0,0,0,0.9);
+                      border: 1px solid rgba(212,175,55,0.6);
+                      color: #f4c95d;
+                    "
                   >
-                    bet ${fmt(p.betThisStreet)}
+                    ${fmt(p.betThisStreet)}
                   </div>
-                {/if}
-                {#if p.allIn}
-                  <span
-                    class="mt-0.5 text-[7px] font-extrabold bg-red-600 rounded-full px-1.5 py-0.5 text-white"
-                    >ALL-IN</span
-                  >
                 {/if}
               </div>
             {/each}
 
             <!-- Last action bubble -->
             {#if currentState.lastAction && step > 0}
-              {@const actor = currentState.players.find(
-                (x: any) => x.seat === currentState.lastAction.seat,
-              )}
+              {@const actor = currentState.players.find((x: any) => x.seat === currentState.lastAction.seat)}
               {#if actor}
-                {@const pos = seatPos(
-                  currentState.players.indexOf(actor),
-                  currentState.players.length,
-                )}
+                {@const pos = seatPos(currentState.players.indexOf(actor), currentState.players.length)}
                 <div
                   class="absolute -translate-x-1/2 -translate-y-1/2 z-[25] pointer-events-none"
                   style="left: {pos.x}%; top: {pos.y - 14}%;"
                 >
                   <div
                     class="rounded-full px-2.5 py-1 text-[10px] font-extrabold whitespace-nowrap shadow-lg"
-                    style="background: rgba(249,115,22,0.98); color: white; border: 1.5px solid white;"
+                    style="
+                      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+                      color: white;
+                      border: 1.5px solid rgba(255,255,255,0.4);
+                    "
                   >
                     {currentState.lastAction.action}
                     {#if currentState.lastAction.amount > 0}
@@ -413,12 +448,13 @@
         </div>
       </div>
 
-      <!-- Progress bar -->
-      <div class="px-3 py-2 border-t border-white/10 shrink-0">
-        <div class="flex items-center gap-2 mb-2">
-          <span class="text-[10px] font-mono text-white/40 tabular-nums shrink-0"
-            >{step + 1}/{states.length}</span
-          >
+      <!-- Controls -->
+      <div class="px-3 py-3 shrink-0" style="border-top: 1px solid rgba(212,175,55,0.15);">
+        <!-- Progress -->
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-[10px] font-mono text-white/50 tabular-nums shrink-0">
+            {step + 1}/{states.length}
+          </span>
           <input
             type="range"
             min="0"
@@ -433,66 +469,95 @@
               }
             }}
           />
-          <span class="text-[10px] font-mono text-amber-400 tabular-nums shrink-0 uppercase"
-            >{currentStreet}</span
-          >
+          <span class="text-[10px] font-mono text-gold tabular-nums shrink-0 uppercase font-extrabold">
+            {currentStreet}
+          </span>
         </div>
 
-        <!-- Controls -->
-        <div class="flex items-center justify-center gap-2 mb-2">
-          <button
-            on:click={() => setSpeed(1)}
-            class="w-8 h-8 rounded-full text-[10px] font-extrabold {speed === 1
-              ? 'bg-amber-500 text-black'
-              : 'text-white/60'}"
-            style="background: {speed === 1 ? '' : 'rgba(255,255,255,0.06)'};">1×</button
+        <!-- Playback -->
+        <div class="flex items-center justify-center gap-2 mb-3">
+          <!-- Speed -->
+          <div
+            class="flex rounded-xl overflow-hidden shrink-0"
+            style="background: rgba(0,0,0,0.35); border: 1px solid rgba(212,175,55,0.2);"
           >
-          <button
-            on:click={() => setSpeed(2)}
-            class="w-8 h-8 rounded-full text-[10px] font-extrabold {speed === 2
-              ? 'bg-amber-500 text-black'
-              : 'text-white/60'}"
-            style="background: {speed === 2 ? '' : 'rgba(255,255,255,0.06)'};">2×</button
-          >
-          <button
-            on:click={() => setSpeed(4)}
-            class="w-8 h-8 rounded-full text-[10px] font-extrabold {speed === 4
-              ? 'bg-amber-500 text-black'
-              : 'text-white/60'}"
-            style="background: {speed === 4 ? '' : 'rgba(255,255,255,0.06)'};">4×</button
-          >
+            {#each [1, 2, 4] as s}
+              <button
+                on:click={() => setSpeed(s)}
+                class="w-8 h-8 text-[10px] font-extrabold transition"
+                style="
+                  background: {speed === s ? 'linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15)' : 'transparent'};
+                  color: {speed === s ? '#0a0800' : 'rgba(255,255,255,0.6)'};
+                "
+              >
+                {s}×
+              </button>
+            {/each}
+          </div>
 
-          <div class="w-px h-5 bg-white/10 mx-1"></div>
-
+          <!-- Skip prev -->
           <button
             on:click={() => skip(-5)}
             class="w-9 h-9 rounded-full flex items-center justify-center text-white/70 active:scale-95"
-            style="background: rgba(255,255,255,0.06);">⏮</button
+            style="background: rgba(255,255,255,0.06);"
+            aria-label="Skip back"
           >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z" />
+            </svg>
+          </button>
+
+          <!-- Play/pause -->
           <button
             on:click={togglePlay}
-            class="w-11 h-11 rounded-full flex items-center justify-center text-black font-bold active:scale-95"
-            style="background: #fbbf24;">{playing ? '⏸' : '▶'}</button
+            class="w-12 h-12 rounded-full flex items-center justify-center text-near-black active:scale-95"
+            style="
+              background: linear-gradient(180deg, #f4e5a8 0%, #d4af37 45%, #a87a15 100%);
+              box-shadow: 0 3px 0 #7a560a, 0 6px 14px rgba(212,175,55,0.4), inset 0 1px 0 rgba(255,235,170,0.5);
+            "
+            aria-label={playing ? 'Pause' : 'Play'}
           >
+            {#if playing}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="4" width="4" height="16" rx="1" />
+                <rect x="14" y="4" width="4" height="16" rx="1" />
+              </svg>
+            {:else}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M6 4l14 8-14 8V4z" />
+              </svg>
+            {/if}
+          </button>
+
+          <!-- Skip next -->
           <button
             on:click={() => skip(5)}
             class="w-9 h-9 rounded-full flex items-center justify-center text-white/70 active:scale-95"
-            style="background: rgba(255,255,255,0.06);">⏭</button
+            style="background: rgba(255,255,255,0.06);"
+            aria-label="Skip forward"
           >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M13 6v12l8.5-6L13 6zM4 18l8.5-6L4 6v12z" />
+            </svg>
+          </button>
         </div>
 
         <!-- Street tabs -->
         <div class="flex gap-1.5">
-          {#each [['preflop', 'Preflop'], ['flop', 'Flop'], ['turn', 'Turn'], ['river', 'River']] as [key, label]}
+          {#each [['preflop', 'PREFLOP'], ['flop', 'FLOP'], ['turn', 'TURN'], ['river', 'RIVER']] as [key, label]}
             <button
               on:click={() => goToStreet(key)}
-              class="flex-1 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition"
-              style="background: {currentStreet === key
-                ? '#fbbf24'
-                : 'rgba(255,255,255,0.06)'}; color: {currentStreet === key
-                ? 'black'
-                : 'rgba(255,255,255,0.6)'};">{label}</button
+              class="flex-1 py-2 rounded-xl text-[9px] font-extrabold uppercase tracking-wider transition"
+              style="
+                background: {currentStreet === key
+                  ? 'linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15)'
+                  : 'rgba(0,0,0,0.35)'};
+                color: {currentStreet === key ? '#0a0800' : 'rgba(255,255,255,0.5)'};
+                border: 1px solid {currentStreet === key ? 'transparent' : 'rgba(212,175,55,0.15)'};
+              "
             >
+              {label}
+            </button>
           {/each}
         </div>
       </div>
@@ -508,8 +573,8 @@
     border-radius: 9999px;
     background: linear-gradient(
       to right,
-      #fbbf24 0%,
-      #fbbf24 var(--progress, 0%),
+      #d4af37 0%,
+      #d4af37 var(--progress, 0%),
       rgba(255, 255, 255, 0.1) var(--progress, 0%),
       rgba(255, 255, 255, 0.1) 100%
     );
@@ -523,18 +588,16 @@
     height: 14px;
     border-radius: 50%;
     background: #fff;
-    border: 2px solid #fff;
+    border: 2px solid #d4af37;
     cursor: pointer;
-    box-shadow:
-      0 2px 6px rgba(0, 0, 0, 0.8),
-      0 0 0 2px rgba(251, 191, 36, 0.4);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.8), 0 0 0 3px rgba(212, 175, 55, 0.3);
   }
   .replay-slider::-moz-range-thumb {
     width: 14px;
     height: 14px;
     border-radius: 50%;
     background: #fff;
-    border: 2px solid #fff;
+    border: 2px solid #d4af37;
     cursor: pointer;
   }
 </style>
