@@ -181,9 +181,16 @@
       {:else}
         {#each messages as m (m.id)}
           {@const isMine = m.userId === myUserId}
-          <div class="flex items-start gap-2 {isMine ? 'flex-row-reverse' : ''}">
-            <div class="w-8 h-8 rounded-full overflow-hidden shrink-0" style="border: 1.5px solid rgba(212,175,55,0.3);">
-              <Avatar avatarId={m.avatarId || 'spade'} size="sm" />
+          <div class="flex items-start gap-2.5 {isMine ? 'flex-row-reverse' : ''}">
+            <div
+              class="w-10 h-10 rounded-full overflow-hidden shrink-0 flex items-center justify-center"
+              style="
+                border: 1.5px solid rgba(212,175,55,0.4);
+                background: radial-gradient(circle, #1a3a5c, #05080f);
+                box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+              "
+            >
+              <Avatar avatarId={m.avatarId || 'king'} size="sm" />
             </div>
             <div class="max-w-[75%] {isMine ? 'items-end' : 'items-start'} flex flex-col">
               <p class="text-[9px] font-bold mb-0.5 {isMine ? 'text-right' : ''}"
