@@ -29,6 +29,16 @@ export interface TableState {
   totalRebuy?: number;
 }
 
+export interface ChatMessage {
+  id: string;
+  userId: number;
+  displayName: string;
+  avatarId: string;
+  text: string;
+  isEmoji: boolean;
+  timestamp: number;
+}
+
 export type SocketEvent =
   | { type: 'state'; state: TableState }
   | { type: 'hand_result'; result: any; state: any }
@@ -38,6 +48,7 @@ export type SocketEvent =
   | { type: 'reconnected'; syncType: string }
   | { type: 'player_joined'; userId: number; displayName: string; total: number }
   | { type: 'player_left'; userId: number; total: number }
+  | { type: 'chat'; message: ChatMessage }
   | { type: 'error'; message: string; code?: string };
 
 type Listener = (e: SocketEvent) => void;
@@ -49,7 +60,6 @@ export class TableSocketIO {
   private tableId: number;
   private closedByUser = false;
 
-  // 🔴 Track sequence for resync
   private lastHandNo: number = 0;
   private lastSequence: number = 0;
   private reconnectAttempt = 0;
@@ -100,10 +110,8 @@ export class TableSocketIO {
     });
 
     this.socket.on('table:state', (state: TableState) => {
-      // 🔴 Track sequence
       if (typeof state.handNo === 'number') this.lastHandNo = state.handNo;
       if (typeof state.sequence === 'number') this.lastSequence = state.sequence;
-
       this.emit({ type: 'state', state });
     });
 
@@ -131,6 +139,10 @@ export class TableSocketIO {
         userId: data.userId,
         total: data.total,
       });
+    });
+
+    this.socket.on('table:chat_message', (msg: ChatMessage) => {
+      this.emit({ type: 'chat', message: msg });
     });
 
     this.socket.on('connect_error', (err: any) => {
@@ -171,7 +183,6 @@ export class TableSocketIO {
   action(action: 'FOLD' | 'CHECK' | 'CALL' | 'RAISE', amount = 0): void {
     if (!this.socket?.connected) return;
 
-    // 🔴 Generate unique commandId for idempotency
     const commandId = this.generateCommandId();
 
     this.socket.emit('table:action', { action, amount, commandId }, (res: any) => {
@@ -210,6 +221,33 @@ export class TableSocketIO {
   leaveTable(): void {
     if (!this.socket?.connected) return;
     this.socket.emit('table:leave', {}, () => {});
+  }
+
+  // ============================================================
+  // CHAT
+  // ============================================================
+  sendChat(text: string, isEmoji = false): Promise<{ ok: boolean; code?: string }> {
+    return new Promise((resolve) => {
+      if (!this.socket?.connected) {
+        resolve({ ok: false, code: 'NOT_CONNECTED' });
+        return;
+      }
+      this.socket.emit('table:chat', { text, isEmoji }, (res: any) => {
+        resolve(res ?? { ok: false, code: 'NO_ACK' });
+      });
+    });
+  }
+
+  requestChatHistory(): Promise<ChatMessage[]> {
+    return new Promise((resolve) => {
+      if (!this.socket?.connected) {
+        resolve([]);
+        return;
+      }
+      this.socket.emit('table:chat_history', {}, (res: any) => {
+        resolve(res?.messages ?? []);
+      });
+    });
   }
 
   on(listener: Listener): () => void {

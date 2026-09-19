@@ -1,74 +1,72 @@
 <script lang="ts">
+  import { onDestroy } from 'svelte';
   import Avatar from './Avatar.svelte';
+  import type { TableSocketIO, ChatMessage } from '../lib/socket';
 
   export let open: boolean = false;
   export let myUserId: number | null = null;
+  export let myAvatarId: string = 'spade';
+  export let socket: TableSocketIO | null = null;
   export let onClose: () => void = () => {};
-
-  interface ChatMessage {
-    id: string;
-    userId: number;
-    displayName: string;
-    avatarId: string;
-    text: string;
-    isEmoji: boolean;
-    timestamp: number;
-  }
 
   let messages: ChatMessage[] = [];
   let inputText = '';
   let messagesEl: HTMLDivElement | null = null;
+  let sending = false;
+  let errorMsg = '';
+  let lastSendAt = 0;
 
   const QUICK_EMOJIS = ['👋', '😎', '🔥', '👍', '😂', '😱', '👏', '🤑', '🤝', '🍀'];
 
-  const BOT_REPLIES = [
+  const QUICK_CHAT = [
     'Nice hand!',
     'gg',
-    'wow',
-    'fold already 😅',
+    'well played',
+    'nice river',
+    'ouch',
     'all in?',
-    'you got lucky',
-    '😎',
-    '🔥',
-    'one more',
-    'raise!',
+    'call',
+    'fold',
   ];
 
-  function sendMessage(text: string, isEmoji = false) {
-    if (!text.trim()) return;
-    const msg: ChatMessage = {
-      id: `${Date.now()}_${Math.random()}`,
-      userId: myUserId || 0,
-      displayName: 'You',
-      avatarId: 'spade',
-      text: text.trim(),
-      isEmoji,
-      timestamp: Date.now(),
-    };
-    messages = [...messages, msg];
-    inputText = '';
-    scrollToBottom();
+  function scrollToBottom() {
+    setTimeout(() => {
+      if (messagesEl) messagesEl.scrollTop = messagesEl.scrollHeight;
+    }, 30);
+  }
 
-    // Simulate a bot reply after 1-2 sec
-    setTimeout(
-      () => {
-        const replyText = BOT_REPLIES[Math.floor(Math.random() * BOT_REPLIES.length)];
-        messages = [
-          ...messages,
-          {
-            id: `${Date.now()}_${Math.random()}`,
-            userId: 999,
-            displayName: 'Bot',
-            avatarId: 'diamond',
-            text: replyText,
-            isEmoji: replyText.length <= 2,
-            timestamp: Date.now(),
-          },
-        ];
-        scrollToBottom();
-      },
-      1000 + Math.random() * 1500,
-    );
+  async function sendMessage(text: string, isEmoji = false) {
+    const trimmed = text.trim();
+    if (!trimmed || sending || !socket) return;
+
+    // client-side cooldown feedback
+    const now = Date.now();
+    if (now - lastSendAt < 1200) {
+      errorMsg = 'Slow down…';
+      setTimeout(() => (errorMsg = ''), 1500);
+      return;
+    }
+    lastSendAt = now;
+
+    sending = true;
+    errorMsg = '';
+    try {
+      const res = await socket.sendChat(trimmed, isEmoji);
+      if (!res.ok) {
+        if (res.code === 'RATE_LIMIT') errorMsg = 'Slow down…';
+        else if (res.code === 'TOO_LONG') errorMsg = 'Message too long';
+        else if (res.code === 'NOT_IN_TABLE') errorMsg = 'Not seated at table';
+        else errorMsg = 'Failed to send';
+        setTimeout(() => (errorMsg = ''), 2000);
+      } else {
+        inputText = '';
+      }
+    } catch (e: any) {
+      errorMsg = e.message;
+      setTimeout(() => (errorMsg = ''), 2000);
+    } finally {
+      sending = false;
+    }
   }
 
   function sendEmoji(emoji: string) {
@@ -82,84 +80,127 @@
     }
   }
 
-  function scrollToBottom() {
-    setTimeout(() => {
-      if (messagesEl) messagesEl.scrollTop = messagesEl.scrollHeight;
-    }, 50);
+  // ===== Subscribe to socket events =====
+  let unsub: (() => void) | null = null;
+
+  $: if (socket && open && !unsub) {
+    unsub = socket.on((evt) => {
+      if (evt.type === 'chat') {
+        messages = [...messages, evt.message];
+        scrollToBottom();
+      }
+    });
+
+    // Load history
+    socket.requestChatHistory().then((hist) => {
+      if (hist.length > 0) {
+        messages = hist;
+        scrollToBottom();
+      }
+    });
+  }
+
+  $: if (!open && unsub) {
+    unsub();
+    unsub = null;
+    // clear on close
+    setTimeout(() => { messages = []; }, 200);
   }
 
   $: if (open) {
     setTimeout(scrollToBottom, 100);
   }
+
+  onDestroy(() => {
+    if (unsub) unsub();
+  });
 </script>
 
 {#if open}
   <button
     aria-label="Close"
     class="fixed inset-0 z-[95] cursor-default"
-    style="background: rgba(0,0,0,0.75); backdrop-filter: blur(4px);"
+    style="background: rgba(5,8,15,0.8); backdrop-filter: blur(6px);"
     on:click={onClose}
   ></button>
 
   <div
     class="fixed bottom-0 left-0 right-0 z-[100] max-w-[480px] mx-auto rounded-t-3xl flex flex-col"
-    style="height: 75vh; background: linear-gradient(180deg, #101a3a, #080d24); border-top: 1px solid rgba(139,92,246,0.35); box-shadow: 0 -8px 40px rgba(0,0,0,0.8);"
+    style="
+      height: 78vh;
+      background: linear-gradient(180deg, rgba(15,31,58,0.99), rgba(7,14,27,1));
+      border-top: 1.5px solid rgba(212,175,55,0.35);
+      box-shadow: 0 -8px 40px rgba(0,0,0,0.9), 0 0 30px rgba(212,175,55,0.1);
+    "
   >
     <!-- Handle -->
-    <div class="w-12 h-1 bg-white/20 rounded-full mx-auto mt-2 mb-1"></div>
+    <div class="w-12 h-1 rounded-full mx-auto mt-2 mb-1" style="background: rgba(212,175,55,0.4);"></div>
 
     <!-- Header -->
     <div
       class="flex items-center gap-2 px-4 py-3 shrink-0"
-      style="border-bottom: 1px solid rgba(139,92,246,0.2);"
+      style="border-bottom: 1px solid rgba(212,175,55,0.15);"
     >
-      <h2 class="text-base font-extrabold text-white flex-1">💬 Table Chat</h2>
-      <span
-        class="text-[9px] font-bold text-amber-300 px-2 py-0.5 rounded-full"
-        style="background: rgba(245,158,11,0.2);"
+      <div
+        class="w-9 h-9 rounded-xl flex items-center justify-center"
+        style="background: linear-gradient(180deg, rgba(212,175,55,0.2), rgba(168,122,21,0.1)); border: 1px solid rgba(212,175,55,0.4);"
       >
-        LOCAL ONLY
-      </span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        </svg>
+      </div>
+      <h2 class="text-base font-extrabold text-white flex-1 tracking-wide">Table Chat</h2>
+
       <button
         on:click={onClose}
         aria-label="Close"
-        class="w-8 h-8 rounded-full flex items-center justify-center text-white/60 text-xl leading-none"
-        style="background: rgba(139,92,246,0.15);"
+        class="w-9 h-9 rounded-xl flex items-center justify-center text-white/60 active:scale-95"
+        style="background: rgba(255,255,255,0.06);"
       >
-        ×
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
       </button>
     </div>
 
     <!-- Messages -->
-    <div bind:this={messagesEl} class="flex-1 overflow-y-auto px-3 py-2 space-y-2">
+    <div bind:this={messagesEl} class="flex-1 overflow-y-auto px-3 py-3 space-y-2.5 no-scrollbar">
       {#if messages.length === 0}
-        <div class="flex items-center justify-center h-full">
-          <p class="text-white/40 text-xs text-center">
-            No messages yet.<br />
-            Say hi to your opponents!
-          </p>
+        <div class="flex flex-col items-center justify-center h-full text-center px-4">
+          <div
+            class="w-16 h-16 rounded-2xl flex items-center justify-center mb-3"
+            style="background: linear-gradient(180deg, rgba(212,175,55,0.15), rgba(168,122,21,0.05)); border: 1px solid rgba(212,175,55,0.3);"
+          >
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+          </div>
+          <p class="text-white/50 text-sm font-bold">No messages yet</p>
+          <p class="text-white/35 text-[11px] mt-1">Say hi to your opponents</p>
         </div>
       {:else}
-        {#each messages as m}
-          <div class="flex items-start gap-2 {m.userId === myUserId ? 'flex-row-reverse' : ''}">
-            <div class="w-7 h-7 rounded-full overflow-hidden shrink-0">
-              <Avatar avatarId={m.avatarId} size="sm" />
+        {#each messages as m (m.id)}
+          {@const isMine = m.userId === myUserId}
+          <div class="flex items-start gap-2 {isMine ? 'flex-row-reverse' : ''}">
+            <div class="w-8 h-8 rounded-full overflow-hidden shrink-0" style="border: 1.5px solid rgba(212,175,55,0.3);">
+              <Avatar avatarId={m.avatarId || 'spade'} size="sm" />
             </div>
-            <div class="max-w-[75%] {m.userId === myUserId ? 'text-right' : ''}">
-              <p
-                class="text-[9px] text-white/40 mb-0.5 {m.userId === myUserId ? 'text-right' : ''}"
-              >
-                {m.displayName}
+            <div class="max-w-[75%] {isMine ? 'items-end' : 'items-start'} flex flex-col">
+              <p class="text-[9px] font-bold mb-0.5 {isMine ? 'text-right' : ''}"
+                 style="color: {isMine ? '#f4e5a8' : 'rgba(255,255,255,0.5)'};">
+                {isMine ? 'You' : m.displayName}
               </p>
               <div
-                class="rounded-2xl px-3 py-1.5 inline-block {m.isEmoji
-                  ? 'text-3xl !p-2'
-                  : 'text-sm'}"
-                style="background: {m.userId === myUserId
-                  ? 'linear-gradient(135deg, #6d28d9, #4c1d95)'
-                  : 'rgba(16,26,58,0.9)'}; color: white; border: 1px solid {m.userId === myUserId
-                  ? 'rgba(139,92,246,0.5)'
-                  : 'rgba(139,92,246,0.2)'};"
+                class="rounded-2xl px-3 py-1.5 inline-block"
+                style="
+                  background: {isMine
+                    ? 'linear-gradient(135deg, #d4af37, #a87a15)'
+                    : 'linear-gradient(135deg, rgba(15,31,58,0.95), rgba(7,14,27,0.98))'};
+                  color: {isMine ? '#0a0800' : '#ffffff'};
+                  border: 1px solid {isMine ? 'rgba(255,235,170,0.4)' : 'rgba(212,175,55,0.2)'};
+                  box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+                  {m.isEmoji ? 'font-size: 28px; line-height: 1; padding: 6px 10px;' : 'font-size: 13px; font-weight: 600;'}
+                "
               >
                 {m.text}
               </div>
@@ -169,16 +210,47 @@
       {/if}
     </div>
 
+    <!-- Error toast -->
+    {#if errorMsg}
+      <div class="px-3 pb-1">
+        <div
+          class="rounded-xl px-3 py-1.5 text-center text-[10px] font-bold"
+          style="background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); color: #fca5a5;"
+        >
+          {errorMsg}
+        </div>
+      </div>
+    {/if}
+
+    <!-- Quick chat -->
+    <div class="px-3 pt-2 pb-1 shrink-0">
+      <div class="flex gap-1.5 overflow-x-auto no-scrollbar">
+        {#each QUICK_CHAT as q}
+          <button
+            on:click={() => sendMessage(q)}
+            disabled={sending}
+            class="shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold active:scale-95 transition disabled:opacity-40"
+            style="
+              background: rgba(212,175,55,0.12);
+              border: 1px solid rgba(212,175,55,0.3);
+              color: #f4e5a8;
+            "
+          >
+            {q}
+          </button>
+        {/each}
+      </div>
+    </div>
+
     <!-- Quick emoji -->
-    <div
-      class="px-3 py-2 flex gap-1.5 overflow-x-auto no-scrollbar shrink-0"
-      style="border-top: 1px solid rgba(139,92,246,0.15);"
-    >
+    <div class="px-3 py-2 flex gap-1.5 overflow-x-auto no-scrollbar shrink-0"
+         style="border-top: 1px solid rgba(212,175,55,0.1);">
       {#each QUICK_EMOJIS as emoji}
         <button
           on:click={() => sendEmoji(emoji)}
-          class="text-2xl shrink-0 w-10 h-10 rounded-xl active:scale-90 transition flex items-center justify-center"
-          style="background: rgba(139,92,246,0.12);"
+          disabled={sending}
+          class="text-2xl shrink-0 w-10 h-10 rounded-xl active:scale-90 transition flex items-center justify-center disabled:opacity-40"
+          style="background: rgba(212,175,55,0.08); border: 1px solid rgba(212,175,55,0.2);"
         >
           {emoji}
         </button>
@@ -188,22 +260,31 @@
     <!-- Input -->
     <div
       class="px-3 py-2 flex gap-2 shrink-0"
-      style="padding-bottom: calc(0.5rem + env(safe-area-inset-bottom)); border-top: 1px solid rgba(139,92,246,0.2);"
+      style="padding-bottom: calc(0.5rem + env(safe-area-inset-bottom)); border-top: 1px solid rgba(212,175,55,0.15);"
     >
       <input
         type="text"
         bind:value={inputText}
         on:keydown={handleKey}
         placeholder="Type a message…"
-        class="flex-1 rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-cyan"
-        style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+        maxlength="200"
+        class="flex-1 rounded-xl px-3 py-2.5 text-sm text-white outline-none"
+        style="background: rgba(0,0,0,0.4); border: 1px solid rgba(212,175,55,0.25);"
       />
       <button
         on:click={() => sendMessage(inputText)}
-        disabled={!inputText.trim()}
-        class="w-11 h-11 rounded-xl flex items-center justify-center text-near-black active:scale-95 disabled:opacity-40 badge-gold"
+        disabled={!inputText.trim() || sending}
+        aria-label="Send"
+        class="w-11 h-11 rounded-xl flex items-center justify-center active:scale-95 disabled:opacity-40"
+        style="
+          background: linear-gradient(180deg, #f4e5a8 0%, #d4af37 45%, #a87a15 100%);
+          box-shadow: 0 2px 0 #7a560a, inset 0 1px 0 rgba(255,235,170,0.5);
+          color: #0a0800;
+        "
       >
-        ➤
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M2 21l21-9L2 3v7l15 2-15 2z" />
+        </svg>
       </button>
     </div>
   </div>

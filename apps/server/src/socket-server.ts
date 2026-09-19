@@ -7,12 +7,32 @@ import { ErrorCode } from './errors.js';
 import { recordIp, recordDevice, analyzeUser } from './anti-cheat.js';
 
 const JWT_SECRET = process.env.JWT_SECRET ?? 'dev_secret_change_me';
+// ============================================================
+// Chat
+// ============================================================
+interface ChatMessage {
+  id: string;
+  userId: number;
+  displayName: string;
+  avatarId: string;
+  text: string;
+  isEmoji: boolean;
+  timestamp: number;
+}
 
+const CHAT_MAX_LENGTH = 200;
+const CHAT_HISTORY_SIZE = 50;
+const CHAT_COOLDOWN_MS = 1500;
 const VIRTUAL_TABLE_THRESHOLD = 1_000_000;
 
 export function setupSocketServer(io: SocketIOServer, db: Pool): void {
   console.log('[socket.io] server setup');
   const commandQueue = new CommandQueue(db);
+    // ============================================================
+  // Chat state (in-memory, per table)
+  // ============================================================
+  const chatHistory = new Map<number, ChatMessage[]>();
+  const lastChatAt = new Map<string, number>(); // socketId → last message time
 
   io.use(async (socket, next) => {
     try {
@@ -227,7 +247,70 @@ export function setupSocketServer(io: SocketIOServer, db: Pool): void {
         }
       },
     );
+    // ============================================================
+    // CHAT — send message
+    // ============================================================
+    socket.on(
+      'table:chat',
+      async (data: { text: string; isEmoji?: boolean }, ack?: Function) => {
+        try {
+          const ctx = gameManager.getPlayerBySocket(socket.id);
+          if (!ctx) return ack?.({ ok: false, code: 'NOT_IN_TABLE' });
 
+          const tableId = ctx.room.tableId;
+          const text = String(data?.text ?? '').trim();
+
+          if (!text) return ack?.({ ok: false, code: 'EMPTY' });
+          if (text.length > CHAT_MAX_LENGTH) return ack?.({ ok: false, code: 'TOO_LONG' });
+
+          // Anti-spam
+          const now = Date.now();
+          const lastAt = lastChatAt.get(socket.id) ?? 0;
+          if (now - lastAt < CHAT_COOLDOWN_MS) {
+            return ack?.({ ok: false, code: 'RATE_LIMIT' });
+          }
+          lastChatAt.set(socket.id, now);
+
+          const msg: ChatMessage = {
+            id: `${now}_${Math.random().toString(36).slice(2, 8)}`,
+            userId,
+            displayName: displayName,
+            avatarId: 'spade',
+            text,
+            isEmoji: !!data?.isEmoji || text.length <= 4,
+            timestamp: now,
+          };
+
+          // Save to history
+          const hist = chatHistory.get(tableId) ?? [];
+          hist.push(msg);
+          while (hist.length > CHAT_HISTORY_SIZE) hist.shift();
+          chatHistory.set(tableId, hist);
+
+          // Broadcast to all players at table
+          io.to(`table:${tableId}`).emit('table:chat_message', msg);
+
+          ack?.({ ok: true, messageId: msg.id });
+        } catch (e: any) {
+          ack?.({ ok: false, code: 'INTERNAL_ERROR', error: e.message });
+        }
+      },
+    );
+
+    // ============================================================
+    // CHAT — request history
+    // ============================================================
+    socket.on('table:chat_history', async (_data: any, ack?: Function) => {
+      try {
+        const ctx = gameManager.getPlayerBySocket(socket.id);
+        if (!ctx) return ack?.({ ok: false, code: 'NOT_IN_TABLE' });
+        const tableId = ctx.room.tableId;
+        const hist = chatHistory.get(tableId) ?? [];
+        ack?.({ ok: true, messages: hist });
+      } catch (e: any) {
+        ack?.({ ok: false, code: 'INTERNAL_ERROR', error: e.message });
+      }
+    });
     socket.on('table:leave', async (data: any, ack?: Function) => {
       try {
         const ctx = gameManager.getPlayerBySocket(socket.id);
@@ -239,7 +322,7 @@ export function setupSocketServer(io: SocketIOServer, db: Pool): void {
       }
     });
 
-    socket.on('disconnect', (reason) => {
+    socket.on('disconnect', (reason) => {      lastChatAt.delete(socket.id);
       console.log(`[socket.io] disconnected: ${displayName} (${socket.id}) - ${reason}`);
       const ctx = gameManager.getPlayerBySocket(socket.id);
       if (ctx) {

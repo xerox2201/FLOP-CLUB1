@@ -732,9 +732,11 @@
     onMute={mutePlayer}
   />
 
-  <ChatModal
+   <ChatModal
     open={showChat}
     {myUserId}
+    myAvatarId={myAvatarId}
+    {socket}
     onClose={() => {
       showChat = false;
     }}
