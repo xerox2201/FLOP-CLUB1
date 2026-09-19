@@ -3,6 +3,8 @@
   import TopBar from '../components/TopBar.svelte';
   import { auth } from '../stores/auth';
   import { cardTheme, CARD_THEMES } from '../stores/cardTheme';
+  import { setSoundEnabled } from '../lib/sounds';
+  import { setHapticsEnabled } from '../lib/haptics';
 
   export let onBack: () => void = () => {};
 
@@ -32,7 +34,9 @@
         autoPostBlinds = s.autoPostBlinds ?? true;
       }
     } catch {
-      /* ignore */
+      /* ignore */    // Apply sound + haptics from settings
+    setSoundEnabled(sound);
+    setHapticsEnabled(haptics);
     }
   });
 
@@ -46,7 +50,8 @@
         }),
       );
     } catch {
-      /* ignore */
+      /* igno      setSoundEnabled(sound);
+      setHapticsEnabled(haptics);re */
     }
   }
 

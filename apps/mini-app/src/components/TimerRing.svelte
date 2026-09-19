@@ -27,10 +27,11 @@
   $: pct = limitSec > 0 ? remaining / limitSec : 0;
 
   // Color tiers: blue → yellow → red
+    // Color tiers: green → amber → red (standard 80/15/5 distribution)
   $: timerColor =
-    remaining <= dangerThreshold ? '#ef4444' :
-    remaining <= warningThreshold ? '#f59e0b' :
-    color;
+    remaining <= dangerThreshold ? '#ef4444' :     // 0-5s: red (5%)
+    remaining <= warningThreshold ? '#f59e0b' :    // 5-10s: amber (15%)
+    '#10b981';                                      // 10-30s: green (80%)
 
   $: radius = (size - strokeWidth) / 2;
   $: circumference = 2 * Math.PI * radius;

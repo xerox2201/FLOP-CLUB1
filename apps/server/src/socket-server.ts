@@ -44,14 +44,16 @@ export function setupSocketServer(io: SocketIOServer, db: Pool): void {
 
       const userId = payload.uid;
 
-      const uCheck = await db.query('SELECT is_banned, display_name FROM users WHERE id = $1', [
-        userId,
-      ]);
+      const uCheck = await db.query(
+        'SELECT is_banned, display_name, avatar_id FROM users WHERE id = $1',
+        [userId],
+      );
       if (uCheck.rows.length === 0) return next(new Error('user_not_found'));
       if (uCheck.rows[0].is_banned) return next(new Error('banned'));
 
       (socket as any).userId = userId;
       (socket as any).displayName = uCheck.rows[0].display_name;
+      (socket as any).avatarId = uCheck.rows[0].avatar_id || 'king';
 
       const ip = socket.handshake.address || 'unknown';
       await recordIp(db, userId, ip);
@@ -67,6 +69,7 @@ export function setupSocketServer(io: SocketIOServer, db: Pool): void {
   io.on('connection', (socket) => {
     const userId = (socket as any).userId;
     const displayName = (socket as any).displayName;
+    const avatarId = (socket as any).avatarId || 'king';
 
     console.log(`[socket.io] connected: ${displayName} (${socket.id})`);
 
@@ -275,7 +278,7 @@ export function setupSocketServer(io: SocketIOServer, db: Pool): void {
             id: `${now}_${Math.random().toString(36).slice(2, 8)}`,
             userId,
             displayName: displayName,
-            avatarId: 'spade',
+            avatarId: avatarId,
             text,
             isEmoji: !!data?.isEmoji || text.length <= 4,
             timestamp: now,

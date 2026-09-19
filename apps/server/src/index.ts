@@ -162,22 +162,29 @@ async function main() {
          ORDER BY id ASC`,
       );
       return {
-        tables: res.rows.map((r) => ({
-          id: r.id,
-          name: r.name,
-          variant: r.variant,
-          mode: r.mode,
-          speed: r.speed,
-          blinds: {
-            sb: Number(r.blinds?.sb ?? 0),
-            bb: Number(r.blinds?.bb ?? 0),
-            ante: Number(r.blinds?.ante ?? 0),
-          },
-          minBuyIn: Number(r.min_buyin ?? 0),
-          maxBuyIn: Number(r.max_buyin ?? 0),
-          maxSeats: Number(r.seats ?? 6),
-          rakePct: Number(r.rake_pct ?? 0),
-        })),
+        tables: res.rows.map((r) => {
+          const room = gameManager.getRoom(r.id);
+          const livePlayers = room ? room.players.size : 0;
+          const maxSeats = Number(r.seats ?? 6);
+          return {
+            id: r.id,
+            name: r.name,
+            variant: r.variant,
+            mode: r.mode,
+            speed: r.speed,
+            blinds: {
+              sb: Number(r.blinds?.sb ?? 0),
+              bb: Number(r.blinds?.bb ?? 0),
+              ante: Number(r.blinds?.ante ?? 0),
+            },
+            minBuyIn: Number(r.min_buyin ?? 0),
+            maxBuyIn: Number(r.max_buyin ?? 0),
+            maxSeats,
+            livePlayers,
+            seats: maxSeats, // backward compat
+            rakePct: Number(r.rake_pct ?? 0),
+          };
+        }),
       };
     } catch (e: any) {
       console.error('[tables] error:', e.message);

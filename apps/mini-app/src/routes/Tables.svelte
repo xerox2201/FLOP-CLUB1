@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { api } from '../lib/api';
   import TopBar from '../components/TopBar.svelte';
 
@@ -9,13 +9,30 @@
 
   let tables: any[] = [];
   let loading = true;
+  let error = '';
   let filterMode: 'all' | 'free' | 'real' = initialMode;
   let filterVariant: string = initialVariant;
 
-  onMount(async () => {
-    const res = await api.tables();
-    if (res.ok && res.data) tables = res.data.tables;
-    loading = false;
+  let pollTimer: any = null;
+
+  async function loadTables() {
+    try {
+      const res = await api.tables();
+      if (res.ok && res.data) tables = res.data.tables;
+    } catch (e: any) {
+      error = e.message;
+    } finally {
+      loading = false;
+    }
+  }
+
+  onMount(() => {
+    loadTables();
+    pollTimer = setInterval(loadTables, 4000);
+  });
+
+  onDestroy(() => {
+    if (pollTimer) clearInterval(pollTimer);
   });
 
   $: filtered = tables.filter((tbl) => {
@@ -44,12 +61,26 @@
     if (v === 'omaha5') return '#10b981';
     return '#d4af37';
   }
+
+  // ===== Seat availability =====
+  function seatStatus(live: number, max: number): {
+    color: string;
+    label: string;
+    pct: number;
+  } {
+    const safeMax = Math.max(1, max);
+    const pct = Math.min(100, (live / safeMax) * 100);
+    if (live >= safeMax) return { color: '#ef4444', label: 'Full', pct };
+    if (live >= safeMax - 1) return { color: '#f59e0b', label: 'Almost full', pct };
+    if (live === 0) return { color: '#6b7280', label: 'Empty', pct };
+    return { color: '#10b981', label: 'Open', pct };
+  }
 </script>
 
 <div class="px-4 pb-28">
   <TopBar />
 
-  <!-- ============ HEADER ============ -->
+  <!-- HEADER -->
   <div class="flex items-center justify-between mt-3 mb-4">
     <div>
       <h1 class="t-h1 text-white">Tables</h1>
@@ -69,7 +100,7 @@
     </div>
   </div>
 
-  <!-- ============ MODE FILTER ============ -->
+  <!-- MODE FILTER -->
   <div
     class="rounded-2xl p-1 grid grid-cols-3 gap-1 mb-3"
     style="
@@ -125,7 +156,7 @@
     </button>
   </div>
 
-  <!-- ============ VARIANT FILTER ============ -->
+  <!-- VARIANT FILTER -->
   <div class="flex gap-2 mb-5 overflow-x-auto no-scrollbar pb-1">
     <button
       on:click={() => (filterVariant = 'all')}
@@ -201,12 +232,12 @@
     </button>
   </div>
 
-  <!-- ============ LOADING ============ -->
+  <!-- LOADING -->
   {#if loading}
     <div class="space-y-3">
       {#each Array(3) as _}
         <div
-          class="rounded-2xl p-4 h-[100px]"
+          class="rounded-2xl p-4 h-[110px]"
           style="
             background: linear-gradient(180deg, rgba(15,31,58,0.6), rgba(11,19,36,0.8));
             border: 1px solid rgba(212,175,55,0.1);
@@ -242,6 +273,10 @@
       {#each filtered as table}
         {@const accent = variantColor(table.variant)}
         {@const isFree = table.mode === 'free'}
+        {@const live = Number(table.livePlayers ?? 0)}
+        {@const max = Number(table.maxSeats ?? table.seats ?? 6)}
+        {@const status = seatStatus(live, max)}
+
         <button
           on:click={() => onOpenTable(table.id)}
           class="w-full text-left rounded-2xl active:scale-[0.98] transition-all relative overflow-hidden"
@@ -312,13 +347,21 @@
               </div>
 
               <p class="text-[11px] text-white/60 font-mono">
-                {variantLabel(table.variant)} · <span class="text-cyan/80">${table.blinds.sb}/{table.blinds.bb}</span>
+                {variantLabel(table.variant)} · <span class="text-cyan/80">${table.blinds.sb}/${table.blinds.bb}</span>
               </p>
 
               <div class="flex items-center gap-3 mt-1.5 text-[10px]">
-                <span class="flex items-center gap-1 text-white/50">
-                  <span class="w-1.5 h-1.5 rounded-full" style="background: {accent}; box-shadow: 0 0 6px {accent};"></span>
-                  {table.seats} seats
+                <span class="flex items-center gap-1.5">
+                  <span
+                    class="w-1.5 h-1.5 rounded-full shrink-0"
+                    style="background: {status.color}; box-shadow: 0 0 6px {status.color};"
+                  ></span>
+                  <span class="font-extrabold text-[11px] tabular-nums" style="color: {status.color};">
+                    {live}
+                  </span>
+                  <span class="text-white/40">/</span>
+                  <span class="font-semibold text-[10px] text-white/70 tabular-nums">{max}</span>
+                  <span class="text-white/40">seats</span>
                 </span>
                 {#if table.mode === 'real' && table.minBuyIn > 0}
                   <span class="text-gold/80">
@@ -328,29 +371,27 @@
               </div>
             </div>
 
-            <!-- Arrow -->
-            <div
-              class="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-              style="
-                background: {isFree
-                  ? 'rgba(16,185,129,0.15)'
-                  : 'rgba(212,175,55,0.15)'};
-                border: 1px solid {isFree
-                  ? 'rgba(16,185,129,0.4)'
-                  : 'rgba(212,175,55,0.4)'};
-              "
-            >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke={isFree ? '#6ee7b7' : '#d4af37'}
-                stroke-width="3"
-                stroke-linecap="round"
+            <!-- Seat bar (right side) -->
+            <div class="shrink-0 flex flex-col items-end gap-1">
+              <div class="flex gap-0.5">
+                {#each Array(max) as _, i}
+                  <span
+                    class="w-1 h-5 rounded-sm transition-all"
+                    style="
+                      background: {i < live
+                        ? status.color
+                        : 'rgba(255,255,255,0.08)'};
+                      box-shadow: {i < live ? `0 0 4px ${status.color}80` : 'none'};
+                    "
+                  ></span>
+                {/each}
+              </div>
+              <span
+                class="text-[8px] font-extrabold uppercase tracking-wider"
+                style="color: {status.color};"
               >
-                <path d="M9 6l6 6-6 6" />
-              </svg>
+                {status.label}
+              </span>
             </div>
           </div>
         </button>
