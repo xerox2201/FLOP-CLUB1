@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import PokerTable from '../components/PokerTable.svelte';
+  import PokerTableMobile from '../components/poker/PokerTableMobile.svelte';
   import PlayingCard from '../components/PlayingCard.svelte';
   import HandHistoryModal from '../components/HandHistoryModal.svelte';
   import HandReplayModal from '../components/HandReplayModal.svelte';
@@ -14,7 +15,15 @@
 
   export let tableId: number = 1;
   export let onBack: () => void = () => {};
+// ===== Layout detection (portrait mobile) =====
+let isMobilePortrait = false;
 
+function updateLayout() {
+  if (typeof window === 'undefined') return;
+  isMobilePortrait =
+    window.innerWidth < 768 &&
+    window.innerHeight > window.innerWidth;
+}
   let socket: TableSocketIO | null = null;
   let gameState: TableState | null = null;
   let connected = false;
@@ -255,12 +264,21 @@
   }
 
   onMount(() => {
-    connect();
-    const interval = setInterval(() => {
-      nowTick = Date.now();
-    }, 500);
-    return () => clearInterval(interval);
-  });
+  connect();
+  updateLayout();
+  window.addEventListener('resize', updateLayout);
+  window.addEventListener('orientationchange', updateLayout);
+
+  const interval = setInterval(() => {
+    nowTick = Date.now();
+  }, 500);
+
+  return () => {
+    clearInterval(interval);
+    window.removeEventListener('resize', updateLayout);
+    window.removeEventListener('orientationchange', updateLayout);
+  };
+});
 
   onDestroy(() => {
     if (socket) socket.close();
@@ -689,18 +707,30 @@
     </div>
   {/if}
 
-  <!-- POKER TABLE -->
-  <PokerTable
-    {gameState}
-    {myUserId}
-    {myAvatarId}
-    theme={isTournament ? 'tournament' : 'cash'}
-    {handResult}
-    {isFinalTable}
-    tournamentTitle={isTournament ? 'Tournament' : ''}
-    onPlayerClick={openPlayerInfo}
-  />
-
+    <!-- POKER TABLE — desktop or mobile portrait -->
+  {#if isMobilePortrait}
+    <PokerTableMobile
+      {gameState}
+      {myUserId}
+      {myAvatarId}
+      theme={isTournament ? 'tournament' : 'cash'}
+      {handResult}
+      {isFinalTable}
+      tournamentTitle={isTournament ? 'Tournament' : ''}
+      onPlayerClick={openPlayerInfo}
+    />
+  {:else}
+    <PokerTable
+      {gameState}
+      {myUserId}
+      {myAvatarId}
+      theme={isTournament ? 'tournament' : 'cash'}
+      {handResult}
+      {isFinalTable}
+      tournamentTitle={isTournament ? 'Tournament' : ''}
+      onPlayerClick={openPlayerInfo}
+    />
+  {/if}
   <!-- MODALS -->
   <HandHistoryModal
     open={showHandHistory}
