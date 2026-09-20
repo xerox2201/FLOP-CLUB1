@@ -98,7 +98,7 @@
   $: allSeats = gameState?.seats ?? [];
   $: totalSeats = allSeats.length;
   $: S = getSizes(totalSeats);
-  $: pSize = totalSeats <= 3 ? 'xl' : totalSeats <= 5 ? 'lg' : totalSeats <= 7 ? 'md' : 'sm';
+  $: pSize = ((totalSeats <= 3 ? 'xl' : totalSeats <= 5 ? 'lg' : totalSeats <= 7 ? 'md' : 'sm') as 'sm' | 'md' | 'lg' | 'xl');
 
   $: heroIdx = allSeats.findIndex((s: any) => Number(s.userId) === Number(myUserId));
   $: mySeat = heroIdx >= 0 ? allSeats[heroIdx] : (allSeats[0] ?? null);

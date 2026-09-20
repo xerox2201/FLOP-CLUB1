@@ -27,6 +27,10 @@ export interface TableState {
   mode?: 'free' | 'real';
   totalRake?: number;
   totalRebuy?: number;
+ tournamentId?: number;
+  tournamentTableNumber?: number;
+  clientSeed?: string;
+  revealSeed?: string;
 }
 
 export interface ChatMessage {

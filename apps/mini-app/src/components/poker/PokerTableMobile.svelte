@@ -12,7 +12,7 @@
   export let handResult: any = null;
   export let isFinalTable: boolean = false;
   export let onPlayerClick: (userId: number) => void = () => {};
-
+  export let orientation: 'portrait' | 'landscape' = 'portrait';
   function fmt(n: any): string {
     const num = Number(n || 0);
     if (num === Math.floor(num)) return String(Math.floor(num));
@@ -42,36 +42,67 @@
     timerExtra: number;
   };
 
-  function getSizes(total: number): Sizes {
-    if (total <= 2)
-      return { avatar: 52, nameW: 76, nameFont: 10, stackFont: 10, betChip: 12, betFont: 9,  cardSize: 'sm', potTop: 26, potFont: 13, timerExtra: 12 };
-    if (total === 3)
-      return { avatar: 48, nameW: 72, nameFont: 10, stackFont: 10, betChip: 12, betFont: 9,  cardSize: 'sm', potTop: 26, potFont: 12, timerExtra: 10 };
-    if (total === 4)
-      return { avatar: 42, nameW: 66, nameFont: 9,  stackFont: 9,  betChip: 10, betFont: 8,  cardSize: 'xs', potTop: 26, potFont: 11, timerExtra: 10 };
-    if (total === 5)
-      return { avatar: 38, nameW: 62, nameFont: 9,  stackFont: 9,  betChip: 10, betFont: 8,  cardSize: 'xs', potTop: 26, potFont: 11, timerExtra: 8  };
-    if (total === 6)
-      return { avatar: 34, nameW: 58, nameFont: 8,  stackFont: 8,  betChip: 10, betFont: 8,  cardSize: 'xs', potTop: 26, potFont: 11, timerExtra: 8  };
-    if (total === 7)
-      return { avatar: 32, nameW: 54, nameFont: 8,  stackFont: 8,  betChip: 9,  betFont: 7,  cardSize: 'xs', potTop: 24, potFont: 10, timerExtra: 6  };
-    return { avatar: 30, nameW: 50, nameFont: 8,  stackFont: 8,  betChip: 9,  betFont: 7,  cardSize: 'xs', potTop: 24, potFont: 10, timerExtra: 6  };
+ function getSizesBase(total: number): Sizes {
+  if (total <= 2)
+    return { avatar: 60, nameW: 84, nameFont: 11, stackFont: 11, betChip: 14, betFont: 10, cardSize: 'md', potTop: 24, potFont: 15, timerExtra: 14 };
+  if (total === 3)
+    return { avatar: 52, nameW: 78, nameFont: 10, stackFont: 10, betChip: 12, betFont: 9,  cardSize: 'sm', potTop: 26, potFont: 13, timerExtra: 12 };
+  if (total === 4)
+    return { avatar: 46, nameW: 70, nameFont: 10, stackFont: 10, betChip: 11, betFont: 9,  cardSize: 'sm', potTop: 26, potFont: 12, timerExtra: 10 };
+  if (total === 5)
+    return { avatar: 40, nameW: 64, nameFont: 9,  stackFont: 9,  betChip: 10, betFont: 8,  cardSize: 'xs', potTop: 26, potFont: 11, timerExtra: 8  };
+  if (total === 6)
+    return { avatar: 36, nameW: 60, nameFont: 9,  stackFont: 9,  betChip: 10, betFont: 8,  cardSize: 'xs', potTop: 26, potFont: 11, timerExtra: 8  };
+  if (total === 7)
+    return { avatar: 34, nameW: 56, nameFont: 8,  stackFont: 8,  betChip: 9,  betFont: 7,  cardSize: 'xs', potTop: 24, potFont: 10, timerExtra: 6  };
+  return { avatar: 32, nameW: 52, nameFont: 8,  stackFont: 8,  betChip: 9,  betFont: 7,  cardSize: 'xs', potTop: 24, potFont: 10, timerExtra: 6  };
+}
+
+function getSizes(total: number): Sizes {
+  const base = getSizesBase(total);
+  if (orientation === 'landscape') {
+    return {
+      ...base,
+      avatar: Math.round(base.avatar * 0.8),
+      nameW: Math.round(base.nameW * 0.85),
+      nameFont: Math.max(8, base.nameFont - 1),
+      stackFont: Math.max(8, base.stackFont - 1),
+      betChip: Math.round(base.betChip * 0.85),
+      betFont: Math.max(7, base.betFont - 1),
+      potTop: 18,
+      potFont: Math.max(11, base.potFont - 2),
+      timerExtra: Math.max(6, base.timerExtra - 2),
+    };
   }
+  return base;
+}
 
   // ============================================================
   // PORTRAIT SEAT POSITION — Hero at bottom, oval shifted up
   // ============================================================
   function seatPos(rotatedIdx: number, total: number): { x: number; y: number } {
-    const angleDeg = 90 + (rotatedIdx * 360) / total;
-    const rad = (angleDeg * Math.PI) / 180;
-    const rx = 40;   // horizontal radius (% of container width)
-    const ry = 36;   // vertical radius   (% of container height)
-    const cy = 46;   // center Y shifted up to leave room at bottom
+  const angleDeg = 90 + (rotatedIdx * 360) / total;
+  const rad = (angleDeg * Math.PI) / 180;
+
+  if (orientation === 'landscape') {
+    const rx = 42;
+    const ry = 36;
+    const cy = 50;
     return {
       x: 50 + Math.cos(rad) * rx,
       y: cy + Math.sin(rad) * ry,
     };
   }
+
+  // portrait
+  const rx = 40;
+  const ry = 36;
+  const cy = 46;
+  return {
+    x: 50 + Math.cos(rad) * rx,
+    y: cy + Math.sin(rad) * ry,
+  };
+}
 
   function betPos(pos: { x: number; y: number }, S: Sizes): { x: string; y: string } {
     const dx = 50 - pos.x;
@@ -95,7 +126,11 @@
   $: allSeats = gameState?.seats ?? [];
   $: totalSeats = allSeats.length;
   $: S = getSizes(totalSeats);
-  $: pSize = totalSeats <= 2 ? 'lg' : totalSeats <= 4 ? 'md' : 'sm';
+  $: pSize = ((totalSeats <= 2 ? 'lg' : totalSeats <= 4 ? 'md' : 'sm') as 'sm' | 'md' | 'lg' | 'xl');
+// vertical positions adapt to orientation
+$: heroTop      = orientation === 'landscape' ? 82 : 86;
+$: communityTop = orientation === 'landscape' ? 44 : 47;
+$: logoTop      = orientation === 'landscape' ? 60 : 62;
 
   $: heroIdx = allSeats.findIndex((s: any) => Number(s.userId) === Number(myUserId));
   $: mySeat = heroIdx >= 0 ? allSeats[heroIdx] : (allSeats[0] ?? null);
@@ -215,15 +250,22 @@
      ============================================================ -->
 <div
   class="absolute inset-0 flex items-center justify-center"
-  style="padding-top: 56px; padding-bottom: 190px;"
+  style="
+    padding-top: {orientation === 'landscape' ? 48 : 56}px;
+    padding-bottom: {orientation === 'landscape' ? 120 : 190}px;
+  "
 >
   <div
     class="relative w-full"
-    style="aspect-ratio: 3 / 4; max-height: 100%; max-width: 480px;"
+    style="
+      aspect-ratio: {orientation === 'landscape' ? '16 / 9' : '3 / 4'};
+      max-height: 100%;
+      max-width: {orientation === 'landscape' ? '900px' : '480px'};
+    "
   >
-    <!-- Table image (mobile version) -->
+    <!-- Table image -->
     <img
-      src="/table-top-mobile.webp"
+      src={orientation === 'landscape' ? '/table-top-desktop.webp' : '/table-top-mobile.webp'}
       alt=""
       class="absolute inset-0 w-full h-full object-contain select-none pointer-events-none"
       draggable="false"
@@ -329,7 +371,7 @@
     <!-- ========== CENTER LOGO ========== -->
     <div
       class="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-[5] pointer-events-none"
-      style="top: 62%;"
+            style="top: {logoTop}%;"
     >
       <img
         src="/logo-flop-club.png"
@@ -352,7 +394,7 @@
 
     <!-- ========== COMMUNITY CARDS ========== -->
     {#if gameState}
-      <div class="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-1 z-[10]" style="top: 47%;">
+      <div class="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-1 z-[10]" style="top: {communityTop}%;">
         {#each Array(5) as _, i}
           {#if community[i]}
             {@const isWinCard = isWinningCard(community[i])}
@@ -461,7 +503,7 @@
 
       <div
         class="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-[30]"
-        style="top: 86%;"
+        style="top: {heroTop}%;"
       >
         {#if heroHole.length > 0 && !isEliminated}
           {#key gameState.handNo}

@@ -169,8 +169,8 @@
           <Table tableId={activeTableId} onBack={backFromTable} />
         {:else if currentPage === 'leaderboard'}
           <Leaderboard />
-        {:else if currentPage === 'events'}
-          <Events onNavigate={navigate} />
+       {:else if currentPage === 'events'}
+  <Events />
         {:else if currentPage === 'tournaments'}
           <Tournaments onOpenTournament={openTournament} />
         {:else if currentPage === 'tournament-detail' && activeTournamentId !== null}

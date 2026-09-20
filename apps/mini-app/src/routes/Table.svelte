@@ -15,14 +15,16 @@
 
   export let tableId: number = 1;
   export let onBack: () => void = () => {};
-// ===== Layout detection (portrait mobile) =====
+// ===== Layout detection (portrait / landscape mobile) =====
 let isMobilePortrait = false;
+let isMobileLandscape = false;
 
 function updateLayout() {
   if (typeof window === 'undefined') return;
-  isMobilePortrait =
-    window.innerWidth < 768 &&
-    window.innerHeight > window.innerWidth;
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  isMobilePortrait = w < 768 && h > w;
+  isMobileLandscape = h < 500 && w > h && w < 1200;
 }
   let socket: TableSocketIO | null = null;
   let gameState: TableState | null = null;
@@ -707,9 +709,22 @@ function updateLayout() {
     </div>
   {/if}
 
-    <!-- POKER TABLE — desktop or mobile portrait -->
+  <!-- POKER TABLE — desktop / mobile portrait / mobile landscape -->
   {#if isMobilePortrait}
     <PokerTableMobile
+      orientation="portrait"
+      {gameState}
+      {myUserId}
+      {myAvatarId}
+      theme={isTournament ? 'tournament' : 'cash'}
+      {handResult}
+      {isFinalTable}
+      tournamentTitle={isTournament ? 'Tournament' : ''}
+      onPlayerClick={openPlayerInfo}
+    />
+  {:else if isMobileLandscape}
+    <PokerTableMobile
+      orientation="landscape"
       {gameState}
       {myUserId}
       {myAvatarId}
@@ -898,7 +913,7 @@ function updateLayout() {
           >
             <div class="flex items-center justify-between mb-3 gap-3">
               <button
-                on:click={() => setRaise(raiseAmount - gameState.bigBlind)}
+                on:click={() => setRaise(raiseAmount - (gameState?.bigBlind ?? 0))}
                 aria-label="Decrease"
                 class="w-9 h-9 rounded-full flex items-center justify-center text-white text-lg active:scale-95 shrink-0"
                 style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4);"
@@ -921,7 +936,7 @@ function updateLayout() {
               </div>
 
               <button
-                on:click={() => setRaise(raiseAmount + gameState.bigBlind)}
+                on:click={() => setRaise(raiseAmount + (gameState?.bigBlind ?? 0))}
                 aria-label="Increase"
                 class="w-9 h-9 rounded-full flex items-center justify-center text-white text-lg active:scale-95 shrink-0"
                 style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4);"

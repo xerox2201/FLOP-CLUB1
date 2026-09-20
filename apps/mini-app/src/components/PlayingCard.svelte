@@ -148,12 +148,12 @@
   }
 
   .card-front {
-    transform: rotateY(180deg);
-  }
+  transform: rotateY(0deg);
+}
 
-  .card-back {
-    transform: rotateY(0deg);
-  }
+.card-back {
+  transform: rotateY(180deg);
+}
 
   /* ===== DEAL IN ===== */
   @keyframes card-deal-in {
