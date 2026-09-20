@@ -12,7 +12,7 @@
   export let handResult: any = null;
   export let isFinalTable: boolean = false;
   export let onPlayerClick: (userId: number) => void = () => {};
-  export let orientation: 'portrait' | 'landscape' = 'portrait';
+
   function fmt(n: any): string {
     const num = Number(n || 0);
     if (num === Math.floor(num)) return String(Math.floor(num));
@@ -26,9 +26,6 @@
     return '♣';
   }
 
-  // ============================================================
-  // MOBILE-ADAPTIVE SIZES (smaller than desktop)
-  // ============================================================
   type Sizes = {
     avatar: number;
     nameW: number;
@@ -42,67 +39,33 @@
     timerExtra: number;
   };
 
- function getSizesBase(total: number): Sizes {
-  if (total <= 2)
-    return { avatar: 60, nameW: 84, nameFont: 11, stackFont: 11, betChip: 14, betFont: 10, cardSize: 'md', potTop: 24, potFont: 15, timerExtra: 14 };
-  if (total === 3)
-    return { avatar: 52, nameW: 78, nameFont: 10, stackFont: 10, betChip: 12, betFont: 9,  cardSize: 'sm', potTop: 26, potFont: 13, timerExtra: 12 };
-  if (total === 4)
-    return { avatar: 46, nameW: 70, nameFont: 10, stackFont: 10, betChip: 11, betFont: 9,  cardSize: 'sm', potTop: 26, potFont: 12, timerExtra: 10 };
-  if (total === 5)
-    return { avatar: 40, nameW: 64, nameFont: 9,  stackFont: 9,  betChip: 10, betFont: 8,  cardSize: 'xs', potTop: 26, potFont: 11, timerExtra: 8  };
-  if (total === 6)
-    return { avatar: 36, nameW: 60, nameFont: 9,  stackFont: 9,  betChip: 10, betFont: 8,  cardSize: 'xs', potTop: 26, potFont: 11, timerExtra: 8  };
-  if (total === 7)
-    return { avatar: 34, nameW: 56, nameFont: 8,  stackFont: 8,  betChip: 9,  betFont: 7,  cardSize: 'xs', potTop: 24, potFont: 10, timerExtra: 6  };
-  return { avatar: 32, nameW: 52, nameFont: 8,  stackFont: 8,  betChip: 9,  betFont: 7,  cardSize: 'xs', potTop: 24, potFont: 10, timerExtra: 6  };
-}
-
-function getSizes(total: number): Sizes {
-  const base = getSizesBase(total);
-  if (orientation === 'landscape') {
-    return {
-      ...base,
-      avatar: Math.round(base.avatar * 0.8),
-      nameW: Math.round(base.nameW * 0.85),
-      nameFont: Math.max(8, base.nameFont - 1),
-      stackFont: Math.max(8, base.stackFont - 1),
-      betChip: Math.round(base.betChip * 0.85),
-      betFont: Math.max(7, base.betFont - 1),
-      potTop: 18,
-      potFont: Math.max(11, base.potFont - 2),
-      timerExtra: Math.max(6, base.timerExtra - 2),
-    };
+  function getSizes(total: number): Sizes {
+    if (total <= 2)
+      return { avatar: 60, nameW: 84, nameFont: 11, stackFont: 11, betChip: 14, betFont: 10, cardSize: 'md', potTop: 24, potFont: 15, timerExtra: 14 };
+    if (total === 3)
+      return { avatar: 52, nameW: 78, nameFont: 10, stackFont: 10, betChip: 12, betFont: 9,  cardSize: 'sm', potTop: 26, potFont: 13, timerExtra: 12 };
+    if (total === 4)
+      return { avatar: 46, nameW: 70, nameFont: 10, stackFont: 10, betChip: 11, betFont: 9,  cardSize: 'sm', potTop: 26, potFont: 12, timerExtra: 10 };
+    if (total === 5)
+      return { avatar: 40, nameW: 64, nameFont: 9,  stackFont: 9,  betChip: 10, betFont: 8,  cardSize: 'xs', potTop: 26, potFont: 11, timerExtra: 8  };
+    if (total === 6)
+      return { avatar: 36, nameW: 60, nameFont: 9,  stackFont: 9,  betChip: 10, betFont: 8,  cardSize: 'xs', potTop: 26, potFont: 11, timerExtra: 8  };
+    if (total === 7)
+      return { avatar: 34, nameW: 56, nameFont: 8,  stackFont: 8,  betChip: 9,  betFont: 7,  cardSize: 'xs', potTop: 24, potFont: 10, timerExtra: 6  };
+    return { avatar: 32, nameW: 52, nameFont: 8,  stackFont: 8,  betChip: 9,  betFont: 7,  cardSize: 'xs', potTop: 24, potFont: 10, timerExtra: 6  };
   }
-  return base;
-}
 
-  // ============================================================
-  // PORTRAIT SEAT POSITION — Hero at bottom, oval shifted up
-  // ============================================================
   function seatPos(rotatedIdx: number, total: number): { x: number; y: number } {
-  const angleDeg = 90 + (rotatedIdx * 360) / total;
-  const rad = (angleDeg * Math.PI) / 180;
-
-  if (orientation === 'landscape') {
-    const rx = 42;
-    const ry = 36;
-    const cy = 50;
+    const angleDeg = 90 + (rotatedIdx * 360) / total;
+    const rad = (angleDeg * Math.PI) / 180;
+    const rx = 38;
+    const ry = 38;
+    const cy = 46;
     return {
       x: 50 + Math.cos(rad) * rx,
       y: cy + Math.sin(rad) * ry,
     };
   }
-
-  // portrait
-  const rx = 40;
-  const ry = 36;
-  const cy = 46;
-  return {
-    x: 50 + Math.cos(rad) * rx,
-    y: cy + Math.sin(rad) * ry,
-  };
-}
 
   function betPos(pos: { x: number; y: number }, S: Sizes): { x: string; y: string } {
     const dx = 50 - pos.x;
@@ -120,17 +83,14 @@ function getSizes(total: number): Sizes {
     };
   }
 
-  // ============================================================
-  // REACTIVE
-  // ============================================================
   $: allSeats = gameState?.seats ?? [];
   $: totalSeats = allSeats.length;
   $: S = getSizes(totalSeats);
   $: pSize = ((totalSeats <= 2 ? 'lg' : totalSeats <= 4 ? 'md' : 'sm') as 'sm' | 'md' | 'lg' | 'xl');
-// vertical positions adapt to orientation
-$: heroTop      = orientation === 'landscape' ? 82 : 86;
-$: communityTop = orientation === 'landscape' ? 44 : 47;
-$: logoTop      = orientation === 'landscape' ? 60 : 62;
+
+  $: heroTop = 86;
+  $: communityTop = 47;
+  $: logoTop = 62;
 
   $: heroIdx = allSeats.findIndex((s: any) => Number(s.userId) === Number(myUserId));
   $: mySeat = heroIdx >= 0 ? allSeats[heroIdx] : (allSeats[0] ?? null);
@@ -204,7 +164,6 @@ $: logoTop      = orientation === 'landscape' ? 60 : 62;
     return winningCardKeys.has(`${c.r}${c.s}`);
   }
 
-  // ===== Chip fly =====
   let chipFlies: { id: number; fromX: number; fromY: number; toX: number; toY: number; delay: number }[] = [];
   let chipFlyIdCounter = 0;
 
@@ -213,7 +172,6 @@ $: logoTop      = orientation === 'landscape' ? 60 : 62;
     for (const winnerSeat of winners) {
       const winnerSeatInfo = allSeats.find((s: any) => s.seat === winnerSeat);
       if (!winnerSeatInfo) continue;
-
       let toX = 50, toY = 50;
       if (winnerSeat === mySeat?.seat) {
         toX = 50; toY = 88;
@@ -221,15 +179,9 @@ $: logoTop      = orientation === 'landscape' ? 60 : 62;
         const pos = oppPos(winnerSeat);
         toX = pos.x; toY = pos.y;
       }
-
       const payout = showdownData?.[winnerSeat]?.payout ?? 0;
       if (payout > 0) {
-        flies.push({
-          id: ++chipFlyIdCounter,
-          fromX: 50, fromY: S.potTop,
-          toX, toY,
-          delay: 0.3,
-        });
+        flies.push({ id: ++chipFlyIdCounter, fromX: 50, fromY: S.potTop, toX, toY, delay: 0.3 });
       }
     }
     chipFlies = flies;
@@ -245,154 +197,90 @@ $: logoTop      = orientation === 'landscape' ? 60 : 62;
   $: isFinal = isFinalTable;
 </script>
 
-<!-- ============================================================
-     MOBILE CONTAINER — full height, leaving room for header + action bar
-     ============================================================ -->
 <div
   class="absolute inset-0 flex items-center justify-center"
-  style="
-    padding-top: {orientation === 'landscape' ? 48 : 56}px;
-    padding-bottom: {orientation === 'landscape' ? 120 : 190}px;
-  "
+  style="padding-top: 50px; padding-bottom: 230px;"
 >
   <div
-    class="relative w-full"
-    style="
-      aspect-ratio: {orientation === 'landscape' ? '16 / 9' : '3 / 4'};
-      max-height: 100%;
-      max-width: {orientation === 'landscape' ? '900px' : '480px'};
-    "
+    class="relative felt"
+    style="aspect-ratio: 1 / 2;"
   >
-    <!-- Table image -->
     <img
-      src={orientation === 'landscape' ? '/table-top-desktop.webp' : '/table-top-mobile.webp'}
+      src="/table-top-mobile.webp"
       alt=""
-      class="absolute inset-0 w-full h-full object-contain select-none pointer-events-none"
+      class="absolute inset-0 w-full h-full object-fill select-none pointer-events-none"
       draggable="false"
       style="filter: drop-shadow(0 16px 40px rgba(0,0,0,0.9)) {isFinal ? 'drop-shadow(0 0 32px rgba(212,175,55,0.4))' : ''};"
     />
 
-    <!-- ========== WINNER ANNOUNCEMENT ========== -->
     {#if winnerPlayer && winners.length > 0}
       <div class="absolute left-1/2 -translate-x-1/2 z-[70] winner-announce pointer-events-none" style="top: 1%;">
         <div
           class="rounded-xl px-3 py-1 text-center winner-glow-card"
-          style="
-            background: linear-gradient(180deg, rgba(8,13,36,0.98), rgba(5,8,15,0.98));
-            border: 1.5px solid #d4af37;
-            min-width: 130px;
-          "
+          style="background: linear-gradient(180deg, rgba(8,13,36,0.98), rgba(5,8,15,0.98)); border: 1.5px solid #d4af37; min-width: 130px;"
         >
           <p class="text-[7px] uppercase tracking-[0.3em] text-gold/80 font-bold mb-0.5">
             {winners.length > 1 ? 'Winners' : 'Winner'}
           </p>
-          <p class="text-[12px] font-extrabold text-white leading-tight">
-            {winnerDisplayName}
-          </p>
+          <p class="text-[12px] font-extrabold text-white leading-tight">{winnerDisplayName}</p>
           {#if winnerPlayer.handName && handResult?.showdownPlayers?.filter((p: any) => p.hole?.length > 0).length > 1}
             <p class="text-[9px] text-gold font-bold">{winnerPlayer.handName}</p>
           {:else}
             <p class="text-[8px] text-white/70 font-bold">wins the pot</p>
           {/if}
           {#if winnerPlayer.payout > 0}
-            <p class="text-[11px] font-extrabold text-emerald-400 tabular-nums">
-              +${fmt(winnerPlayer.payout)}
-            </p>
+            <p class="text-[11px] font-extrabold text-emerald-400 tabular-nums">+${fmt(winnerPlayer.payout)}</p>
           {/if}
         </div>
       </div>
     {/if}
 
-    <!-- ========== HAND COMPARISON (compact) ========== -->
     {#if handResult?.showdownPlayers && handResult.showdownPlayers.length > 1 && winners.length > 0 && handResult.showdownPlayers.filter((p: any) => p.hole?.length > 0).length > 1}
       <div class="absolute top-[1%] right-[2%] z-[65] comparison-panel">
-        <div
-          class="rounded-lg p-1 space-y-0.5"
-          style="background: rgba(5,8,15,0.94); border: 1px solid rgba(212,175,55,0.35); backdrop-filter: blur(10px); min-width: 108px;"
-        >
+        <div class="rounded-lg p-1 space-y-0.5" style="background: rgba(5,8,15,0.94); border: 1px solid rgba(212,175,55,0.35); backdrop-filter: blur(10px); min-width: 108px;">
           <p class="text-[6px] uppercase tracking-[0.2em] text-white/40 font-bold px-1">Showdown</p>
           {#each handResult.showdownPlayers as p}
-            <div
-              class="flex items-center justify-between px-1.5 py-0.5 rounded-md"
-              style="
-                background: {p.isWinner ? 'linear-gradient(90deg, rgba(244,201,93,0.2), rgba(244,201,93,0.05))' : 'transparent'};
-                border: 1px solid {p.isWinner ? 'rgba(244,201,93,0.5)' : 'transparent'};
-              "
-            >
+            <div class="flex items-center justify-between px-1.5 py-0.5 rounded-md" style="background: {p.isWinner ? 'linear-gradient(90deg, rgba(244,201,93,0.2), rgba(244,201,93,0.05))' : 'transparent'}; border: 1px solid {p.isWinner ? 'rgba(244,201,93,0.5)' : 'transparent'};">
               <span class="text-[7px] font-bold truncate" style="color: {p.isWinner ? '#f4e5a8' : 'rgba(255,255,255,0.6)'};">
                 {p.userId === myUserId ? 'You' : shortName(allSeats.find((s: any) => s.seat === p.seat)?.displayName ?? '?')}
               </span>
-              <span class="text-[6px] font-mono ml-1 shrink-0" style="color: {p.isWinner ? '#d4af37' : 'rgba(255,255,255,0.4)'};">
-                {p.handName}
-              </span>
+              <span class="text-[6px] font-mono ml-1 shrink-0" style="color: {p.isWinner ? '#d4af37' : 'rgba(255,255,255,0.4)'};">{p.handName}</span>
             </div>
           {/each}
         </div>
       </div>
     {/if}
 
-    <!-- ========== POT ========== -->
     {#if gameState && totalPot > 0 && winners.length === 0}
       {#if sidePots.length > 1}
         <div class="absolute left-1/2 -translate-x-1/2 z-[15] flex flex-col items-center gap-0.5" style="top: {S.potTop}%;">
           {#each sidePots as pot}
-            <div
-              class="rounded-full pl-1.5 pr-2 py-0.5 flex items-center gap-1"
-              style="background: rgba(0,0,0,0.92); border: 1.5px solid {pot.type === 'main' ? '#d4af37' : '#3b82f6'};"
-            >
-              <span class="text-[6px] uppercase tracking-widest font-extrabold" style="color: {pot.type === 'main' ? '#d4af37' : '#3b82f6'};">
-                {pot.label}
-              </span>
-              <span class="text-[8px] font-extrabold tabular-nums" style="color: {pot.type === 'main' ? '#d4af37' : '#3b82f6'};">
-                ${fmt(pot.amount)}
-              </span>
+            <div class="rounded-full pl-1.5 pr-2 py-0.5 flex items-center gap-1" style="background: rgba(0,0,0,0.92); border: 1.5px solid {pot.type === 'main' ? '#d4af37' : '#3b82f6'};">
+              <span class="text-[6px] uppercase tracking-widest font-extrabold" style="color: {pot.type === 'main' ? '#d4af37' : '#3b82f6'};">{pot.label}</span>
+              <span class="text-[8px] font-extrabold tabular-nums" style="color: {pot.type === 'main' ? '#d4af37' : '#3b82f6'};">${fmt(pot.amount)}</span>
             </div>
           {/each}
         </div>
       {:else}
         <div class="absolute left-1/2 -translate-x-1/2 z-[15]" style="top: {S.potTop}%;">
-          <div
-            class="rounded-full px-2.5 py-0.5 flex items-center gap-1.5"
-            style="
-              background: linear-gradient(180deg, rgba(0,0,0,0.95), rgba(0,0,0,0.85));
-              border: 1.5px solid #d4af37;
-              box-shadow: 0 3px 14px rgba(0,0,0,0.9), 0 0 16px rgba(212,175,55,0.3);
-            "
-          >
+          <div class="rounded-full px-2.5 py-0.5 flex items-center gap-1.5" style="background: linear-gradient(180deg, rgba(0,0,0,0.95), rgba(0,0,0,0.85)); border: 1.5px solid #d4af37; box-shadow: 0 3px 14px rgba(0,0,0,0.9), 0 0 16px rgba(212,175,55,0.3);">
             <span class="text-[7px] uppercase tracking-widest font-extrabold text-gold/70">POT</span>
-            <span class="font-black text-gold tabular-nums" style="font-size: {S.potFont}px;">
-              ${fmt(totalPot)}
-            </span>
+            <span class="font-black text-gold tabular-nums" style="font-size: {S.potFont}px;">${fmt(totalPot)}</span>
           </div>
         </div>
       {/if}
     {/if}
 
-    <!-- ========== CENTER LOGO ========== -->
-    <div
-      class="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-[5] pointer-events-none"
-            style="top: {logoTop}%;"
-    >
-      <img
-        src="/logo-flop-club.png"
-        alt=""
-        class="object-contain select-none"
-        style="width: 40px; height: 40px; opacity: 0.55;"
-        draggable="false"
-      />
+    <div class="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-[5] pointer-events-none" style="top: {logoTop}%;">
+      <img src="/logo-flop-club.png" alt="" class="object-contain select-none" style="width: 40px; height: 40px; opacity: 0.55;" draggable="false" />
     </div>
 
-    <!-- ========== CHIP FLY ========== -->
     {#each chipFlies as fly (fly.id)}
-      <div
-        class="chip-fly"
-        style="--from-x: {fly.fromX}%; --from-y: {fly.fromY}%; --to-x: {fly.toX}%; --to-y: {fly.toY}%; animation-delay: {fly.delay}s;"
-      >
+      <div class="chip-fly" style="--from-x: {fly.fromX}%; --from-y: {fly.fromY}%; --to-x: {fly.toX}%; --to-y: {fly.toY}%; animation-delay: {fly.delay}s;">
         <PokerChip amount={Math.min(totalPot, 100)} size={16} />
       </div>
     {/each}
 
-    <!-- ========== COMMUNITY CARDS ========== -->
     {#if gameState}
       <div class="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-1 z-[10]" style="top: {communityTop}%;">
         {#each Array(5) as _, i}
@@ -405,22 +293,12 @@ $: logoTop      = orientation === 'landscape' ? 60 : 62;
               {/if}
             </div>
           {:else}
-            <div
-              class="rounded-md"
-              style="
-                width: {S.cardSize === 'md' ? 50 : S.cardSize === 'sm' ? 34 : 26}px;
-                height: {S.cardSize === 'md' ? 70 : S.cardSize === 'sm' ? 48 : 36}px;
-                background: rgba(0,0,0,0.4);
-                border: 1px solid rgba(212,175,55,0.12);
-                box-shadow: inset 0 2px 6px rgba(0,0,0,0.7);
-              "
-            ></div>
+            <div class="rounded-md" style="width: {S.cardSize === 'md' ? 50 : S.cardSize === 'sm' ? 34 : 26}px; height: {S.cardSize === 'md' ? 70 : S.cardSize === 'sm' ? 48 : 36}px; background: rgba(0,0,0,0.4); border: 1px solid rgba(212,175,55,0.12); box-shadow: inset 0 2px 6px rgba(0,0,0,0.7);"></div>
           {/if}
         {/each}
       </div>
     {/if}
 
-    <!-- ========== OPPONENTS ========== -->
     {#each opponents as s}
       {@const pos = oppPos(s.seat)}
       {@const bPos = betPos(pos, S)}
@@ -431,16 +309,9 @@ $: logoTop      = orientation === 'landscape' ? 60 : 62;
       {@const isShowdown = inShowdown(s.seat)}
       {@const isShowdownWin = showdownWin(s.seat)}
       {@const isShowdownLose = showdownLose(s.seat)}
-      {@const hole = (() => {
-        if (!handResult?.showdownPlayers) return [];
-        const p = handResult.showdownPlayers.find((x: any) => x.seat === s.seat);
-        return p?.hole ?? [];
-      })()}
+      {@const hole = (() => { if (!handResult?.showdownPlayers) return []; const p = handResult.showdownPlayers.find((x: any) => x.seat === s.seat); return p?.hole ?? []; })()}
 
-      <div
-        class="absolute -translate-x-1/2 -translate-y-1/2 z-[20]"
-        style="left: {pos.x}%; top: {pos.y}%;"
-      >
+      <div class="absolute -translate-x-1/2 -translate-y-1/2 z-[20]" style="left: {pos.x}%; top: {pos.y}%;">
         <PlayerSeat
           player={s}
           {myUserId}
@@ -465,46 +336,21 @@ $: logoTop      = orientation === 'landscape' ? 60 : 62;
       </div>
 
       {#if betAmount > 0 && !s.folded && winners.length === 0}
-        <div
-          class="absolute -translate-x-1/2 -translate-y-1/2 z-[22] pointer-events-none chip-enter"
-          style="left: {bPos.x}; top: {bPos.y};"
-        >
-          <div
-            class="flex items-center justify-center rounded-full"
-            style="
-              height: 18px;
-              min-width: 26px;
-              padding: 0 7px;
-              background: linear-gradient(180deg, #f4e5a8 0%, #d4af37 55%, #a87a15 100%);
-              box-shadow:
-                0 2px 6px rgba(0,0,0,0.9),
-                inset 0 1px 0 rgba(255,255,255,0.6),
-                inset 0 -1px 0 rgba(0,0,0,0.3);
-              border: 1px solid rgba(122,86,10,0.9);
-            "
-          >
-            <span
-              class="font-black text-black tabular-nums leading-none"
-              style="font-size: 9px; letter-spacing: -0.02em;"
-            >
-              {fmt(betAmount)}
-            </span>
+        <div class="absolute -translate-x-1/2 -translate-y-1/2 z-[22] pointer-events-none chip-enter" style="left: {bPos.x}; top: {bPos.y};">
+          <div class="flex items-center justify-center rounded-full" style="height: 18px; min-width: 26px; padding: 0 7px; background: linear-gradient(180deg, #f4e5a8 0%, #d4af37 55%, #a87a15 100%); box-shadow: 0 2px 6px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -1px 0 rgba(0,0,0,0.3); border: 1px solid rgba(122,86,10,0.9);">
+            <span class="font-black text-black tabular-nums leading-none" style="font-size: 9px; letter-spacing: -0.02em;">{fmt(betAmount)}</span>
           </div>
         </div>
       {/if}
     {/each}
 
-    <!-- ========== HERO SEAT ========== -->
     {#if gameState && mySeat}
       {@const isWin = isWinnerSeat(mySeat.seat)}
       {@const isShowdown = inShowdown(mySeat.seat)}
       {@const isShowdownWin = showdownWin(mySeat.seat)}
       {@const isShowdownLose = showdownLose(mySeat.seat)}
 
-      <div
-        class="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-[30]"
-        style="top: {heroTop}%;"
-      >
+      <div class="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-[30]" style="top: {heroTop}%;">
         {#if heroHole.length > 0 && !isEliminated}
           {#key gameState.handNo}
             <div class="flex justify-center gap-1 mb-1" style="filter: drop-shadow(0 6px 14px rgba(0,0,0,0.9));">
@@ -546,26 +392,8 @@ $: logoTop      = orientation === 'landscape' ? 60 : 62;
 
         {#if mySeat.betThisStreet > 0 && !mySeat.folded && winners.length === 0}
           <div class="mt-1 flex justify-center chip-enter">
-            <div
-              class="flex items-center justify-center rounded-full"
-              style="
-                height: 18px;
-                min-width: 26px;
-                padding: 0 7px;
-                background: linear-gradient(180deg, #f4e5a8 0%, #d4af37 55%, #a87a15 100%);
-                box-shadow:
-                  0 2px 6px rgba(0,0,0,0.9),
-                  inset 0 1px 0 rgba(255,255,255,0.6),
-                  inset 0 -1px 0 rgba(0,0,0,0.3);
-                border: 1px solid rgba(122,86,10,0.9);
-              "
-            >
-              <span
-                class="font-black text-black tabular-nums leading-none"
-                style="font-size: 9px; letter-spacing: -0.02em;"
-              >
-                {fmt(mySeat.betThisStreet)}
-              </span>
+            <div class="flex items-center justify-center rounded-full" style="height: 18px; min-width: 26px; padding: 0 7px; background: linear-gradient(180deg, #f4e5a8 0%, #d4af37 55%, #a87a15 100%); box-shadow: 0 2px 6px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -1px 0 rgba(0,0,0,0.3); border: 1px solid rgba(122,86,10,0.9);">
+              <span class="font-black text-black tabular-nums leading-none" style="font-size: 9px; letter-spacing: -0.02em;">{fmt(mySeat.betThisStreet)}</span>
             </div>
           </div>
         {/if}
@@ -575,6 +403,12 @@ $: logoTop      = orientation === 'landscape' ? 60 : 62;
 </div>
 
 <style>
+  .felt {
+    height: 100%;
+    width: auto;
+    max-width: 100%;
+  }
+
   @keyframes chip-enter-kf {
     0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
     60% { opacity: 1; transform: translate(-50%, -50%) scale(1.12); }
@@ -607,10 +441,7 @@ $: logoTop      = orientation === 'landscape' ? 60 : 62;
     50% { left: calc((var(--from-x) + var(--to-x)) / 2); top: calc((var(--from-y) + var(--to-y)) / 2 - 10%); opacity: 1; transform: translate(-50%, -50%) scale(1.3) rotate(180deg); }
     100% { left: var(--to-x); top: var(--to-y); opacity: 0; transform: translate(-50%, -50%) scale(0.6) rotate(360deg); }
   }
-  .chip-fly {
-    position: absolute; z-index: 55; pointer-events: none;
-    animation: chip-fly-kf 1.1s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-  }
+  .chip-fly { position: absolute; z-index: 55; pointer-events: none; animation: chip-fly-kf 1.1s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
 
   @keyframes winning-card-glow-kf {
     0%, 100% { box-shadow: 0 0 10px rgba(244,201,93,0.7), 0 0 0 2px rgba(244,201,93,0.9); transform: scale(1); }

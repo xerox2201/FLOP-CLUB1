@@ -219,9 +219,9 @@
 <div
   class="absolute left-1/2 -translate-x-1/2 w-full px-3"
   style="
-    top: 50%;
+    top: 45%;
     transform: translate(-50%, -50%);
-    max-width: min(1100px, calc((100dvh - 180px) * 1.6));
+    max-width: min(1100px, calc((100dvh - 300px) * 1.6));
   "
 >
 >

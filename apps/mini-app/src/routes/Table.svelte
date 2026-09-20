@@ -17,14 +17,12 @@
   export let onBack: () => void = () => {};
 // ===== Layout detection (portrait / landscape mobile) =====
 let isMobilePortrait = false;
-let isMobileLandscape = false;
 
 function updateLayout() {
   if (typeof window === 'undefined') return;
-  const w = window.innerWidth;
-  const h = window.innerHeight;
-  isMobilePortrait = w < 768 && h > w;
-  isMobileLandscape = h < 500 && w > h && w < 1200;
+  isMobilePortrait =
+    window.innerWidth < 768 &&
+    window.innerHeight > window.innerWidth;
 }
   let socket: TableSocketIO | null = null;
   let gameState: TableState | null = null;
@@ -709,43 +707,30 @@ function updateLayout() {
     </div>
   {/if}
 
-  <!-- POKER TABLE — desktop / mobile portrait / mobile landscape -->
+  <!-- POKER TABLE — mobile always uses horizontal layout; desktop uses regular -->
   {#if isMobilePortrait}
-    <PokerTableMobile
-      orientation="portrait"
-      {gameState}
-      {myUserId}
-      {myAvatarId}
-      theme={isTournament ? 'tournament' : 'cash'}
-      {handResult}
-      {isFinalTable}
-      tournamentTitle={isTournament ? 'Tournament' : ''}
-      onPlayerClick={openPlayerInfo}
-    />
-  {:else if isMobileLandscape}
-    <PokerTableMobile
-      orientation="landscape"
-      {gameState}
-      {myUserId}
-      {myAvatarId}
-      theme={isTournament ? 'tournament' : 'cash'}
-      {handResult}
-      {isFinalTable}
-      tournamentTitle={isTournament ? 'Tournament' : ''}
-      onPlayerClick={openPlayerInfo}
-    />
-  {:else}
-    <PokerTable
-      {gameState}
-      {myUserId}
-      {myAvatarId}
-      theme={isTournament ? 'tournament' : 'cash'}
-      {handResult}
-      {isFinalTable}
-      tournamentTitle={isTournament ? 'Tournament' : ''}
-      onPlayerClick={openPlayerInfo}
-    />
-  {/if}
+  <PokerTableMobile
+    {gameState}
+    {myUserId}
+    {myAvatarId}
+    theme={isTournament ? 'tournament' : 'cash'}
+    {handResult}
+    {isFinalTable}
+    tournamentTitle={isTournament ? 'Tournament' : ''}
+    onPlayerClick={openPlayerInfo}
+  />
+{:else}
+  <PokerTable
+    {gameState}
+    {myUserId}
+    {myAvatarId}
+    theme={isTournament ? 'tournament' : 'cash'}
+    {handResult}
+    {isFinalTable}
+    tournamentTitle={isTournament ? 'Tournament' : ''}
+    onPlayerClick={openPlayerInfo}
+  />
+{/if}
   <!-- MODALS -->
   <HandHistoryModal
     open={showHandHistory}
