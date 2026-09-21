@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+import { preferences } from '../lib/preferences';
 
   export let amount: number = 0;
   export let size: number = 28;
@@ -48,9 +49,10 @@
     return () => clearTimeout(t);
   });
 
-  $: popClass = animate && !mounted ? 'chip-pop-in' : '';
-  $: pulseClass = pulse ? 'chip-pulse' : '';
-  $: collectClass = collecting ? 'chip-collect' : '';
+  $: disabled = !$preferences.animations || $preferences.graphics === 'performance';
+  $: popClass = animate && !mounted && !disabled ? 'chip-pop-in' : '';
+  $: pulseClass = pulse && !disabled ? 'chip-pulse' : '';
+  $: collectClass = collecting && !disabled ? 'chip-collect' : '';
 </script>
 
 {#if amount > 0}

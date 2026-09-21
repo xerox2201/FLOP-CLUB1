@@ -5,14 +5,13 @@
 type HapticStyle = 'light' | 'medium' | 'heavy' | 'rigid' | 'soft';
 type HapticNotif = 'success' | 'warning' | 'error';
 
+import { preferences } from './preferences';
+
 let enabled = true;
 
-if (typeof localStorage !== 'undefined') {
-  try {
-    const settings = JSON.parse(localStorage.getItem('settings') || '{}');
-    enabled = settings.haptics !== false;
-  } catch {}
-}
+preferences.subscribe((p) => {
+  enabled = p.haptics;
+});
 
 export function setHapticsEnabled(v: boolean) {
   enabled = v;

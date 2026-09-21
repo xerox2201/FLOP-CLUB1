@@ -12,18 +12,21 @@
   import { t } from '../i18n';
   import { playSound } from '../lib/sounds';
   import { haptic } from '../lib/haptics';
+  import { preferences } from '../lib/preferences';
 
   export let tableId: number = 1;
   export let onBack: () => void = () => {};
-// ===== Layout detection (portrait / landscape mobile) =====
-let isMobilePortrait = false;
 
-function updateLayout() {
-  if (typeof window === 'undefined') return;
-  isMobilePortrait =
-    window.innerWidth < 768 &&
-    window.innerHeight > window.innerWidth;
-}
+  // ===== Layout detection (portrait / landscape mobile) =====
+  let isMobilePortrait = false;
+
+  function updateLayout() {
+    if (typeof window === 'undefined') return;
+    isMobilePortrait =
+      window.innerWidth < 768 &&
+      window.innerHeight > window.innerWidth;
+  }
+
   let socket: TableSocketIO | null = null;
   let gameState: TableState | null = null;
   let connected = false;
@@ -47,7 +50,7 @@ function updateLayout() {
   let lastSoundCommunityCount = 0;
   let lastSoundWinnersKey = '';
 
-  // 🔴 New: player info + chat
+  // Player info + chat
   let selectedPlayer: any = null;
   let showPlayerInfo = false;
   let showChat = false;
@@ -56,27 +59,28 @@ function updateLayout() {
   let raiseTouched = false;
   let raiseInput = '0.00';
   let raiseInputFocused = false;
-  let showRaisePanel = false;let sliderRef: HTMLDivElement;
-let dragging = false;
-let editingCustom = false;
-let customInput = '';
+  let showRaisePanel = false;
+  let sliderRef: HTMLDivElement;
+  let dragging = false;
+  let editingCustom = false;
+  let customInput = '';
 
-function handleSliderPointer(clientY: number) {
-  if (!sliderRef) return;
-  const rect = sliderRef.getBoundingClientRect();
-  const y = clientY - rect.top;
-  const pct = 1 - Math.max(0, Math.min(1, y / rect.height));
-  setRaise(minRaiseTo + pct * (hardMax - minRaiseTo));
-}
+  function handleSliderPointer(clientY: number) {
+    if (!sliderRef) return;
+    const rect = sliderRef.getBoundingClientRect();
+    const y = clientY - rect.top;
+    const pct = 1 - Math.max(0, Math.min(1, y / rect.height));
+    setRaise(minRaiseTo + pct * (hardMax - minRaiseTo));
+  }
 
-$: potIfCall = (gameState?.pot ?? 0) + maxBet - myBet;
-$: isAllIn = hardMax > 0 && raiseAmount >= hardMax - 0.01;
-$: presets = [
-  { label: '1/3', value: Math.min(maxBet + potIfCall / 3, hardMax) },
-  { label: '1/2', value: Math.min(maxBet + potIfCall / 2, hardMax) },
-  { label: '2/3', value: Math.min(maxBet + (potIfCall * 2) / 3, hardMax) },
-  { label: 'POT', value: Math.min(maxBet + potIfCall, hardMax) },
-];
+  $: potIfCall = (gameState?.pot ?? 0) + maxBet - myBet;
+  $: isAllIn = hardMax > 0 && raiseAmount >= hardMax - 0.01;
+  $: presets = [
+    { label: '1/3', value: Math.min(maxBet + potIfCall / 3, hardMax) },
+    { label: '1/2', value: Math.min(maxBet + potIfCall / 2, hardMax) },
+    { label: '2/3', value: Math.min(maxBet + (potIfCall * 2) / 3, hardMax) },
+    { label: 'POT', value: Math.min(maxBet + potIfCall, hardMax) },
+  ];
 
   type PreActionKey = 'check_fold' | 'check' | 'call_any' | 'fold';
   type PreAction = PreActionKey | null;
@@ -231,7 +235,6 @@ $: presets = [
       } else if (evt.type === 'state') {
         const newState = evt.state;
 
-        // ===== SOUND + HAPTIC: New hand → deal sound =====
         if (newState?.handNo && newState.handNo !== lastSoundHandNo) {
           lastSoundHandNo = newState.handNo;
           lastSoundCommunityCount = 0;
@@ -239,7 +242,6 @@ $: presets = [
           haptic.light();
         }
 
-        // ===== SOUND: Community cards appeared → flip =====
         const ccCount = newState?.community?.length || 0;
         if (ccCount > lastSoundCommunityCount) {
           lastSoundCommunityCount = ccCount;
@@ -254,7 +256,6 @@ $: presets = [
         gameState = evt.state;
         resetPreAction();
 
-        // ===== SOUND + HAPTIC: Win/lose =====
         const winners = evt.result?.winners || [];
         const winnersKey = winners.join(',');
         if (winnersKey && winnersKey !== lastSoundWinnersKey) {
@@ -285,21 +286,21 @@ $: presets = [
   }
 
   onMount(() => {
-  connect();
-  updateLayout();
-  window.addEventListener('resize', updateLayout);
-  window.addEventListener('orientationchange', updateLayout);
+    connect();
+    updateLayout();
+    window.addEventListener('resize', updateLayout);
+    window.addEventListener('orientationchange', updateLayout);
 
-  const interval = setInterval(() => {
-    nowTick = Date.now();
-  }, 500);
+    const interval = setInterval(() => {
+      nowTick = Date.now();
+    }, 500);
 
-  return () => {
-    clearInterval(interval);
-    window.removeEventListener('resize', updateLayout);
-    window.removeEventListener('orientationchange', updateLayout);
-  };
-});
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('resize', updateLayout);
+      window.removeEventListener('orientationchange', updateLayout);
+    };
+  });
 
   onDestroy(() => {
     if (socket) socket.close();
@@ -406,7 +407,6 @@ $: presets = [
     resetPreAction();
     socket.action(action, amount);
 
-    // ===== SOUND + HAPTIC per action =====
     if (action === 'FOLD') {
       playSound('button', 0.4);
       haptic.light();
@@ -414,7 +414,6 @@ $: presets = [
       playSound('chip', 0.5);
       haptic.medium();
     } else {
-      // CHECK
       playSound('check', 0.5);
       haptic.light();
     }
@@ -425,7 +424,6 @@ $: presets = [
     resetPreAction();
     socket?.action('RAISE', Math.floor(raiseAmount * 100) / 100);
 
-    // ===== SOUND + HAPTIC: Raise =====
     playSound('chip', 0.6);
     haptic.medium();
   }
@@ -728,30 +726,31 @@ $: presets = [
     </div>
   {/if}
 
-  <!-- POKER TABLE — mobile always uses horizontal layout; desktop uses regular -->
+  <!-- POKER TABLE -->
   {#if isMobilePortrait}
-  <PokerTableMobile
-    {gameState}
-    {myUserId}
-    {myAvatarId}
-    theme={isTournament ? 'tournament' : 'cash'}
-    {handResult}
-    {isFinalTable}
-    tournamentTitle={isTournament ? 'Tournament' : ''}
-    onPlayerClick={openPlayerInfo}
-  />
-{:else}
-  <PokerTable
-    {gameState}
-    {myUserId}
-    {myAvatarId}
-    theme={isTournament ? 'tournament' : 'cash'}
-    {handResult}
-    {isFinalTable}
-    tournamentTitle={isTournament ? 'Tournament' : ''}
-    onPlayerClick={openPlayerInfo}
-  />
-{/if}
+    <PokerTableMobile
+      {gameState}
+      {myUserId}
+      {myAvatarId}
+      theme={isTournament ? 'tournament' : 'cash'}
+      {handResult}
+      {isFinalTable}
+      tournamentTitle={isTournament ? 'Tournament' : ''}
+      onPlayerClick={openPlayerInfo}
+    />
+  {:else}
+    <PokerTable
+      {gameState}
+      {myUserId}
+      {myAvatarId}
+      theme={isTournament ? 'tournament' : 'cash'}
+      {handResult}
+      {isFinalTable}
+      tournamentTitle={isTournament ? 'Tournament' : ''}
+      onPlayerClick={openPlayerInfo}
+    />
+  {/if}
+
   <!-- MODALS -->
   <HandHistoryModal
     open={showHandHistory}
@@ -783,7 +782,7 @@ $: presets = [
     onMute={mutePlayer}
   />
 
-   <ChatModal
+  <ChatModal
     open={showChat}
     {myUserId}
     myAvatarId={myAvatarId}
@@ -893,7 +892,7 @@ $: presets = [
     </div>
   {/if}
 
-     <!-- RAISE POPUP PANEL (anchored to RAISE button) -->
+  <!-- RAISE POPUP PANEL -->
   {#if showRaisePanel && isMyTurn && !sittingOut}
     <div
       class="absolute z-[36] pointer-events-none"
@@ -951,8 +950,6 @@ $: presets = [
                   (e.target as HTMLInputElement).blur();
                 }
               }}
-              
-              autofocus
               class="rounded-md text-[10px] font-extrabold text-gold tabular-nums text-center outline-none"
               style="padding: 5px 2px; width: 100%; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(212,175,55,0.7);"
             />
@@ -997,7 +994,6 @@ $: presets = [
           }}
           on:pointercancel={() => (dragging = false)}
         >
-          <!-- Fill -->
           <div
             class="absolute left-0 right-0 bottom-0 pointer-events-none"
             style="
@@ -1007,7 +1003,6 @@ $: presets = [
             "
           ></div>
 
-          <!-- Tick marks -->
           <div class="absolute inset-x-1 pointer-events-none" style="top: 32px; bottom: 32px;">
             {#each Array(5) as _, i}
               <div
@@ -1020,7 +1015,6 @@ $: presets = [
             {/each}
           </div>
 
-          <!-- ALL-IN label -->
           <div class="absolute top-1 left-0 right-0 text-center pointer-events-none">
             <div
               class="text-[6px] font-extrabold uppercase tracking-wider leading-none"
@@ -1032,7 +1026,6 @@ $: presets = [
             >${fmt(hardMax)}</div>
           </div>
 
-          <!-- Handle -->
           <div
             class="absolute left-1/2 -translate-x-1/2 pointer-events-none"
             style="bottom: calc({raisePercent}% - 13px); transition: bottom 0.06s linear;"
@@ -1060,7 +1053,7 @@ $: presets = [
       </div>
     </div>
   {/if}
-</div>
+
   <!-- ACTION BAR -->
   {#if gameState && !startingHand && !handResult && isMyTurn}
     <div
@@ -1155,3 +1148,8 @@ $: presets = [
       {/if}
     </div>
   {/if}
+</div>
+
+<style>
+  /* No custom styles needed here — preferences handle visuals */
+</style>

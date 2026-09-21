@@ -16,16 +16,15 @@ const SOUND_FILES: Record<SoundName, string> = {
 
 const cache: Partial<Record<SoundName, HTMLAudioElement>> = {};
 
+import { preferences } from './preferences';
+
 let enabled = true;
 let masterVolume = 0.6;
 
-// Load from localStorage
-if (typeof localStorage !== 'undefined') {
-  try {
-    const settings = JSON.parse(localStorage.getItem('settings') || '{}');
-    enabled = settings.sound !== false;
-  } catch {}
-}
+// Sync with preferences store
+preferences.subscribe((p) => {
+  enabled = p.sound;
+});
 
 export function setSoundEnabled(v: boolean) {
   enabled = v;

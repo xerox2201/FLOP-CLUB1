@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { cardTheme, CARD_THEMES } from '../stores/cardTheme';
+import { preferences } from '../lib/preferences';
 
   export let rank: string = 'A';
   export let suit: '♠' | '♥' | '♦' | '♣' = '♠';
@@ -81,7 +82,10 @@
 >
   <div
     class="card-anim {dealClass} {foldClass}"
-    style="animation-delay: {dealDelay}s;"
+    style="
+      animation-delay: {dealDelay}s;
+      {$preferences.animations ? '' : 'animation: none !important;'}
+    "
   >
     <div
       class="card-inner"
@@ -94,7 +98,10 @@
         src={cardSrc}
         alt="{rank}{suit}"
         class="card-face card-front"
-        style="border-radius: {radius}px; filter: {frontFilter};"
+        style="
+          border-radius: {radius}px;
+          filter: {frontFilter} {$preferences.fourColor && suit === '♦' ? 'hue-rotate(160deg) saturate(2.5)' : ''} {$preferences.fourColor && suit === '♣' ? 'hue-rotate(80deg) saturate(2)' : ''};
+        "
         draggable="false"
         on:error={() => console.warn('[PlayingCard] 404:', cardSrc)}
       />
