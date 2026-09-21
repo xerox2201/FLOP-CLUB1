@@ -44,11 +44,11 @@
     await api.updateAvatar(id);
     await auth.refresh();
   }
-
-  function pickFrame(frame: string) {
-    if (user) (user as any).frame_id = frame;
-    // TODO: save to backend later
-  }
+function pickFrame(frame: string | null) {
+  if (!frame) return;
+  if (user) (user as any).frame_id = frame;
+  // TODO: save to backend later
+}
 </script>
 
 <div class="pb-44 lg:pb-8">

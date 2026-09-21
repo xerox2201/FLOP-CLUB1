@@ -26,7 +26,8 @@
   let loading = true;
   let error = '';
   let toast = '';
-  let activeFilter: 'all' | 'hand' | 'tournament' | 'wallet' | 'special' = 'all';
+  type CategoryKey = 'all' | 'hand' | 'tournament' | 'wallet' | 'special';
+let activeFilter: CategoryKey = 'all';
   let claiming: string | null = null;
 
   function token(): string | null {
@@ -95,7 +96,7 @@
   $: claimableCount = achievements.filter((a) => a.unlocked && !a.claimed).length;
   $: completionPct = totalCount > 0 ? Math.round((unlockedCount / totalCount) * 100) : 0;
 
-  const CATEGORIES: { key: typeof activeFilter; label: string }[] = [
+  const CATEGORIES: { key: CategoryKey; label: string }[] = [
     { key: 'all', label: 'All' },
     { key: 'hand', label: 'Hands' },
     { key: 'tournament', label: 'Tournaments' },

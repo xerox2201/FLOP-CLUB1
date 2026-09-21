@@ -16,15 +16,16 @@
   let selected: EventItem | null = null
 
   onMount(async () => {
-    try {
-      events = await api.get('/api/events')
-    } catch (e) {
-      console.error('[Events] load failed', e)
-      events = []
-    } finally {
-      loading = false
-    }
-  })
+  try {
+    const res = await api.request('/api/events')
+    if (res.ok && res.data) events = (res.data as any).events || []
+  } catch (e) {
+    console.error('[Events] load failed', e)
+    events = []
+  } finally {
+    loading = false
+  }
+})
 
   function openDetail(ev: EventItem) {
     selected = ev

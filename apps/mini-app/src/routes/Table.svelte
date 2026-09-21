@@ -951,6 +951,7 @@ $: presets = [
                   (e.target as HTMLInputElement).blur();
                 }
               }}
+              
               autofocus
               class="rounded-md text-[10px] font-extrabold text-gold tabular-nums text-center outline-none"
               style="padding: 5px 2px; width: 100%; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(212,175,55,0.7);"
@@ -974,8 +975,14 @@ $: presets = [
         </div>
 
         <!-- RIGHT: Vertical slider -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           bind:this={sliderRef}
+          role="slider"
+          aria-valuenow={raiseAmount}
+          aria-valuemin={minRaiseTo}
+          aria-valuemax={hardMax}
+          tabindex="0"
           class="relative rounded-lg overflow-hidden touch-none select-none shrink-0"
           style="width: 40px; height: 200px; background: linear-gradient(180deg, rgba(8,13,36,0.95), rgba(5,8,15,1)); border: 1px solid rgba(212,175,55,0.5); cursor: pointer;"
           on:pointerdown={(e) => {
@@ -1148,42 +1155,3 @@ $: presets = [
       {/if}
     </div>
   {/if}
-<style>
-  .raise-slider {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 100%;
-    height: 6px;
-    border-radius: 9999px;
-    background: linear-gradient(
-      to right,
-      #f4c95d 0%,
-      #f4c95d var(--raise-pct, 50%),
-      rgba(255, 255, 255, 0.12) var(--raise-pct, 50%),
-      rgba(255, 255, 255, 0.12) 100%
-    );
-    outline: none;
-    cursor: pointer;
-  }
-  .raise-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: #ffffff;
-    border: 2px solid #f4c95d;
-    cursor: pointer;
-    box-shadow:
-      0 2px 10px rgba(0, 0, 0, 0.8),
-      0 0 0 3px rgba(244, 201, 93, 0.35);
-  }
-  .raise-slider::-moz-range-thumb {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: #ffffff;
-    border: 2px solid #f4c95d;
-    cursor: pointer;
-  }
-</style>

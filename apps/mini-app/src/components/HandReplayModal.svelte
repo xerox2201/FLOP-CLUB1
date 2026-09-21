@@ -85,13 +85,13 @@
       (blinds.sb || 0) + (blinds.bb || 0) + (blinds.ante || 0) * initialPlayers.length;
 
     const result: any[] = [];
-    const currentState = {
-      phase: 'preflop',
-      pot: initialPot,
-      community: [] as any[],
-      players: JSON.parse(JSON.stringify(initialPlayers)),
-      lastAction: null,
-    };
+    const currentState: any = {
+  phase: 'preflop',
+  pot: initialPot,
+  community: [] as any[],
+  players: JSON.parse(JSON.stringify(initialPlayers)),
+  lastAction: null,
+};
     result.push(JSON.parse(JSON.stringify(currentState)));
 
     let prevPhase = 'preflop';
