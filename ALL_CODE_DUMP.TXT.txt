@@ -1,6 +1,6 @@
 # FLOP CLUB — ALL CODE DUMP
-# Date: 2026-09-21 04:52:33
-# Total files: 193
+# Date: 2026-09-22 05:48:26
+# Total files: 197
 
 
 ========== FILE: .github\workflows\ci.yml ==========
@@ -402,13 +402,12 @@ describe('PlayingCard', () => {
 });
 
 ========== FILE: apps\mini-app\src\components\poker\PlayerSeat.svelte ==========
-<script lang="ts">
+ <script lang="ts">
   import Avatar from '../Avatar.svelte';
   import PlayingCard from '../PlayingCard.svelte';
   import TimerRing from '../TimerRing.svelte';
 
   export let player: any = {};
-  export let myUserId: number | null = null;
   export let isHero: boolean = false;
   export let isDealer: boolean = false;
   export let isTurn: boolean = false;
@@ -567,6 +566,9 @@ describe('PlayingCard', () => {
     <div class="pill pill-win" class:lose={isShowdownLose}>
       {isShowdownWin ? '✓ WIN' : '✗ LOSE'}
     </div>
+    {#if handName}
+      <div class="pill pill-hand">{handName}</div>
+    {/if}
     {#if payout > 0}
       <div class="pill pill-payout">+${fmt(payout)}</div>
     {/if}
@@ -716,6 +718,12 @@ describe('PlayingCard', () => {
   }
   .pill-win.lose {
     background: linear-gradient(135deg, #ef4444, #991b1b);
+  }
+  .pill-hand {
+    background: rgba(0, 0, 0, 0.85);
+    color: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    font-size: 7px;
   }
   .pill-fold {
     background: rgba(107, 114, 128, 0.9);
@@ -1058,6 +1066,20 @@ describe('PlayingCard', () => {
       style="filter: drop-shadow(0 16px 40px rgba(0,0,0,0.9)) {isFinal ? 'drop-shadow(0 0 32px rgba(212,175,55,0.4))' : ''};"
     />
 
+    <!-- ========== TOURNAMENT TITLE BADGE ========== -->
+    {#if theme === 'tournament' && tournamentTitle}
+      <div class="absolute -top-2 left-1/2 -translate-x-1/2 z-[70] pointer-events-none">
+        <div
+          class="rounded-full px-3 py-1"
+          style="background: rgba(0,0,0,0.85); border: 1px solid rgba(244,201,93,0.5); box-shadow: 0 4px 12px rgba(0,0,0,0.7);"
+        >
+          <span class="text-[9px] font-extrabold text-gold tracking-widest uppercase">
+            {tournamentTitle}
+          </span>
+        </div>
+      </div>
+    {/if}
+
     <!-- ========== WINNER ANNOUNCEMENT ========== -->
     {#if winnerPlayer && winners.length > 0}
       <div class="absolute left-1/2 -translate-x-1/2 z-[70] winner-announce pointer-events-none" style="top: 22%;">
@@ -1166,7 +1188,6 @@ describe('PlayingCard', () => {
       <div class="absolute -translate-x-1/2 -translate-y-1/2 z-[20]" style="left: {pos.x}%; top: {pos.y}%;">
         <PlayerSeat
           player={s}
-          {myUserId}
           isHero={false}
           isDealer={gameState?.dealerSeat === s.seat}
           {isTurn}
@@ -1227,7 +1248,6 @@ describe('PlayingCard', () => {
       <div class="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-[30]" style="top: {heroPos.y}%;">
         <PlayerSeat
           player={mySeat}
-          {myUserId}
           isHero={true}
           heroAvatarId={myAvatarId}
           isDealer={gameState?.dealerSeat === mySeat.seat}
@@ -1363,15 +1383,13 @@ describe('PlayingCard', () => {
     <div
       class="w-full max-w-sm rounded-3xl p-6 relative"
       class:shake
-      style="
-        background: linear-gradient(180deg, rgba(15,31,58,0.98), rgba(7,14,27,1));
-        border: 1.5px solid rgba(212,175,55,0.4);
-        box-shadow: 0 20px 60px rgba(0,0,0,0.9), 0 0 40px rgba(212,175,55,0.15);
-      "
+      style="..."
       on:click={(e) => e.stopPropagation()}
+      on:keydown={(e) => e.stopPropagation()}
       role="dialog"
       aria-modal="true"
       aria-label="Admin access"
+      tabindex="-1"
     >
       <div class="flex justify-center mb-4">
         <div
@@ -1602,6 +1620,7 @@ describe('PlayingCard', () => {
 ========== FILE: apps\mini-app\src\components\BottomNav.svelte ==========
 <script lang="ts">
   import { t } from '../i18n';
+  import { unreadCount } from '../lib/broadcasts';
 
   type Page =
     | 'home'
@@ -1660,7 +1679,7 @@ describe('PlayingCard', () => {
       {#each items as item}
         <button
           on:click={() => onNavigate(item.id)}
-          class="flex flex-col items-center gap-0.5 px-2 py-1 rounded-2xl transition-all active:scale-95 {current ===
+          class="relative flex flex-col items-center gap-0.5 px-2 py-1 rounded-2xl transition-all active:scale-95 {current ===
           item.id
             ? 'text-gold'
             : 'text-white/45'}"
@@ -1679,13 +1698,25 @@ describe('PlayingCard', () => {
           </svg>
           <span class="text-[9px] font-bold">{$t(item.key)}</span>
           {#if current === item.id}
-            <span class="w-1 h-1 rounded-full bg-gold" style="box-shadow: 0 0 6px rgba(244,201,93,0.8);"></span>
+            <span
+              class="w-1 h-1 rounded-full bg-gold"
+              style="box-shadow: 0 0 6px rgba(244,201,93,0.8);"
+            ></span>
+          {/if}
+          {#if item.id === 'profile' && $unreadCount > 0}
+            <span
+              class="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full flex items-center justify-center text-[9px] font-extrabold"
+              style="background: linear-gradient(180deg, #ef4444, #991b1b); color: white; box-shadow: 0 0 8px rgba(239,68,68,0.8);"
+            >
+              {$unreadCount > 9 ? '9+' : $unreadCount}
+            </span>
           {/if}
         </button>
       {/each}
     </div>
   </div>
 </nav>
+
 
 ========== FILE: apps\mini-app\src\components\ChatModal.svelte ==========
 <script lang="ts">
@@ -1880,7 +1911,7 @@ describe('PlayingCard', () => {
                 box-shadow: 0 2px 8px rgba(0,0,0,0.5);
               "
             >
-              <Avatar avatarId={m.avatarId || 'king'} size="sm" />
+              <Avatar avatarId={m.avatarId || myAvatarId || 'king'} size="sm" />
             </div>
             <div class="max-w-[75%] {isMine ? 'items-end' : 'items-start'} flex flex-col">
               <p class="text-[9px] font-bold mb-0.5 {isMine ? 'text-right' : ''}"
@@ -3679,22 +3710,22 @@ import { preferences } from '../lib/preferences';
 <script lang="ts">
   import PlayingCard from './PlayingCard.svelte';
   import PokerChip from './PokerChip.svelte';
-  import PlayerSeat from './poker/PlayerSeat.svelte';
+  import Avatar from './Avatar.svelte';
+  import TimerRing from './TimerRing.svelte';
 
   export let gameState: any = null;
   export let myUserId: number | null = null;
-  export let myAvatarId: string = 'king';
+  export let myAvatarId: string = 'spade';
   export let theme: 'cash' | 'tournament' = 'cash';
   export let tournamentTitle: string = '';
   export let isEliminated: boolean = false;
   export let handResult: any = null;
   export let isFinalTable: boolean = false;
   export let onPlayerClick: (userId: number) => void = () => {};
+  export let compact: boolean = false;
 
   function fmt(n: any): string {
-    const num = Number(n || 0);
-    if (num === Math.floor(num)) return String(Math.floor(num));
-    return num.toFixed(2);
+    return Number(Number(n || 0).toFixed(2)).toFixed(2);
   }
 
   function suitChar(s: string): '♠' | '♥' | '♦' | '♣' {
@@ -3704,90 +3735,82 @@ import { preferences } from '../lib/preferences';
     return '♣';
   }
 
-  // ============================================================
-  // ADAPTIVE SIZES
-  // ============================================================
   type Sizes = {
-    avatar: number;
-    nameW: number;
+    avatarPx: number;
+    avatarBorder: number;
+    panelMinW: number;
+    panelPad: string;
     nameFont: number;
     stackFont: number;
-    betChip: number;
-    betFont: number;
-    cardSize: 'xs' | 'sm' | 'md';
-    potTop: number;
+    holeCardSize: 'sm' | 'md' | 'lg';
+    boardCardSize: 'xs' | 'sm' | 'md';
+    holeGap: number;
+    holeTop: number;
+    heroTop: number;
+    heroAvatarPx: number;
+    timerSize: number;
+    timerHeroSize: number;
     potFont: number;
-    timerExtra: number;
+    potChipSize: number;
+    seatMT: number;
+    betFont: number;
+    betChipSize: number;
   };
 
-  function getSizes(total: number): Sizes {
-    if (total <= 2)
-      return { avatar: 62, nameW: 88, nameFont: 11, stackFont: 11, betChip: 14, betFont: 10, cardSize: 'md', potTop: 28, potFont: 14, timerExtra: 14 };
-    if (total === 3)
-      return { avatar: 58, nameW: 84, nameFont: 11, stackFont: 11, betChip: 14, betFont: 10, cardSize: 'md', potTop: 28, potFont: 14, timerExtra: 12 };
-    if (total === 4)
-      return { avatar: 52, nameW: 78, nameFont: 10, stackFont: 10, betChip: 12, betFont: 9, cardSize: 'md', potTop: 28, potFont: 13, timerExtra: 12 };
-    if (total === 5)
-      return { avatar: 48, nameW: 72, nameFont: 10, stackFont: 10, betChip: 12, betFont: 9, cardSize: 'sm', potTop: 28, potFont: 13, timerExtra: 10 };
-    if (total === 6)
-      return { avatar: 44, nameW: 68, nameFont: 10, stackFont: 9, betChip: 12, betFont: 9, cardSize: 'sm', potTop: 28, potFont: 12, timerExtra: 10 };
-    if (total === 7)
-      return { avatar: 40, nameW: 62, nameFont: 9, stackFont: 9, betChip: 10, betFont: 8, cardSize: 'sm', potTop: 28, potFont: 12, timerExtra: 8 };
-    return { avatar: 38, nameW: 58, nameFont: 9, stackFont: 9, betChip: 10, betFont: 8, cardSize: 'sm', potTop: 28, potFont: 12, timerExtra: 8 };
+  function getSizes(isCompact: boolean): Sizes {
+    if (isCompact) {
+      return {
+        avatarPx: 38, avatarBorder: 2, panelMinW: 54, panelPad: '1px 6px',
+        nameFont: 9, stackFont: 9, holeCardSize: 'sm', boardCardSize: 'sm',
+        holeGap: 1, holeTop: 74, heroTop: 92, heroAvatarPx: 46,
+        timerSize: 52, timerHeroSize: 58, potFont: 11, potChipSize: 13,
+        seatMT: 4, betFont: 9, betChipSize: 10,
+      };
+    }
+    return {
+      avatarPx: 52, avatarBorder: 3, panelMinW: 72, panelPad: '2px 10px',
+      nameFont: 10, stackFont: 10, holeCardSize: 'lg', boardCardSize: 'md',
+      holeGap: 2, holeTop: 68, heroTop: 92, heroAvatarPx: 64,
+      timerSize: 70, timerHeroSize: 78, potFont: 14, potChipSize: 16,
+      seatMT: 8, betFont: 11, betChipSize: 12,
+    };
   }
 
-  // ============================================================
-  // SEAT POSITION — HERO at bottom, others counter-clockwise
-  // ============================================================
+  $: SZ = getSizes(compact);
+
+  const BASE_ANGLES: Record<number, number[]> = {
+    2: [90, 270],
+    3: [90, 210, 330],
+    4: [90, 180, 270, 0],
+    5: [90, 162, 234, 306, 18],
+    6: [90, 150, 210, 270, 330, 30],
+  };
+
   function seatPos(rotatedIdx: number, total: number): { x: number; y: number } {
-    const angleDeg = 90 + (rotatedIdx * 360) / total;
-    const rad = (angleDeg * Math.PI) / 180;
-    const rx = 42;
-    const ry = 37;
+    const angles = BASE_ANGLES[total] || BASE_ANGLES[6];
+    const deg = angles[rotatedIdx] ?? 90;
+    const rad = (deg * Math.PI) / 180;
+    const rx = total === 2 ? 38 : 44;
+    const ry = total === 2 ? 34 : 34;
     return {
       x: 50 + Math.cos(rad) * rx,
       y: 50 + Math.sin(rad) * ry,
     };
   }
 
-  // Bet chip offset — outside the player seat, toward center
-    function betPos(pos: { x: number; y: number }, S: Sizes): { x: string; y: string } {
-    const dx = 50 - pos.x;
-    const dy = 50 - pos.y;
-    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-    const ux = dx / dist;
-    const uy = dy / dist;
-
-    // Side players push further toward center
-    const isHorizontal = Math.abs(ux) > Math.abs(uy);
-    const offPx = isHorizontal
-      ? S.avatar / 2 + 60
-      : S.avatar / 2 + 32;
-
-    return {
-      x: `calc(${pos.x}% + ${ux * offPx}px)`,
-      y: `calc(${pos.y}% + ${uy * offPx}px)`,
-    };
+  function towardCenter(px: number, py: number, dist: number): { x: number; y: number } {
+    const dx = 50 - px;
+    const dy = 50 - py;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    if (len === 0) return { x: 0, y: 0 };
+    return { x: (dx / len) * dist, y: (dy / len) * dist };
   }
 
-  // ============================================================
-  // REACTIVE
-  // ============================================================
   $: allSeats = gameState?.seats ?? [];
   $: totalSeats = allSeats.length;
-  $: S = getSizes(totalSeats);
-  $: pSize = ((totalSeats <= 3 ? 'xl' : totalSeats <= 5 ? 'lg' : totalSeats <= 7 ? 'md' : 'sm') as 'sm' | 'md' | 'lg' | 'xl');
-
-  $: heroIdx = allSeats.findIndex((s: any) => Number(s.userId) === Number(myUserId));
-  $: mySeat = heroIdx >= 0 ? allSeats[heroIdx] : (allSeats[0] ?? null);
-  $: heroSeatNumber = mySeat?.seat ?? 0;
-  $: opponents = allSeats.filter((_: any, i: number) => i !== (heroIdx >= 0 ? heroIdx : 0));
-
-  $: winners = (gameState?.winners && gameState.winners.length > 0)
-    ? gameState.winners
-    : (handResult?.winners ?? []);
-
-  $: sidePots = gameState?.sidePots ?? [];
+  $: heroIdx = allSeats.findIndex((s: any) => s.userId === myUserId);
+  $: mySeat = heroIdx >= 0 ? allSeats[heroIdx] : null;
+  $: opponents = allSeats.filter((s: any) => s.userId !== myUserId);
 
   $: isMyTurn = !!(
     gameState &&
@@ -3799,24 +3822,17 @@ import { preferences } from '../lib/preferences';
   );
 
   $: totalPot = gameState?.pot ?? 0;
-
-  $: community = (gameState?.community && gameState.community.length > 0)
-    ? gameState.community
-    : (handResult?.communityCards ?? []);
-
-  $: heroShowdownPlayer = handResult?.showdownPlayers?.find(
-    (p: any) => p.seat === mySeat?.seat
-  );
-  $: heroHole = (mySeat?.hole && mySeat.hole.length > 0)
-    ? mySeat.hole
-    : (heroShowdownPlayer?.hole ?? []);
-
+  $: community = gameState?.community ?? [];
   $: serverTime = gameState?.serverTime ?? Date.now();
   $: turnStartedAt = gameState?.turnStartedAt ?? 0;
   $: turnBaseLimit = gameState?.turnBaseLimit ?? 30;
 
-  function oppPos(seatNumber: number): { x: number; y: number } {
-    const rotated = ((seatNumber - heroSeatNumber + totalSeats) % totalSeats + totalSeats) % totalSeats;
+  $: winners = gameState?.winners ?? [];
+  $: sidePots = gameState?.sidePots ?? [];
+
+  function oppPos(opponentSeatIdx: number): { x: number; y: number } {
+    if (heroIdx < 0) return { x: 50, y: 10 };
+    const rotated = (opponentSeatIdx - heroIdx + totalSeats) % totalSeats;
     return seatPos(rotated, totalSeats);
   }
 
@@ -3825,184 +3841,162 @@ import { preferences } from '../lib/preferences';
     if (!handResult?.showdownPlayers) return null;
     const map: Record<number, { isWinner: boolean; handName: string; payout: number }> = {};
     for (const p of handResult.showdownPlayers) {
-      map[p.seat] = { isWinner: !!p.isWinner, handName: p.handName || '', payout: p.payout || 0 };
+      map[p.seat] = {
+        isWinner: !!p.isWinner,
+        handName: p.handName || '',
+        payout: p.payout || 0,
+      };
     }
     return map;
   })();
 
-  function isWinnerSeat(seat: number): boolean { return winners.includes(seat); }
-  function inShowdown(seat: number): boolean { return !!(showdownData && showdownData[seat]); }
-  function showdownWin(seat: number): boolean { return !!(showdownData && showdownData[seat]?.isWinner); }
-  function showdownLose(seat: number): boolean { return !!(showdownData && showdownData[seat] && !showdownData[seat].isWinner); }
-  function payoutForSeat(seat: number): number { return showdownData?.[seat]?.payout ?? 0; }
-
-  $: winnerPlayer = handResult?.showdownPlayers?.find((p: any) => p.isWinner);
-  $: winnerIsMe = winnerPlayer?.userId === myUserId;
-  $: winnerDisplayName = winnerIsMe ? 'You' : (() => {
-    const s = allSeats.find((x: any) => x.seat === winnerPlayer?.seat);
-    return s?.displayName || 'Winner';
-  })();
-
-  $: winningCardKeys = new Set(
-    (winnerPlayer?.bestCards ?? []).map((c: any) => `${c.r}${c.s}`)
-  );
-  function isWinningCard(c: any): boolean {
-    return winningCardKeys.has(`${c.r}${c.s}`);
+  function isWinnerSeat(seat: number): boolean {
+    return winners.includes(seat);
   }
 
-  // ===== Chip fly =====
-  let chipFlies: { id: number; fromX: number; fromY: number; toX: number; toY: number; delay: number }[] = [];
-  let chipFlyIdCounter = 0;
+  function inShowdown(seat: number): boolean {
+    return !!(showdownData && showdownData[seat]);
+  }
 
-  $: if (winners.length > 0 && totalPot > 0) {
-    const flies: typeof chipFlies = [];
-    for (const winnerSeat of winners) {
-      const winnerSeatInfo = allSeats.find((s: any) => s.seat === winnerSeat);
-      if (!winnerSeatInfo) continue;
+  function showdownWin(seat: number): boolean {
+    return !!(showdownData && showdownData[seat]?.isWinner);
+  }
 
-      let toX = 50, toY = 50;
-      if (winnerSeat === mySeat?.seat) {
-        toX = 50; toY = 88;
-      } else {
-        const pos = oppPos(winnerSeat);
-        toX = pos.x; toY = pos.y;
-      }
+  function showdownLose(seat: number): boolean {
+    return !!(showdownData && showdownData[seat] && !showdownData[seat].isWinner);
+  }
 
-      const payout = showdownData?.[winnerSeat]?.payout ?? 0;
-      if (payout > 0) {
-        flies.push({
-          id: ++chipFlyIdCounter,
-          fromX: 50, fromY: S.potTop,
-          toX, toY,
-          delay: 0.3,
-        });
-      }
+  function handName(seat: number): string {
+    return showdownData?.[seat]?.handName || '';
+  }
+
+  function payoutForSeat(seat: number): number {
+    return showdownData?.[seat]?.payout ?? 0;
+  }
+
+  let chipVisible = false;
+  let chipLeft = 50;
+  let chipTop = 40;
+  let lastAnimatedHandNo = -1;
+
+  $: if (winners.length > 0 && gameState?.handNo !== lastAnimatedHandNo) {
+    lastAnimatedHandNo = gameState.handNo;
+    const winnerSeat = winners[0];
+    const winnerData = allSeats.find((s: any) => s.seat === winnerSeat);
+
+    if (winnerData && winnerData.userId !== myUserId) {
+      const pos = oppPos(winnerData.seat);
+      chipVisible = true;
+      chipLeft = 50;
+      chipTop = 30;
+      setTimeout(() => {
+        chipLeft = pos.x;
+        chipTop = pos.y + 6;
+      }, 80);
+      setTimeout(() => {
+        chipVisible = false;
+      }, 2000);
+    } else {
+      chipVisible = true;
+      chipLeft = 50;
+      chipTop = 30;
+      setTimeout(() => {
+        chipLeft = 50;
+        chipTop = 88;
+      }, 80);
+      setTimeout(() => {
+        chipVisible = false;
+      }, 2000);
     }
-    chipFlies = flies;
-  } else {
-    chipFlies = [];
   }
-
-  function shortName(name: string): string {
-    if (!name) return '?';
-    return name;
-  }
-
-  $: isFinal = isFinalTable;
 </script>
 
-<!-- ============================================================
-     CONTAINER — 16:10 landscape
-     ============================================================ -->
 <div
-  class="absolute left-1/2 -translate-x-1/2 w-full px-3"
+  class="absolute left-1/2 -translate-x-1/2 w-full"
   style="
-    top: 45%;
+    top: {compact ? '50%' : '45%'};
     transform: translate(-50%, -50%);
-    max-width: min(1100px, calc((100dvh - 300px) * 1.6));
+    padding: 0 {compact ? '6px' : '12px'};
+    max-width: min(
+      {compact ? '900px' : '1100px'},
+      calc((100dvh - {compact ? 130 : 300}px) * 1.6)
+    );
   "
 >
->
-  <div class="relative w-full" style="aspect-ratio: 16 / 10;">
+  <div class="relative w-full" style="aspect-ratio: 1 / 1.12;">
 
-    <!-- Table image -->
-    <img
-      src="/table-top-desktop.webp"
-      alt=""
-      class="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
-      draggable="false"
-      style="filter: drop-shadow(0 20px 48px rgba(0,0,0,0.9)) {isFinal ? 'drop-shadow(0 0 40px rgba(212,175,55,0.4))' : ''};"
-    />
-
-    <!-- ========== WINNER ANNOUNCEMENT ========== -->
-    {#if winnerPlayer && winners.length > 0}
-      <div class="absolute left-1/2 -translate-x-1/2 z-[70] winner-announce pointer-events-none" style="top: 2%;">
+    {#if theme === 'tournament' && tournamentTitle}
+      <div class="absolute -top-3 left-1/2 -translate-x-1/2 z-[60] pointer-events-none">
         <div
-          class="rounded-xl px-3 py-1.5 text-center winner-glow-card"
-          style="
-            background: linear-gradient(180deg, rgba(8,13,36,0.98), rgba(5,8,15,0.98));
-            border: 1.5px solid #d4af37;
-            min-width: 140px;
-          "
+          class="rounded-full px-3 py-1"
+          style="background: rgba(0,0,0,0.85); border: 1px solid rgba(244,201,93,0.5); box-shadow: 0 4px 12px rgba(0,0,0,0.7);"
         >
-          <p class="text-[7px] uppercase tracking-[0.3em] text-gold/80 font-bold mb-0.5">
-            {winners.length > 1 ? 'Winners' : 'Winner'}
-          </p>
-          <p class="text-sm font-extrabold text-white leading-tight">
-            {winnerDisplayName}
-          </p>
-          {#if winnerPlayer.handName && handResult?.showdownPlayers?.filter((p: any) => p.hole?.length > 0).length > 1}
-            <p class="text-[10px] text-gold font-bold">{winnerPlayer.handName}</p>
-          {:else}
-            <p class="text-[9px] text-white/70 font-bold">wins the pot</p>
-          {/if}
-          {#if winnerPlayer.payout > 0}
-            <p class="text-[13px] font-extrabold text-emerald-400 tabular-nums">
-              +${fmt(winnerPlayer.payout)}
-            </p>
-          {/if}
+          <span class="text-[10px] font-extrabold text-gold tracking-widest uppercase">
+            {tournamentTitle}
+          </span>
         </div>
       </div>
     {/if}
 
-    <!-- ========== HAND COMPARISON ========== -->
-    {#if handResult?.showdownPlayers && handResult.showdownPlayers.length > 1 && winners.length > 0 && handResult.showdownPlayers.filter((p: any) => p.hole?.length > 0).length > 1}
-      <div class="absolute top-[3%] right-[2%] z-[65] comparison-panel">
-        <div
-          class="rounded-lg p-1 space-y-0.5"
-          style="background: rgba(5,8,15,0.94); border: 1px solid rgba(212,175,55,0.35); backdrop-filter: blur(10px); min-width: 120px;"
-        >
-          <p class="text-[7px] uppercase tracking-[0.2em] text-white/40 font-bold px-1">Showdown</p>
-          {#each handResult.showdownPlayers as p}
-            <div
-              class="flex items-center justify-between px-1.5 py-0.5 rounded-md"
-              style="
-                background: {p.isWinner ? 'linear-gradient(90deg, rgba(244,201,93,0.2), rgba(244,201,93,0.05))' : 'transparent'};
-                border: 1px solid {p.isWinner ? 'rgba(244,201,93,0.5)' : 'transparent'};
-              "
-            >
-              <span class="text-[8px] font-bold truncate" style="color: {p.isWinner ? '#f4e5a8' : 'rgba(255,255,255,0.6)'};">
-                {p.userId === myUserId ? 'You' : shortName(allSeats.find((s: any) => s.seat === p.seat)?.displayName ?? '?')}
-              </span>
-              <span class="text-[7px] font-mono ml-1 shrink-0" style="color: {p.isWinner ? '#d4af37' : 'rgba(255,255,255,0.4)'};">
-                {p.handName}
-              </span>
-            </div>
-          {/each}
-        </div>
-      </div>
-    {/if}
+    <div
+      class="absolute -inset-2 rounded-[50%] {isFinalTable ? 'felt-rim-final' : 'felt-rim'}"
+    ></div>
 
-    <!-- ========== POT ========== -->
+    <div
+      class="absolute inset-0 rounded-[50%] overflow-hidden {theme === 'tournament'
+        ? 'felt-tournament'
+        : 'felt-cash'}"
+    >
+      <div
+        class="absolute inset-0 rounded-[50%]"
+        style="box-shadow: inset 0 0 80px rgba(0,0,0,0.75), inset 0 4px 12px rgba(255,255,255,0.06);"
+      ></div>
+      <div
+        class="absolute inset-0 rounded-[50%] opacity-40"
+        style="background: radial-gradient(ellipse at 50% 25%, rgba(255,255,255,0.15), transparent 55%);"
+      ></div>
+    </div>
+
     {#if gameState && totalPot > 0 && winners.length === 0}
       {#if sidePots.length > 1}
-        <div class="absolute left-1/2 -translate-x-1/2 z-[15] flex flex-col items-center gap-0.5" style="top: {S.potTop}%;">
+        <div
+          class="absolute {compact ? 'top-[31%]' : 'top-[33%]'} left-1/2 -translate-x-1/2 z-[25] flex flex-col items-center gap-1"
+        >
           {#each sidePots as pot}
             <div
-              class="rounded-full pl-1.5 pr-2.5 py-0.5 flex items-center gap-1"
-              style="background: rgba(0,0,0,0.92); border: 1.5px solid {pot.type === 'main' ? '#d4af37' : '#3b82f6'};"
+              class="rounded-full {compact ? 'px-2 py-0.5' : 'px-3 py-0.5'} flex items-center gap-1.5"
+              style="background: rgba(0,0,0,0.92); border: 1.5px solid {pot.type === 'main'
+                ? '#f4c95d'
+                : '#22d3ee'}; box-shadow: 0 4px 12px rgba(0,0,0,0.9);"
             >
-              <span class="text-[7px] uppercase tracking-widest font-extrabold" style="color: {pot.type === 'main' ? '#d4af37' : '#3b82f6'};">
+              <span
+                class="text-[{compact ? 7 : 9}px] uppercase tracking-widest font-extrabold {pot.type === 'main'
+                  ? 'text-gold'
+                  : 'text-cyan'}"
+              >
                 {pot.label}
               </span>
-              <span class="text-[9px] font-extrabold tabular-nums" style="color: {pot.type === 'main' ? '#d4af37' : '#3b82f6'};">
+              <span
+                class="text-[{compact ? 10 : 12}px] font-extrabold {pot.type === 'main'
+                  ? 'text-gold'
+                  : 'text-cyan'} tabular-nums"
+              >
                 ${fmt(pot.amount)}
               </span>
             </div>
           {/each}
         </div>
       {:else}
-        <div class="absolute left-1/2 -translate-x-1/2 z-[15]" style="top: {S.potTop}%;">
+        <div class="absolute {compact ? 'top-[31%]' : 'top-[33%]'} left-1/2 -translate-x-1/2 z-[25]">
           <div
-            class="rounded-full px-3 py-0.5 flex items-center gap-2"
-            style="
-              background: linear-gradient(180deg, rgba(0,0,0,0.95), rgba(0,0,0,0.85));
-              border: 1.5px solid #d4af37;
-              box-shadow: 0 3px 14px rgba(0,0,0,0.9), 0 0 16px rgba(212,175,55,0.3);
-            "
+            class="rounded-full {compact ? 'pl-1 pr-3 py-0.5' : 'pl-1.5 pr-3.5 py-0.5'} flex items-center gap-2"
+            style="background: rgba(0,0,0,0.92); border: 1.5px solid #f4c95d; box-shadow: 0 4px 16px rgba(0,0,0,0.9), 0 0 16px rgba(244,201,93,0.25);"
           >
-            <span class="text-[8px] uppercase tracking-widest font-extrabold text-gold/70">POT</span>
-            <span class="font-black text-gold tabular-nums" style="font-size: {S.potFont}px;">
+            <PokerChip amount={totalPot} size={SZ.potChipSize} />
+            <span class="text-[{compact ? 8 : 10}px] uppercase tracking-widest font-extrabold text-white/70">
+              POT
+            </span>
+            <span class="text-[{SZ.potFont}px] font-extrabold text-gold tabular-nums">
               ${fmt(totalPot)}
             </span>
           </div>
@@ -4010,135 +4004,212 @@ import { preferences } from '../lib/preferences';
       {/if}
     {/if}
 
-    <!-- ========== CENTER LOGO (below community cards) ========== -->
-    <div
-      class="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-[5] pointer-events-none"
-      style="top: 60%;"
-    >
-      <img
-        src="/logo-flop-club.png"
-        alt=""
-        class="object-contain select-none"
-        style="width: 56px; height: 56px; opacity: 0.6;"
-        draggable="false"
-      />
-    </div>
-
-    <!-- ========== CHIP FLY ========== -->
-    {#each chipFlies as fly (fly.id)}
-      <div
-        class="chip-fly"
-        style="--from-x: {fly.fromX}%; --from-y: {fly.fromY}%; --to-x: {fly.toX}%; --to-y: {fly.toY}%; animation-delay: {fly.delay}s;"
-      >
-        <PokerChip amount={Math.min(totalPot, 100)} size={18} />
-      </div>
-    {/each}
-
-    <!-- ========== COMMUNITY CARDS ========== -->
     {#if gameState}
-      <div class="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-1 z-[10]" style="top: 46%;">
+      <div
+        class="absolute top-[49%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex {compact
+          ? 'gap-0.5'
+          : 'gap-1'} z-[8]"
+      >
         {#each Array(5) as _, i}
           {#if community[i]}
-            {@const isWinCard = isWinningCard(community[i])}
-            <div class="relative">
-              <PlayingCard rank={community[i].r} suit={suitChar(community[i].s)} size={S.cardSize} dealFrom="top" dealDelay={0} />
-              {#if isWinCard && winners.length > 0}
-                <div class="absolute -inset-0.5 rounded-md winning-card-glow pointer-events-none z-[15]"></div>
-              {/if}
-            </div>
+            <PlayingCard
+              rank={community[i].r}
+              suit={suitChar(community[i].s)}
+              size={SZ.boardCardSize}
+            />
           {:else}
             <div
-              class="rounded-md"
-              style="
-                width: {S.cardSize === 'md' ? 50 : 34}px;
-                height: {S.cardSize === 'md' ? 70 : 48}px;
-                background: rgba(0,0,0,0.4);
-                border: 1px solid rgba(212,175,55,0.12);
-                box-shadow: inset 0 2px 6px rgba(0,0,0,0.7);
-              "
+              class="{compact ? 'w-8 h-[44px]' : 'w-11 h-[60px]'} rounded-md bg-black/25 border border-white/5"
             ></div>
           {/if}
         {/each}
       </div>
     {/if}
 
-    <!-- ========== OPPONENTS ========== -->
     {#each opponents as s}
       {@const pos = oppPos(s.seat)}
-      {@const bPos = betPos(pos, S)}
-      {@const panelSide = pos.x > 50 ? 'left' : 'right'}
-      {@const isTurn = gameState?.currentSeat === s.seat && !s.folded && !s.allIn && winners.length === 0}
+      {@const isTurn =
+        gameState?.currentSeat === s.seat && !s.folded && !s.allIn && winners.length === 0}
       {@const betAmount = s.betThisStreet}
+      {@const chipOffset = towardCenter(pos.x, pos.y, 9)}
       {@const isWin = isWinnerSeat(s.seat)}
       {@const isShowdown = inShowdown(s.seat)}
       {@const isShowdownWin = showdownWin(s.seat)}
       {@const isShowdownLose = showdownLose(s.seat)}
-      {@const hole = (() => {
-        if (!handResult?.showdownPlayers) return [];
-        const p = handResult.showdownPlayers.find((x: any) => x.seat === s.seat);
-        return p?.hole ?? [];
-      })()}
 
-      <!-- PLAYER SEAT -->
       <div
-        class="absolute -translate-x-1/2 -translate-y-1/2 z-[20]"
+        class="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-[20] cursor-pointer"
         style="left: {pos.x}%; top: {pos.y}%;"
+        on:click={() => onPlayerClick(s.userId)}
+        on:keydown={(e) => e.key === 'Enter' && onPlayerClick(s.userId)}
+        role="button"
+        tabindex="0"
       >
-        <PlayerSeat
-          player={s}
-          {myUserId}
-          isHero={false}
-          isDealer={gameState?.dealerSeat === s.seat}
-          {isTurn}
-          isWinner={isWin}
-          {isShowdown}
-          {isShowdownWin}
-          {isShowdownLose}
-          handName={showdownData?.[s.seat]?.handName ?? ''}
-          payout={payoutForSeat(s.seat)}
-          holeCards={hole}
-          {turnStartedAt}
-          {turnBaseLimit}
-          {serverTime}
-          size={pSize}
-          cardsAbove={pos.y < 50}
-          {panelSide}
-          onClick={() => onPlayerClick(s.userId)}
-        />
-      </div>
+        <div class="relative">
+          {#if isTurn}
+            <div class="absolute -inset-[6px] pointer-events-none z-[2]">
+              <TimerRing
+                size={SZ.timerSize}
+                strokeWidth={compact ? 3 : 4}
+                startedAt={turnStartedAt}
+                limitSec={turnBaseLimit}
+                {serverTime}
+                active={true}
+                color="#f97316"
+              />
+            </div>
+          {/if}
 
-      <!-- BET CHIP -->
-      {#if betAmount > 0 && !s.folded && winners.length === 0}
-        <div
-          class="absolute -translate-x-1/2 -translate-y-1/2 z-[22] pointer-events-none chip-enter"
-          style="left: {bPos.x}; top: {bPos.y};"
-        >
           <div
-            class="flex items-center justify-center rounded-full"
-            style="
-              height: 20px;
-              min-width: 30px;
-              padding: 0 8px;
-              background: linear-gradient(180deg, #f4e5a8 0%, #d4af37 55%, #a87a15 100%);
-              box-shadow:
-                0 2px 6px rgba(0,0,0,0.9),
-                inset 0 1px 0 rgba(255,255,255,0.6),
-                inset 0 -1px 0 rgba(0,0,0,0.3);
-              border: 1px solid rgba(122,86,10,0.9);
-            "
+            class="relative rounded-full p-[{SZ.avatarBorder}px] bg-black {s.folded ? 'opacity-40' : ''}"
+            style="border: {SZ.avatarBorder}px solid {isWin
+              ? '#f4c95d'
+              : isShowdownLose
+                ? '#4b5563'
+                : isTurn
+                  ? '#f97316'
+                  : 'rgba(255,255,255,0.85)'}; box-shadow: 0 4px 14px rgba(0,0,0,0.9){isWin
+              ? ', 0 0 22px rgba(244,201,93,0.7)'
+              : ''};"
           >
-            <span
-              class="font-black text-black tabular-nums leading-none"
-              style="font-size: 10px; letter-spacing: -0.02em;"
+            <div
+              class="relative rounded-full overflow-hidden bg-gradient-to-br from-amber-700 to-amber-900 flex items-center justify-center"
+              style="width: {SZ.avatarPx}px; height: {SZ.avatarPx}px;"
             >
-              {fmt(betAmount)}
-            </span>
+              <Avatar avatarId={s.avatarId || 'diamond'} size={compact ? 'sm' : 'md'} />
+            </div>
           </div>
+
+          {#if s.folded}
+            <div
+              class="absolute inset-0 flex items-center justify-center rounded-full bg-black/75 z-[3]"
+            >
+              <span class="text-[{compact ? 6 : 8}px] font-extrabold text-white/90 tracking-wider">
+                FOLD
+              </span>
+            </div>
+          {/if}
+
+          {#if s.allIn && !s.folded}
+            <div class="absolute -top-2 left-1/2 -translate-x-1/2 z-[6]">
+              <span
+                class="text-[{compact ? 6 : 8}px] font-extrabold bg-red-600 rounded-full {compact
+                  ? 'px-1.5'
+                  : 'px-2'} py-0.5 whitespace-nowrap border border-red-400 shadow-lg text-white tracking-wider"
+              >
+                ALL-IN
+              </span>
+            </div>
+          {/if}
+
+          {#if gameState?.dealerSeat === s.seat}
+            <div
+              class="absolute -bottom-1.5 left-1/2 -translate-x-1/2 rounded-full flex items-center justify-center font-extrabold z-[15] badge-gold"
+              style="width: {compact ? 16 : 22}px; height: {compact ? 16 : 22}px; font-size: {compact
+                ? 8
+                : 10}px;"
+            >
+              D
+            </div>
+          {/if}
         </div>
-      {/if}
+
+        <div
+          class="bg-soft-white flex flex-col items-center relative z-[16] shadow-lg"
+          style="margin-top: {SZ.seatMT}px; padding: {SZ.panelPad}; border-radius: 6px; border: 2px solid {isShowdownWin
+            ? '#10b981'
+            : isShowdownLose
+              ? '#6b7280'
+              : 'rgba(0,0,0,0.35)'}; min-width: {SZ.panelMinW}px;"
+        >
+          <p
+            class="font-extrabold text-black leading-none whitespace-nowrap overflow-hidden text-ellipsis"
+            style="font-size: {SZ.nameFont}px; max-width: {compact ? 76 : 100}px;"
+          >
+            {s.displayName}
+          </p>
+          <p
+            class="font-extrabold text-amber-600 leading-tight tabular-nums"
+            style="font-size: {SZ.stackFont}px;"
+          >
+            ${fmt(s.stack)}
+          </p>
+        </div>
+
+        {#if isShowdown}
+          <div
+            class="mt-1 {compact ? 'px-2' : 'px-2.5'} py-0.5 rounded-full text-[{compact
+              ? 8
+              : 10}px] font-extrabold tracking-wider z-[20]"
+            style="background: {isShowdownWin
+              ? 'linear-gradient(135deg, #10b981, #059669)'
+              : 'linear-gradient(135deg, #ef4444, #991b1b)'}; color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.6);"
+          >
+            {isShowdownWin ? '✓ WIN' : '✗ LOSE'}
+          </div>
+          {#if payoutForSeat(s.seat) > 0 && !gameState?.tournamentId}
+            <div
+              class="mt-0.5 px-2 py-0.5 rounded-full text-[{compact ? 8 : 10}px] font-extrabold text-emerald-300 z-[20]"
+              style="background: rgba(0,0,0,0.85);"
+            >
+              +${fmt(payoutForSeat(s.seat))}
+            </div>
+          {/if}
+          {#if handName(s.seat)}
+            <div class="mt-0.5 text-[{compact ? 7 : 9}px] font-bold text-white/70 whitespace-nowrap">
+              {handName(s.seat)}
+            </div>
+          {/if}
+        {/if}
+
+        {#if betAmount > 0 && !s.folded && winners.length === 0}
+          <div
+            class="absolute -translate-x-1/2 -translate-y-1/2 z-[22] pointer-events-none"
+            style="left: {chipOffset.x}%; top: {chipOffset.y}%;"
+          >
+            <div
+              class="flex items-center gap-1.5 rounded-full {compact
+                ? 'pl-1 pr-2 py-0.5'
+                : 'pl-1.5 pr-2.5 py-0.5'}"
+              style="background: rgba(0,0,0,0.92); border: 1.5px solid rgba(244,201,93,0.55);"
+            >
+              <PokerChip amount={betAmount} size={SZ.betChipSize} />
+              <span
+                class="font-extrabold text-gold leading-none tabular-nums"
+                style="font-size: {SZ.betFont}px;"
+              >
+                ${fmt(betAmount)}
+              </span>
+            </div>
+          </div>
+        {/if}
+      </div>
     {/each}
 
-    <!-- ========== HERO SEAT ========== -->
+    {#if chipVisible}
+      <div
+        class="absolute pointer-events-none z-[60] transition-all duration-[1800ms] ease-out"
+        style="left: {chipLeft}%; top: {chipTop}%; transform: translate(-50%,-50%);"
+      >
+        <div class="drop-shadow-[0_0_24px_rgba(244,201,93,0.9)]">
+          <PokerChip amount={totalPot} size={compact ? 22 : 28} />
+        </div>
+      </div>
+    {/if}
+
+    {#if gameState && mySeat && mySeat.hole && mySeat.hole.length > 0 && !isEliminated}
+      <div
+        class="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 flex justify-center z-[30]"
+        style="top: {SZ.holeTop}%; gap: {SZ.holeGap * 4}px;"
+      >
+        {#each mySeat.hole as c}
+          <div class="drop-shadow-[0_8px_20px_rgba(0,0,0,0.95)]">
+            <PlayingCard rank={c.r} suit={suitChar(c.s)} size={SZ.holeCardSize} />
+          </div>
+        {/each}
+      </div>
+    {/if}
+
     {#if gameState && mySeat}
       {@const isWin = isWinnerSeat(mySeat.seat)}
       {@const isShowdown = inShowdown(mySeat.seat)}
@@ -4146,126 +4217,130 @@ import { preferences } from '../lib/preferences';
       {@const isShowdownLose = showdownLose(mySeat.seat)}
 
       <div
-        class="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-[30]"
-        style="top: 86%;"
+        class="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-[30] cursor-pointer"
+        style="top: {SZ.heroTop}%;"
+        on:click={() => onPlayerClick(mySeat.userId)}
+        on:keydown={(e) => e.key === 'Enter' && onPlayerClick(mySeat.userId)}
+        role="button"
+        tabindex="0"
       >
-        <!-- Hero hole cards (bigger, shown ABOVE hero panel) -->
-        {#if heroHole.length > 0 && !isEliminated}
-          {#key gameState.handNo}
-            <div class="flex justify-center gap-1 mb-1" style="filter: drop-shadow(0 6px 14px rgba(0,0,0,0.9));">
-              {#each heroHole as c, i}
-                {@const isWinCard = isWinningCard(c)}
-                <div class="relative">
-                  <PlayingCard rank={c.r} suit={suitChar(c.s)} size={S.cardSize} dealFrom="top-left" dealDelay={i * 0.15} />
-                  {#if isWinCard && winners.length > 0}
-                    <div class="absolute -inset-0.5 rounded-md winning-card-glow pointer-events-none z-[15]"></div>
-                  {/if}
-                </div>
-              {/each}
+        <div class="relative">
+          {#if isMyTurn}
+            <div class="absolute -inset-[6px] pointer-events-none z-[2]">
+              <TimerRing
+                size={SZ.timerHeroSize}
+                strokeWidth={compact ? 3 : 4}
+                startedAt={turnStartedAt}
+                limitSec={turnBaseLimit}
+                {serverTime}
+                active={true}
+                color="#f97316"
+              />
             </div>
-          {/key}
+          {/if}
+
+          <div
+            class="relative rounded-full p-[{SZ.avatarBorder}px] bg-black {mySeat.folded || isEliminated
+              ? 'opacity-40'
+              : ''}"
+            style="border: {SZ.avatarBorder}px solid {isWin
+              ? '#f4c95d'
+              : isShowdownLose
+                ? '#4b5563'
+                : isMyTurn
+                  ? '#f97316'
+                  : 'rgba(255,255,255,0.9)'}; box-shadow: 0 4px 18px rgba(0,0,0,0.9){isWin
+              ? ', 0 0 26px rgba(244,201,93,0.8)'
+              : ''};"
+          >
+            <div
+              class="relative rounded-full overflow-hidden bg-gradient-to-br from-amber-700 to-amber-900 flex items-center justify-center"
+              style="width: {SZ.heroAvatarPx}px; height: {SZ.heroAvatarPx}px;"
+            >
+              <Avatar avatarId={myAvatarId} size={compact ? 'sm' : 'md'} />
+            </div>
+          </div>
+
+          {#if gameState.dealerSeat === mySeat.seat}
+            <div
+              class="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full flex items-center justify-center font-extrabold z-[15] badge-gold"
+              style="width: {compact ? 18 : 24}px; height: {compact ? 18 : 24}px; font-size: {compact
+                ? 9
+                : 11}px;"
+            >
+              D
+            </div>
+          {/if}
+        </div>
+
+        <div
+          class="bg-soft-white flex flex-col items-center relative z-[16] shadow-xl"
+          style="margin-top: {SZ.seatMT}px; padding: {SZ.panelPad}; border-radius: 6px; border: 2px solid {isShowdownWin
+            ? '#10b981'
+            : isShowdownLose
+              ? '#6b7280'
+              : 'rgba(0,0,0,0.35)'}; min-width: {SZ.panelMinW + 14}px;"
+        >
+          <p
+            class="font-extrabold text-black leading-none"
+            style="font-size: {SZ.nameFont + 1}px;"
+          >
+            You
+          </p>
+          <p
+            class="font-extrabold text-amber-600 leading-tight tabular-nums"
+            style="font-size: {SZ.stackFont + 2}px;"
+          >
+            ${fmt(mySeat.stack)}
+          </p>
+        </div>
+
+        {#if isShowdown}
+          <div
+            class="mt-1 {compact ? 'px-2' : 'px-2.5'} py-0.5 rounded-full text-[{compact
+              ? 8
+              : 10}px] font-extrabold tracking-wider z-[20]"
+            style="background: {isShowdownWin
+              ? 'linear-gradient(135deg, #10b981, #059669)'
+              : 'linear-gradient(135deg, #ef4444, #991b1b)'}; color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.6);"
+          >
+            {isShowdownWin ? '✓ WIN' : '✗ LOSE'}
+          </div>
+          {#if payoutForSeat(mySeat.seat) > 0 && !gameState?.tournamentId}
+            <div
+              class="mt-0.5 px-2 py-0.5 rounded-full text-[{compact ? 9 : 11}px] font-extrabold text-emerald-300 z-[20]"
+              style="background: rgba(0,0,0,0.85);"
+            >
+              +${fmt(payoutForSeat(mySeat.seat))}
+            </div>
+          {/if}
+          {#if handName(mySeat.seat)}
+            <div class="mt-0.5 text-[{compact ? 7 : 9}px] font-bold text-white/70">
+              {handName(mySeat.seat)}
+            </div>
+          {/if}
         {/if}
 
-        <PlayerSeat
-          player={mySeat}
-          {myUserId}
-          isHero={true}
-          heroAvatarId={myAvatarId}
-          isDealer={gameState?.dealerSeat === mySeat.seat}
-          isTurn={isMyTurn}
-          isWinner={isWin}
-          {isShowdown}
-          {isShowdownWin}
-          {isShowdownLose}
-          handName={showdownData?.[mySeat.seat]?.handName ?? ''}
-          payout={payoutForSeat(mySeat.seat)}
-          holeCards={[]}
-          {turnStartedAt}
-          {turnBaseLimit}
-          {serverTime}
-          size={pSize}
-          cardsAbove={false}
-          panelSide="right"
-          onClick={() => onPlayerClick(mySeat.userId)}
-        />
-
-        <!-- Hero bet chip -->
         {#if mySeat.betThisStreet > 0 && !mySeat.folded && winners.length === 0}
-          <div class="mt-1 flex justify-center chip-enter">
-            <div
-              class="flex items-center justify-center rounded-full"
-              style="
-                height: 20px;
-                min-width: 30px;
-                padding: 0 8px;
-                background: linear-gradient(180deg, #f4e5a8 0%, #d4af37 55%, #a87a15 100%);
-                box-shadow:
-                  0 2px 6px rgba(0,0,0,0.9),
-                  inset 0 1px 0 rgba(255,255,255,0.6),
-                  inset 0 -1px 0 rgba(0,0,0,0.3);
-                border: 1px solid rgba(122,86,10,0.9);
-              "
+          <div
+            class="mt-1 flex items-center gap-1 bg-black/85 rounded-full {compact
+              ? 'px-1.5 py-0.5'
+              : 'px-2 py-0.5'} border border-gold/50"
+          >
+            <PokerChip amount={mySeat.betThisStreet} size={SZ.betChipSize} />
+            <span
+              class="font-bold text-gold leading-none tabular-nums"
+              style="font-size: {SZ.betFont}px;"
             >
-              <span
-                class="font-black text-black tabular-nums leading-none"
-                style="font-size: 10px; letter-spacing: -0.02em;"
-              >
-                {fmt(mySeat.betThisStreet)}
-              </span>
-            </div>
+              ${fmt(mySeat.betThisStreet)}
+            </span>
           </div>
         {/if}
       </div>
     {/if}
+
   </div>
 </div>
-
-<style>
-  @keyframes chip-enter-kf {
-    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
-    60% { opacity: 1; transform: translate(-50%, -50%) scale(1.12); }
-    100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-  }
-  .chip-enter { animation: chip-enter-kf 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
-
-@keyframes winner-announce-in {
-    0% { opacity: 0; transform: translate(-50%, -20px) scale(0.85); }
-    60% { opacity: 1; transform: translate(-50%, 0) scale(1.05); }
-    100% { opacity: 1; transform: translate(-50%, 0) scale(1); }
-  }
-  .winner-announce { animation: winner-announce-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
-
-  @keyframes winner-glow-card-kf {
-    0%, 100% { box-shadow: 0 0 30px rgba(212,175,55,0.6); }
-    50% { box-shadow: 0 0 55px rgba(212,175,55,1); }
-  }
-  .winner-glow-card { animation: winner-glow-card-kf 1.6s ease-in-out infinite; }
-
-  @keyframes comparison-in {
-    from { opacity: 0; transform: translateX(20px); }
-    to { opacity: 1; transform: translateX(0); }
-  }
-  .comparison-panel { animation: comparison-in 0.4s ease-out 0.2s both; }
-
-  @keyframes chip-fly-kf {
-    0% { left: var(--from-x); top: var(--from-y); opacity: 0; transform: translate(-50%, -50%) scale(0.5) rotate(0deg); }
-    15% { opacity: 1; }
-    50% { left: calc((var(--from-x) + var(--to-x)) / 2); top: calc((var(--from-y) + var(--to-y)) / 2 - 10%); opacity: 1; transform: translate(-50%, -50%) scale(1.3) rotate(180deg); }
-    100% { left: var(--to-x); top: var(--to-y); opacity: 0; transform: translate(-50%, -50%) scale(0.6) rotate(360deg); }
-  }
-  .chip-fly {
-    position: absolute; z-index: 55; pointer-events: none;
-    animation: chip-fly-kf 1.1s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-  }
-
-  @keyframes winning-card-glow-kf {
-    0%, 100% { box-shadow: 0 0 10px rgba(244,201,93,0.7), 0 0 0 2px rgba(244,201,93,0.9); transform: scale(1); }
-    50% { box-shadow: 0 0 28px rgba(244,201,93,1), 0 0 0 3px rgba(244,201,93,1); transform: scale(1.05); }
-  }
-  .winning-card-glow { animation: winning-card-glow-kf 1.4s ease-in-out infinite; border-radius: 6px; }
-
-
-</style>
 
 ========== FILE: apps\mini-app\src\components\QuickSeatSheet.svelte ==========
 <script lang="ts">
@@ -4667,7 +4742,7 @@ import { preferences } from '../lib/preferences';
 
 ========== FILE: apps\mini-app\src\components\TimerRing.svelte ==========
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount } from 'svelte';
 
   export let size: number = 80;
   export let strokeWidth: number = 4;
@@ -4677,11 +4752,19 @@ import { preferences } from '../lib/preferences';
   export let active: boolean = true;
   export let color: string = '#3b82f6';
   export let paused: boolean = false;
-  export let dangerThreshold: number = 5;  // seconds
+  export let dangerThreshold: number = 5;
   export let warningThreshold: number = 10;
 
   let now = Date.now();
   let timer: any = null;
+
+  // Sync offset with server time (client clock may drift)
+  let serverOffset = 0;
+  $: if (serverTime > 0) {
+    const clientAtReceive = Date.now();
+    // We assume serverTime was captured ~now
+    serverOffset = serverTime - clientAtReceive;
+  }
 
   onMount(() => {
     timer = setInterval(() => (now = Date.now()), 100);
@@ -4690,26 +4773,38 @@ import { preferences } from '../lib/preferences';
     };
   });
 
-  $: elapsed = Math.max(0, (now - startedAt) / 1000);
+  // Paused = freeze elapsed at the moment pause started
+  let pausedAt: number | null = null;
+  $: if (paused && pausedAt === null) {
+    pausedAt = now;
+  } else if (!paused && pausedAt !== null) {
+    pausedAt = null;
+  }
+
+  $: effectiveNow = paused && pausedAt !== null ? pausedAt : now + serverOffset;
+  $: elapsed = Math.max(0, (effectiveNow - startedAt) / 1000);
   $: remaining = Math.max(0, limitSec - elapsed);
   $: pct = limitSec > 0 ? remaining / limitSec : 0;
 
-  // Color tiers: blue → yellow → red
-    // Color tiers: green → amber → red (standard 80/15/5 distribution)
-  $: timerColor =
-    remaining <= dangerThreshold ? '#ef4444' :     // 0-5s: red (5%)
-    remaining <= warningThreshold ? '#f59e0b' :    // 5-10s: amber (15%)
-    '#10b981';                                      // 10-30s: green (80%)
+  // If a custom color is provided, use it; otherwise use tiered color
+  $: useCustomColor = color && color !== '#3b82f6';
+  $: tieredColor =
+    remaining <= dangerThreshold
+      ? '#ef4444'
+      : remaining <= warningThreshold
+        ? '#f59e0b'
+        : '#10b981';
+  $: timerColor = useCustomColor ? color : tieredColor;
 
   $: radius = (size - strokeWidth) / 2;
   $: circumference = 2 * Math.PI * radius;
   $: dashOffset = circumference * (1 - pct);
 
   $: displaySec = Math.ceil(remaining);
-  $: isPulsing = remaining <= dangerThreshold && active && remaining > 0;
+  $: isPulsing = remaining <= dangerThreshold && active && remaining > 0 && !paused;
 </script>
 
-{#if active && remaining > 0}
+{#if active && (remaining > 0 || paused)}
   <div
     class="timer-ring"
     class:pulsing={isPulsing}
@@ -4721,7 +4816,6 @@ import { preferences } from '../lib/preferences';
       viewBox="0 0 {size} {size}"
       style="transform: rotate(-90deg);"
     >
-      <!-- Background track -->
       <circle
         cx={size / 2}
         cy={size / 2}
@@ -4731,7 +4825,6 @@ import { preferences } from '../lib/preferences';
         stroke-width={strokeWidth}
       />
 
-      <!-- Progress arc -->
       <circle
         cx={size / 2}
         cy={size / 2}
@@ -4749,7 +4842,6 @@ import { preferences } from '../lib/preferences';
       />
     </svg>
 
-    <!-- Countdown number -->
     <div
       class="timer-text"
       style="
@@ -5117,8 +5209,11 @@ export default {
     yourRank: 'Your Rank',
   },
   events: {
-    title: 'Tournaments',
+    title: 'Events',
+    loading: 'Loading…',
     noEvents: 'No events scheduled',
+    prize: 'Prize',
+    close: 'Close',
     register: 'Register',
     viewResult: 'View Results',
   },
@@ -5289,8 +5384,11 @@ export default {
     yourRank: 'رتبه شما',
   },
   events: {
-    title: 'تورنومنت‌ها',
-    noEvents: 'تورنومنتی برنامه‌ریزی نشده',
+    title: 'رویدادها',
+    loading: 'در حال بارگذاری…',
+    noEvents: 'رویدادی وجود ندارد',
+    prize: 'جایزه',
+    close: 'بستن',
     register: 'ثبت‌نام',
     viewResult: 'مشاهده نتایج',
   },
@@ -5935,9 +6033,35 @@ class ApiClient {
   async listBlindStructures(): Promise<ApiResponse<{ structures: any[] }>> {
     return this.request('/api/blind-structures');
   }
+
+  // ============================================================
+  // Broadcasts / Notifications
+  // ============================================================
+  async getBroadcasts(): Promise<
+    ApiResponse<{
+      broadcasts: Array<{
+        id: number;
+        title: string;
+        message: string;
+        target: string;
+        severity: 'info' | 'warning' | 'success' | 'danger';
+        createdAt: string;
+      }>;
+    }>
+  > {
+    return this.request('/api/broadcasts');
+  }
+
+  async markBroadcastRead(id: number): Promise<ApiResponse<{ ok: boolean }>> {
+    return this.request(`/api/broadcasts/${id}/read`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+  }
 }
 
 export const api = new ApiClient(API_URL);
+
 
 ========== FILE: apps\mini-app\src\lib\avatars.ts ==========
 export interface Avatar {
@@ -5968,6 +6092,89 @@ export const AVATARS: Avatar[] = [
 export function getAvatar(id?: string): Avatar {
   return AVATARS.find((a) => a.id === id) ?? AVATARS[0];
 }
+
+========== FILE: apps\mini-app\src\lib\broadcasts.ts ==========
+import { writable, get } from 'svelte/store';
+import { api } from './api';
+
+export interface BroadcastItem {
+  id: number;
+  title: string;
+  message: string;
+  target: string;
+  severity: 'info' | 'warning' | 'success' | 'danger';
+  createdAt: string;
+}
+
+export const broadcasts = writable<BroadcastItem[]>([]);
+export const unreadCount = writable<number>(0);
+export const broadcastsLoading = writable<boolean>(false);
+
+export async function loadBroadcasts(): Promise<void> {
+  broadcastsLoading.set(true);
+  try {
+    const res = await api.getBroadcasts();
+    if (res.ok && res.data) {
+      broadcasts.set(res.data.broadcasts);
+      unreadCount.set(res.data.broadcasts.length);
+    } else {
+      broadcasts.set([]);
+      unreadCount.set(0);
+    }
+  } catch {
+    broadcasts.set([]);
+    unreadCount.set(0);
+  } finally {
+    broadcastsLoading.set(false);
+  }
+}
+
+export async function markRead(id: number): Promise<void> {
+  const before = get(broadcasts);
+  const target = before.find((b) => b.id === id);
+  if (!target) return;
+
+  // optimistic: remove from list
+  broadcasts.update((arr) => arr.filter((b) => b.id !== id));
+  unreadCount.update((n) => Math.max(0, n - 1));
+
+  try {
+    await api.markBroadcastRead(id);
+  } catch {
+    // rollback on failure
+    broadcasts.set(before);
+    unreadCount.update((n) => n + 1);
+  }
+}
+
+export async function markAllRead(): Promise<void> {
+  const before = get(broadcasts);
+  if (before.length === 0) return;
+  broadcasts.set([]);
+  unreadCount.set(0);
+  try {
+    await Promise.all(before.map((b) => api.markBroadcastRead(b.id)));
+  } catch {
+    broadcasts.set(before);
+    unreadCount.set(before.length);
+  }
+}
+
+// Poll every 30s
+let pollTimer: any = null;
+export function startBroadcastPolling(): void {
+  if (pollTimer) return;
+  loadBroadcasts();
+  pollTimer = setInterval(loadBroadcasts, 30_000);
+}
+
+export function stopBroadcastPolling(): void {
+  if (pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+}
+
 
 ========== FILE: apps\mini-app\src\lib\card-themes.ts ==========
 export type CardTheme = 'classic' | '4color' | 'clean' | 'luxury' | 'neon';
@@ -6451,15 +6658,17 @@ export class TableSocketIO {
   private listeners: Set<Listener> = new Set();
   private token: string;
   private tableId: number;
+  private autoMuck: boolean;
   private closedByUser = false;
 
   private lastHandNo: number = 0;
   private lastSequence: number = 0;
   private reconnectAttempt = 0;
 
-  constructor(tableId: number, token: string) {
+  constructor(tableId: number, token: string, autoMuck: boolean = true) {
     this.tableId = tableId;
     this.token = token;
+    this.autoMuck = autoMuck;
   }
 
   connect(): void {
@@ -6489,6 +6698,7 @@ export class TableSocketIO {
           tableId: this.tableId,
           lastHandNo: this.lastHandNo,
           lastSequence: this.lastSequence,
+          autoMuck: this.autoMuck,
         },
         (res: any) => {
           if (!res?.ok) {
@@ -6593,7 +6803,11 @@ export class TableSocketIO {
     if (!this.socket?.connected) return;
     this.socket.emit('table:time_bank', {}, () => {});
   }
-
+  updateAutoMuck(autoMuck: boolean): void {
+    this.autoMuck = autoMuck;
+    if (!this.socket?.connected) return;
+    this.socket.emit('table:update_prefs', { autoMuck }, () => {});
+  }
   requestResync(): void {
     if (!this.socket?.connected) return;
     this.socket.emit(
@@ -7972,6 +8186,7 @@ let activeFilter: CategoryKey = 'all';
         </button>
         <button
           on:click={loadTournaments}
+          aria-label="Refresh tournaments"
           class="w-12 rounded-xl text-white/70 active:scale-95 flex items-center justify-center"
           style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3);"
         >
@@ -8257,7 +8472,7 @@ let activeFilter: CategoryKey = 'all';
           class="flex-1 rounded-xl px-3 py-2.5 text-sm text-white outline-none"
           style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
         />
-        <button on:click={loadPlayers} class="px-3 rounded-xl text-white/70" style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3);">
+        <button on:click={loadPlayers} aria-label="Search players" class="px-3 rounded-xl text-white/70" style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3);">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
         </button>
       </div>
@@ -8520,7 +8735,7 @@ let activeFilter: CategoryKey = 'all';
                 <p class="text-[12px] font-bold text-white capitalize">{key.replace(/_/g, ' ')}</p>
                 <p class="text-[9px] text-white/40 font-mono">{key}</p>
               </div>
-              <button on:click={() => toggleSetting(key)} class="w-12 h-7 rounded-full relative transition-all shrink-0" style="background: {val.value ? 'linear-gradient(180deg, #f4e5a8, #d4af37)' : 'rgba(255,255,255,0.15)'};">
+              <button on:click={() => toggleSetting(key)} aria-label="Toggle {key}" class="w-12 h-7 rounded-full relative transition-all shrink-0" style="background: {val.value ? 'linear-gradient(180deg, #f4e5a8, #d4af37)' : 'rgba(255,255,255,0.15)'};">
                 <span class="absolute top-1 w-5 h-5 rounded-full bg-white transition-all" style="left: {val.value ? '26px' : '4px'}; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></span>
               </button>
             </div>
@@ -8559,8 +8774,20 @@ let activeFilter: CategoryKey = 'all';
 
 <!-- ============ PLAYER DETAIL MODAL ============ -->
 {#if selectedPlayer}
-  <div class="fixed inset-0 z-[100] flex items-center justify-center px-4" style="background: rgba(5,8,15,0.92); backdrop-filter: blur(8px);" on:click={closePlayer} role="presentation">
-    <div class="w-full max-w-md rounded-3xl p-5 max-h-[85vh] overflow-y-auto no-scrollbar" style="background: linear-gradient(180deg, rgba(15,31,58,0.98), rgba(7,14,27,1)); border: 1.5px solid rgba(212,175,55,0.4);" on:click={(e) => e.stopPropagation()} role="dialog">
+  <div class="fixed inset-0 z-[100] flex items-center justify-center px-4"
+       style="background: rgba(5,8,15,0.92); backdrop-filter: blur(8px);"
+       on:click={closePlayer}
+       on:keydown={(e) => (e.key === 'Escape' || e.key === 'Enter') && closePlayer()}
+       role="button"
+       tabindex="-1"
+       aria-label="Close player details">
+    <div class="w-full max-w-md rounded-3xl p-5 max-h-[85vh] overflow-y-auto no-scrollbar"
+         style="..."
+         on:click={(e) => e.stopPropagation()}
+         on:keydown={(e) => e.stopPropagation()}
+         role="dialog"
+         aria-modal="true"
+         tabindex="-1">
       {#if playerDetailLoading || !playerDetail}
         <p class="text-white/40 text-center py-8">Loading…</p>
       {:else}
@@ -8666,72 +8893,86 @@ let activeFilter: CategoryKey = 'all';
 
 ========== FILE: apps\mini-app\src\routes\Events.svelte ==========
 <script lang="ts">
-  import { onMount } from 'svelte'
-  import { api } from '../lib/api'
+  import { onMount } from 'svelte';
+  import { api } from '../lib/api';
+  import { t, lang } from '../i18n';
 
   type EventItem = {
-    id: string
-    title: string
-    description: string
-    startsAt: string
-    prize: number
-    image?: string
-  }
+    id: string;
+    title: string;
+    description: string;
+    startsAt: string;
+    prize: number;
+    image?: string;
+  };
 
-  let events: EventItem[] = []
-  let loading = true
-  let selected: EventItem | null = null
+  let events: EventItem[] = [];
+  let loading = true;
+  let selected: EventItem | null = null;
 
   onMount(async () => {
-  try {
-    const res = await api.request('/api/events')
-    if (res.ok && res.data) events = (res.data as any).events || []
-  } catch (e) {
-    console.error('[Events] load failed', e)
-    events = []
-  } finally {
-    loading = false
-  }
-})
+    try {
+      const res = await api.request('/api/events');
+      if (res.ok && res.data) events = (res.data as any).events || [];
+    } catch (e) {
+      console.error('[Events] load failed', e);
+      events = [];
+    } finally {
+      loading = false;
+    }
+  });
 
   function openDetail(ev: EventItem) {
-    selected = ev
+    selected = ev;
   }
 
   function closeDetail() {
-    selected = null
+    selected = null;
   }
 
   function formatDate(iso: string) {
-    return new Date(iso).toLocaleString('fa-IR', {
+    const locale =
+      $lang === 'fa'
+        ? 'fa-IR'
+        : $lang === 'ar'
+          ? 'ar-SA'
+          : $lang === 'tr'
+            ? 'tr-TR'
+            : $lang === 'ru'
+              ? 'ru-RU'
+              : $lang === 'zh'
+                ? 'zh-CN'
+                : 'en-US';
+    return new Date(iso).toLocaleString(locale, {
       dateStyle: 'medium',
       timeStyle: 'short',
-    })
+    });
   }
 </script>
 
 <div class="events-page">
   <header class="page-header">
-    <h1>رویدادها</h1>
+    <h1>{$t('events.title')}</h1>
   </header>
 
   {#if loading}
-    <div class="state">در حال بارگذاری…</div>
+    <div class="state">{$t('events.loading')}</div>
   {:else if events.length === 0}
-    <div class="state">رویدادی وجود ندارد</div>
+    <div class="state">{$t('events.noEvents')}</div>
   {:else}
     <ul class="event-list">
       {#each events as ev (ev.id)}
-        <li class="event-card" onclick={() => openDetail(ev)} role="button" tabindex="0"
-            onkeydown={(e) => e.key === 'Enter' && openDetail(ev)}>
-          {#if ev.image}
-            <img class="thumb" src={ev.image} alt={ev.title} />
-          {/if}
-          <div class="body">
-            <span class="title">{ev.title}</span>
-            <span class="date">{formatDate(ev.startsAt)}</span>
-          </div>
-          <div class="prize">{ev.prize.toLocaleString()} TON</div>
+        <li>
+          <button type="button" class="event-card w-full text-left" onclick={() => openDetail(ev)}>
+            {#if ev.image}
+              <img class="thumb" src={ev.image} alt={ev.title} />
+            {/if}
+            <div class="body">
+              <span class="title">{ev.title}</span>
+              <span class="date">{formatDate(ev.startsAt)}</span>
+            </div>
+            <div class="prize">{ev.prize.toLocaleString()} TON</div>
+          </button>
         </li>
       {/each}
     </ul>
@@ -8739,13 +8980,21 @@ let activeFilter: CategoryKey = 'all';
 </div>
 
 {#if selected}
-  <div class="modal-backdrop" onclick={closeDetail} role="presentation">
-    <div class="modal" onclick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+  <div class="modal-backdrop">
+    <button
+      type="button"
+      class="modal-backdrop-btn"
+      onclick={closeDetail}
+      aria-label={$t('events.close')}
+    ></button>
+    <div class="modal" role="dialog" aria-modal="true" tabindex="-1">
       <h2>{selected.title}</h2>
       <p class="modal-date">{formatDate(selected.startsAt)}</p>
       <p class="modal-desc">{selected.description}</p>
-      <p class="modal-prize">جایزه: {selected.prize.toLocaleString()} TON</p>
-      <button class="close-btn" onclick={closeDetail}>بستن</button>
+      <p class="modal-prize">
+        {$t('events.prize')}: {selected.prize.toLocaleString()} TON
+      </p>
+      <button class="close-btn" onclick={closeDetail}>{$t('events.close')}</button>
     </div>
   </div>
 {/if}
@@ -8754,20 +9003,30 @@ let activeFilter: CategoryKey = 'all';
   .events-page {
     padding: 1rem;
     min-height: 100%;
-    background: url('/bg-pattern.png') center/cover no-repeat, var(--color-bg, #0e0e10);
+    background:
+      url('/bg-pattern.png') center/cover no-repeat,
+      var(--color-bg, #0e0e10);
   }
-  .page-header { margin-bottom: 1rem; }
+  .page-header {
+    margin-bottom: 1rem;
+  }
   .page-header h1 {
     font-family: 'Sora', sans-serif;
     font-size: 1.5rem;
     font-weight: 700;
   }
-  .state { text-align: center; padding: 3rem 1rem; opacity: 0.6; }
+  .state {
+    text-align: center;
+    padding: 3rem 1rem;
+    opacity: 0.6;
+  }
   .event-list {
     list-style: none;
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+    padding: 0;
+    margin: 0;
   }
   .event-card {
     display: flex;
@@ -8775,14 +9034,18 @@ let activeFilter: CategoryKey = 'all';
     gap: 0.75rem;
     padding: 0.75rem 1rem;
     border-radius: 16px;
-    background: linear-gradient(145deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02));
-    border: 1px solid rgba(255,255,255,0.08);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+    border: 1px solid rgba(255, 255, 255, 0.08);
     cursor: pointer;
-    transition: transform 0.15s ease, border-color 0.15s ease;
+    transition:
+      transform 0.15s ease,
+      border-color 0.15s ease;
+    color: inherit;
+    font-family: inherit;
   }
   .event-card:hover {
     transform: translateY(-2px);
-    border-color: rgba(212,175,55,0.4);
+    border-color: rgba(212, 175, 55, 0.4);
   }
   .thumb {
     width: 56px;
@@ -8791,9 +9054,21 @@ let activeFilter: CategoryKey = 'all';
     object-fit: cover;
     flex-shrink: 0;
   }
-  .body { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
-  .title { font-weight: 600; font-size: 0.95rem; }
-  .date { font-size: 0.78rem; opacity: 0.65; }
+  .body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+  }
+  .title {
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+  .date {
+    font-size: 0.78rem;
+    opacity: 0.65;
+  }
   .prize {
     font-weight: 700;
     font-size: 0.9rem;
@@ -8801,25 +9076,52 @@ let activeFilter: CategoryKey = 'all';
     white-space: nowrap;
   }
   .modal-backdrop {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.6);
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(6px);
-    display: grid; place-items: center;
+    display: grid;
+    place-items: center;
     z-index: 100;
     padding: 1rem;
   }
+  .modal-backdrop-btn {
+    position: absolute;
+    inset: 0;
+    background: transparent;
+    border: none;
+    cursor: default;
+  }
   .modal {
+    position: relative;
+    z-index: 1;
     background: #1a1a1f;
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 20px;
     padding: 1.5rem;
     max-width: 420px;
     width: 100%;
   }
-  .modal h2 { font-size: 1.15rem; margin-bottom: 0.5rem; }
-  .modal-date { font-size: 0.8rem; opacity: 0.6; margin-bottom: 0.75rem; }
-  .modal-desc { font-size: 0.9rem; line-height: 1.6; margin-bottom: 1rem; opacity: 0.85; }
-  .modal-prize { color: #d4af37; font-weight: 700; margin-bottom: 1.25rem; }
+  .modal h2 {
+    font-size: 1.15rem;
+    margin-bottom: 0.5rem;
+  }
+  .modal-date {
+    font-size: 0.8rem;
+    opacity: 0.6;
+    margin-bottom: 0.75rem;
+  }
+  .modal-desc {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+    opacity: 0.85;
+  }
+  .modal-prize {
+    color: #d4af37;
+    font-weight: 700;
+    margin-bottom: 1.25rem;
+  }
   .close-btn {
     width: 100%;
     padding: 0.75rem;
@@ -8831,6 +9133,7 @@ let activeFilter: CategoryKey = 'all';
     cursor: pointer;
   }
 </style>
+
 
 ========== FILE: apps\mini-app\src\routes\HelpCenter.svelte ==========
 <script lang="ts">
@@ -9004,7 +9307,6 @@ let activeFilter: CategoryKey = 'all';
 
   export let onNavigate: (page: any) => void = () => {};
   export let onQuickSeat: (variant: string, mode: 'free' | 'real') => void = () => {};
-  export let onOpenTable: (id: number) => void = () => {};
 
   let sheetOpen = false;
   let liveTournaments: any[] = [];
@@ -9056,7 +9358,9 @@ let activeFilter: CategoryKey = 'all';
       id: 'fast',
       title: 'Fast Payouts',
       sub: 'Get your winnings quickly',
-      paths: ['M13 2L4.09 12.97a1 1 0 0 0 .78 1.63H10l-1 7.4 8.91-10.97a1 1 0 0 0-.78-1.63H12l1-7.4z'],
+      paths: [
+        'M13 2L4.09 12.97a1 1 0 0 0 .78 1.63H10l-1 7.4 8.91-10.97a1 1 0 0 0-.78-1.63H12l1-7.4z',
+      ],
     },
     {
       id: 'global',
@@ -9072,10 +9376,7 @@ let activeFilter: CategoryKey = 'all';
       id: 'secure',
       title: 'Secure & Fair',
       sub: 'Trusted platform',
-      paths: [
-        'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z',
-        'M9 12l2 2 4-4',
-      ],
+      paths: ['M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z', 'M9 12l2 2 4-4'],
     },
   ];
 
@@ -9084,14 +9385,22 @@ let activeFilter: CategoryKey = 'all';
       const tablesRes = await api.tables();
       if (tablesRes.ok && tablesRes.data) tables = tablesRes.data.tables || [];
       const tourneyRes = await api.listTournaments({ status: 'running' });
-      if (tourneyRes.ok && tourneyRes.data) liveTournaments = (tourneyRes.data.tournaments || []).slice(0, 3);
-    } catch (e) {}
+      if (tourneyRes.ok && tourneyRes.data)
+        liveTournaments = (tourneyRes.data.tournaments || []).slice(0, 3);
+    } catch {
+      // ignore
+    }
   }
 
-  onMount(() => { loadData(); });
+  onMount(() => {
+    loadData();
+  });
 
-  function openGame(g: typeof games[0]) {
-    if (g.id === 'tourney') { onNavigate('tournaments'); return; }
+  function openGame(g: (typeof games)[0]) {
+    if (g.id === 'tourney') {
+      onNavigate('tournaments');
+      return;
+    }
     onQuickSeat(g.id, 'free');
   }
 
@@ -9120,7 +9429,10 @@ let activeFilter: CategoryKey = 'all';
       class="absolute inset-0 w-full h-full object-cover"
       draggable="false"
     />
-    <div class="absolute inset-0" style="background: linear-gradient(180deg, rgba(5,8,15,0.35) 0%, rgba(5,8,15,0.7) 50%, rgba(5,8,15,0.95) 100%);"></div>
+    <div
+      class="absolute inset-0"
+      style="background: linear-gradient(180deg, rgba(5,8,15,0.35) 0%, rgba(5,8,15,0.7) 50%, rgba(5,8,15,0.95) 100%);"
+    ></div>
 
     <!-- Content -->
     <div class="relative p-5 pt-6">
@@ -9156,8 +9468,16 @@ let activeFilter: CategoryKey = 'all';
         "
       >
         <span>Play Now</span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
           <path d="M5 12h14" />
           <path d="M13 5l7 7-7 7" />
         </svg>
@@ -9183,8 +9503,16 @@ let activeFilter: CategoryKey = 'all';
             border: 1px solid rgba(212,175,55,0.35);
           "
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-               stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#d4af37"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             {#each f.paths as d}
               <path {d} />
             {/each}
@@ -9199,10 +9527,21 @@ let activeFilter: CategoryKey = 'all';
   <!-- ============ POPULAR GAMES ============ -->
   <div class="flex items-center justify-between mb-3 px-4">
     <h2 class="text-base font-extrabold text-white">Popular Games</h2>
-    <button on:click={() => onNavigate('tables')} class="text-[10px] font-bold text-gold active:opacity-70 flex items-center gap-1">
+    <button
+      on:click={() => onNavigate('tables')}
+      class="text-[10px] font-bold text-gold active:opacity-70 flex items-center gap-1"
+    >
       <span>See All</span>
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
-           stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <svg
+        width="10"
+        height="10"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="3"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
         <path d="M5 12h14" />
         <path d="M13 5l7 7-7 7" />
       </svg>
@@ -9221,7 +9560,6 @@ let activeFilter: CategoryKey = 'all';
           box-shadow: 0 6px 20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
         "
       >
-        <!-- Mini felt preview -->
         <div
           class="relative w-full h-[90px] flex items-center justify-center overflow-hidden"
           style="
@@ -9229,13 +9567,20 @@ let activeFilter: CategoryKey = 'all';
             border-bottom: 1px solid rgba(255,255,255,0.05);
           "
         >
-          <div class="absolute inset-0 opacity-20"
-               style="background-image: url('/bg-table-pattern.png'); background-size: 200px; background-position: center;"></div>
-          <div class="absolute inset-2 rounded-[50%]" style="border: 1px solid rgba(212,175,55,0.35);"></div>
+          <div
+            class="absolute inset-0 opacity-20"
+            style="background-image: url('/bg-table-pattern.png'); background-size: 200px; background-position: center;"
+          ></div>
+          <div
+            class="absolute inset-2 rounded-[50%]"
+            style="border: 1px solid rgba(212,175,55,0.35);"
+          ></div>
 
           <div class="flex justify-center -space-x-3 relative z-10">
             {#each g.cards as c}
-              <div style="transform: rotate({c.rot}deg); filter: drop-shadow(0 3px 6px rgba(0,0,0,0.7));">
+              <div
+                style="transform: rotate({c.rot}deg); filter: drop-shadow(0 3px 6px rgba(0,0,0,0.7));"
+              >
                 <PlayingCard rank={c.rank} suit={c.suit} size="xs" />
               </div>
             {/each}
@@ -9262,10 +9607,20 @@ let activeFilter: CategoryKey = 'all';
       "
     >
       <div class="flex items-center gap-2.5">
-        <div class="w-10 h-10 rounded-xl flex items-center justify-center"
-             style="background: rgba(16,185,129,0.25); border: 1px solid rgba(16,185,129,0.5);">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-               stroke="#6ee7b7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <div
+          class="w-10 h-10 rounded-xl flex items-center justify-center"
+          style="background: rgba(16,185,129,0.25); border: 1px solid rgba(16,185,129,0.5);"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#6ee7b7"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <path d="M20 12v10H4V12" />
             <path d="M2 7h20v5H2z" />
             <path d="M12 22V7" />
@@ -9274,14 +9629,29 @@ let activeFilter: CategoryKey = 'all';
           </svg>
         </div>
         <div class="text-left">
-          <p class="text-[9px] font-extrabold uppercase tracking-widest" style="color: rgba(110,231,183,0.9);">Free Chips</p>
-          <p class="text-lg font-extrabold text-white leading-tight tabular-nums">{chips.toLocaleString()}</p>
+          <p
+            class="text-[9px] font-extrabold uppercase tracking-widest"
+            style="color: rgba(110,231,183,0.9);"
+          >
+            Free Chips
+          </p>
+          <p class="text-lg font-extrabold text-white leading-tight tabular-nums">
+            {chips.toLocaleString()}
+          </p>
         </div>
       </div>
       <div class="text-right flex items-center gap-1" style="color: #6ee7b7;">
         <span class="text-[11px] font-extrabold">Play Free</span>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
           <path d="M5 12h14" />
           <path d="M13 5l7 7-7 7" />
         </svg>
@@ -9296,10 +9666,21 @@ let activeFilter: CategoryKey = 'all';
         Live Tournaments
         <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
       </h2>
-      <button on:click={() => onNavigate('tournaments')} class="text-[10px] font-bold text-gold flex items-center gap-1">
+      <button
+        on:click={() => onNavigate('tournaments')}
+        class="text-[10px] font-bold text-gold flex items-center gap-1"
+      >
         <span>See All</span>
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <svg
+          width="10"
+          height="10"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
           <path d="M5 12h14" />
           <path d="M13 5l7 7-7 7" />
         </svg>
@@ -9317,8 +9698,10 @@ let activeFilter: CategoryKey = 'all';
           "
         >
           <div class="flex items-center gap-2 relative">
-            <div class="w-10 h-10 rounded-xl overflow-hidden shrink-0"
-                 style="border: 1.5px solid rgba(244,201,93,0.5);">
+            <div
+              class="w-10 h-10 rounded-xl overflow-hidden shrink-0"
+              style="border: 1.5px solid rgba(244,201,93,0.5);"
+            >
               <img src="/trophy.png" alt="" class="w-full h-full object-cover" />
             </div>
             <div class="flex-1 min-w-0">
@@ -9326,7 +9709,9 @@ let activeFilter: CategoryKey = 'all';
               <p class="text-[9px] text-white/50 uppercase">{t.variant} · {t.speed}</p>
             </div>
             <div class="text-right shrink-0">
-              <p class="text-[12px] font-extrabold text-emerald-400 tabular-nums">${Number(t.totalPrizePool || 0).toFixed(0)}</p>
+              <p class="text-[12px] font-extrabold text-emerald-400 tabular-nums">
+                ${Number(t.totalPrizePool || 0).toFixed(0)}
+              </p>
               <p class="text-[9px] text-white/40">prize pool</p>
             </div>
           </div>
@@ -9336,7 +9721,13 @@ let activeFilter: CategoryKey = 'all';
   {/if}
 </div>
 
-<QuickSeatSheet bind:open={sheetOpen} freeChips={chips} onClose={() => (sheetOpen = false)} onConfirm={handleConfirm} />
+<QuickSeatSheet
+  bind:open={sheetOpen}
+  freeChips={chips}
+  onClose={() => (sheetOpen = false)}
+  onConfirm={handleConfirm}
+/>
+
 
 ========== FILE: apps\mini-app\src\routes\Leaderboard.svelte ==========
 <script lang="ts">
@@ -10038,46 +10429,53 @@ let activeFilter: CategoryKey = 'all';
 
 ========== FILE: apps\mini-app\src\routes\Notifications.svelte ==========
 <script lang="ts">
+  import { onMount } from 'svelte';
   import TopBar from '../components/TopBar.svelte';
+  import {
+    broadcasts,
+    broadcastsLoading,
+    unreadCount,
+    loadBroadcasts,
+    markRead,
+    markAllRead,
+  } from '../lib/broadcasts';
 
   export let onBack: () => void = () => {};
 
-  interface Notification {
-    id: string;
-    type: 'tournament' | 'friend' | 'reward' | 'security' | 'system';
-    title: string;
-    message: string;
-    time: string;
-    read: boolean;
-  }
-
-  let notifications: Notification[] = [
-    { id: '1', type: 'reward', title: 'Welcome Bonus', message: 'You received 1,000 free chips. Good luck!', time: '2 minutes ago', read: false },
-    { id: '2', type: 'system', title: 'New Tournaments Available', message: 'Daily Deepstack is now open for registration.', time: '1 hour ago', read: false },
-    { id: '3', type: 'security', title: 'New Login Detected', message: 'Your account was accessed from a new device.', time: '3 hours ago', read: true },
-  ];
-
-  const typeIcons: Record<string, string> = {
-    tournament: '🏆',
-    friend: '👥',
-    reward: '🎁',
-    security: '🔒',
-    system: '📢',
+  const ICONS: Record<string, string> = {
+    info: '📢',
+    warning: '⚠️',
+    success: '✅',
+    danger: '🚨',
   };
 
-  const typeColors: Record<string, string> = {
-    tournament: '#8b5cf6',
-    friend: '#22d3ee',
-    reward: '#f4c95d',
-    security: '#ef4444',
-    system: '#10b981',
+  const COLORS: Record<string, string> = {
+    info: '#3b82f6',
+    warning: '#f59e0b',
+    success: '#10b981',
+    danger: '#ef4444',
   };
 
-  function markAllRead() {
-    notifications = notifications.map((n) => ({ ...n, read: true }));
+  function fmtDate(iso: string): string {
+    try {
+      const d = new Date(iso);
+      const diff = Date.now() - d.getTime();
+      const min = Math.floor(diff / 60000);
+      if (min < 1) return 'Just now';
+      if (min < 60) return `${min}m ago`;
+      const h = Math.floor(min / 60);
+      if (h < 24) return `${h}h ago`;
+      const days = Math.floor(h / 24);
+      if (days < 7) return `${days}d ago`;
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    } catch {
+      return iso;
+    }
   }
 
-  $: unreadCount = notifications.filter((n) => !n.read).length;
+  onMount(() => {
+    loadBroadcasts();
+  });
 </script>
 
 <div class="pb-44 lg:pb-8">
@@ -10090,12 +10488,20 @@ let activeFilter: CategoryKey = 'all';
       class="w-10 h-10 rounded-2xl flex items-center justify-center active:scale-95 transition"
       style="background: linear-gradient(180deg, rgba(30,58,138,0.4), rgba(15,31,58,0.7)); border: 1.5px solid rgba(96,165,250,0.3);"
     >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round">
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="white"
+        stroke-width="2.5"
+        stroke-linecap="round"
+      >
         <path d="M15 18l-6-6 6-6" />
       </svg>
     </button>
     <h1 class="text-xl font-extrabold text-white flex-1">🔔 Notifications</h1>
-    {#if unreadCount > 0}
+    {#if $unreadCount > 0}
       <button
         on:click={markAllRead}
         class="text-[10px] font-bold text-gold active:opacity-70 px-2 py-1 rounded-full"
@@ -10106,46 +10512,70 @@ let activeFilter: CategoryKey = 'all';
     {/if}
   </div>
 
-  {#if notifications.length === 0}
-    <div class="rounded-2xl p-8 text-center mx-4" style="background: linear-gradient(180deg, rgba(15,31,58,0.7), rgba(7,14,27,0.9)); border: 1px solid rgba(212,175,55,0.15);">
+  {#if $broadcastsLoading && $broadcasts.length === 0}
+    <div class="space-y-2 px-4">
+      {#each Array(3) as _}
+        <div
+          class="rounded-2xl h-[80px] shimmer"
+          style="background: linear-gradient(180deg, rgba(15,31,58,0.6), rgba(11,19,36,0.8)); border: 1px solid rgba(212,175,55,0.1);"
+        ></div>
+      {/each}
+    </div>
+  {:else if $broadcasts.length === 0}
+    <div
+      class="rounded-2xl p-8 text-center mx-4"
+      style="background: linear-gradient(180deg, rgba(15,31,58,0.7), rgba(7,14,27,0.9)); border: 1px solid rgba(212,175,55,0.15);"
+    >
       <p class="text-4xl mb-2">🔔</p>
       <p class="text-white/50 text-sm">No notifications</p>
+      <p class="text-white/30 text-[11px] mt-1">You're all caught up</p>
     </div>
   {:else}
     <div class="space-y-2 px-4">
-      {#each notifications as n}
-        {@const color = typeColors[n.type]}
-        <div
-          class="rounded-2xl p-3 flex items-start gap-3 relative"
+      {#each $broadcasts as n (n.id)}
+        {@const color = COLORS[n.severity] ?? '#3b82f6'}
+        {@const icon = ICONS[n.severity] ?? '📢'}
+        <button
+          on:click={() => markRead(n.id)}
+          class="w-full text-left rounded-2xl p-3 flex items-start gap-3 relative active:scale-[0.99] transition"
           style="
-            background: {n.read
-              ? 'rgba(16,26,58,0.5)'
-              : 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(8,13,36,0.9))'};
-            border: 1px solid {n.read ? 'rgba(139,92,246,0.15)' : 'rgba(139,92,246,0.35)'};
-            box-shadow: {n.read ? 'none' : `0 4px 16px rgba(0,0,0,0.4)`};
-            opacity: {n.read ? 0.75 : 1};
+            background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(8,13,36,0.9));
+            border: 1px solid {color}55;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4), 0 0 12px {color}22;
           "
         >
-          <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0"
-               style="background: {color}25; border: 1px solid {color}50;">
-            {typeIcons[n.type]}
+          <div
+            class="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0"
+            style="background: {color}25; border: 1px solid {color}50;"
+          >
+            {icon}
           </div>
 
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 mb-0.5">
               <p class="text-sm font-extrabold text-white truncate">{n.title}</p>
-              {#if !n.read}
-                <span class="w-2 h-2 rounded-full shrink-0" style="background: {color}; box-shadow: 0 0 6px {color};"></span>
-              {/if}
+              <span
+                class="w-2 h-2 rounded-full shrink-0"
+                style="background: {color}; box-shadow: 0 0 6px {color};"
+              ></span>
             </div>
-            <p class="text-[11px] text-white/60 leading-relaxed">{n.message}</p>
-            <p class="text-[9px] text-white/40 mt-1.5">{n.time}</p>
+            <p class="text-[11px] text-white/70 leading-relaxed">{n.message}</p>
+            <p class="text-[9px] text-white/40 mt-1.5">{fmtDate(n.createdAt)}</p>
           </div>
-        </div>
+
+          <!-- Tap to dismiss hint -->
+          <div
+            class="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center text-white/30 text-xs"
+            style="background: rgba(0,0,0,0.3);"
+          >
+            ✕
+          </div>
+        </button>
       {/each}
     </div>
   {/if}
 </div>
+
 
 ========== FILE: apps\mini-app\src\routes\Profile.svelte ==========
 <script lang="ts">
@@ -10180,14 +10610,27 @@ let activeFilter: CategoryKey = 'all';
 
   $: user = $auth.user;
   $: chips = $auth.freeChips;
+  $: stats = $auth.stats;
   $: selectedAvatar = (user as any)?.avatar_id || 'king';
   $: selectedFrame = (user as any)?.frame_id || 'royal';
 
-  $: handsPlayed = chips?.total_hands || 0;
-  $: level = Math.floor(handsPlayed / 50) + 1;
-  $: xpInLevel = handsPlayed % 50;
-  $: xpCurrent = 2460 + xpInLevel * 20;
-  $: xpTotal = 5000;
+  // Stats (real money only for win rate + level)
+  $: totalHands = stats?.totalHands ?? chips?.total_hands ?? 0;
+  $: handsPlayedReal = stats?.handsPlayedReal ?? 0;
+  $: handsWon = stats?.handsWon ?? 0;
+  $: totalWon = stats?.totalWon ?? 0;
+  $: trophies = stats?.trophies ?? 0;
+
+  // Win rate: real money only
+  $: winRate = handsPlayedReal > 0
+    ? Math.round((handsWon / handsPlayedReal) * 100)
+    : 0;
+
+  // Level: $100 won on real tables = 1 level
+  const USD_PER_LEVEL = 100;
+  $: level = Math.floor(totalWon / USD_PER_LEVEL) + 1;
+  $: xpCurrent = totalWon % USD_PER_LEVEL;
+  $: xpTotal = USD_PER_LEVEL;
 
   async function pickAvatar(id: string) {
     if (user) (user as any).avatar_id = id;
@@ -10282,14 +10725,16 @@ function pickFrame(frame: string | null) {
     <!-- XP -->
     <div class="mt-5 pt-4" style="border-top: 1px solid rgba(212,175,55,0.2);">
       <div class="flex justify-between items-center mb-2">
-        <span class="text-[10px] uppercase tracking-widest text-gold/80 font-extrabold">XP</span>
+        <span class="text-[10px] uppercase tracking-widest text-gold/80 font-extrabold">
+          XP · Real Winnings
+        </span>
         <span class="text-[10px] font-extrabold text-white/60 tabular-nums">
-          {xpCurrent.toLocaleString()} / {xpTotal.toLocaleString()}
+          ${xpCurrent.toFixed(2)} / ${xpTotal}
         </span>
       </div>
       <div class="w-full h-2 rounded-full overflow-hidden" style="background: rgba(0,0,0,0.55);">
         <div
-          class="h-full rounded-full"
+          class="h-full rounded-full transition-all"
           style="
             width: {Math.min(100, (xpCurrent / xpTotal) * 100)}%;
             background: linear-gradient(90deg, #f4e5a8 0%, #d4af37 50%, #a87a15 100%);
@@ -10297,21 +10742,24 @@ function pickFrame(frame: string | null) {
           "
         ></div>
       </div>
+      <p class="text-[9px] text-white/40 mt-1.5 text-right tabular-nums">
+        Total won: <span class="text-gold font-bold">${totalWon.toFixed(2)}</span>
+      </p>
     </div>
 
     <!-- Stats -->
     <div class="grid grid-cols-3 gap-2 mt-5">
       <div class="rounded-2xl p-3 text-center" style="background: rgba(0,0,0,0.35); border: 1px solid rgba(96,165,250,0.2);">
         <p class="text-[9px] text-white/40 uppercase tracking-wider font-bold mb-1">Win Rate</p>
-        <p class="text-lg font-extrabold tabular-nums" style="color: #60a5fa;">62%</p>
+        <p class="text-lg font-extrabold tabular-nums" style="color: #60a5fa;">{winRate}%</p>
       </div>
       <div class="rounded-2xl p-3 text-center" style="background: rgba(0,0,0,0.35); border: 1px solid rgba(212,175,55,0.2);">
-        <p class="text-[9px] text-white/40 uppercase tracking-wider font-bold mb-1">Games</p>
-        <p class="text-lg font-extrabold text-gold tabular-nums">482</p>
+        <p class="text-[9px] text-white/40 uppercase tracking-wider font-bold mb-1">Hands</p>
+        <p class="text-lg font-extrabold text-gold tabular-nums">{totalHands}</p>
       </div>
       <div class="rounded-2xl p-3 text-center" style="background: rgba(0,0,0,0.35); border: 1px solid rgba(139,92,246,0.2);">
         <p class="text-[9px] text-white/40 uppercase tracking-wider font-bold mb-1">Trophies</p>
-        <p class="text-lg font-extrabold tabular-nums" style="color: #a78bfa;">12</p>
+        <p class="text-lg font-extrabold tabular-nums" style="color: #a78bfa;">{trophies}</p>
       </div>
     </div>
   </div>
@@ -10381,16 +10829,15 @@ function pickFrame(frame: string | null) {
   </div>
 
   <!-- Hidden version text (20-tap secret admin) -->
-  <p
-    class="text-center text-[8px] text-white/15 mt-8 mb-2 select-none cursor-default"
+  <button
+    type="button"
+    class="w-full text-center text-[8px] text-white/15 mt-8 mb-2 select-none cursor-default bg-transparent border-0"
     on:click={handleVersionTap}
-    on:keydown={(e) => e.key === 'Enter' && handleVersionTap()}
-    role="button"
-    tabindex="-1"
     aria-hidden="true"
+    tabindex="-1"
   >
     Flop Club v1.0.0
-  </p>
+  </button>
 </div>
 
 ========== FILE: apps\mini-app\src\routes\Settings.svelte ==========
@@ -10401,6 +10848,7 @@ function pickFrame(frame: string | null) {
   import { cardTheme, CARD_THEMES } from '../stores/cardTheme';
   import { preferences } from '../lib/preferences';
   import { initMusic } from '../lib/music';
+  import { lang, setLang, LANGUAGES, type Lang } from '../i18n';
 
   export let onBack: () => void = () => {};
 
@@ -10430,7 +10878,9 @@ function pickFrame(frame: string | null) {
     // For now: just go back to profile and let user tap Wallet from menu
     onBack();
   }
-
+  function changeLang(code: Lang) {
+    setLang(code);
+  }
   onMount(() => {
     initMusic();
   });
@@ -10448,21 +10898,90 @@ function pickFrame(frame: string | null) {
         border: 1.5px solid rgba(96,165,250,0.3);
       "
     >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-           stroke="white" stroke-width="2.5" stroke-linecap="round">
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="white"
+        stroke-width="2.5"
+        stroke-linecap="round"
+      >
         <path d="M15 18l-6-6 6-6" />
       </svg>
     </button>
     <h1 class="text-xl font-extrabold flex-1 flex items-center gap-2">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-           stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="#d4af37"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
         <circle cx="12" cy="12" r="3" />
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+        <path
+          d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+        />
       </svg>
       <span>Settings</span>
     </h1>
   </div>
+  <!-- ============ LANGUAGE ============ -->
+  <h2 class="t-label text-white/40 mb-2 px-1">Language</h2>
+  <div
+    class="rounded-2xl p-1.5 mb-4"
+    style="background: linear-gradient(180deg, rgba(15,31,58,0.7), rgba(11,19,36,0.9)); border: 1px solid rgba(212,175,55,0.15); box-shadow: var(--shadow-card), inset 0 1px 0 rgba(255,255,255,0.04);"
+  >
+    {#each LANGUAGES as L}
+      <button
+        on:click={() => changeLang(L.code)}
+        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl active:scale-[0.98] transition-all text-left"
+        style="
+          background: {$lang === L.code
+          ? 'linear-gradient(180deg, rgba(212,175,55,0.2), rgba(168,122,21,0.08))'
+          : 'transparent'};
+          border: 1.5px solid {$lang === L.code ? 'rgba(212,175,55,0.5)' : 'transparent'};
+        "
+      >
+        <!-- Radio circle -->
+        <div
+          class="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0"
+          style="
+            border-color: {$lang === L.code ? '#d4af37' : 'rgba(255,255,255,0.25)'};
+            background: {$lang === L.code ? 'rgba(212,175,55,0.15)' : 'transparent'};
+          "
+        >
+          {#if $lang === L.code}
+            <div class="w-2.5 h-2.5 rounded-full" style="background: #d4af37;"></div>
+          {/if}
+        </div>
 
+        <!-- Flag -->
+        <span class="text-xl shrink-0">{L.flag}</span>
+
+        <!-- Label -->
+        <span
+          class="flex-1 text-[13px] font-extrabold"
+          style="color: {$lang === L.code ? '#f4e5a8' : 'rgba(255,255,255,0.9)'};"
+        >
+          {L.label}
+        </span>
+
+        <!-- RTL badge -->
+        {#if L.rtl}
+          <span
+            class="text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider"
+            style="background: rgba(34,211,238,0.15); color: #67e8f9; border: 1px solid rgba(34,211,238,0.4);"
+          >
+            RTL
+          </span>
+        {/if}
+      </button>
+    {/each}
+  </div>
   <!-- ============ CARD THEME ============ -->
   <h2 class="t-label text-gold/60 mb-2 px-1">Card Theme</h2>
   <div
@@ -10473,21 +10992,39 @@ function pickFrame(frame: string | null) {
       <button
         on:click={() => cardTheme.set(t.id)}
         class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl active:scale-[0.98] transition-all text-left"
-        style="background: {$cardTheme === t.id ? 'linear-gradient(180deg, rgba(212,175,55,0.2), rgba(168,122,21,0.08))' : 'transparent'}; border: 1.5px solid {$cardTheme === t.id ? 'rgba(212,175,55,0.5)' : 'transparent'};"
+        style="background: {$cardTheme === t.id
+          ? 'linear-gradient(180deg, rgba(212,175,55,0.2), rgba(168,122,21,0.08))'
+          : 'transparent'}; border: 1.5px solid {$cardTheme === t.id
+          ? 'rgba(212,175,55,0.5)'
+          : 'transparent'};"
       >
-        <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0"
-             style="border-color: {$cardTheme === t.id ? '#d4af37' : 'rgba(255,255,255,0.25)'}; background: {$cardTheme === t.id ? 'rgba(212,175,55,0.15)' : 'transparent'};">
+        <div
+          class="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0"
+          style="border-color: {$cardTheme === t.id
+            ? '#d4af37'
+            : 'rgba(255,255,255,0.25)'}; background: {$cardTheme === t.id
+            ? 'rgba(212,175,55,0.15)'
+            : 'transparent'};"
+        >
           {#if $cardTheme === t.id}
             <div class="w-2.5 h-2.5 rounded-full" style="background: #d4af37;"></div>
           {/if}
         </div>
         <div class="flex-1 min-w-0">
-          <p class="text-[13px] font-extrabold leading-tight" style="color: {$cardTheme === t.id ? '#f4e5a8' : 'rgba(255,255,255,0.9)'};">{t.name}</p>
+          <p
+            class="text-[13px] font-extrabold leading-tight"
+            style="color: {$cardTheme === t.id ? '#f4e5a8' : 'rgba(255,255,255,0.9)'};"
+          >
+            {t.name}
+          </p>
           <p class="text-[10px] text-white/40 leading-tight mt-0.5">{t.nameFa} · {t.desc}</p>
         </div>
         <div class="flex gap-1 shrink-0">
           {#each t.previewColors as c}
-            <div class="w-3 h-3 rounded-full" style="background: {c}; box-shadow: inset 0 0 0 0.5px rgba(255,255,255,0.3);"></div>
+            <div
+              class="w-3 h-3 rounded-full"
+              style="background: {c}; box-shadow: inset 0 0 0 0.5px rgba(255,255,255,0.3);"
+            ></div>
           {/each}
         </div>
       </button>
@@ -10497,9 +11034,21 @@ function pickFrame(frame: string | null) {
   <!-- ============ AUDIO ============ -->
   <h2 class="t-label text-white/40 mb-2 px-1">Audio</h2>
   <div class="card !p-0 mb-4 overflow-hidden">
-    <label class="flex items-center justify-between px-4 py-3 cursor-pointer" style="border-bottom: 1px solid rgba(212,175,55,0.08);">
+    <label
+      class="flex items-center justify-between px-4 py-3 cursor-pointer"
+      style="border-bottom: 1px solid rgba(212,175,55,0.08);"
+    >
       <div class="flex items-center gap-3">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#d4af37"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
           <path d="M11 5L6 9H2v6h4l5 4V5z" />
           <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
         </svg>
@@ -10508,11 +11057,25 @@ function pickFrame(frame: string | null) {
           <p class="text-[10px] text-white/50">Card & chip sounds</p>
         </div>
       </div>
-      <input type="checkbox" checked={prefs.sound} on:change={() => toggle('sound')} class="toggle" />
+      <input
+        type="checkbox"
+        checked={prefs.sound}
+        on:change={() => toggle('sound')}
+        class="toggle"
+      />
     </label>
     <label class="flex items-center justify-between px-4 py-3 cursor-pointer">
       <div class="flex items-center gap-3">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#d4af37"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
           <path d="M9 18V5l12-2v13" />
           <circle cx="6" cy="18" r="3" />
           <circle cx="18" cy="16" r="3" />
@@ -10522,16 +11085,33 @@ function pickFrame(frame: string | null) {
           <p class="text-[10px] text-white/50">Ambient pad</p>
         </div>
       </div>
-      <input type="checkbox" checked={prefs.music} on:change={() => toggle('music')} class="toggle" />
+      <input
+        type="checkbox"
+        checked={prefs.music}
+        on:change={() => toggle('music')}
+        class="toggle"
+      />
     </label>
   </div>
 
   <!-- ============ EXPERIENCE ============ -->
   <h2 class="t-label text-white/40 mb-2 px-1">Experience</h2>
   <div class="card !p-0 mb-4 overflow-hidden">
-    <label class="flex items-center justify-between px-4 py-3 cursor-pointer" style="border-bottom: 1px solid rgba(212,175,55,0.08);">
+    <label
+      class="flex items-center justify-between px-4 py-3 cursor-pointer"
+      style="border-bottom: 1px solid rgba(212,175,55,0.08);"
+    >
       <div class="flex items-center gap-3">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#d4af37"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
           <rect x="5" y="2" width="14" height="20" rx="2" />
           <path d="M12 18h.01" />
         </svg>
@@ -10540,11 +11120,28 @@ function pickFrame(frame: string | null) {
           <p class="text-[10px] text-white/50">Vibration feedback</p>
         </div>
       </div>
-      <input type="checkbox" checked={prefs.haptics} on:change={() => toggle('haptics')} class="toggle" />
+      <input
+        type="checkbox"
+        checked={prefs.haptics}
+        on:change={() => toggle('haptics')}
+        class="toggle"
+      />
     </label>
-    <label class="flex items-center justify-between px-4 py-3 cursor-pointer" style="border-bottom: 1px solid rgba(212,175,55,0.08);">
+    <label
+      class="flex items-center justify-between px-4 py-3 cursor-pointer"
+      style="border-bottom: 1px solid rgba(212,175,55,0.08);"
+    >
       <div class="flex items-center gap-3">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#d4af37"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
           <path d="M12 3l1.9 5.8L20 10l-6.1 1.2L12 17l-1.9-5.8L4 10l6.1-1.2z" />
         </svg>
         <div>
@@ -10552,16 +11149,32 @@ function pickFrame(frame: string | null) {
           <p class="text-[10px] text-white/50">Card & chip animations</p>
         </div>
       </div>
-      <input type="checkbox" checked={prefs.animations} on:change={() => toggle('animations')} class="toggle" />
+      <input
+        type="checkbox"
+        checked={prefs.animations}
+        on:change={() => toggle('animations')}
+        class="toggle"
+      />
     </label>
     <div class="px-4 py-3">
       <div class="flex items-center gap-3 mb-2">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#d4af37"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
           <circle cx="13.5" cy="6.5" r=".5" />
           <circle cx="17.5" cy="10.5" r=".5" />
           <circle cx="8.5" cy="7.5" r=".5" />
           <circle cx="6.5" cy="12.5" r=".5" />
-          <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />
+          <path
+            d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"
+          />
         </svg>
         <div>
           <p class="text-sm font-bold text-white">Graphics Quality</p>
@@ -10573,8 +11186,12 @@ function pickFrame(frame: string | null) {
           <button
             on:click={() => setGraphics(g as any)}
             class="py-1.5 rounded-lg text-[10px] font-extrabold uppercase transition"
-            style="background: {prefs.graphics === g ? 'linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15)' : 'rgba(255,255,255,0.05)'}; color: {prefs.graphics === g ? '#0a0800' : 'rgba(255,255,255,0.6)'};"
-          >{g}</button>
+            style="background: {prefs.graphics === g
+              ? 'linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15)'
+              : 'rgba(255,255,255,0.05)'}; color: {prefs.graphics === g
+              ? '#0a0800'
+              : 'rgba(255,255,255,0.6)'};">{g}</button
+          >
         {/each}
       </div>
     </div>
@@ -10583,9 +11200,21 @@ function pickFrame(frame: string | null) {
   <!-- ============ TABLE ============ -->
   <h2 class="t-label text-white/40 mb-2 px-1">Table Preferences</h2>
   <div class="card !p-0 mb-4 overflow-hidden">
-    <label class="flex items-center justify-between px-4 py-3 cursor-pointer" style="border-bottom: 1px solid rgba(212,175,55,0.08);">
+    <label
+      class="flex items-center justify-between px-4 py-3 cursor-pointer"
+      style="border-bottom: 1px solid rgba(212,175,55,0.08);"
+    >
       <div class="flex items-center gap-3">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#d4af37"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
           <line x1="4" y1="21" x2="4" y2="14" /><line x1="4" y1="10" x2="4" y2="3" />
           <line x1="12" y1="21" x2="12" y2="12" /><line x1="12" y1="8" x2="12" y2="3" />
           <line x1="20" y1="21" x2="20" y2="16" /><line x1="20" y1="12" x2="20" y2="3" />
@@ -10595,12 +11224,31 @@ function pickFrame(frame: string | null) {
           <p class="text-[10px] text-white/50">Show slider on raise</p>
         </div>
       </div>
-      <input type="checkbox" checked={prefs.betSlider} on:change={() => toggle('betSlider')} class="toggle" />
+      <input
+        type="checkbox"
+        checked={prefs.betSlider}
+        on:change={() => toggle('betSlider')}
+        class="toggle"
+      />
     </label>
-    <label class="flex items-center justify-between px-4 py-3 cursor-pointer" style="border-bottom: 1px solid rgba(212,175,55,0.08);">
+    <label
+      class="flex items-center justify-between px-4 py-3 cursor-pointer"
+      style="border-bottom: 1px solid rgba(212,175,55,0.08);"
+    >
       <div class="flex items-center gap-3">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#d4af37"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path
+            d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"
+          />
           <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
           <line x1="1" y1="1" x2="23" y2="23" />
         </svg>
@@ -10609,11 +11257,25 @@ function pickFrame(frame: string | null) {
           <p class="text-[10px] text-white/50">Auto-fold losing hands at showdown</p>
         </div>
       </div>
-      <input type="checkbox" checked={prefs.autoMuck} on:change={() => toggle('autoMuck')} class="toggle" />
+      <input
+        type="checkbox"
+        checked={prefs.autoMuck}
+        on:change={() => toggle('autoMuck')}
+        class="toggle"
+      />
     </label>
     <label class="flex items-center justify-between px-4 py-3 cursor-pointer">
       <div class="flex items-center gap-3">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#d4af37"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
           <circle cx="8" cy="8" r="6" />
           <path d="M18.09 10.37A6 6 0 1 1 10.34 18" />
         </svg>
@@ -10622,7 +11284,12 @@ function pickFrame(frame: string | null) {
           <p class="text-[10px] text-white/50">♣ green · ♦ blue</p>
         </div>
       </div>
-      <input type="checkbox" checked={prefs.fourColor} on:change={() => toggle('fourColor')} class="toggle" />
+      <input
+        type="checkbox"
+        checked={prefs.fourColor}
+        on:change={() => toggle('fourColor')}
+        class="toggle"
+      />
     </label>
   </div>
 
@@ -10634,7 +11301,16 @@ function pickFrame(frame: string | null) {
       class="w-full flex items-center gap-3 px-4 py-3 text-left active:bg-white/5"
       style="border-bottom: 1px solid rgba(212,175,55,0.08);"
     >
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg
+        width="22"
+        height="22"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="#d4af37"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
         <rect x="3" y="11" width="18" height="11" rx="2" />
         <path d="M7 11V7a5 5 0 0 1 10 0v4" />
       </svg>
@@ -10642,7 +11318,15 @@ function pickFrame(frame: string | null) {
         <p class="text-sm font-bold text-white">Security</p>
         <p class="text-[10px] text-white/50">Telegram account settings</p>
       </div>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2.5" stroke-linecap="round">
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="rgba(255,255,255,0.3)"
+        stroke-width="2.5"
+        stroke-linecap="round"
+      >
         <path d="M9 18l6-6-6-6" />
       </svg>
     </button>
@@ -10651,7 +11335,16 @@ function pickFrame(frame: string | null) {
       class="w-full flex items-center gap-3 px-4 py-3 text-left active:bg-white/5"
       style="border-bottom: 1px solid rgba(212,175,55,0.08);"
     >
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg
+        width="22"
+        height="22"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="#d4af37"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
         <path d="M12 22v-5" /><path d="M9 8V2" /><path d="M15 8V2" />
         <path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8z" />
       </svg>
@@ -10659,7 +11352,15 @@ function pickFrame(frame: string | null) {
         <p class="text-sm font-bold text-white">Connected Wallets</p>
         <p class="text-[10px] text-white/50">Manage TON wallet</p>
       </div>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2.5" stroke-linecap="round">
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="rgba(255,255,255,0.3)"
+        stroke-width="2.5"
+        stroke-linecap="round"
+      >
         <path d="M9 18l6-6-6-6" />
       </svg>
     </button>
@@ -10667,7 +11368,16 @@ function pickFrame(frame: string | null) {
       on:click={() => auth.logout()}
       class="w-full flex items-center gap-3 px-4 py-3 text-left active:bg-white/5"
     >
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg
+        width="22"
+        height="22"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="#f87171"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
         <polyline points="16 17 21 12 16 7" />
         <line x1="21" y1="12" x2="9" y2="12" />
@@ -10693,7 +11403,9 @@ function pickFrame(frame: string | null) {
     transition: background 0.2s;
     flex-shrink: 0;
   }
-  .toggle:checked { background: linear-gradient(180deg, #f4e5a8, #d4af37); }
+  .toggle:checked {
+    background: linear-gradient(180deg, #f4e5a8, #d4af37);
+  }
   .toggle::after {
     content: '';
     position: absolute;
@@ -10706,8 +11418,11 @@ function pickFrame(frame: string | null) {
     transition: transform 0.2s;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   }
-  .toggle:checked::after { transform: translateX(18px); }
+  .toggle:checked::after {
+    transform: translateX(18px);
+  }
 </style>
+
 
 ========== FILE: apps\mini-app\src\routes\Shop.svelte ==========
 <script lang="ts">
@@ -11090,6 +11805,7 @@ function pickFrame(frame: string | null) {
 ========== FILE: apps\mini-app\src\routes\Table.svelte ==========
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
+  import { get } from 'svelte/store';
   import PokerTable from '../components/PokerTable.svelte';
   import PokerTableMobile from '../components/poker/PokerTableMobile.svelte';
   import PlayingCard from '../components/PlayingCard.svelte';
@@ -11107,14 +11823,22 @@ function pickFrame(frame: string | null) {
   export let tableId: number = 1;
   export let onBack: () => void = () => {};
 
-  // ===== Layout detection (portrait / landscape mobile) =====
-  let isMobilePortrait = false;
+  // ===== Layout detection =====
+  type LayoutMode = 'mobile-portrait' | 'mobile-landscape' | 'desktop';
+  let layoutMode: LayoutMode = 'desktop';
 
   function updateLayout() {
     if (typeof window === 'undefined') return;
-    isMobilePortrait =
-      window.innerWidth < 768 &&
-      window.innerHeight > window.innerWidth;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+
+    if (w < 768 && h > w) {
+      layoutMode = 'mobile-portrait';
+    } else if (h < 520 && w > h) {
+      layoutMode = 'mobile-landscape';
+    } else {
+      layoutMode = 'desktop';
+    }
   }
 
   let socket: TableSocketIO | null = null;
@@ -11135,12 +11859,10 @@ function pickFrame(frame: string | null) {
   let showSeedModal = false;
   let nowTick = Date.now();
 
-  // Sound + Haptic triggers
   let lastSoundHandNo = -1;
   let lastSoundCommunityCount = 0;
   let lastSoundWinnersKey = '';
 
-  // Player info + chat
   let selectedPlayer: any = null;
   let showPlayerInfo = false;
   let showChat = false;
@@ -11154,6 +11876,8 @@ function pickFrame(frame: string | null) {
   let dragging = false;
   let editingCustom = false;
   let customInput = '';
+
+  $: betSliderEnabled = $preferences.betSlider;
 
   function handleSliderPointer(clientY: number) {
     if (!sliderRef) return;
@@ -11302,7 +12026,7 @@ function pickFrame(frame: string | null) {
       return;
     }
 
-    socket = new TableSocketIO(tableId, token);
+    socket = new TableSocketIO(tableId, token, get(preferences).autoMuck);
     socket.on((evt) => {
       if (evt.type === 'connected') {
         connected = true;
@@ -11606,6 +12330,13 @@ function pickFrame(frame: string | null) {
       autoActionMsg = '';
     }, 1500);
   }
+
+  // ===== Auto-Muck: sync preference to server when changed =====
+  let lastSentAutoMuck = get(preferences).autoMuck;
+  $: if (socket && $preferences.autoMuck !== lastSentAutoMuck) {
+    lastSentAutoMuck = $preferences.autoMuck;
+    socket.updateAutoMuck(lastSentAutoMuck);
+  }
 </script>
 
 <div
@@ -11817,7 +12548,7 @@ function pickFrame(frame: string | null) {
   {/if}
 
   <!-- POKER TABLE -->
-  {#if isMobilePortrait}
+  {#if layoutMode === 'mobile-portrait'}
     <PokerTableMobile
       {gameState}
       {myUserId}
@@ -11837,6 +12568,7 @@ function pickFrame(frame: string | null) {
       {handResult}
       {isFinalTable}
       tournamentTitle={isTournament ? 'Tournament' : ''}
+      compact={layoutMode === 'mobile-landscape'}
       onPlayerClick={openPlayerInfo}
     />
   {/if}
@@ -11875,7 +12607,7 @@ function pickFrame(frame: string | null) {
   <ChatModal
     open={showChat}
     {myUserId}
-    myAvatarId={myAvatarId}
+    {myAvatarId}
     {socket}
     onClose={() => {
       showChat = false;
@@ -11982,8 +12714,8 @@ function pickFrame(frame: string | null) {
     </div>
   {/if}
 
-  <!-- RAISE POPUP PANEL -->
-  {#if showRaisePanel && isMyTurn && !sittingOut}
+  <!-- RAISE POPUP PANEL (with slider) -->
+  {#if showRaisePanel && isMyTurn && !sittingOut && betSliderEnabled}
     <div
       class="absolute z-[36] pointer-events-none"
       style="
@@ -11998,28 +12730,36 @@ function pickFrame(frame: string | null) {
         style="background: rgba(8,13,36,0.98); border: 1.5px solid rgba(139,92,246,0.5); box-shadow: 0 -8px 32px rgba(0,0,0,0.85), 0 0 24px rgba(139,92,246,0.2);"
       >
         <!-- LEFT: Presets column + Custom -->
-        <div class="flex flex-col justify-between gap-0.5 flex-1 min-w-0" style="min-height: 200px;">
+        <div
+          class="flex flex-col justify-between gap-0.5 flex-1 min-w-0"
+          style="min-height: 200px;"
+        >
           {#each presets as p}
             <button
               on:click={() => setRaise(p.value)}
               class="rounded-md py-1 active:scale-95 transition-all px-1 overflow-hidden"
               style="
                 background: {Math.abs(raiseAmount - p.value) < 0.01
-                  ? 'linear-gradient(180deg, rgba(139,92,246,0.7), rgba(139,92,246,0.4))'
-                  : 'linear-gradient(180deg, rgba(139,92,246,0.35), rgba(139,92,246,0.12))'};
+                ? 'linear-gradient(180deg, rgba(139,92,246,0.7), rgba(139,92,246,0.4))'
+                : 'linear-gradient(180deg, rgba(139,92,246,0.35), rgba(139,92,246,0.12))'};
                 border: 1px solid {Math.abs(raiseAmount - p.value) < 0.01
-                  ? 'rgba(167,139,250,0.9)'
-                  : 'rgba(139,92,246,0.4)'};
+                ? 'rgba(167,139,250,0.9)'
+                : 'rgba(139,92,246,0.4)'};
               "
             >
-              <div class="text-[7px] font-extrabold text-white/60 uppercase leading-none">{p.label}</div>
-              <div class="text-[9px] font-extrabold text-white tabular-nums leading-tight mt-0.5 truncate">${fmt(p.value)}</div>
+              <div class="text-[7px] font-extrabold text-white/60 uppercase leading-none">
+                {p.label}
+              </div>
+              <div
+                class="text-[9px] font-extrabold text-white tabular-nums leading-tight mt-0.5 truncate"
+              >
+                ${fmt(p.value)}
+              </div>
             </button>
           {/each}
 
           {#if editingCustom}
             <input
-              id="custom-amount-input"
               type="text"
               inputmode="decimal"
               bind:value={customInput}
@@ -12055,14 +12795,17 @@ function pickFrame(frame: string | null) {
                 border: 1px solid rgba(212,175,55,0.5);
               "
             >
-              <div class="text-[7px] font-extrabold text-gold/80 uppercase leading-none">CUSTOM</div>
-              <div class="text-[9px] font-extrabold text-gold tabular-nums leading-tight mt-0.5">$—</div>
+              <div class="text-[7px] font-extrabold text-gold/80 uppercase leading-none">
+                CUSTOM
+              </div>
+              <div class="text-[9px] font-extrabold text-gold tabular-nums leading-tight mt-0.5">
+                $—
+              </div>
             </button>
           {/if}
         </div>
 
         <!-- RIGHT: Vertical slider -->
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           bind:this={sliderRef}
           role="slider"
@@ -12077,10 +12820,16 @@ function pickFrame(frame: string | null) {
             (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
             handleSliderPointer(e.clientY);
           }}
-          on:pointermove={(e) => { if (dragging) handleSliderPointer(e.clientY); }}
+          on:pointermove={(e) => {
+            if (dragging) handleSliderPointer(e.clientY);
+          }}
           on:pointerup={(e) => {
             dragging = false;
-            try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
+            try {
+              (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+            } catch {
+              // ignore — pointer may already be released
+            }
           }}
           on:pointercancel={() => (dragging = false)}
         >
@@ -12088,7 +12837,11 @@ function pickFrame(frame: string | null) {
             class="absolute left-0 right-0 bottom-0 pointer-events-none"
             style="
               height: {raisePercent}%;
-              background: linear-gradient(180deg, {isAllIn ? 'rgba(239,68,68,0.35)' : 'rgba(244,201,93,0.28)'}, {isAllIn ? 'rgba(239,68,68,0.08)' : 'rgba(244,201,93,0.05)'});
+              background: linear-gradient(180deg, {isAllIn
+              ? 'rgba(239,68,68,0.35)'
+              : 'rgba(244,201,93,0.28)'}, {isAllIn
+              ? 'rgba(239,68,68,0.08)'
+              : 'rgba(244,201,93,0.05)'});
               transition: height 0.06s linear;
             "
           ></div>
@@ -12099,7 +12852,9 @@ function pickFrame(frame: string | null) {
                 class="absolute left-0 right-0 h-px"
                 style="
                   top: {(i / 4) * 100}%;
-                  background: linear-gradient(90deg, transparent, rgba(212,175,55,{isAllIn ? 0.15 : 0.35}), transparent);
+                  background: linear-gradient(90deg, transparent, rgba(212,175,55,{isAllIn
+                  ? 0.15
+                  : 0.35}), transparent);
                 "
               ></div>
             {/each}
@@ -12109,11 +12864,15 @@ function pickFrame(frame: string | null) {
             <div
               class="text-[6px] font-extrabold uppercase tracking-wider leading-none"
               style="color: {isAllIn ? '#fca5a5' : 'rgba(212,175,55,0.7)'};"
-            >ALL-IN</div>
+            >
+              ALL-IN
+            </div>
             <div
               class="text-[8px] font-extrabold tabular-nums leading-tight mt-0.5"
               style="color: {isAllIn ? '#fca5a5' : '#d4af37'};"
-            >${fmt(hardMax)}</div>
+            >
+              ${fmt(hardMax)}
+            </div>
           </div>
 
           <div
@@ -12127,18 +12886,130 @@ function pickFrame(frame: string | null) {
                 height: 26px;
                 padding: 0 5px;
                 background: {isAllIn
-                  ? 'radial-gradient(circle at 35% 30%, #fca5a5, #dc2626 50%, #7f1d1d)'
-                  : 'radial-gradient(circle at 35% 30%, #fef3c7, #d4af37 50%, #a87a15)'};
+                ? 'radial-gradient(circle at 35% 30%, #fca5a5, #dc2626 50%, #7f1d1d)'
+                : 'radial-gradient(circle at 35% 30%, #fef3c7, #d4af37 50%, #a87a15)'};
                 border: 1.5px solid {isAllIn ? 'rgba(252,165,165,0.9)' : 'rgba(255,235,170,0.85)'};
-                box-shadow: 0 2px 8px rgba(0,0,0,0.9), 0 0 14px {isAllIn ? 'rgba(239,68,68,0.7)' : 'rgba(244,201,93,0.55)'};
+                box-shadow: 0 2px 8px rgba(0,0,0,0.9), 0 0 14px {isAllIn
+                ? 'rgba(239,68,68,0.7)'
+                : 'rgba(244,201,93,0.55)'};
               "
             >
               <span
                 class="text-[8px] font-extrabold tabular-nums leading-none"
-                style="color: {isAllIn ? '#fff' : '#0a0800'};"
-              >${fmt(raiseAmount)}</span>
+                style="color: {isAllIn ? '#fff' : '#0a0800'};">${fmt(raiseAmount)}</span
+              >
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  <!-- RAISE PANEL WITHOUT SLIDER (betSlider off) -->
+  {#if showRaisePanel && isMyTurn && !sittingOut && !betSliderEnabled}
+    <div
+      class="absolute z-[36] pointer-events-none"
+      style="
+        right: 12px;
+        bottom: calc(96px + env(safe-area-inset-bottom));
+        width: calc((min(480px, 100vw) - 40px) / 2);
+        max-width: 220px;
+      "
+    >
+      <div
+        class="rounded-xl p-2 pointer-events-auto"
+        style="background: rgba(8,13,36,0.98); border: 1.5px solid rgba(139,92,246,0.5); box-shadow: 0 -8px 32px rgba(0,0,0,0.85), 0 0 24px rgba(139,92,246,0.2);"
+      >
+        <!-- Presets grid 2x2 -->
+        <div class="grid grid-cols-2 gap-1 mb-1.5">
+          {#each presets as p}
+            <button
+              on:click={() => setRaise(p.value)}
+              class="rounded-md py-1.5 active:scale-95 transition-all px-1 overflow-hidden"
+              style="
+                background: {Math.abs(raiseAmount - p.value) < 0.01
+                ? 'linear-gradient(180deg, rgba(139,92,246,0.7), rgba(139,92,246,0.4))'
+                : 'linear-gradient(180deg, rgba(139,92,246,0.35), rgba(139,92,246,0.12))'};
+                border: 1px solid {Math.abs(raiseAmount - p.value) < 0.01
+                ? 'rgba(167,139,250,0.9)'
+                : 'rgba(139,92,246,0.4)'};
+              "
+            >
+              <div class="text-[7px] font-extrabold text-white/60 uppercase leading-none">
+                {p.label}
+              </div>
+              <div
+                class="text-[10px] font-extrabold text-white tabular-nums leading-tight mt-0.5 truncate"
+              >
+                ${fmt(p.value)}
+              </div>
+            </button>
+          {/each}
+        </div>
+
+        <!-- Custom + All-In row -->
+        <div class="flex gap-1 mb-1.5">
+          {#if editingCustom}
+            <input
+              type="text"
+              inputmode="decimal"
+              bind:value={customInput}
+              on:input={(e) => {
+                const v = parseFloat((e.target as HTMLInputElement).value);
+                if (!isNaN(v) && v > 0) setRaise(v);
+              }}
+              on:blur={() => {
+                const v = parseFloat(customInput);
+                if (!isNaN(v) && v > 0) setRaise(v);
+                editingCustom = false;
+              }}
+              on:keydown={(e) => {
+                if (e.key === 'Enter') {
+                  const v = parseFloat(customInput);
+                  if (!isNaN(v) && v > 0) setRaise(v);
+                  editingCustom = false;
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+              class="flex-1 rounded-md text-[10px] font-extrabold text-gold tabular-nums text-center outline-none"
+              style="padding: 6px 4px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(212,175,55,0.7);"
+            />
+          {:else}
+            <button
+              on:click={() => {
+                customInput = raiseAmount.toFixed(2);
+                editingCustom = true;
+              }}
+              class="flex-1 rounded-md py-1.5 active:scale-95 transition-all"
+              style="background: linear-gradient(180deg, rgba(212,175,55,0.35), rgba(212,175,55,0.12)); border: 1px solid rgba(212,175,55,0.5);"
+            >
+              <div class="text-[7px] font-extrabold text-gold/80 uppercase leading-none">
+                CUSTOM
+              </div>
+              <div class="text-[10px] font-extrabold text-gold tabular-nums leading-tight mt-0.5">
+                $—
+              </div>
+            </button>
+          {/if}
+          <button
+            on:click={allIn}
+            class="flex-1 rounded-md py-1.5 active:scale-95 transition-all"
+            style="background: linear-gradient(180deg, rgba(239,68,68,0.4), rgba(239,68,68,0.15)); border: 1px solid rgba(239,68,68,0.6);"
+          >
+            <div class="text-[7px] font-extrabold text-red-300 uppercase leading-none">ALL-IN</div>
+            <div class="text-[10px] font-extrabold text-red-200 tabular-nums leading-tight mt-0.5">
+              ${fmt(hardMax)}
+            </div>
+          </button>
+        </div>
+
+        <!-- Current amount display -->
+        <div
+          class="rounded-md py-1.5 text-center"
+          style="background: rgba(0,0,0,0.5); border: 1px solid rgba(212,175,55,0.3);"
+        >
+          <span class="text-[8px] uppercase text-white/40 font-bold">Raise to </span>
+          <span class="text-[13px] font-extrabold text-gold tabular-nums">${fmt(raiseAmount)}</span>
         </div>
       </div>
     </div>
@@ -12157,14 +13028,18 @@ function pickFrame(frame: string | null) {
               on:click={useTimeBank}
               class="rounded-full px-4 py-1.5 text-[11px] font-bold text-gold active:scale-95"
               style="background: rgba(0,0,0,0.85); border: 1px solid rgba(244,201,93,0.5); backdrop-filter: blur(10px);"
-            >⏱️ Use Time Bank</button>
+              >⏱️ Use Time Bank</button
+            >
           </div>
         {/if}
 
         <div class="flex gap-2">
           <!-- FOLD -->
           <button
-            on:click={() => { doAction('FOLD'); showRaisePanel = false; }}
+            on:click={() => {
+              doAction('FOLD');
+              showRaisePanel = false;
+            }}
             class="flex-1 rounded-xl py-4 active:scale-[0.97] transition-all"
             style="background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%); box-shadow: 0 4px 0 #7f1d1d, 0 6px 14px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.2);"
           >
@@ -12174,21 +13049,34 @@ function pickFrame(frame: string | null) {
           <!-- CHECK / CALL -->
           {#if canCheck}
             <button
-              on:click={() => { doAction('CHECK'); showRaisePanel = false; }}
+              on:click={() => {
+                doAction('CHECK');
+                showRaisePanel = false;
+              }}
               class="flex-1 rounded-xl py-4 active:scale-[0.97] transition-all"
               style="background: linear-gradient(180deg, #22c55e 0%, #15803d 100%); box-shadow: 0 4px 0 #14532d, 0 6px 14px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.2);"
             >
-              <span class="text-[15px] font-extrabold text-white uppercase tracking-wider">CHECK</span>
+              <span class="text-[15px] font-extrabold text-white uppercase tracking-wider"
+                >CHECK</span
+              >
             </button>
           {:else}
             <button
-              on:click={() => { doAction('CALL'); showRaisePanel = false; }}
+              on:click={() => {
+                doAction('CALL');
+                showRaisePanel = false;
+              }}
               disabled={myStack === 0}
               class="flex-1 rounded-xl py-3 active:scale-[0.97] transition-all disabled:opacity-50"
               style="background: linear-gradient(180deg, #22c55e 0%, #15803d 100%); box-shadow: 0 4px 0 #14532d, 0 6px 14px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.2);"
             >
-              <span class="block text-[11px] font-bold text-white/90 leading-none uppercase">CALL</span>
-              <span class="block text-[16px] font-extrabold text-white leading-tight tabular-nums mt-0.5">${fmt(toCall)}</span>
+              <span class="block text-[11px] font-bold text-white/90 leading-none uppercase"
+                >CALL</span
+              >
+              <span
+                class="block text-[16px] font-extrabold text-white leading-tight tabular-nums mt-0.5"
+                >${fmt(toCall)}</span
+              >
             </button>
           {/if}
 
@@ -12196,6 +13084,10 @@ function pickFrame(frame: string | null) {
           {#if canRaise}
             <button
               on:click={() => {
+                if (!betSliderEnabled) {
+                  doRaise();
+                  return;
+                }
                 if (showRaisePanel) {
                   doRaise();
                   showRaisePanel = false;
@@ -12204,26 +13096,39 @@ function pickFrame(frame: string | null) {
                 }
               }}
               class="flex-1 rounded-xl py-3 active:scale-[0.97] transition-all relative"
-              style="background: linear-gradient(180deg, {isAllIn ? '#ef4444 0%, #991b1b 100%' : '#3b82f6 0%, #1d4ed8 100%'}); box-shadow: 0 4px 0 {isAllIn ? '#7f1d1d' : '#1e3a8a'}, 0 6px 14px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.3);"
+              style="background: linear-gradient(180deg, {isAllIn
+                ? '#ef4444 0%, #991b1b 100%'
+                : '#3b82f6 0%, #1d4ed8 100%'}); box-shadow: 0 4px 0 {isAllIn
+                ? '#7f1d1d'
+                : '#1e3a8a'}, 0 6px 14px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.3);"
             >
               <span
                 class="absolute top-0.5 left-1/2 -translate-x-1/2 text-[8px] leading-none transition-transform"
-                style="color: rgba(255,255,255,0.7); transform: translateX(-50%) rotate({showRaisePanel ? 180 : 0}deg);"
-              >▲</span>
+                style="color: rgba(255,255,255,0.7); transform: translateX(-50%) rotate({showRaisePanel
+                  ? 180
+                  : 0}deg);">▲</span
+              >
               <span class="block text-[11px] font-bold text-white/90 leading-none uppercase">
                 {showRaisePanel ? (isAllIn ? 'ALL-IN' : 'CONFIRM') : 'RAISE'}
               </span>
-              <span class="block text-[16px] font-extrabold text-white leading-tight tabular-nums mt-0.5">
+              <span
+                class="block text-[16px] font-extrabold text-white leading-tight tabular-nums mt-0.5"
+              >
                 ${fmt(raiseAmount)}
               </span>
             </button>
           {:else if myStack > 0 && myStack <= toCall}
             <button
-              on:click={() => { allIn(); doRaise(); }}
+              on:click={() => {
+                allIn();
+                doRaise();
+              }}
               class="flex-1 rounded-xl py-4 active:scale-[0.97] transition-all"
               style="background: linear-gradient(180deg, #ef4444 0%, #991b1b 100%); box-shadow: 0 4px 0 #7f1d1d, 0 6px 14px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.2);"
             >
-              <span class="text-[15px] font-extrabold text-white uppercase tracking-wider">ALL-IN</span>
+              <span class="text-[15px] font-extrabold text-white uppercase tracking-wider"
+                >ALL-IN</span
+              >
             </button>
           {/if}
         </div>
@@ -12233,7 +13138,9 @@ function pickFrame(frame: string | null) {
           style="background: rgba(244,201,93,0.15); border: 1px solid rgba(244,201,93,0.4); backdrop-filter: blur(10px);"
         >
           <p class="text-xs font-bold text-gold">💤 Sitting Out — Auto-folding</p>
-          <button on:click={doSitIn} class="mt-2 text-[11px] text-white underline">Resume playing</button>
+          <button on:click={doSitIn} class="mt-2 text-[11px] text-white underline"
+            >Resume playing</button
+          >
         </div>
       {/if}
     </div>
@@ -12243,6 +13150,7 @@ function pickFrame(frame: string | null) {
 <style>
   /* No custom styles needed here — preferences handle visuals */
 </style>
+
 
 ========== FILE: apps\mini-app\src\routes\Tables.svelte ==========
 <script lang="ts">
@@ -14093,10 +15001,19 @@ export interface User {
   avatar_id?: string;
 }
 
+export interface UserStats {
+  handsWon: number;        // real money only
+  handsPlayedReal: number; // real money only
+  totalWon: number;        // USD won on real tables
+  totalHands: number;      // all hands
+  trophies: number;
+}
+
 export interface AuthState {
   user: User | null;
   wallet: { balance_usd: string; locked_usd: string } | null;
   freeChips: { chips: string; total_hands: number } | null;
+  stats: UserStats | null;
   token: string | null;
   loading: boolean;
   error: string | null;
@@ -14107,6 +15024,7 @@ function createAuthStore() {
     user: null,
     wallet: null,
     freeChips: null,
+    stats: null,
     token: null,
     loading: true,
     error: null,
@@ -14188,11 +15106,13 @@ function createAuthStore() {
     async refresh() {
       const res = await api.me();
       if (res.ok && res.data) {
+        const data = res.data as any;
         update((s) => ({
           ...s,
-          user: res.data!.user,
-          wallet: res.data!.wallet,
-          freeChips: res.data!.free_chips,
+          user: data.user,
+          wallet: data.wallet,
+          freeChips: data.free_chips,
+          stats: data.stats ?? null,
           loading: false,
           error: null,
         }));
@@ -14205,7 +15125,15 @@ function createAuthStore() {
       localStorage.removeItem('token');
       localStorage.removeItem('dev_uid');
       localStorage.removeItem('dev_name');
-      set({ user: null, wallet: null, freeChips: null, token: null, loading: false, error: null });
+      set({
+        user: null,
+        wallet: null,
+        freeChips: null,
+        stats: null,
+        token: null,
+        loading: false,
+        error: null,
+      });
     },
   };
 }
@@ -14700,10 +15628,11 @@ export type { CardTheme };
 
 ========== FILE: apps\mini-app\src\App.svelte ==========
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { auth } from './stores/auth';
   import { initRealtime } from './lib/realtime';
   import { adminRequested } from './stores/admin';
+  import { startBroadcastPolling, stopBroadcastPolling } from './lib/broadcasts';
   import Login from './routes/Login.svelte';
   import Home from './routes/Home.svelte';
   import Tables from './routes/Tables.svelte';
@@ -14728,9 +15657,22 @@ export type { CardTheme };
   import Splash from './routes/Splash.svelte';
 
   type Page =
-    | 'home' | 'tables' | 'wallet' | 'profile' | 'table' | 'leaderboard'
-    | 'events' | 'tournaments' | 'tournament-detail' | 'achievements'
-    | 'my-tournaments' | 'shop' | 'notifications' | 'settings' | 'help' | 'admin';
+    | 'home'
+    | 'tables'
+    | 'wallet'
+    | 'profile'
+    | 'table'
+    | 'leaderboard'
+    | 'events'
+    | 'tournaments'
+    | 'tournament-detail'
+    | 'achievements'
+    | 'my-tournaments'
+    | 'shop'
+    | 'notifications'
+    | 'settings'
+    | 'help'
+    | 'admin';
 
   let currentPage: Page = 'home';
   let activeTableId = 1;
@@ -14754,11 +15696,16 @@ export type { CardTheme };
   $: forceSplash = $auth.loading || !splashElapsed;
 
   onMount(async () => {
-    setTimeout(() => { splashElapsed = true; }, 3000);
+    onDestroy(() => {
+      stopBroadcastPolling();
+    });
+    setTimeout(() => {
+      splashElapsed = true;
+    }, 3000);
     await auth.init();
     const token = localStorage.getItem('token');
     if (token) initRealtime(token);
-
+    if (token) startBroadcastPolling();
     // ============ SECRET ADMIN (after password prompt) ============
     adminRequested.subscribe((v) => {
       if (v) {
@@ -14813,10 +15760,7 @@ export type { CardTheme };
 </script>
 
 <!-- ============ OUTER BACKGROUND ============ -->
-<div
-  class="fixed inset-0 -z-10"
-  style="background: #05080f;"
->
+<div class="fixed inset-0 -z-10" style="background: #05080f;">
   <div
     class="absolute inset-0"
     style="
@@ -14847,20 +15791,20 @@ export type { CardTheme };
       <SideNav current={currentPage as any} onNavigate={navigate} />
     {/if}
 
-    <main
-      class="flex-1 relative min-w-0"
-      class:with-side={!hideNav}
-      style="min-height: 100dvh;"
-    >
+    <main class="flex-1 relative min-w-0" class:with-side={!hideNav} style="min-height: 100dvh;">
       <div
         class="mx-auto w-full"
         style="max-width: {currentPage === 'table' ? '100%' : 'min(520px, 100%)'};"
       >
         {#if currentPage === 'home'}
-          <Home onNavigate={navigate} onQuickSeat={quickSeat} onOpenTable={openTable} />
+          <Home onNavigate={navigate} onQuickSeat={quickSeat} />
         {:else if currentPage === 'tables'}
           {#key tablesKey}
-            <Tables initialVariant={tablesVariant} initialMode={tablesMode} onOpenTable={openTable} />
+            <Tables
+              initialVariant={tablesVariant}
+              initialMode={tablesMode}
+              onOpenTable={openTable}
+            />
           {/key}
         {:else if currentPage === 'wallet'}
           <Wallet />
@@ -14870,8 +15814,8 @@ export type { CardTheme };
           <Table tableId={activeTableId} onBack={backFromTable} />
         {:else if currentPage === 'leaderboard'}
           <Leaderboard />
-       {:else if currentPage === 'events'}
-  <Events />
+        {:else if currentPage === 'events'}
+          <Events />
         {:else if currentPage === 'tournaments'}
           <Tournaments onOpenTournament={openTournament} />
         {:else if currentPage === 'tournament-detail' && activeTournamentId !== null}
@@ -14921,6 +15865,7 @@ export type { CardTheme };
     }
   }
 </style>
+
 
 ========== FILE: apps\mini-app\src\main.ts ==========
 import { mount } from 'svelte'
@@ -17456,6 +18401,7 @@ export interface PlayerInfo {
   displayName: string;
   socketId: string;
   tournamentStack?: number;
+  autoMuck?: boolean;
 }
 
 export interface TableRoom {
@@ -17506,8 +18452,8 @@ class GameManager {
   private rooms: Map<number, TableRoom> = new Map();
   private persister: HandPersister | null = null;
   private tournamentHandEndCallback:
-    | ((tournamentId: number, room: TableRoom, handResult?: any) => void | Promise<void>)
-    | null = null;
+    ((tournamentId: number, room: TableRoom, handResult?: any) => void | Promise<void>) | null =
+    null;
 
   private getPersister(): HandPersister {
     if (!this.persister) {
@@ -17708,9 +18654,24 @@ class GameManager {
       if (room.mode === 'real' && !room.tournamentId) {
         room.totalRake = round2(room.totalRake + handResult.rake);
       }
-
+      // ============ AUTO-MUCK ============
+      // If a losing player has auto-muck enabled, hide their hole cards
+      // from opponents (and from showdownPlayers list).
+      if (handResult.showdownPlayers && handResult.showdownPlayers.length > 0) {
+        for (const sp of handResult.showdownPlayers) {
+          if (sp.isWinner) continue;
+          const seatData = room.game.state.seats.find((s: any) => s.seat === sp.seat);
+          if (!seatData) continue;
+          const playerInfo = room.players.get(`user_${seatData.userId}`);
+          if (playerInfo?.autoMuck) {
+            sp.hole = [];
+            seatData.revealed = false;
+          }
+        }
+      }
+      // ============ END AUTO-MUCK ============
       room.game.state.handNo = room.handCounter;
-            // ============ ACHIEVEMENTS TRACKING ============
+      // ============ ACHIEVEMENTS TRACKING ============
       try {
         const ach = getAchievementsService();
         if (ach) {
@@ -17729,9 +18690,7 @@ class GameManager {
 
             await ach.track(seatInfo.userId, 'first_win', 1);
 
-            const payout = (handResult.payouts || []).find(
-              (p: any) => p.seat === winnerSeat,
-            );
+            const payout = (handResult.payouts || []).find((p: any) => p.seat === winnerSeat);
             if (payout?.amount) {
               await ach.track(seatInfo.userId, 'big_pot', Number(payout.amount));
             }
@@ -17953,6 +18912,7 @@ class GameManager {
     displayName: string;
     socketId: string;
     tableConfig: any;
+    autoMuck?: boolean;
   }): TableRoom {
     let room = this.rooms.get(params.tableId);
     if (!room) {
@@ -17978,6 +18938,7 @@ class GameManager {
       displayName: params.displayName,
       socketId: params.socketId,
       tournamentStack: existing?.tournamentStack,
+      autoMuck: params.autoMuck ?? existing?.autoMuck ?? true,
     };
 
     room.players.set(playerId, info);
@@ -18063,7 +19024,6 @@ class GameManager {
     room.busy = true;
     try {
       const players: PlayerInit[] = [];
-      let reBuysThisHand = 0;
       const REBUY_THRESHOLD = Number(process.env.REBUY_THRESHOLD ?? 0);
       const REBUY_AMOUNT = Number(process.env.REBUY_AMOUNT ?? 1000);
 
@@ -18087,7 +19047,6 @@ class GameManager {
             const injected = round2(REBUY_AMOUNT - stack);
             room.totalRebuy = round2(room.totalRebuy + injected);
             stack = REBUY_AMOUNT;
-            reBuysThisHand++;
           }
         }
 
@@ -18944,7 +19903,77 @@ async function main() {
       console.error('[me] ledger error:', e.message);
     }
 
-    const chipsRes = await db.query('SELECT chips FROM free_chips WHERE user_id = $1', [user.id]);
+    // free chips + hands
+    const chipsRes = await db.query(
+      'SELECT chips, total_hands FROM free_chips WHERE user_id = $1',
+      [user.id],
+    );
+    const totalHands = Number(chipsRes.rows[0]?.total_hands ?? 0);
+
+    // stats: hands won + total winnings on REAL money tables only
+    let handsWon = 0;
+    let totalWon = 0;
+    let handsPlayedReal = 0;
+    try {
+      const statsRes = await db.query(
+        `WITH my_real_hands AS (
+           SELECT
+             h.id AS hand_id,
+             h.winner_seats,
+             h.result,
+             (
+               SELECT (p->>'seat')::int
+               FROM jsonb_array_elements(hs.state->'players') p
+               WHERE (p->>'userId')::bigint = $1
+               LIMIT 1
+             ) AS my_seat
+           FROM hands h
+           JOIN hand_snapshots hs ON hs.hand_id = h.id AND hs.sequence = 0
+           WHERE h.finished = TRUE
+             AND h.mode = 'real'
+             AND EXISTS (
+               SELECT 1 FROM jsonb_array_elements(hs.state->'players') p
+               WHERE (p->>'userId')::bigint = $1
+             )
+         )
+         SELECT
+           COUNT(*)::int AS hands_played,
+           COUNT(*) FILTER (
+             WHERE winner_seats::jsonb @> to_jsonb(my_seat)
+           )::int AS hands_won,
+           COALESCE(SUM(
+             (
+               SELECT COALESCE((sp->>'payout')::numeric, 0)
+               FROM jsonb_array_elements(
+                 COALESCE(result->'showdownPlayers', '[]'::jsonb)
+               ) sp
+               WHERE (sp->>'seat')::int = my_seat
+               LIMIT 1
+             )
+           ), 0)::numeric AS total_won
+         FROM my_real_hands`,
+        [user.id],
+      );
+      handsPlayedReal = Number(statsRes.rows[0]?.hands_played ?? 0);
+      handsWon = Number(statsRes.rows[0]?.hands_won ?? 0);
+      totalWon = Number(statsRes.rows[0]?.total_won ?? 0);
+    } catch (e: any) {
+      console.error('[me] stats error:', e.message);
+    }
+
+    // trophies: tournaments won
+    let trophies = 0;
+    try {
+      const trophiesRes = await db.query(
+        `SELECT COUNT(*)::int AS t
+         FROM tournament_entries
+         WHERE user_id = $1 AND final_position = 1`,
+        [user.id],
+      );
+      trophies = Number(trophiesRes.rows[0]?.t ?? 0);
+    } catch (e: any) {
+      console.error('[me] trophies error:', e.message);
+    }
 
     return {
       user: {
@@ -18954,7 +19983,17 @@ async function main() {
         avatar_id: user.avatar_id,
       },
       wallet: { balance },
-      free_chips: { chips: Number(chipsRes.rows[0]?.chips ?? 0) },
+      free_chips: {
+        chips: Number(chipsRes.rows[0]?.chips ?? 0),
+        total_hands: totalHands,
+      },
+      stats: {
+        handsWon,        // real-money wins only
+        handsPlayedReal, // real-money hands played
+        totalWon,        // USD won on real tables
+        totalHands,      // all hands (free + real)
+        trophies,
+      },
     };
   });
 
@@ -19996,7 +21035,12 @@ export function setupSocketServer(io: SocketIOServer, db: Pool): void {
     socket.on(
       'table:join',
       async (
-        data: { tableId: number; lastHandNo?: number; lastSequence?: number },
+        data: {
+          tableId: number;
+          lastHandNo?: number;
+          lastSequence?: number;
+          autoMuck?: boolean;
+        },
         ack?: Function,
       ) => {
         try {
@@ -20043,6 +21087,7 @@ export function setupSocketServer(io: SocketIOServer, db: Pool): void {
             displayName,
             socketId: socket.id,
             tableConfig: table,
+            autoMuck: data?.autoMuck,
           });
 
           socket.join(`table:${tableId}`);
@@ -20244,7 +21289,21 @@ export function setupSocketServer(io: SocketIOServer, db: Pool): void {
         ack?.({ ok: false, code: 'INTERNAL_ERROR', error: e.message });
       }
     });
-
+    socket.on(
+      'table:update_prefs',
+      async (data: { autoMuck?: boolean }, ack?: Function) => {
+        try {
+          const ctx = gameManager.getPlayerBySocket(socket.id);
+          if (!ctx) return ack?.({ ok: false, code: 'NOT_IN_ROOM' });
+          if (typeof data?.autoMuck === 'boolean') {
+            ctx.player.autoMuck = data.autoMuck;
+          }
+          ack?.({ ok: true });
+        } catch (e: any) {
+          ack?.({ ok: false, code: 'INTERNAL_ERROR', error: e.message });
+        }
+      },
+    );
     socket.on('disconnect', (reason) => {      lastChatAt.delete(socket.id);
       console.log(`[socket.io] disconnected: ${displayName} (${socket.id}) - ${reason}`);
       const ctx = gameManager.getPlayerBySocket(socket.id);
@@ -27542,6 +28601,65 @@ main().catch((e) => {
 });
 
 
+========== FILE: tools\bots\check-real.ts ==========
+import { Pool } from 'pg';
+import 'dotenv/config';
+
+const db = new Pool({
+  connectionString:
+    process.env.DATABASE_URL ??
+    'postgres://poker:pokerpass@localhost:5432/poker',
+});
+
+async function main() {
+  console.log('═══ Last 10 hands ═══\n');
+  const hands = await db.query(`
+    SELECT id, hand_no, mode, table_id, finished, pot
+    FROM hands
+    WHERE finished = TRUE
+    ORDER BY id DESC
+    LIMIT 10
+  `);
+  console.table(hands.rows);
+
+  console.log('\n═══ Real tables ═══\n');
+  const realTables = await db.query(`
+    SELECT id, name, variant, mode, is_active
+    FROM poker_tables
+    WHERE mode IN ('real', 'cash')
+    ORDER BY id
+  `);
+  console.table(realTables.rows);
+
+  console.log('\n═══ Ali payouts on REAL tables ═══\n');
+  const payouts = await db.query(`
+    SELECT
+      h.id,
+      h.mode,
+      h.pot,
+      sp->>'displayName' AS player,
+      sp->>'payout' AS payout,
+      sp->>'isWinner' AS is_winner
+    FROM hands h
+    CROSS JOIN LATERAL jsonb_array_elements(
+      COALESCE(h.result->'showdownPlayers', '[]'::jsonb)
+    ) sp
+    WHERE h.finished = TRUE
+      AND h.mode = 'real'
+      AND (sp->>'displayName') = 'Ali'
+    ORDER BY h.id DESC
+    LIMIT 10
+  `);
+  console.table(payouts.rows);
+
+  await db.end();
+}
+
+main().catch((e) => {
+  console.error('ERROR:', e.message);
+  process.exit(1);
+});
+
 ========== FILE: tools\bots\check-sidepots.ts ==========
 import dotenv from 'dotenv';
 import { Pool } from 'pg';
@@ -27720,6 +28838,50 @@ try {
 
 await admin.end();
 
+
+========== FILE: tools\bots\fix-table-modes.ts ==========
+import { Pool } from 'pg';
+import 'dotenv/config';
+
+const db = new Pool({
+  connectionString:
+    process.env.DATABASE_URL ??
+    'postgres://poker:pokerpass@localhost:5432/poker',
+});
+
+async function main() {
+  console.log('▶ Fixing table modes...\n');
+
+  // mode='cash' → 'real'
+  const r1 = await db.query(
+    `UPDATE poker_tables SET mode = 'real' WHERE mode = 'cash' RETURNING id, name`,
+  );
+  console.log(`✅ ${r1.rowCount} tables updated from 'cash' → 'real'`);
+  for (const row of r1.rows) console.log(`   #${row.id} ${row.name}`);
+
+  // "Free Omaha4" id=7 → should be free
+  const r2 = await db.query(
+    `UPDATE poker_tables SET mode = 'free' WHERE id = 7 AND name ILIKE 'Free%' RETURNING id, name, mode`,
+  );
+  if (r2.rowCount > 0) {
+    console.log(`\n✅ Fixed "Free" table that was marked real:`);
+    for (const row of r2.rows) console.log(`   #${row.id} ${row.name} → ${row.mode}`);
+  }
+
+  // Show all tables
+  const all = await db.query(
+    `SELECT id, name, variant, mode, is_active FROM poker_tables ORDER BY id`,
+  );
+  console.log('\n═══ All tables ═══\n');
+  console.table(all.rows);
+
+  await db.end();
+}
+
+main().catch((e) => {
+  console.error('ERROR:', e.message);
+  process.exit(1);
+});
 
 ========== FILE: tools\bots\join-table.ts ==========
 import { io, Socket } from 'socket.io-client';
@@ -31078,6 +32240,73 @@ main().catch((e) => {
   process.exit(1);
 });
 
+
+========== FILE: tools\bots\test-stats.ts ==========
+import { Pool } from 'pg';
+import 'dotenv/config';
+
+const db = new Pool({
+  connectionString:
+    process.env.DATABASE_URL ??
+    'postgres://poker:pokerpass@localhost:5432/poker',
+});
+
+async function main() {
+  // Get Ali's user id
+  const u = await db.query(
+    `SELECT id FROM users WHERE display_name = 'Ali' LIMIT 1`,
+  );
+  const userId = u.rows[0].id;
+  console.log(`Ali user_id = ${userId}\n`);
+
+  const statsRes = await db.query(
+    `WITH my_real_hands AS (
+       SELECT
+         h.id AS hand_id,
+         h.winner_seats,
+         h.result,
+         (
+           SELECT (p->>'seat')::int
+           FROM jsonb_array_elements(hs.state->'players') p
+           WHERE (p->>'userId')::bigint = $1
+           LIMIT 1
+         ) AS my_seat
+       FROM hands h
+       JOIN hand_snapshots hs ON hs.hand_id = h.id AND hs.sequence = 0
+       WHERE h.finished = TRUE
+         AND h.mode = 'real'
+         AND EXISTS (
+           SELECT 1 FROM jsonb_array_elements(hs.state->'players') p
+           WHERE (p->>'userId')::bigint = $1
+         )
+     )
+     SELECT
+       COUNT(*)::int AS hands_played,
+       COUNT(*) FILTER (
+         WHERE winner_seats::jsonb @> to_jsonb(my_seat)
+       )::int AS hands_won,
+       COALESCE(SUM(
+         (
+           SELECT COALESCE((sp->>'payout')::numeric, 0)
+           FROM jsonb_array_elements(
+             COALESCE(result->'showdownPlayers', '[]'::jsonb)
+           ) sp
+           WHERE (sp->>'seat')::int = my_seat
+           LIMIT 1
+         )
+       ), 0)::numeric AS total_won
+     FROM my_real_hands`,
+    [userId],
+  );
+  console.log('Stats:', statsRes.rows[0]);
+
+  await db.end();
+}
+
+main().catch((e) => {
+  console.error('ERROR:', e.message);
+  process.exit(1);
+});
 
 ========== FILE: tools\bots\test-tournament-2p.ts ==========
 import dotenv from 'dotenv';
@@ -42938,6 +44167,7 @@ export default [
   "scripts": {
     "server": "npm -w apps/server run dev",
     "app": "npm -w apps/mini-app run dev",
+    "check": "npm -w apps/mini-app run check",
     "engine:test": "npm -w packages/poker-engine run test",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

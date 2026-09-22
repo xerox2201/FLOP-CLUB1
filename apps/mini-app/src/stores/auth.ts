@@ -10,10 +10,19 @@ export interface User {
   avatar_id?: string;
 }
 
+export interface UserStats {
+  handsWon: number;        // real money only
+  handsPlayedReal: number; // real money only
+  totalWon: number;        // USD won on real tables
+  totalHands: number;      // all hands
+  trophies: number;
+}
+
 export interface AuthState {
   user: User | null;
   wallet: { balance_usd: string; locked_usd: string } | null;
   freeChips: { chips: string; total_hands: number } | null;
+  stats: UserStats | null;
   token: string | null;
   loading: boolean;
   error: string | null;
@@ -24,6 +33,7 @@ function createAuthStore() {
     user: null,
     wallet: null,
     freeChips: null,
+    stats: null,
     token: null,
     loading: true,
     error: null,
@@ -105,11 +115,13 @@ function createAuthStore() {
     async refresh() {
       const res = await api.me();
       if (res.ok && res.data) {
+        const data = res.data as any;
         update((s) => ({
           ...s,
-          user: res.data!.user,
-          wallet: res.data!.wallet,
-          freeChips: res.data!.free_chips,
+          user: data.user,
+          wallet: data.wallet,
+          freeChips: data.free_chips,
+          stats: data.stats ?? null,
           loading: false,
           error: null,
         }));
@@ -122,7 +134,15 @@ function createAuthStore() {
       localStorage.removeItem('token');
       localStorage.removeItem('dev_uid');
       localStorage.removeItem('dev_name');
-      set({ user: null, wallet: null, freeChips: null, token: null, loading: false, error: null });
+      set({
+        user: null,
+        wallet: null,
+        freeChips: null,
+        stats: null,
+        token: null,
+        loading: false,
+        error: null,
+      });
     },
   };
 }

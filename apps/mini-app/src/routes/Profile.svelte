@@ -30,14 +30,27 @@
 
   $: user = $auth.user;
   $: chips = $auth.freeChips;
+  $: stats = $auth.stats;
   $: selectedAvatar = (user as any)?.avatar_id || 'king';
   $: selectedFrame = (user as any)?.frame_id || 'royal';
 
-  $: handsPlayed = chips?.total_hands || 0;
-  $: level = Math.floor(handsPlayed / 50) + 1;
-  $: xpInLevel = handsPlayed % 50;
-  $: xpCurrent = 2460 + xpInLevel * 20;
-  $: xpTotal = 5000;
+  // Stats (real money only for win rate + level)
+  $: totalHands = stats?.totalHands ?? chips?.total_hands ?? 0;
+  $: handsPlayedReal = stats?.handsPlayedReal ?? 0;
+  $: handsWon = stats?.handsWon ?? 0;
+  $: totalWon = stats?.totalWon ?? 0;
+  $: trophies = stats?.trophies ?? 0;
+
+  // Win rate: real money only
+  $: winRate = handsPlayedReal > 0
+    ? Math.round((handsWon / handsPlayedReal) * 100)
+    : 0;
+
+  // Level: $100 won on real tables = 1 level
+  const USD_PER_LEVEL = 100;
+  $: level = Math.floor(totalWon / USD_PER_LEVEL) + 1;
+  $: xpCurrent = totalWon % USD_PER_LEVEL;
+  $: xpTotal = USD_PER_LEVEL;
 
   async function pickAvatar(id: string) {
     if (user) (user as any).avatar_id = id;
@@ -132,14 +145,16 @@ function pickFrame(frame: string | null) {
     <!-- XP -->
     <div class="mt-5 pt-4" style="border-top: 1px solid rgba(212,175,55,0.2);">
       <div class="flex justify-between items-center mb-2">
-        <span class="text-[10px] uppercase tracking-widest text-gold/80 font-extrabold">XP</span>
+        <span class="text-[10px] uppercase tracking-widest text-gold/80 font-extrabold">
+          XP · Real Winnings
+        </span>
         <span class="text-[10px] font-extrabold text-white/60 tabular-nums">
-          {xpCurrent.toLocaleString()} / {xpTotal.toLocaleString()}
+          ${xpCurrent.toFixed(2)} / ${xpTotal}
         </span>
       </div>
       <div class="w-full h-2 rounded-full overflow-hidden" style="background: rgba(0,0,0,0.55);">
         <div
-          class="h-full rounded-full"
+          class="h-full rounded-full transition-all"
           style="
             width: {Math.min(100, (xpCurrent / xpTotal) * 100)}%;
             background: linear-gradient(90deg, #f4e5a8 0%, #d4af37 50%, #a87a15 100%);
@@ -147,21 +162,24 @@ function pickFrame(frame: string | null) {
           "
         ></div>
       </div>
+      <p class="text-[9px] text-white/40 mt-1.5 text-right tabular-nums">
+        Total won: <span class="text-gold font-bold">${totalWon.toFixed(2)}</span>
+      </p>
     </div>
 
     <!-- Stats -->
     <div class="grid grid-cols-3 gap-2 mt-5">
       <div class="rounded-2xl p-3 text-center" style="background: rgba(0,0,0,0.35); border: 1px solid rgba(96,165,250,0.2);">
         <p class="text-[9px] text-white/40 uppercase tracking-wider font-bold mb-1">Win Rate</p>
-        <p class="text-lg font-extrabold tabular-nums" style="color: #60a5fa;">62%</p>
+        <p class="text-lg font-extrabold tabular-nums" style="color: #60a5fa;">{winRate}%</p>
       </div>
       <div class="rounded-2xl p-3 text-center" style="background: rgba(0,0,0,0.35); border: 1px solid rgba(212,175,55,0.2);">
-        <p class="text-[9px] text-white/40 uppercase tracking-wider font-bold mb-1">Games</p>
-        <p class="text-lg font-extrabold text-gold tabular-nums">482</p>
+        <p class="text-[9px] text-white/40 uppercase tracking-wider font-bold mb-1">Hands</p>
+        <p class="text-lg font-extrabold text-gold tabular-nums">{totalHands}</p>
       </div>
       <div class="rounded-2xl p-3 text-center" style="background: rgba(0,0,0,0.35); border: 1px solid rgba(139,92,246,0.2);">
         <p class="text-[9px] text-white/40 uppercase tracking-wider font-bold mb-1">Trophies</p>
-        <p class="text-lg font-extrabold tabular-nums" style="color: #a78bfa;">12</p>
+        <p class="text-lg font-extrabold tabular-nums" style="color: #a78bfa;">{trophies}</p>
       </div>
     </div>
   </div>

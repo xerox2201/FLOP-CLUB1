@@ -122,7 +122,77 @@ async function main() {
       console.error('[me] ledger error:', e.message);
     }
 
-    const chipsRes = await db.query('SELECT chips FROM free_chips WHERE user_id = $1', [user.id]);
+    // free chips + hands
+    const chipsRes = await db.query(
+      'SELECT chips, total_hands FROM free_chips WHERE user_id = $1',
+      [user.id],
+    );
+    const totalHands = Number(chipsRes.rows[0]?.total_hands ?? 0);
+
+    // stats: hands won + total winnings on REAL money tables only
+    let handsWon = 0;
+    let totalWon = 0;
+    let handsPlayedReal = 0;
+    try {
+      const statsRes = await db.query(
+        `WITH my_real_hands AS (
+           SELECT
+             h.id AS hand_id,
+             h.winner_seats,
+             h.result,
+             (
+               SELECT (p->>'seat')::int
+               FROM jsonb_array_elements(hs.state->'players') p
+               WHERE (p->>'userId')::bigint = $1
+               LIMIT 1
+             ) AS my_seat
+           FROM hands h
+           JOIN hand_snapshots hs ON hs.hand_id = h.id AND hs.sequence = 0
+           WHERE h.finished = TRUE
+             AND h.mode = 'real'
+             AND EXISTS (
+               SELECT 1 FROM jsonb_array_elements(hs.state->'players') p
+               WHERE (p->>'userId')::bigint = $1
+             )
+         )
+         SELECT
+           COUNT(*)::int AS hands_played,
+           COUNT(*) FILTER (
+             WHERE winner_seats::jsonb @> to_jsonb(my_seat)
+           )::int AS hands_won,
+           COALESCE(SUM(
+             (
+               SELECT COALESCE((sp->>'payout')::numeric, 0)
+               FROM jsonb_array_elements(
+                 COALESCE(result->'showdownPlayers', '[]'::jsonb)
+               ) sp
+               WHERE (sp->>'seat')::int = my_seat
+               LIMIT 1
+             )
+           ), 0)::numeric AS total_won
+         FROM my_real_hands`,
+        [user.id],
+      );
+      handsPlayedReal = Number(statsRes.rows[0]?.hands_played ?? 0);
+      handsWon = Number(statsRes.rows[0]?.hands_won ?? 0);
+      totalWon = Number(statsRes.rows[0]?.total_won ?? 0);
+    } catch (e: any) {
+      console.error('[me] stats error:', e.message);
+    }
+
+    // trophies: tournaments won
+    let trophies = 0;
+    try {
+      const trophiesRes = await db.query(
+        `SELECT COUNT(*)::int AS t
+         FROM tournament_entries
+         WHERE user_id = $1 AND final_position = 1`,
+        [user.id],
+      );
+      trophies = Number(trophiesRes.rows[0]?.t ?? 0);
+    } catch (e: any) {
+      console.error('[me] trophies error:', e.message);
+    }
 
     return {
       user: {
@@ -132,7 +202,17 @@ async function main() {
         avatar_id: user.avatar_id,
       },
       wallet: { balance },
-      free_chips: { chips: Number(chipsRes.rows[0]?.chips ?? 0) },
+      free_chips: {
+        chips: Number(chipsRes.rows[0]?.chips ?? 0),
+        total_hands: totalHands,
+      },
+      stats: {
+        handsWon,        // real-money wins only
+        handsPlayedReal, // real-money hands played
+        totalWon,        // USD won on real tables
+        totalHands,      // all hands (free + real)
+        trophies,
+      },
     };
   });
 
