@@ -26,6 +26,9 @@
   import ToastStack from './components/ToastStack.svelte';
   import AdminPrompt from './components/AdminPrompt.svelte';
   import Splash from './routes/Splash.svelte';
+  import TableSwitcher from './components/TableSwitcher.svelte';
+import TurnAlert from './components/TurnAlert.svelte';
+import { activeTables } from './lib/activeTables';
 
   type Page =
     | 'home'
@@ -128,6 +131,16 @@
     currentPage = 'tables';
     window.scrollTo({ top: 0 });
   }
+
+  function switchTable(id: number) {
+  activeTableId = id;
+  currentPage = 'table';
+  window.scrollTo({ top: 0 });
+}
+
+function goToTablesToAdd() {
+  navigate('tables');
+}
 </script>
 
 <!-- ============ OUTER BACKGROUND ============ -->
@@ -182,7 +195,18 @@
         {:else if currentPage === 'profile'}
           <Profile onNavigate={navigate} />
         {:else if currentPage === 'table'}
-          <Table tableId={activeTableId} onBack={backFromTable} />
+          <div class="flex flex-col" style="height: 100dvh;">
+            <TableSwitcher
+              currentTableId={activeTableId}
+              onSwitch={switchTable}
+              onAdd={goToTablesToAdd}
+            />
+            <div class="flex-1 relative min-h-0">
+              {#key activeTableId}
+                <Table tableId={activeTableId} onBack={backFromTable} />
+              {/key}
+            </div>
+          </div>
         {:else if currentPage === 'leaderboard'}
           <Leaderboard />
         {:else if currentPage === 'events'}
@@ -219,6 +243,10 @@
 
     <ToastStack />
   </div>
+  <TurnAlert
+  currentTableId={currentPage === 'table' ? activeTableId : null}
+  onGo={switchTable}
+/>
 {/if}
 
 <!-- Admin password prompt (global) -->

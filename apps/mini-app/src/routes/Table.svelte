@@ -8,12 +8,12 @@
   import HandReplayModal from '../components/HandReplayModal.svelte';
   import PlayerInfoModal from '../components/PlayerInfoModal.svelte';
   import ChatModal from '../components/ChatModal.svelte';
-  import { TableSocketIO, type TableState } from '../lib/socket';
   import { auth } from '../stores/auth';
   import { t } from '../i18n';
   import { playSound } from '../lib/sounds';
   import { haptic } from '../lib/haptics';
   import { preferences } from '../lib/preferences';
+  import { activeTables } from '../lib/activeTables';
 
   export let tableId: number = 1;
   export let onBack: () => void = () => {};
@@ -36,27 +36,29 @@
     }
   }
 
-  let socket: TableSocketIO | null = null;
-  let gameState: TableState | null = null;
-  let connected = false;
-  let reconnecting = false;
-  let reconnectAttempt = 0;
-  let reconnectSynced = false;
+  // ===== Multi-table store binding =====
+  $: entry = $activeTables.get(tableId) ?? null;
+  $: socket = entry?.socket ?? null;
+  $: gameState = entry?.state ?? null;
+  $: handResult = entry?.handResult ?? null;
+  $: connected = entry?.connected ?? false;
+  $: reconnecting = entry?.reconnecting ?? false;
+
   let errorMsg = '';
   let autoActionMsg = '';
-  let startingHand = true;
   let showMenu = false;
   let showHandHistory = false;
   let showReplay = false;
   let replayHandId: number | null = null;
   let sittingOut = false;
-  let handResult: any = null;
   let showSeedModal = false;
   let nowTick = Date.now();
 
   let lastSoundHandNo = -1;
   let lastSoundCommunityCount = 0;
   let lastSoundWinnersKey = '';
+  let lastErrorAt = 0;
+  let wasReconnecting = false;
 
   let selectedPlayer: any = null;
   let showPlayerInfo = false;
@@ -98,7 +100,8 @@
   let lastEndedHandNo = -1;
 
   $: myUserId = $auth.user?.id;
-  $: mySeat = gameState?.seats?.find((s: any) => s.userId === myUserId) ?? null;
+  $: mySeat =
+    gameState?.seats?.find((s: any) => Number(s.userId) === Number(myUserId)) ?? null;
   $: isMyTurn = !!(
     gameState &&
     mySeat &&
@@ -119,7 +122,10 @@
 
   $: timeRemaining =
     gameState && gameState.turnStartedAt
-      ? Math.max(0, (gameState.turnBaseLimit ?? 30) - (nowTick - gameState.turnStartedAt) / 1000)
+      ? Math.max(
+          0,
+          (gameState.turnBaseLimit ?? 30) - (nowTick - gameState.turnStartedAt) / 1000,
+        )
       : 30;
 
   $: canUseBank =
@@ -142,6 +148,7 @@
     hardMax > minRaiseTo ? ((raiseAmount - minRaiseTo) / (hardMax - minRaiseTo)) * 100 : 100;
 
   $: myAvatarId = ($auth.user as any)?.avatar_id || 'spade';
+  $: startingHand = !gameState;
 
   $: variantLabel =
     gameState?.variant === 'omaha4'
@@ -156,6 +163,63 @@
   $: isFinalTable = isTournament && gameState?.tournamentTableNumber === 1000;
   $: tableTitle = isTournament ? 'Tournament' : 'Cash Game';
   $: seatCount = gameState?.seats?.length ?? 0;
+
+  // ===== Sounds + haptics (derived from store state) =====
+  $: if (gameState?.handNo && gameState.handNo !== lastSoundHandNo) {
+    lastSoundHandNo = gameState.handNo;
+    lastSoundCommunityCount = 0;
+    playSound('deal', 0.5);
+    haptic.light();
+  }
+
+  $: if (gameState?.community) {
+    const ccCount = gameState.community.length;
+    if (ccCount > lastSoundCommunityCount) {
+      lastSoundCommunityCount = ccCount;
+      playSound('card-flip', 0.5);
+      haptic.light();
+    }
+  }
+
+  $: if (handResult) {
+    resetPreAction();
+    const winners = handResult.winners || [];
+    const winnersKey = winners.join(',');
+    if (winnersKey && winnersKey !== lastSoundWinnersKey) {
+      lastSoundWinnersKey = winnersKey;
+      const iWon = mySeat && winners.includes(mySeat.seat);
+      if (iWon) {
+        playSound('win', 0.6);
+        haptic.success();
+      } else {
+        playSound('lose', 0.5);
+        haptic.error();
+      }
+    }
+  }
+
+  // ===== Socket errors (pushed by store) =====
+  $: if (entry?.lastError && entry.lastError.at !== lastErrorAt) {
+    lastErrorAt = entry.lastError.at;
+    errorMsg = entry.lastError.message;
+    setTimeout(() => {
+      errorMsg = '';
+    }, 3000);
+  }
+
+  // ===== Reconnecting toast =====
+  $: {
+    if (reconnecting && !wasReconnecting) {
+      errorMsg = 'Reconnecting…';
+    }
+    if (!reconnecting && wasReconnecting) {
+      autoActionMsg = '✅ Reconnected';
+      setTimeout(() => {
+        autoActionMsg = '';
+      }, 2000);
+    }
+    wasReconnecting = reconnecting;
+  }
 
   const PRE_ACTIONS: {
     key: PreActionKey;
@@ -214,92 +278,19 @@
     return '♣';
   }
 
-  function connect() {
+  onMount(() => {
     const token = localStorage.getItem('token');
     if (!token) {
       errorMsg = 'no_token';
       return;
     }
+    if (!$auth.user?.id) return;
 
-    socket = new TableSocketIO(tableId, token, get(preferences).autoMuck);
-    socket.on((evt) => {
-      if (evt.type === 'connected') {
-        connected = true;
-        reconnecting = false;
-      } else if (evt.type === 'disconnected') {
-        connected = false;
-        reconnecting = true;
-        errorMsg = 'Reconnecting…';
-      } else if (evt.type === 'reconnecting') {
-        reconnecting = true;
-        reconnectAttempt = (evt as any).attempt || 0;
-      } else if (evt.type === 'reconnected') {
-        reconnecting = false;
-        reconnectSynced = true;
-        autoActionMsg = '✅ Reconnected';
-        setTimeout(() => {
-          autoActionMsg = '';
-          reconnectSynced = false;
-        }, 2000);
-      } else if (evt.type === 'state') {
-        const newState = evt.state;
+    activeTables.join({ tableId }, token, $auth.user.id);
 
-        if (newState?.handNo && newState.handNo !== lastSoundHandNo) {
-          lastSoundHandNo = newState.handNo;
-          lastSoundCommunityCount = 0;
-          playSound('deal', 0.5);
-          haptic.light();
-        }
-
-        const ccCount = newState?.community?.length || 0;
-        if (ccCount > lastSoundCommunityCount) {
-          lastSoundCommunityCount = ccCount;
-          playSound('card-flip', 0.5);
-          haptic.light();
-        }
-
-        gameState = newState;
-        startingHand = false;
-      } else if (evt.type === 'hand_result') {
-        handResult = evt.result;
-        gameState = evt.state;
-        resetPreAction();
-
-        const winners = evt.result?.winners || [];
-        const winnersKey = winners.join(',');
-        if (winnersKey && winnersKey !== lastSoundWinnersKey) {
-          lastSoundWinnersKey = winnersKey;
-          const mySeatNow = evt.state?.seats?.find((s: any) => s.userId === myUserId);
-          const iWon = mySeatNow && winners.includes(mySeatNow.seat);
-
-          if (iWon) {
-            playSound('win', 0.6);
-            haptic.success();
-          } else {
-            playSound('lose', 0.5);
-            haptic.error();
-          }
-        }
-
-        setTimeout(() => {
-          handResult = null;
-        }, 7000);
-      } else if (evt.type === 'error') {
-        errorMsg = evt.message;
-        setTimeout(() => {
-          errorMsg = '';
-        }, 3000);
-      }
-    });
-    socket.connect();
-  }
-
-  onMount(() => {
-    connect();
     updateLayout();
     window.addEventListener('resize', updateLayout);
     window.addEventListener('orientationchange', updateLayout);
-
     const interval = setInterval(() => {
       nowTick = Date.now();
     }, 500);
@@ -312,7 +303,7 @@
   });
 
   onDestroy(() => {
-    if (socket) socket.close();
+    // Socket stays alive in the store for multi-tabling.
   });
 
   function resetPreAction() {
@@ -505,12 +496,12 @@
   function leaveTable() {
     showMenu = false;
     if (!confirm('Leave this table?')) return;
-    socket?.leaveTable();
+    activeTables.leave(tableId);
     setTimeout(() => onBack(), 200);
   }
 
   function openPlayerInfo(userId: number) {
-    const s = gameState?.seats?.find((x: any) => x.userId === userId);
+    const s = gameState?.seats?.find((x: any) => Number(x.userId) === Number(userId));
     if (!s) return;
     selectedPlayer = {
       ...s,
@@ -526,11 +517,11 @@
     }, 1500);
   }
 
-  // ===== Auto-Muck: sync preference to server when changed =====
+  // ===== Auto-Muck: sync preference to all active sockets =====
   let lastSentAutoMuck = get(preferences).autoMuck;
-  $: if (socket && $preferences.autoMuck !== lastSentAutoMuck) {
+  $: if ($preferences.autoMuck !== lastSentAutoMuck) {
     lastSentAutoMuck = $preferences.autoMuck;
-    socket.updateAutoMuck(lastSentAutoMuck);
+    activeTables.updateAutoMuck(lastSentAutoMuck);
   }
 </script>
 
@@ -924,7 +915,6 @@
         class="rounded-xl p-1.5 flex gap-1 pointer-events-auto"
         style="background: rgba(8,13,36,0.98); border: 1.5px solid rgba(139,92,246,0.5); box-shadow: 0 -8px 32px rgba(0,0,0,0.85), 0 0 24px rgba(139,92,246,0.2);"
       >
-        <!-- LEFT: Presets column + Custom -->
         <div
           class="flex flex-col justify-between gap-0.5 flex-1 min-w-0"
           style="min-height: 200px;"
@@ -1000,7 +990,6 @@
           {/if}
         </div>
 
-        <!-- RIGHT: Vertical slider -->
         <div
           bind:this={sliderRef}
           role="slider"
@@ -1023,7 +1012,7 @@
             try {
               (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
             } catch {
-              // ignore — pointer may already be released
+              // ignore
             }
           }}
           on:pointercancel={() => (dragging = false)}
@@ -1115,7 +1104,6 @@
         class="rounded-xl p-2 pointer-events-auto"
         style="background: rgba(8,13,36,0.98); border: 1.5px solid rgba(139,92,246,0.5); box-shadow: 0 -8px 32px rgba(0,0,0,0.85), 0 0 24px rgba(139,92,246,0.2);"
       >
-        <!-- Presets grid 2x2 -->
         <div class="grid grid-cols-2 gap-1 mb-1.5">
           {#each presets as p}
             <button
@@ -1142,7 +1130,6 @@
           {/each}
         </div>
 
-        <!-- Custom + All-In row -->
         <div class="flex gap-1 mb-1.5">
           {#if editingCustom}
             <input
@@ -1198,7 +1185,6 @@
           </button>
         </div>
 
-        <!-- Current amount display -->
         <div
           class="rounded-md py-1.5 text-center"
           style="background: rgba(0,0,0,0.5); border: 1px solid rgba(212,175,55,0.3);"
@@ -1229,7 +1215,6 @@
         {/if}
 
         <div class="flex gap-2">
-          <!-- FOLD -->
           <button
             on:click={() => {
               doAction('FOLD');
@@ -1241,7 +1226,6 @@
             <span class="text-[15px] font-extrabold text-white uppercase tracking-wider">FOLD</span>
           </button>
 
-          <!-- CHECK / CALL -->
           {#if canCheck}
             <button
               on:click={() => {
@@ -1275,7 +1259,6 @@
             </button>
           {/if}
 
-          <!-- RAISE / CONFIRM -->
           {#if canRaise}
             <button
               on:click={() => {

@@ -511,8 +511,8 @@ class GameManager {
     }
   }
 
-  getRoom(tableId: number): TableRoom | undefined {
-    return this.rooms.get(tableId);
+  getRoom(tableId: number | string): TableRoom | undefined {
+    return this.rooms.get(Number(tableId));
   }
 
   joinRoom(params: {

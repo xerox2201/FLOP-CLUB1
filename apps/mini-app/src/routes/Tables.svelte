@@ -13,7 +13,7 @@
   let filterMode: 'all' | 'free' | 'real' = initialMode;
   let filterVariant: 'all' | 'holdem' | 'omaha4' | 'omaha5' = initialVariant as any;
   let filterStatus: 'all' | 'active' | 'has_seats' | 'empty' = 'all';
-  let sortBy: 'fullness' | 'id' | 'blinds' = 'fullness';
+  let sortBy: 'fullness' | 'active' | 'id' | 'blinds' = 'fullness';
 
   let pollTimer: any = null;
 
@@ -63,6 +63,15 @@
       if (sortBy === 'id') return Number(a.id) - Number(b.id);
       if (sortBy === 'blinds')
         return Number(b.blinds?.bb ?? 0) - Number(a.blinds?.bb ?? 0);
+      if (sortBy === 'active') {
+        const la = live(a);
+        const lb = live(b);
+        if (la > 0 && lb === 0) return -1;
+        if (la === 0 && lb > 0) return 1;
+        if (la !== lb) return lb - la;
+        return Number(a.id) - Number(b.id);
+      }
+      // fullness default
       const diff = ratio(b) - ratio(a);
       if (diff !== 0) return diff;
       return Number(a.id) - Number(b.id);
@@ -172,20 +181,20 @@
     {/each}
   </div>
 
-  <!-- STATUS + SORT -->
+    <!-- STATUS + SORT -->
   <div class="grid grid-cols-2 gap-2 mb-4">
     <div>
       <p class="text-[9px] uppercase tracking-widest text-white/40 font-extrabold mb-1 px-1">Status</p>
       <div class="relative">
         <select
           bind:value={filterStatus}
-          class="w-full rounded-xl px-3 py-2.5 text-[11px] font-bold text-white outline-none appearance-none pr-8"
-          style="background: linear-gradient(180deg, rgba(15,31,58,0.7), rgba(11,19,36,0.9)); border: 1px solid rgba(212,175,55,0.2);"
+          class="w-full rounded-xl px-3 py-2.5 text-[11px] font-bold outline-none appearance-none pr-8"
+          style="background: #0f1f3a; color: #ffffff; border: 1px solid rgba(212,175,55,0.35);"
         >
-          <option value="all">All</option>
-          <option value="active">Active (≥1 player)</option>
-          <option value="has_seats">Has open seats</option>
-          <option value="empty">Empty only</option>
+          <option value="all" style="background:#0f1f3a;color:#ffffff;">All</option>
+          <option value="active" style="background:#0f1f3a;color:#ffffff;">Active (≥1 player)</option>
+          <option value="has_seats" style="background:#0f1f3a;color:#ffffff;">Has open seats</option>
+          <option value="empty" style="background:#0f1f3a;color:#ffffff;">Empty only</option>
         </select>
         <svg class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="3" stroke-linecap="round">
           <path d="M6 9l6 6 6-6" />
@@ -198,12 +207,13 @@
       <div class="relative">
         <select
           bind:value={sortBy}
-          class="w-full rounded-xl px-3 py-2.5 text-[11px] font-bold text-white outline-none appearance-none pr-8"
-          style="background: linear-gradient(180deg, rgba(15,31,58,0.7), rgba(11,19,36,0.9)); border: 1px solid rgba(212,175,55,0.2);"
+          class="w-full rounded-xl px-3 py-2.5 text-[11px] font-bold outline-none appearance-none pr-8"
+          style="background: #0f1f3a; color: #ffffff; border: 1px solid rgba(212,175,55,0.35);"
         >
-          <option value="fullness">Fullness (full first)</option>
-          <option value="blinds">Blinds (high first)</option>
-          <option value="id">Table ID</option>
+          <option value="fullness" style="background:#0f1f3a;color:#ffffff;">Fullness (full first)</option>
+          <option value="active" style="background:#0f1f3a;color:#ffffff;">Active tables first</option>
+          <option value="blinds" style="background:#0f1f3a;color:#ffffff;">Blinds (high first)</option>
+          <option value="id" style="background:#0f1f3a;color:#ffffff;">Table ID</option>
         </select>
         <svg class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="3" stroke-linecap="round">
           <path d="M6 9l6 6 6-6" />
@@ -351,3 +361,14 @@
     </div>
   {/if}
 </div>
+<style>
+  /* Native select — fallback برای مرورگرهایی که inline style رو روی option نادیده می‌گیرن */
+  select {
+    background-color: #0f1f3a !important;
+    color: #ffffff !important;
+  }
+  select option {
+    background-color: #0f1f3a !important;
+    color: #ffffff !important;
+  }
+</style>
