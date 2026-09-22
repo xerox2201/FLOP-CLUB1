@@ -23,6 +23,7 @@ import { registerTournamentRoutes } from './tournament-routes.js';
 import { registerSettingsRoutes } from './settings-routes.js';
 import { registerOverviewRoutes } from './overview-routes.js';
 import { registerAchievementsRoutes } from './achievements-routes.js';
+import { registerLoyaltyRoutes } from './loyalty-routes.js';
 
 const PORT = Number(process.env.PORT ?? 4000);
 const DATABASE_URL = process.env.DATABASE_URL ?? 'postgres://poker:pokerpass@localhost:5432/poker';
@@ -199,7 +200,15 @@ async function main() {
     } catch (e: any) {
       console.error('[me] trophies error:', e.message);
     }
-
+    // loyalty summary (tier, xp, rakeback, vouchers, seeds)
+    let loyalty: any = null;
+    try {
+      const { LoyaltyService } = await import('./loyalty/service.js');
+      const svc = new LoyaltyService(db);
+      loyalty = await svc.getSummary(user.id);
+    } catch (e: any) {
+      console.error('[me] loyalty error:', e.message);
+    }
     return {
       user: {
         id: user.id,
@@ -215,7 +224,7 @@ async function main() {
         free_won: freeWon,
         free_hands_won: freeHandsWon,
       },
-      stats: {
+      stats: {       loyalty,
         handsWon,
         handsPlayedReal,
         totalWon,
@@ -296,6 +305,7 @@ async function main() {
   await registerSettingsRoutes(app, db);
   await registerOverviewRoutes(app, db);
   await registerAchievementsRoutes(app, db)
+  await registerLoyaltyRoutes(app, db)
 
   // 🔴 Tournament Manager
   const tournamentManager = new TournamentManager(db);

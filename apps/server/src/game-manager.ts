@@ -3,6 +3,7 @@ import type { PlayerInit } from '../../../packages/poker-engine/src/types.js';
 import { HandPersister } from './hand-persister.js';
 import { ErrorCode, type CommandResult } from './errors.js';
 import { getAchievementsService } from './achievement-service.js';
+import { LoyaltyService } from './loyalty/service.js';
 
 export interface PlayerInfo {
   userId: number;
@@ -309,7 +310,35 @@ class GameManager {
         console.error('[achievements] hand track failed:', e.message);
       }
       // ============ END ACHIEVEMENTS ============
+      // ============ LOYALTY: rakeback + XP ============
+      try {
+        if (room.mode === 'real' && !room.tournamentId && handResult.rake > 0) {
+          const loyalty = new LoyaltyService((globalThis as any).__dbPool);
+          const contributions = room.game.state.seats
+            .filter((s: any) => s.userId && !s.folded)
+            .map((s: any) => ({
+              userId: Number(s.userId),
+              contribution: Number(s.totalBet ?? 0),
+            }));
 
+          const totalPotForShare = room.game.state.seats.reduce(
+            (sum: number, s: any) => sum + Number(s.totalBet ?? 0),
+            0,
+          );
+
+          if (totalPotForShare > 0) {
+            await loyalty.payHand({
+              handId: room.currentHandId ?? 0,
+              pot: totalPotForShare,
+              totalRake: Number(handResult.rake),
+              contributions,
+            });
+          }
+        }
+      } catch (e: any) {
+        console.error('[loyalty] payHand error:', e.message);
+      }
+      // ============ END LOYALTY ============
       const playerStacks = room.game.state.seats.map((s: any) => ({
         seat: s.seat,
         userId: s.userId,
