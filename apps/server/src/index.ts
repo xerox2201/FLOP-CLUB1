@@ -148,8 +148,12 @@ async function main() {
              ) AS my_seat
            FROM hands h
            JOIN hand_snapshots hs ON hs.hand_id = h.id AND hs.sequence = 0
-           WHERE h.finished = TRUE
+                     WHERE h.finished = TRUE
              AND h.mode = 'real'
+             AND h.ended_at > COALESCE(
+               (SELECT reset_at FROM user_stats_reset WHERE user_id = $1),
+               '1970-01-01'::timestamptz
+             )
              AND EXISTS (
                SELECT 1 FROM jsonb_array_elements(hs.state->'players') p
                WHERE (p->>'userId')::bigint = $1
