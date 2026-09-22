@@ -56,15 +56,13 @@
     <div
       class="w-full max-w-sm rounded-3xl p-6 relative"
       class:shake
-      style="
-        background: linear-gradient(180deg, rgba(15,31,58,0.98), rgba(7,14,27,1));
-        border: 1.5px solid rgba(212,175,55,0.4);
-        box-shadow: 0 20px 60px rgba(0,0,0,0.9), 0 0 40px rgba(212,175,55,0.15);
-      "
+      style="..."
       on:click={(e) => e.stopPropagation()}
+      on:keydown={(e) => e.stopPropagation()}
       role="dialog"
       aria-modal="true"
       aria-label="Admin access"
+      tabindex="-1"
     >
       <div class="flex justify-center mb-4">
         <div

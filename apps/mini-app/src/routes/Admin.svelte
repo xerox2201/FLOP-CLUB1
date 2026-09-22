@@ -877,6 +877,7 @@
         </button>
         <button
           on:click={loadTournaments}
+          aria-label="Refresh tournaments"
           class="w-12 rounded-xl text-white/70 active:scale-95 flex items-center justify-center"
           style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3);"
         >
@@ -1162,7 +1163,7 @@
           class="flex-1 rounded-xl px-3 py-2.5 text-sm text-white outline-none"
           style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
         />
-        <button on:click={loadPlayers} class="px-3 rounded-xl text-white/70" style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3);">
+        <button on:click={loadPlayers} aria-label="Search players" class="px-3 rounded-xl text-white/70" style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3);">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
         </button>
       </div>
@@ -1425,7 +1426,7 @@
                 <p class="text-[12px] font-bold text-white capitalize">{key.replace(/_/g, ' ')}</p>
                 <p class="text-[9px] text-white/40 font-mono">{key}</p>
               </div>
-              <button on:click={() => toggleSetting(key)} class="w-12 h-7 rounded-full relative transition-all shrink-0" style="background: {val.value ? 'linear-gradient(180deg, #f4e5a8, #d4af37)' : 'rgba(255,255,255,0.15)'};">
+              <button on:click={() => toggleSetting(key)} aria-label="Toggle {key}" class="w-12 h-7 rounded-full relative transition-all shrink-0" style="background: {val.value ? 'linear-gradient(180deg, #f4e5a8, #d4af37)' : 'rgba(255,255,255,0.15)'};">
                 <span class="absolute top-1 w-5 h-5 rounded-full bg-white transition-all" style="left: {val.value ? '26px' : '4px'}; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></span>
               </button>
             </div>
@@ -1464,8 +1465,20 @@
 
 <!-- ============ PLAYER DETAIL MODAL ============ -->
 {#if selectedPlayer}
-  <div class="fixed inset-0 z-[100] flex items-center justify-center px-4" style="background: rgba(5,8,15,0.92); backdrop-filter: blur(8px);" on:click={closePlayer} role="presentation">
-    <div class="w-full max-w-md rounded-3xl p-5 max-h-[85vh] overflow-y-auto no-scrollbar" style="background: linear-gradient(180deg, rgba(15,31,58,0.98), rgba(7,14,27,1)); border: 1.5px solid rgba(212,175,55,0.4);" on:click={(e) => e.stopPropagation()} role="dialog">
+  <div class="fixed inset-0 z-[100] flex items-center justify-center px-4"
+       style="background: rgba(5,8,15,0.92); backdrop-filter: blur(8px);"
+       on:click={closePlayer}
+       on:keydown={(e) => (e.key === 'Escape' || e.key === 'Enter') && closePlayer()}
+       role="button"
+       tabindex="-1"
+       aria-label="Close player details">
+    <div class="w-full max-w-md rounded-3xl p-5 max-h-[85vh] overflow-y-auto no-scrollbar"
+         style="..."
+         on:click={(e) => e.stopPropagation()}
+         on:keydown={(e) => e.stopPropagation()}
+         role="dialog"
+         aria-modal="true"
+         tabindex="-1">
       {#if playerDetailLoading || !playerDetail}
         <p class="text-white/40 text-center py-8">Loading…</p>
       {:else}

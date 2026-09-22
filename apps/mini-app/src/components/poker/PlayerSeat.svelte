@@ -1,10 +1,9 @@
-<script lang="ts">
+ <script lang="ts">
   import Avatar from '../Avatar.svelte';
   import PlayingCard from '../PlayingCard.svelte';
   import TimerRing from '../TimerRing.svelte';
 
   export let player: any = {};
-  export let myUserId: number | null = null;
   export let isHero: boolean = false;
   export let isDealer: boolean = false;
   export let isTurn: boolean = false;
@@ -163,6 +162,9 @@
     <div class="pill pill-win" class:lose={isShowdownLose}>
       {isShowdownWin ? '✓ WIN' : '✗ LOSE'}
     </div>
+    {#if handName}
+      <div class="pill pill-hand">{handName}</div>
+    {/if}
     {#if payout > 0}
       <div class="pill pill-payout">+${fmt(payout)}</div>
     {/if}
@@ -312,6 +314,12 @@
   }
   .pill-win.lose {
     background: linear-gradient(135deg, #ef4444, #991b1b);
+  }
+  .pill-hand {
+    background: rgba(0, 0, 0, 0.85);
+    color: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    font-size: 7px;
   }
   .pill-fold {
     background: rgba(107, 114, 128, 0.9);

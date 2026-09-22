@@ -306,6 +306,20 @@
       style="filter: drop-shadow(0 16px 40px rgba(0,0,0,0.9)) {isFinal ? 'drop-shadow(0 0 32px rgba(212,175,55,0.4))' : ''};"
     />
 
+    <!-- ========== TOURNAMENT TITLE BADGE ========== -->
+    {#if theme === 'tournament' && tournamentTitle}
+      <div class="absolute -top-2 left-1/2 -translate-x-1/2 z-[70] pointer-events-none">
+        <div
+          class="rounded-full px-3 py-1"
+          style="background: rgba(0,0,0,0.85); border: 1px solid rgba(244,201,93,0.5); box-shadow: 0 4px 12px rgba(0,0,0,0.7);"
+        >
+          <span class="text-[9px] font-extrabold text-gold tracking-widest uppercase">
+            {tournamentTitle}
+          </span>
+        </div>
+      </div>
+    {/if}
+
     <!-- ========== WINNER ANNOUNCEMENT ========== -->
     {#if winnerPlayer && winners.length > 0}
       <div class="absolute left-1/2 -translate-x-1/2 z-[70] winner-announce pointer-events-none" style="top: 22%;">
@@ -414,7 +428,6 @@
       <div class="absolute -translate-x-1/2 -translate-y-1/2 z-[20]" style="left: {pos.x}%; top: {pos.y}%;">
         <PlayerSeat
           player={s}
-          {myUserId}
           isHero={false}
           isDealer={gameState?.dealerSeat === s.seat}
           {isTurn}
@@ -475,7 +488,6 @@
       <div class="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-[30]" style="top: {heroPos.y}%;">
         <PlayerSeat
           player={mySeat}
-          {myUserId}
           isHero={true}
           heroAvatarId={myAvatarId}
           isDealer={gameState?.dealerSeat === mySeat.seat}

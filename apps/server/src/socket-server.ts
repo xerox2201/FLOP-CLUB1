@@ -76,7 +76,12 @@ export function setupSocketServer(io: SocketIOServer, db: Pool): void {
     socket.on(
       'table:join',
       async (
-        data: { tableId: number; lastHandNo?: number; lastSequence?: number },
+        data: {
+          tableId: number;
+          lastHandNo?: number;
+          lastSequence?: number;
+          autoMuck?: boolean;
+        },
         ack?: Function,
       ) => {
         try {
@@ -123,6 +128,7 @@ export function setupSocketServer(io: SocketIOServer, db: Pool): void {
             displayName,
             socketId: socket.id,
             tableConfig: table,
+            autoMuck: data?.autoMuck,
           });
 
           socket.join(`table:${tableId}`);
@@ -324,7 +330,21 @@ export function setupSocketServer(io: SocketIOServer, db: Pool): void {
         ack?.({ ok: false, code: 'INTERNAL_ERROR', error: e.message });
       }
     });
-
+    socket.on(
+      'table:update_prefs',
+      async (data: { autoMuck?: boolean }, ack?: Function) => {
+        try {
+          const ctx = gameManager.getPlayerBySocket(socket.id);
+          if (!ctx) return ack?.({ ok: false, code: 'NOT_IN_ROOM' });
+          if (typeof data?.autoMuck === 'boolean') {
+            ctx.player.autoMuck = data.autoMuck;
+          }
+          ack?.({ ok: true });
+        } catch (e: any) {
+          ack?.({ ok: false, code: 'INTERNAL_ERROR', error: e.message });
+        }
+      },
+    );
     socket.on('disconnect', (reason) => {      lastChatAt.delete(socket.id);
       console.log(`[socket.io] disconnected: ${displayName} (${socket.id}) - ${reason}`);
       const ctx = gameManager.getPlayerBySocket(socket.id);

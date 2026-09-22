@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount } from 'svelte';
 
   export let size: number = 80;
   export let strokeWidth: number = 4;
@@ -9,11 +9,19 @@
   export let active: boolean = true;
   export let color: string = '#3b82f6';
   export let paused: boolean = false;
-  export let dangerThreshold: number = 5;  // seconds
+  export let dangerThreshold: number = 5;
   export let warningThreshold: number = 10;
 
   let now = Date.now();
   let timer: any = null;
+
+  // Sync offset with server time (client clock may drift)
+  let serverOffset = 0;
+  $: if (serverTime > 0) {
+    const clientAtReceive = Date.now();
+    // We assume serverTime was captured ~now
+    serverOffset = serverTime - clientAtReceive;
+  }
 
   onMount(() => {
     timer = setInterval(() => (now = Date.now()), 100);
@@ -22,26 +30,38 @@
     };
   });
 
-  $: elapsed = Math.max(0, (now - startedAt) / 1000);
+  // Paused = freeze elapsed at the moment pause started
+  let pausedAt: number | null = null;
+  $: if (paused && pausedAt === null) {
+    pausedAt = now;
+  } else if (!paused && pausedAt !== null) {
+    pausedAt = null;
+  }
+
+  $: effectiveNow = paused && pausedAt !== null ? pausedAt : now + serverOffset;
+  $: elapsed = Math.max(0, (effectiveNow - startedAt) / 1000);
   $: remaining = Math.max(0, limitSec - elapsed);
   $: pct = limitSec > 0 ? remaining / limitSec : 0;
 
-  // Color tiers: blue → yellow → red
-    // Color tiers: green → amber → red (standard 80/15/5 distribution)
-  $: timerColor =
-    remaining <= dangerThreshold ? '#ef4444' :     // 0-5s: red (5%)
-    remaining <= warningThreshold ? '#f59e0b' :    // 5-10s: amber (15%)
-    '#10b981';                                      // 10-30s: green (80%)
+  // If a custom color is provided, use it; otherwise use tiered color
+  $: useCustomColor = color && color !== '#3b82f6';
+  $: tieredColor =
+    remaining <= dangerThreshold
+      ? '#ef4444'
+      : remaining <= warningThreshold
+        ? '#f59e0b'
+        : '#10b981';
+  $: timerColor = useCustomColor ? color : tieredColor;
 
   $: radius = (size - strokeWidth) / 2;
   $: circumference = 2 * Math.PI * radius;
   $: dashOffset = circumference * (1 - pct);
 
   $: displaySec = Math.ceil(remaining);
-  $: isPulsing = remaining <= dangerThreshold && active && remaining > 0;
+  $: isPulsing = remaining <= dangerThreshold && active && remaining > 0 && !paused;
 </script>
 
-{#if active && remaining > 0}
+{#if active && (remaining > 0 || paused)}
   <div
     class="timer-ring"
     class:pulsing={isPulsing}
@@ -53,7 +73,6 @@
       viewBox="0 0 {size} {size}"
       style="transform: rotate(-90deg);"
     >
-      <!-- Background track -->
       <circle
         cx={size / 2}
         cy={size / 2}
@@ -63,7 +82,6 @@
         stroke-width={strokeWidth}
       />
 
-      <!-- Progress arc -->
       <circle
         cx={size / 2}
         cy={size / 2}
@@ -81,7 +99,6 @@
       />
     </svg>
 
-    <!-- Countdown number -->
     <div
       class="timer-text"
       style="

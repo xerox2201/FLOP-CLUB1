@@ -9,7 +9,6 @@
 
   export let onNavigate: (page: any) => void = () => {};
   export let onQuickSeat: (variant: string, mode: 'free' | 'real') => void = () => {};
-  export let onOpenTable: (id: number) => void = () => {};
 
   let sheetOpen = false;
   let liveTournaments: any[] = [];
@@ -226,7 +225,6 @@
           box-shadow: 0 6px 20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
         "
       >
-        <!-- Mini felt preview -->
         <div
           class="relative w-full h-[90px] flex items-center justify-center overflow-hidden"
           style="

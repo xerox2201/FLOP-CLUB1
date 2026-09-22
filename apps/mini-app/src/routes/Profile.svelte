@@ -231,14 +231,13 @@ function pickFrame(frame: string | null) {
   </div>
 
   <!-- Hidden version text (20-tap secret admin) -->
-  <p
-    class="text-center text-[8px] text-white/15 mt-8 mb-2 select-none cursor-default"
+  <button
+    type="button"
+    class="w-full text-center text-[8px] text-white/15 mt-8 mb-2 select-none cursor-default bg-transparent border-0"
     on:click={handleVersionTap}
-    on:keydown={(e) => e.key === 'Enter' && handleVersionTap()}
-    role="button"
-    tabindex="-1"
     aria-hidden="true"
+    tabindex="-1"
   >
     Flop Club v1.0.0
-  </p>
+  </button>
 </div>

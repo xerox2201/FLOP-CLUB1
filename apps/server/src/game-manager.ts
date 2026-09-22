@@ -10,6 +10,7 @@ export interface PlayerInfo {
   displayName: string;
   socketId: string;
   tournamentStack?: number;
+  autoMuck?: boolean;
 }
 
 export interface TableRoom {
@@ -262,7 +263,24 @@ class GameManager {
       if (room.mode === 'real' && !room.tournamentId) {
         room.totalRake = round2(room.totalRake + handResult.rake);
       }
-
+      // ============ AUTO-MUCK ============
+      // If a losing player has auto-muck enabled, hide their hole cards
+      // from opponents (and from showdownPlayers list).
+      if (handResult.showdownPlayers && handResult.showdownPlayers.length > 0) {
+        for (const sp of handResult.showdownPlayers) {
+          if (sp.isWinner) continue;
+          const seatData = room.game.state.seats.find(
+            (s: any) => s.seat === sp.seat,
+          );
+          if (!seatData) continue;
+          const playerInfo = room.players.get(`user_${seatData.userId}`);
+          if (playerInfo?.autoMuck) {
+            sp.hole = [];
+            seatData.revealed = false;
+          }
+        }
+      }
+      // ============ END AUTO-MUCK ============
       room.game.state.handNo = room.handCounter;
             // ============ ACHIEVEMENTS TRACKING ============
       try {
@@ -507,6 +525,7 @@ class GameManager {
     displayName: string;
     socketId: string;
     tableConfig: any;
+    autoMuck?: boolean;
   }): TableRoom {
     let room = this.rooms.get(params.tableId);
     if (!room) {
@@ -532,6 +551,7 @@ class GameManager {
       displayName: params.displayName,
       socketId: params.socketId,
       tournamentStack: existing?.tournamentStack,
+      autoMuck: params.autoMuck ?? existing?.autoMuck ?? true,
     };
 
     room.players.set(playerId, info);

@@ -55,16 +55,21 @@
   {:else}
     <ul class="event-list">
       {#each events as ev (ev.id)}
-        <li class="event-card" onclick={() => openDetail(ev)} role="button" tabindex="0"
-            onkeydown={(e) => e.key === 'Enter' && openDetail(ev)}>
-          {#if ev.image}
-            <img class="thumb" src={ev.image} alt={ev.title} />
-          {/if}
-          <div class="body">
-            <span class="title">{ev.title}</span>
-            <span class="date">{formatDate(ev.startsAt)}</span>
-          </div>
-          <div class="prize">{ev.prize.toLocaleString()} TON</div>
+        <li>
+          <button
+            type="button"
+            class="event-card w-full text-left"
+            onclick={() => openDetail(ev)}
+          >
+            {#if ev.image}
+              <img class="thumb" src={ev.image} alt={ev.title} />
+            {/if}
+            <div class="body">
+              <span class="title">{ev.title}</span>
+              <span class="date">{formatDate(ev.startsAt)}</span>
+            </div>
+            <div class="prize">{ev.prize.toLocaleString()} TON</div>
+          </button>
         </li>
       {/each}
     </ul>
@@ -72,8 +77,19 @@
 </div>
 
 {#if selected}
-  <div class="modal-backdrop" onclick={closeDetail} role="presentation">
-    <div class="modal" onclick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+  <div class="modal-backdrop">
+    <button
+      type="button"
+      class="modal-backdrop-btn"
+      onclick={closeDetail}
+      aria-label="Close modal"
+    ></button>
+    <div
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      tabindex="-1"
+    >
       <h2>{selected.title}</h2>
       <p class="modal-date">{formatDate(selected.startsAt)}</p>
       <p class="modal-desc">{selected.description}</p>
@@ -162,5 +178,16 @@
     font-weight: 600;
     border: none;
     cursor: pointer;
+  }
+    .modal-backdrop-btn {
+    position: absolute;
+    inset: 0;
+    background: transparent;
+    border: none;
+    cursor: default;
+  }
+  .modal {
+    position: relative;
+    z-index: 1;
   }
 </style>

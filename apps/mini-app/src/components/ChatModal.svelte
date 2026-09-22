@@ -190,7 +190,7 @@
                 box-shadow: 0 2px 8px rgba(0,0,0,0.5);
               "
             >
-              <Avatar avatarId={m.avatarId || 'king'} size="sm" />
+              <Avatar avatarId={m.avatarId || myAvatarId || 'king'} size="sm" />
             </div>
             <div class="max-w-[75%] {isMine ? 'items-end' : 'items-start'} flex flex-col">
               <p class="text-[9px] font-bold mb-0.5 {isMine ? 'text-right' : ''}"

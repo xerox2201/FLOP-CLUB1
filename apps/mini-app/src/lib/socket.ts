@@ -62,15 +62,17 @@ export class TableSocketIO {
   private listeners: Set<Listener> = new Set();
   private token: string;
   private tableId: number;
+  private autoMuck: boolean;
   private closedByUser = false;
 
   private lastHandNo: number = 0;
   private lastSequence: number = 0;
   private reconnectAttempt = 0;
 
-  constructor(tableId: number, token: string) {
+  constructor(tableId: number, token: string, autoMuck: boolean = true) {
     this.tableId = tableId;
     this.token = token;
+    this.autoMuck = autoMuck;
   }
 
   connect(): void {
@@ -100,6 +102,7 @@ export class TableSocketIO {
           tableId: this.tableId,
           lastHandNo: this.lastHandNo,
           lastSequence: this.lastSequence,
+          autoMuck: this.autoMuck,
         },
         (res: any) => {
           if (!res?.ok) {
@@ -204,7 +207,11 @@ export class TableSocketIO {
     if (!this.socket?.connected) return;
     this.socket.emit('table:time_bank', {}, () => {});
   }
-
+  updateAutoMuck(autoMuck: boolean): void {
+    this.autoMuck = autoMuck;
+    if (!this.socket?.connected) return;
+    this.socket.emit('table:update_prefs', { autoMuck }, () => {});
+  }
   requestResync(): void {
     if (!this.socket?.connected) return;
     this.socket.emit(

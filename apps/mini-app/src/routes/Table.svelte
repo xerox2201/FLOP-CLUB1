@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
+  import { get } from 'svelte/store';
   import PokerTable from '../components/PokerTable.svelte';
   import PokerTableMobile from '../components/poker/PokerTableMobile.svelte';
   import PlayingCard from '../components/PlayingCard.svelte';
@@ -17,14 +18,22 @@
   export let tableId: number = 1;
   export let onBack: () => void = () => {};
 
-  // ===== Layout detection (portrait / landscape mobile) =====
-  let isMobilePortrait = false;
+  // ===== Layout detection =====
+  type LayoutMode = 'mobile-portrait' | 'mobile-landscape' | 'desktop';
+  let layoutMode: LayoutMode = 'desktop';
 
   function updateLayout() {
     if (typeof window === 'undefined') return;
-    isMobilePortrait =
-      window.innerWidth < 768 &&
-      window.innerHeight > window.innerWidth;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+
+    if (w < 768 && h > w) {
+      layoutMode = 'mobile-portrait';
+    } else if (h < 520 && w > h) {
+      layoutMode = 'mobile-landscape';
+    } else {
+      layoutMode = 'desktop';
+    }
   }
 
   let socket: TableSocketIO | null = null;
@@ -45,12 +54,10 @@
   let showSeedModal = false;
   let nowTick = Date.now();
 
-  // Sound + Haptic triggers
   let lastSoundHandNo = -1;
   let lastSoundCommunityCount = 0;
   let lastSoundWinnersKey = '';
 
-  // Player info + chat
   let selectedPlayer: any = null;
   let showPlayerInfo = false;
   let showChat = false;
@@ -64,6 +71,8 @@
   let dragging = false;
   let editingCustom = false;
   let customInput = '';
+
+  $: betSliderEnabled = $preferences.betSlider;
 
   function handleSliderPointer(clientY: number) {
     if (!sliderRef) return;
@@ -212,7 +221,7 @@
       return;
     }
 
-    socket = new TableSocketIO(tableId, token);
+    socket = new TableSocketIO(tableId, token, get(preferences).autoMuck);
     socket.on((evt) => {
       if (evt.type === 'connected') {
         connected = true;
@@ -516,6 +525,13 @@
       autoActionMsg = '';
     }, 1500);
   }
+
+  // ===== Auto-Muck: sync preference to server when changed =====
+  let lastSentAutoMuck = get(preferences).autoMuck;
+  $: if (socket && $preferences.autoMuck !== lastSentAutoMuck) {
+    lastSentAutoMuck = $preferences.autoMuck;
+    socket.updateAutoMuck(lastSentAutoMuck);
+  }
 </script>
 
 <div
@@ -727,7 +743,7 @@
   {/if}
 
   <!-- POKER TABLE -->
-  {#if isMobilePortrait}
+  {#if layoutMode === 'mobile-portrait'}
     <PokerTableMobile
       {gameState}
       {myUserId}
@@ -747,6 +763,7 @@
       {handResult}
       {isFinalTable}
       tournamentTitle={isTournament ? 'Tournament' : ''}
+      compact={layoutMode === 'mobile-landscape'}
       onPlayerClick={openPlayerInfo}
     />
   {/if}
@@ -892,8 +909,8 @@
     </div>
   {/if}
 
-  <!-- RAISE POPUP PANEL -->
-  {#if showRaisePanel && isMyTurn && !sittingOut}
+  <!-- RAISE POPUP PANEL (with slider) -->
+  {#if showRaisePanel && isMyTurn && !sittingOut && betSliderEnabled}
     <div
       class="absolute z-[36] pointer-events-none"
       style="
@@ -929,7 +946,6 @@
 
           {#if editingCustom}
             <input
-              id="custom-amount-input"
               type="text"
               inputmode="decimal"
               bind:value={customInput}
@@ -972,7 +988,6 @@
         </div>
 
         <!-- RIGHT: Vertical slider -->
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           bind:this={sliderRef}
           role="slider"
@@ -1054,6 +1069,104 @@
     </div>
   {/if}
 
+  <!-- RAISE PANEL WITHOUT SLIDER (betSlider off) -->
+  {#if showRaisePanel && isMyTurn && !sittingOut && !betSliderEnabled}
+    <div
+      class="absolute z-[36] pointer-events-none"
+      style="
+        right: 12px;
+        bottom: calc(96px + env(safe-area-inset-bottom));
+        width: calc((min(480px, 100vw) - 40px) / 2);
+        max-width: 220px;
+      "
+    >
+      <div
+        class="rounded-xl p-2 pointer-events-auto"
+        style="background: rgba(8,13,36,0.98); border: 1.5px solid rgba(139,92,246,0.5); box-shadow: 0 -8px 32px rgba(0,0,0,0.85), 0 0 24px rgba(139,92,246,0.2);"
+      >
+        <!-- Presets grid 2x2 -->
+        <div class="grid grid-cols-2 gap-1 mb-1.5">
+          {#each presets as p}
+            <button
+              on:click={() => setRaise(p.value)}
+              class="rounded-md py-1.5 active:scale-95 transition-all px-1 overflow-hidden"
+              style="
+                background: {Math.abs(raiseAmount - p.value) < 0.01
+                  ? 'linear-gradient(180deg, rgba(139,92,246,0.7), rgba(139,92,246,0.4))'
+                  : 'linear-gradient(180deg, rgba(139,92,246,0.35), rgba(139,92,246,0.12))'};
+                border: 1px solid {Math.abs(raiseAmount - p.value) < 0.01
+                  ? 'rgba(167,139,250,0.9)'
+                  : 'rgba(139,92,246,0.4)'};
+              "
+            >
+              <div class="text-[7px] font-extrabold text-white/60 uppercase leading-none">{p.label}</div>
+              <div class="text-[10px] font-extrabold text-white tabular-nums leading-tight mt-0.5 truncate">${fmt(p.value)}</div>
+            </button>
+          {/each}
+        </div>
+
+        <!-- Custom + All-In row -->
+        <div class="flex gap-1 mb-1.5">
+          {#if editingCustom}
+            <input
+              type="text"
+              inputmode="decimal"
+              bind:value={customInput}
+              on:input={(e) => {
+                const v = parseFloat((e.target as HTMLInputElement).value);
+                if (!isNaN(v) && v > 0) setRaise(v);
+              }}
+              on:blur={() => {
+                const v = parseFloat(customInput);
+                if (!isNaN(v) && v > 0) setRaise(v);
+                editingCustom = false;
+              }}
+              on:keydown={(e) => {
+                if (e.key === 'Enter') {
+                  const v = parseFloat(customInput);
+                  if (!isNaN(v) && v > 0) setRaise(v);
+                  editingCustom = false;
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+              class="flex-1 rounded-md text-[10px] font-extrabold text-gold tabular-nums text-center outline-none"
+              style="padding: 6px 4px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(212,175,55,0.7);"
+            />
+          {:else}
+            <button
+              on:click={() => {
+                customInput = raiseAmount.toFixed(2);
+                editingCustom = true;
+              }}
+              class="flex-1 rounded-md py-1.5 active:scale-95 transition-all"
+              style="background: linear-gradient(180deg, rgba(212,175,55,0.35), rgba(212,175,55,0.12)); border: 1px solid rgba(212,175,55,0.5);"
+            >
+              <div class="text-[7px] font-extrabold text-gold/80 uppercase leading-none">CUSTOM</div>
+              <div class="text-[10px] font-extrabold text-gold tabular-nums leading-tight mt-0.5">$—</div>
+            </button>
+          {/if}
+          <button
+            on:click={allIn}
+            class="flex-1 rounded-md py-1.5 active:scale-95 transition-all"
+            style="background: linear-gradient(180deg, rgba(239,68,68,0.4), rgba(239,68,68,0.15)); border: 1px solid rgba(239,68,68,0.6);"
+          >
+            <div class="text-[7px] font-extrabold text-red-300 uppercase leading-none">ALL-IN</div>
+            <div class="text-[10px] font-extrabold text-red-200 tabular-nums leading-tight mt-0.5">${fmt(hardMax)}</div>
+          </button>
+        </div>
+
+        <!-- Current amount display -->
+        <div
+          class="rounded-md py-1.5 text-center"
+          style="background: rgba(0,0,0,0.5); border: 1px solid rgba(212,175,55,0.3);"
+        >
+          <span class="text-[8px] uppercase text-white/40 font-bold">Raise to </span>
+          <span class="text-[13px] font-extrabold text-gold tabular-nums">${fmt(raiseAmount)}</span>
+        </div>
+      </div>
+    </div>
+  {/if}
+
   <!-- ACTION BAR -->
   {#if gameState && !startingHand && !handResult && isMyTurn}
     <div
@@ -1106,6 +1219,10 @@
           {#if canRaise}
             <button
               on:click={() => {
+                if (!betSliderEnabled) {
+                  doRaise();
+                  return;
+                }
                 if (showRaisePanel) {
                   doRaise();
                   showRaisePanel = false;

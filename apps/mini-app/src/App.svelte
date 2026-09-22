@@ -156,7 +156,7 @@
         style="max-width: {currentPage === 'table' ? '100%' : 'min(520px, 100%)'};"
       >
         {#if currentPage === 'home'}
-          <Home onNavigate={navigate} onQuickSeat={quickSeat} onOpenTable={openTable} />
+          <Home onNavigate={navigate} onQuickSeat={quickSeat} />
         {:else if currentPage === 'tables'}
           {#key tablesKey}
             <Tables initialVariant={tablesVariant} initialMode={tablesMode} onOpenTable={openTable} />
