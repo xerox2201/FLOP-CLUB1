@@ -61,8 +61,8 @@ class GameManager {
   private rooms: Map<number, TableRoom> = new Map();
   private persister: HandPersister | null = null;
   private tournamentHandEndCallback:
-    | ((tournamentId: number, room: TableRoom, handResult?: any) => void | Promise<void>)
-    | null = null;
+    ((tournamentId: number, room: TableRoom, handResult?: any) => void | Promise<void>) | null =
+    null;
 
   private getPersister(): HandPersister {
     if (!this.persister) {
@@ -269,9 +269,7 @@ class GameManager {
       if (handResult.showdownPlayers && handResult.showdownPlayers.length > 0) {
         for (const sp of handResult.showdownPlayers) {
           if (sp.isWinner) continue;
-          const seatData = room.game.state.seats.find(
-            (s: any) => s.seat === sp.seat,
-          );
+          const seatData = room.game.state.seats.find((s: any) => s.seat === sp.seat);
           if (!seatData) continue;
           const playerInfo = room.players.get(`user_${seatData.userId}`);
           if (playerInfo?.autoMuck) {
@@ -282,7 +280,7 @@ class GameManager {
       }
       // ============ END AUTO-MUCK ============
       room.game.state.handNo = room.handCounter;
-            // ============ ACHIEVEMENTS TRACKING ============
+      // ============ ACHIEVEMENTS TRACKING ============
       try {
         const ach = getAchievementsService();
         if (ach) {
@@ -301,9 +299,7 @@ class GameManager {
 
             await ach.track(seatInfo.userId, 'first_win', 1);
 
-            const payout = (handResult.payouts || []).find(
-              (p: any) => p.seat === winnerSeat,
-            );
+            const payout = (handResult.payouts || []).find((p: any) => p.seat === winnerSeat);
             if (payout?.amount) {
               await ach.track(seatInfo.userId, 'big_pot', Number(payout.amount));
             }
@@ -637,7 +633,6 @@ class GameManager {
     room.busy = true;
     try {
       const players: PlayerInit[] = [];
-      let reBuysThisHand = 0;
       const REBUY_THRESHOLD = Number(process.env.REBUY_THRESHOLD ?? 0);
       const REBUY_AMOUNT = Number(process.env.REBUY_AMOUNT ?? 1000);
 
@@ -661,7 +656,6 @@ class GameManager {
             const injected = round2(REBUY_AMOUNT - stack);
             room.totalRebuy = round2(room.totalRebuy + injected);
             stack = REBUY_AMOUNT;
-            reBuysThisHand++;
           }
         }
 

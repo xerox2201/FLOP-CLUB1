@@ -89,8 +89,11 @@ export default {
     yourRank: 'رتبه شما',
   },
   events: {
-    title: 'تورنومنت‌ها',
-    noEvents: 'تورنومنتی برنامه‌ریزی نشده',
+    title: 'رویدادها',
+    loading: 'در حال بارگذاری…',
+    noEvents: 'رویدادی وجود ندارد',
+    prize: 'جایزه',
+    close: 'بستن',
     register: 'ثبت‌نام',
     viewResult: 'مشاهده نتایج',
   },

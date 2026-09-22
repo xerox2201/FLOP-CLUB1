@@ -207,6 +207,31 @@ class ApiClient {
   async listBlindStructures(): Promise<ApiResponse<{ structures: any[] }>> {
     return this.request('/api/blind-structures');
   }
+
+  // ============================================================
+  // Broadcasts / Notifications
+  // ============================================================
+  async getBroadcasts(): Promise<
+    ApiResponse<{
+      broadcasts: Array<{
+        id: number;
+        title: string;
+        message: string;
+        target: string;
+        severity: 'info' | 'warning' | 'success' | 'danger';
+        createdAt: string;
+      }>;
+    }>
+  > {
+    return this.request('/api/broadcasts');
+  }
+
+  async markBroadcastRead(id: number): Promise<ApiResponse<{ ok: boolean }>> {
+    return this.request(`/api/broadcasts/${id}/read`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+  }
 }
 
 export const api = new ApiClient(API_URL);

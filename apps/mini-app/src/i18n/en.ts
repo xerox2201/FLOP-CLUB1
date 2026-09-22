@@ -96,8 +96,11 @@ export default {
     yourRank: 'Your Rank',
   },
   events: {
-    title: 'Tournaments',
+    title: 'Events',
+    loading: 'Loading…',
     noEvents: 'No events scheduled',
+    prize: 'Prize',
+    close: 'Close',
     register: 'Register',
     viewResult: 'View Results',
   },

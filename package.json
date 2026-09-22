@@ -10,6 +10,7 @@
   "scripts": {
     "server": "npm -w apps/server run dev",
     "app": "npm -w apps/mini-app run dev",
+    "check": "npm -w apps/mini-app run check",
     "engine:test": "npm -w packages/poker-engine run test",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

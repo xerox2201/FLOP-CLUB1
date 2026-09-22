@@ -60,7 +60,9 @@
       id: 'fast',
       title: 'Fast Payouts',
       sub: 'Get your winnings quickly',
-      paths: ['M13 2L4.09 12.97a1 1 0 0 0 .78 1.63H10l-1 7.4 8.91-10.97a1 1 0 0 0-.78-1.63H12l1-7.4z'],
+      paths: [
+        'M13 2L4.09 12.97a1 1 0 0 0 .78 1.63H10l-1 7.4 8.91-10.97a1 1 0 0 0-.78-1.63H12l1-7.4z',
+      ],
     },
     {
       id: 'global',
@@ -76,10 +78,7 @@
       id: 'secure',
       title: 'Secure & Fair',
       sub: 'Trusted platform',
-      paths: [
-        'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z',
-        'M9 12l2 2 4-4',
-      ],
+      paths: ['M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z', 'M9 12l2 2 4-4'],
     },
   ];
 
@@ -88,14 +87,22 @@
       const tablesRes = await api.tables();
       if (tablesRes.ok && tablesRes.data) tables = tablesRes.data.tables || [];
       const tourneyRes = await api.listTournaments({ status: 'running' });
-      if (tourneyRes.ok && tourneyRes.data) liveTournaments = (tourneyRes.data.tournaments || []).slice(0, 3);
-    } catch (e) {}
+      if (tourneyRes.ok && tourneyRes.data)
+        liveTournaments = (tourneyRes.data.tournaments || []).slice(0, 3);
+    } catch {
+      // ignore
+    }
   }
 
-  onMount(() => { loadData(); });
+  onMount(() => {
+    loadData();
+  });
 
-  function openGame(g: typeof games[0]) {
-    if (g.id === 'tourney') { onNavigate('tournaments'); return; }
+  function openGame(g: (typeof games)[0]) {
+    if (g.id === 'tourney') {
+      onNavigate('tournaments');
+      return;
+    }
     onQuickSeat(g.id, 'free');
   }
 
@@ -124,7 +131,10 @@
       class="absolute inset-0 w-full h-full object-cover"
       draggable="false"
     />
-    <div class="absolute inset-0" style="background: linear-gradient(180deg, rgba(5,8,15,0.35) 0%, rgba(5,8,15,0.7) 50%, rgba(5,8,15,0.95) 100%);"></div>
+    <div
+      class="absolute inset-0"
+      style="background: linear-gradient(180deg, rgba(5,8,15,0.35) 0%, rgba(5,8,15,0.7) 50%, rgba(5,8,15,0.95) 100%);"
+    ></div>
 
     <!-- Content -->
     <div class="relative p-5 pt-6">
@@ -160,8 +170,16 @@
         "
       >
         <span>Play Now</span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
           <path d="M5 12h14" />
           <path d="M13 5l7 7-7 7" />
         </svg>
@@ -187,8 +205,16 @@
             border: 1px solid rgba(212,175,55,0.35);
           "
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-               stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#d4af37"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             {#each f.paths as d}
               <path {d} />
             {/each}
@@ -203,10 +229,21 @@
   <!-- ============ POPULAR GAMES ============ -->
   <div class="flex items-center justify-between mb-3 px-4">
     <h2 class="text-base font-extrabold text-white">Popular Games</h2>
-    <button on:click={() => onNavigate('tables')} class="text-[10px] font-bold text-gold active:opacity-70 flex items-center gap-1">
+    <button
+      on:click={() => onNavigate('tables')}
+      class="text-[10px] font-bold text-gold active:opacity-70 flex items-center gap-1"
+    >
       <span>See All</span>
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
-           stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <svg
+        width="10"
+        height="10"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="3"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
         <path d="M5 12h14" />
         <path d="M13 5l7 7-7 7" />
       </svg>
@@ -232,13 +269,20 @@
             border-bottom: 1px solid rgba(255,255,255,0.05);
           "
         >
-          <div class="absolute inset-0 opacity-20"
-               style="background-image: url('/bg-table-pattern.png'); background-size: 200px; background-position: center;"></div>
-          <div class="absolute inset-2 rounded-[50%]" style="border: 1px solid rgba(212,175,55,0.35);"></div>
+          <div
+            class="absolute inset-0 opacity-20"
+            style="background-image: url('/bg-table-pattern.png'); background-size: 200px; background-position: center;"
+          ></div>
+          <div
+            class="absolute inset-2 rounded-[50%]"
+            style="border: 1px solid rgba(212,175,55,0.35);"
+          ></div>
 
           <div class="flex justify-center -space-x-3 relative z-10">
             {#each g.cards as c}
-              <div style="transform: rotate({c.rot}deg); filter: drop-shadow(0 3px 6px rgba(0,0,0,0.7));">
+              <div
+                style="transform: rotate({c.rot}deg); filter: drop-shadow(0 3px 6px rgba(0,0,0,0.7));"
+              >
                 <PlayingCard rank={c.rank} suit={c.suit} size="xs" />
               </div>
             {/each}
@@ -265,10 +309,20 @@
       "
     >
       <div class="flex items-center gap-2.5">
-        <div class="w-10 h-10 rounded-xl flex items-center justify-center"
-             style="background: rgba(16,185,129,0.25); border: 1px solid rgba(16,185,129,0.5);">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-               stroke="#6ee7b7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <div
+          class="w-10 h-10 rounded-xl flex items-center justify-center"
+          style="background: rgba(16,185,129,0.25); border: 1px solid rgba(16,185,129,0.5);"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#6ee7b7"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <path d="M20 12v10H4V12" />
             <path d="M2 7h20v5H2z" />
             <path d="M12 22V7" />
@@ -277,14 +331,29 @@
           </svg>
         </div>
         <div class="text-left">
-          <p class="text-[9px] font-extrabold uppercase tracking-widest" style="color: rgba(110,231,183,0.9);">Free Chips</p>
-          <p class="text-lg font-extrabold text-white leading-tight tabular-nums">{chips.toLocaleString()}</p>
+          <p
+            class="text-[9px] font-extrabold uppercase tracking-widest"
+            style="color: rgba(110,231,183,0.9);"
+          >
+            Free Chips
+          </p>
+          <p class="text-lg font-extrabold text-white leading-tight tabular-nums">
+            {chips.toLocaleString()}
+          </p>
         </div>
       </div>
       <div class="text-right flex items-center gap-1" style="color: #6ee7b7;">
         <span class="text-[11px] font-extrabold">Play Free</span>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
           <path d="M5 12h14" />
           <path d="M13 5l7 7-7 7" />
         </svg>
@@ -299,10 +368,21 @@
         Live Tournaments
         <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
       </h2>
-      <button on:click={() => onNavigate('tournaments')} class="text-[10px] font-bold text-gold flex items-center gap-1">
+      <button
+        on:click={() => onNavigate('tournaments')}
+        class="text-[10px] font-bold text-gold flex items-center gap-1"
+      >
         <span>See All</span>
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <svg
+          width="10"
+          height="10"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
           <path d="M5 12h14" />
           <path d="M13 5l7 7-7 7" />
         </svg>
@@ -320,8 +400,10 @@
           "
         >
           <div class="flex items-center gap-2 relative">
-            <div class="w-10 h-10 rounded-xl overflow-hidden shrink-0"
-                 style="border: 1.5px solid rgba(244,201,93,0.5);">
+            <div
+              class="w-10 h-10 rounded-xl overflow-hidden shrink-0"
+              style="border: 1.5px solid rgba(244,201,93,0.5);"
+            >
               <img src="/trophy.png" alt="" class="w-full h-full object-cover" />
             </div>
             <div class="flex-1 min-w-0">
@@ -329,7 +411,9 @@
               <p class="text-[9px] text-white/50 uppercase">{t.variant} · {t.speed}</p>
             </div>
             <div class="text-right shrink-0">
-              <p class="text-[12px] font-extrabold text-emerald-400 tabular-nums">${Number(t.totalPrizePool || 0).toFixed(0)}</p>
+              <p class="text-[12px] font-extrabold text-emerald-400 tabular-nums">
+                ${Number(t.totalPrizePool || 0).toFixed(0)}
+              </p>
               <p class="text-[9px] text-white/40">prize pool</p>
             </div>
           </div>
@@ -339,4 +423,9 @@
   {/if}
 </div>
 
-<QuickSeatSheet bind:open={sheetOpen} freeChips={chips} onClose={() => (sheetOpen = false)} onConfirm={handleConfirm} />
+<QuickSeatSheet
+  bind:open={sheetOpen}
+  freeChips={chips}
+  onClose={() => (sheetOpen = false)}
+  onConfirm={handleConfirm}
+/>

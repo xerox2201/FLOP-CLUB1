@@ -1,8 +1,9 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { auth } from './stores/auth';
   import { initRealtime } from './lib/realtime';
   import { adminRequested } from './stores/admin';
+  import { startBroadcastPolling, stopBroadcastPolling } from './lib/broadcasts';
   import Login from './routes/Login.svelte';
   import Home from './routes/Home.svelte';
   import Tables from './routes/Tables.svelte';
@@ -27,9 +28,22 @@
   import Splash from './routes/Splash.svelte';
 
   type Page =
-    | 'home' | 'tables' | 'wallet' | 'profile' | 'table' | 'leaderboard'
-    | 'events' | 'tournaments' | 'tournament-detail' | 'achievements'
-    | 'my-tournaments' | 'shop' | 'notifications' | 'settings' | 'help' | 'admin';
+    | 'home'
+    | 'tables'
+    | 'wallet'
+    | 'profile'
+    | 'table'
+    | 'leaderboard'
+    | 'events'
+    | 'tournaments'
+    | 'tournament-detail'
+    | 'achievements'
+    | 'my-tournaments'
+    | 'shop'
+    | 'notifications'
+    | 'settings'
+    | 'help'
+    | 'admin';
 
   let currentPage: Page = 'home';
   let activeTableId = 1;
@@ -53,11 +67,16 @@
   $: forceSplash = $auth.loading || !splashElapsed;
 
   onMount(async () => {
-    setTimeout(() => { splashElapsed = true; }, 3000);
+    onDestroy(() => {
+      stopBroadcastPolling();
+    });
+    setTimeout(() => {
+      splashElapsed = true;
+    }, 3000);
     await auth.init();
     const token = localStorage.getItem('token');
     if (token) initRealtime(token);
-
+    if (token) startBroadcastPolling();
     // ============ SECRET ADMIN (after password prompt) ============
     adminRequested.subscribe((v) => {
       if (v) {
@@ -112,10 +131,7 @@
 </script>
 
 <!-- ============ OUTER BACKGROUND ============ -->
-<div
-  class="fixed inset-0 -z-10"
-  style="background: #05080f;"
->
+<div class="fixed inset-0 -z-10" style="background: #05080f;">
   <div
     class="absolute inset-0"
     style="
@@ -146,11 +162,7 @@
       <SideNav current={currentPage as any} onNavigate={navigate} />
     {/if}
 
-    <main
-      class="flex-1 relative min-w-0"
-      class:with-side={!hideNav}
-      style="min-height: 100dvh;"
-    >
+    <main class="flex-1 relative min-w-0" class:with-side={!hideNav} style="min-height: 100dvh;">
       <div
         class="mx-auto w-full"
         style="max-width: {currentPage === 'table' ? '100%' : 'min(520px, 100%)'};"
@@ -159,7 +171,11 @@
           <Home onNavigate={navigate} onQuickSeat={quickSeat} />
         {:else if currentPage === 'tables'}
           {#key tablesKey}
-            <Tables initialVariant={tablesVariant} initialMode={tablesMode} onOpenTable={openTable} />
+            <Tables
+              initialVariant={tablesVariant}
+              initialMode={tablesMode}
+              onOpenTable={openTable}
+            />
           {/key}
         {:else if currentPage === 'wallet'}
           <Wallet />
@@ -169,8 +185,8 @@
           <Table tableId={activeTableId} onBack={backFromTable} />
         {:else if currentPage === 'leaderboard'}
           <Leaderboard />
-       {:else if currentPage === 'events'}
-  <Events />
+        {:else if currentPage === 'events'}
+          <Events />
         {:else if currentPage === 'tournaments'}
           <Tournaments onOpenTournament={openTournament} />
         {:else if currentPage === 'tournament-detail' && activeTournamentId !== null}

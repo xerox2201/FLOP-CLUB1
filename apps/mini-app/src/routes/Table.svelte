@@ -802,7 +802,7 @@
   <ChatModal
     open={showChat}
     {myUserId}
-    myAvatarId={myAvatarId}
+    {myAvatarId}
     {socket}
     onClose={() => {
       showChat = false;
@@ -925,22 +925,31 @@
         style="background: rgba(8,13,36,0.98); border: 1.5px solid rgba(139,92,246,0.5); box-shadow: 0 -8px 32px rgba(0,0,0,0.85), 0 0 24px rgba(139,92,246,0.2);"
       >
         <!-- LEFT: Presets column + Custom -->
-        <div class="flex flex-col justify-between gap-0.5 flex-1 min-w-0" style="min-height: 200px;">
+        <div
+          class="flex flex-col justify-between gap-0.5 flex-1 min-w-0"
+          style="min-height: 200px;"
+        >
           {#each presets as p}
             <button
               on:click={() => setRaise(p.value)}
               class="rounded-md py-1 active:scale-95 transition-all px-1 overflow-hidden"
               style="
                 background: {Math.abs(raiseAmount - p.value) < 0.01
-                  ? 'linear-gradient(180deg, rgba(139,92,246,0.7), rgba(139,92,246,0.4))'
-                  : 'linear-gradient(180deg, rgba(139,92,246,0.35), rgba(139,92,246,0.12))'};
+                ? 'linear-gradient(180deg, rgba(139,92,246,0.7), rgba(139,92,246,0.4))'
+                : 'linear-gradient(180deg, rgba(139,92,246,0.35), rgba(139,92,246,0.12))'};
                 border: 1px solid {Math.abs(raiseAmount - p.value) < 0.01
-                  ? 'rgba(167,139,250,0.9)'
-                  : 'rgba(139,92,246,0.4)'};
+                ? 'rgba(167,139,250,0.9)'
+                : 'rgba(139,92,246,0.4)'};
               "
             >
-              <div class="text-[7px] font-extrabold text-white/60 uppercase leading-none">{p.label}</div>
-              <div class="text-[9px] font-extrabold text-white tabular-nums leading-tight mt-0.5 truncate">${fmt(p.value)}</div>
+              <div class="text-[7px] font-extrabold text-white/60 uppercase leading-none">
+                {p.label}
+              </div>
+              <div
+                class="text-[9px] font-extrabold text-white tabular-nums leading-tight mt-0.5 truncate"
+              >
+                ${fmt(p.value)}
+              </div>
             </button>
           {/each}
 
@@ -981,8 +990,12 @@
                 border: 1px solid rgba(212,175,55,0.5);
               "
             >
-              <div class="text-[7px] font-extrabold text-gold/80 uppercase leading-none">CUSTOM</div>
-              <div class="text-[9px] font-extrabold text-gold tabular-nums leading-tight mt-0.5">$—</div>
+              <div class="text-[7px] font-extrabold text-gold/80 uppercase leading-none">
+                CUSTOM
+              </div>
+              <div class="text-[9px] font-extrabold text-gold tabular-nums leading-tight mt-0.5">
+                $—
+              </div>
             </button>
           {/if}
         </div>
@@ -1002,10 +1015,16 @@
             (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
             handleSliderPointer(e.clientY);
           }}
-          on:pointermove={(e) => { if (dragging) handleSliderPointer(e.clientY); }}
+          on:pointermove={(e) => {
+            if (dragging) handleSliderPointer(e.clientY);
+          }}
           on:pointerup={(e) => {
             dragging = false;
-            try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
+            try {
+              (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+            } catch {
+              // ignore — pointer may already be released
+            }
           }}
           on:pointercancel={() => (dragging = false)}
         >
@@ -1013,7 +1032,11 @@
             class="absolute left-0 right-0 bottom-0 pointer-events-none"
             style="
               height: {raisePercent}%;
-              background: linear-gradient(180deg, {isAllIn ? 'rgba(239,68,68,0.35)' : 'rgba(244,201,93,0.28)'}, {isAllIn ? 'rgba(239,68,68,0.08)' : 'rgba(244,201,93,0.05)'});
+              background: linear-gradient(180deg, {isAllIn
+              ? 'rgba(239,68,68,0.35)'
+              : 'rgba(244,201,93,0.28)'}, {isAllIn
+              ? 'rgba(239,68,68,0.08)'
+              : 'rgba(244,201,93,0.05)'});
               transition: height 0.06s linear;
             "
           ></div>
@@ -1024,7 +1047,9 @@
                 class="absolute left-0 right-0 h-px"
                 style="
                   top: {(i / 4) * 100}%;
-                  background: linear-gradient(90deg, transparent, rgba(212,175,55,{isAllIn ? 0.15 : 0.35}), transparent);
+                  background: linear-gradient(90deg, transparent, rgba(212,175,55,{isAllIn
+                  ? 0.15
+                  : 0.35}), transparent);
                 "
               ></div>
             {/each}
@@ -1034,11 +1059,15 @@
             <div
               class="text-[6px] font-extrabold uppercase tracking-wider leading-none"
               style="color: {isAllIn ? '#fca5a5' : 'rgba(212,175,55,0.7)'};"
-            >ALL-IN</div>
+            >
+              ALL-IN
+            </div>
             <div
               class="text-[8px] font-extrabold tabular-nums leading-tight mt-0.5"
               style="color: {isAllIn ? '#fca5a5' : '#d4af37'};"
-            >${fmt(hardMax)}</div>
+            >
+              ${fmt(hardMax)}
+            </div>
           </div>
 
           <div
@@ -1052,16 +1081,18 @@
                 height: 26px;
                 padding: 0 5px;
                 background: {isAllIn
-                  ? 'radial-gradient(circle at 35% 30%, #fca5a5, #dc2626 50%, #7f1d1d)'
-                  : 'radial-gradient(circle at 35% 30%, #fef3c7, #d4af37 50%, #a87a15)'};
+                ? 'radial-gradient(circle at 35% 30%, #fca5a5, #dc2626 50%, #7f1d1d)'
+                : 'radial-gradient(circle at 35% 30%, #fef3c7, #d4af37 50%, #a87a15)'};
                 border: 1.5px solid {isAllIn ? 'rgba(252,165,165,0.9)' : 'rgba(255,235,170,0.85)'};
-                box-shadow: 0 2px 8px rgba(0,0,0,0.9), 0 0 14px {isAllIn ? 'rgba(239,68,68,0.7)' : 'rgba(244,201,93,0.55)'};
+                box-shadow: 0 2px 8px rgba(0,0,0,0.9), 0 0 14px {isAllIn
+                ? 'rgba(239,68,68,0.7)'
+                : 'rgba(244,201,93,0.55)'};
               "
             >
               <span
                 class="text-[8px] font-extrabold tabular-nums leading-none"
-                style="color: {isAllIn ? '#fff' : '#0a0800'};"
-              >${fmt(raiseAmount)}</span>
+                style="color: {isAllIn ? '#fff' : '#0a0800'};">${fmt(raiseAmount)}</span
+              >
             </div>
           </div>
         </div>
@@ -1092,15 +1123,21 @@
               class="rounded-md py-1.5 active:scale-95 transition-all px-1 overflow-hidden"
               style="
                 background: {Math.abs(raiseAmount - p.value) < 0.01
-                  ? 'linear-gradient(180deg, rgba(139,92,246,0.7), rgba(139,92,246,0.4))'
-                  : 'linear-gradient(180deg, rgba(139,92,246,0.35), rgba(139,92,246,0.12))'};
+                ? 'linear-gradient(180deg, rgba(139,92,246,0.7), rgba(139,92,246,0.4))'
+                : 'linear-gradient(180deg, rgba(139,92,246,0.35), rgba(139,92,246,0.12))'};
                 border: 1px solid {Math.abs(raiseAmount - p.value) < 0.01
-                  ? 'rgba(167,139,250,0.9)'
-                  : 'rgba(139,92,246,0.4)'};
+                ? 'rgba(167,139,250,0.9)'
+                : 'rgba(139,92,246,0.4)'};
               "
             >
-              <div class="text-[7px] font-extrabold text-white/60 uppercase leading-none">{p.label}</div>
-              <div class="text-[10px] font-extrabold text-white tabular-nums leading-tight mt-0.5 truncate">${fmt(p.value)}</div>
+              <div class="text-[7px] font-extrabold text-white/60 uppercase leading-none">
+                {p.label}
+              </div>
+              <div
+                class="text-[10px] font-extrabold text-white tabular-nums leading-tight mt-0.5 truncate"
+              >
+                ${fmt(p.value)}
+              </div>
             </button>
           {/each}
         </div>
@@ -1141,8 +1178,12 @@
               class="flex-1 rounded-md py-1.5 active:scale-95 transition-all"
               style="background: linear-gradient(180deg, rgba(212,175,55,0.35), rgba(212,175,55,0.12)); border: 1px solid rgba(212,175,55,0.5);"
             >
-              <div class="text-[7px] font-extrabold text-gold/80 uppercase leading-none">CUSTOM</div>
-              <div class="text-[10px] font-extrabold text-gold tabular-nums leading-tight mt-0.5">$—</div>
+              <div class="text-[7px] font-extrabold text-gold/80 uppercase leading-none">
+                CUSTOM
+              </div>
+              <div class="text-[10px] font-extrabold text-gold tabular-nums leading-tight mt-0.5">
+                $—
+              </div>
             </button>
           {/if}
           <button
@@ -1151,7 +1192,9 @@
             style="background: linear-gradient(180deg, rgba(239,68,68,0.4), rgba(239,68,68,0.15)); border: 1px solid rgba(239,68,68,0.6);"
           >
             <div class="text-[7px] font-extrabold text-red-300 uppercase leading-none">ALL-IN</div>
-            <div class="text-[10px] font-extrabold text-red-200 tabular-nums leading-tight mt-0.5">${fmt(hardMax)}</div>
+            <div class="text-[10px] font-extrabold text-red-200 tabular-nums leading-tight mt-0.5">
+              ${fmt(hardMax)}
+            </div>
           </button>
         </div>
 
@@ -1180,14 +1223,18 @@
               on:click={useTimeBank}
               class="rounded-full px-4 py-1.5 text-[11px] font-bold text-gold active:scale-95"
               style="background: rgba(0,0,0,0.85); border: 1px solid rgba(244,201,93,0.5); backdrop-filter: blur(10px);"
-            >⏱️ Use Time Bank</button>
+              >⏱️ Use Time Bank</button
+            >
           </div>
         {/if}
 
         <div class="flex gap-2">
           <!-- FOLD -->
           <button
-            on:click={() => { doAction('FOLD'); showRaisePanel = false; }}
+            on:click={() => {
+              doAction('FOLD');
+              showRaisePanel = false;
+            }}
             class="flex-1 rounded-xl py-4 active:scale-[0.97] transition-all"
             style="background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%); box-shadow: 0 4px 0 #7f1d1d, 0 6px 14px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.2);"
           >
@@ -1197,21 +1244,34 @@
           <!-- CHECK / CALL -->
           {#if canCheck}
             <button
-              on:click={() => { doAction('CHECK'); showRaisePanel = false; }}
+              on:click={() => {
+                doAction('CHECK');
+                showRaisePanel = false;
+              }}
               class="flex-1 rounded-xl py-4 active:scale-[0.97] transition-all"
               style="background: linear-gradient(180deg, #22c55e 0%, #15803d 100%); box-shadow: 0 4px 0 #14532d, 0 6px 14px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.2);"
             >
-              <span class="text-[15px] font-extrabold text-white uppercase tracking-wider">CHECK</span>
+              <span class="text-[15px] font-extrabold text-white uppercase tracking-wider"
+                >CHECK</span
+              >
             </button>
           {:else}
             <button
-              on:click={() => { doAction('CALL'); showRaisePanel = false; }}
+              on:click={() => {
+                doAction('CALL');
+                showRaisePanel = false;
+              }}
               disabled={myStack === 0}
               class="flex-1 rounded-xl py-3 active:scale-[0.97] transition-all disabled:opacity-50"
               style="background: linear-gradient(180deg, #22c55e 0%, #15803d 100%); box-shadow: 0 4px 0 #14532d, 0 6px 14px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.2);"
             >
-              <span class="block text-[11px] font-bold text-white/90 leading-none uppercase">CALL</span>
-              <span class="block text-[16px] font-extrabold text-white leading-tight tabular-nums mt-0.5">${fmt(toCall)}</span>
+              <span class="block text-[11px] font-bold text-white/90 leading-none uppercase"
+                >CALL</span
+              >
+              <span
+                class="block text-[16px] font-extrabold text-white leading-tight tabular-nums mt-0.5"
+                >${fmt(toCall)}</span
+              >
             </button>
           {/if}
 
@@ -1231,26 +1291,39 @@
                 }
               }}
               class="flex-1 rounded-xl py-3 active:scale-[0.97] transition-all relative"
-              style="background: linear-gradient(180deg, {isAllIn ? '#ef4444 0%, #991b1b 100%' : '#3b82f6 0%, #1d4ed8 100%'}); box-shadow: 0 4px 0 {isAllIn ? '#7f1d1d' : '#1e3a8a'}, 0 6px 14px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.3);"
+              style="background: linear-gradient(180deg, {isAllIn
+                ? '#ef4444 0%, #991b1b 100%'
+                : '#3b82f6 0%, #1d4ed8 100%'}); box-shadow: 0 4px 0 {isAllIn
+                ? '#7f1d1d'
+                : '#1e3a8a'}, 0 6px 14px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.3);"
             >
               <span
                 class="absolute top-0.5 left-1/2 -translate-x-1/2 text-[8px] leading-none transition-transform"
-                style="color: rgba(255,255,255,0.7); transform: translateX(-50%) rotate({showRaisePanel ? 180 : 0}deg);"
-              >▲</span>
+                style="color: rgba(255,255,255,0.7); transform: translateX(-50%) rotate({showRaisePanel
+                  ? 180
+                  : 0}deg);">▲</span
+              >
               <span class="block text-[11px] font-bold text-white/90 leading-none uppercase">
                 {showRaisePanel ? (isAllIn ? 'ALL-IN' : 'CONFIRM') : 'RAISE'}
               </span>
-              <span class="block text-[16px] font-extrabold text-white leading-tight tabular-nums mt-0.5">
+              <span
+                class="block text-[16px] font-extrabold text-white leading-tight tabular-nums mt-0.5"
+              >
                 ${fmt(raiseAmount)}
               </span>
             </button>
           {:else if myStack > 0 && myStack <= toCall}
             <button
-              on:click={() => { allIn(); doRaise(); }}
+              on:click={() => {
+                allIn();
+                doRaise();
+              }}
               class="flex-1 rounded-xl py-4 active:scale-[0.97] transition-all"
               style="background: linear-gradient(180deg, #ef4444 0%, #991b1b 100%); box-shadow: 0 4px 0 #7f1d1d, 0 6px 14px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.2);"
             >
-              <span class="text-[15px] font-extrabold text-white uppercase tracking-wider">ALL-IN</span>
+              <span class="text-[15px] font-extrabold text-white uppercase tracking-wider"
+                >ALL-IN</span
+              >
             </button>
           {/if}
         </div>
@@ -1260,7 +1333,9 @@
           style="background: rgba(244,201,93,0.15); border: 1px solid rgba(244,201,93,0.4); backdrop-filter: blur(10px);"
         >
           <p class="text-xs font-bold text-gold">💤 Sitting Out — Auto-folding</p>
-          <button on:click={doSitIn} class="mt-2 text-[11px] text-white underline">Resume playing</button>
+          <button on:click={doSitIn} class="mt-2 text-[11px] text-white underline"
+            >Resume playing</button
+          >
         </div>
       {/if}
     </div>

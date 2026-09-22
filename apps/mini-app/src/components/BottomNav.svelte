@@ -1,5 +1,6 @@
 <script lang="ts">
   import { t } from '../i18n';
+  import { unreadCount } from '../lib/broadcasts';
 
   type Page =
     | 'home'
@@ -58,7 +59,7 @@
       {#each items as item}
         <button
           on:click={() => onNavigate(item.id)}
-          class="flex flex-col items-center gap-0.5 px-2 py-1 rounded-2xl transition-all active:scale-95 {current ===
+          class="relative flex flex-col items-center gap-0.5 px-2 py-1 rounded-2xl transition-all active:scale-95 {current ===
           item.id
             ? 'text-gold'
             : 'text-white/45'}"
@@ -77,7 +78,18 @@
           </svg>
           <span class="text-[9px] font-bold">{$t(item.key)}</span>
           {#if current === item.id}
-            <span class="w-1 h-1 rounded-full bg-gold" style="box-shadow: 0 0 6px rgba(244,201,93,0.8);"></span>
+            <span
+              class="w-1 h-1 rounded-full bg-gold"
+              style="box-shadow: 0 0 6px rgba(244,201,93,0.8);"
+            ></span>
+          {/if}
+          {#if item.id === 'profile' && $unreadCount > 0}
+            <span
+              class="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full flex items-center justify-center text-[9px] font-extrabold"
+              style="background: linear-gradient(180deg, #ef4444, #991b1b); color: white; box-shadow: 0 0 8px rgba(239,68,68,0.8);"
+            >
+              {$unreadCount > 9 ? '9+' : $unreadCount}
+            </span>
           {/if}
         </button>
       {/each}
