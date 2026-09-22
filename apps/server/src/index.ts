@@ -124,10 +124,12 @@ async function main() {
 
     // free chips + hands
     const chipsRes = await db.query(
-      'SELECT chips, total_hands FROM free_chips WHERE user_id = $1',
+      'SELECT chips, total_hands, free_won, free_hands_won FROM free_chips WHERE user_id = $1',
       [user.id],
     );
     const totalHands = Number(chipsRes.rows[0]?.total_hands ?? 0);
+    const freeWon = Number(chipsRes.rows[0]?.free_won ?? 0);
+    const freeHandsWon = Number(chipsRes.rows[0]?.free_hands_won ?? 0);
 
     // stats: hands won + total winnings on REAL money tables only
     let handsWon = 0;
@@ -209,13 +211,17 @@ async function main() {
       free_chips: {
         chips: Number(chipsRes.rows[0]?.chips ?? 0),
         total_hands: totalHands,
+        free_hands: totalHands,
+        free_won: freeWon,
+        free_hands_won: freeHandsWon,
       },
       stats: {
-        handsWon,        // real-money wins only
-        handsPlayedReal, // real-money hands played
-        totalWon,        // USD won on real tables
-        totalHands,      // all hands (free + real)
+        handsWon,
+        handsPlayedReal,
+        totalWon,
+        totalHands,
         trophies,
+        real_hands: handsPlayedReal,
       },
     };
   });

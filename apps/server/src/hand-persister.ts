@@ -153,7 +153,7 @@ export class HandPersister {
     }
   }
 
-  private async persistFreeChips(
+    private async persistFreeChips(
     stacks: Array<{ seat: number; userId: number; stack: number }>,
   ): Promise<void> {
     for (const s of stacks) {
@@ -166,10 +166,25 @@ export class HandPersister {
         const delta = newBalance - oldBalance;
 
         if (delta !== 0) {
-          await this.db.query(
-            'UPDATE free_chips SET chips = $1, total_hands = total_hands + 1 WHERE user_id = $2',
-            [newBalance, s.userId],
-          );
+          if (delta > 0) {
+            await this.db.query(
+              `UPDATE free_chips
+               SET chips = $1,
+                   total_hands = total_hands + 1,
+                   free_won = free_won + $2,
+                   free_hands_won = free_hands_won + 1
+               WHERE user_id = $3`,
+              [newBalance, delta, s.userId],
+            );
+          } else {
+            await this.db.query(
+              `UPDATE free_chips
+               SET chips = $1,
+                   total_hands = total_hands + 1
+               WHERE user_id = $2`,
+              [newBalance, s.userId],
+            );
+          }
           await this.db.query(
             `INSERT INTO play_money_log (user_id, delta, reason, balance_after)
              VALUES ($1, $2, $3, $4)`,
@@ -182,7 +197,10 @@ export class HandPersister {
           );
         }
       } catch (e: any) {
-        console.error(`[hand-persister] persistFreeChips user ${s.userId} failed:`, e.message);
+        console.error(
+          `[hand-persister] persistFreeChips user ${s.userId} failed:`,
+          e.message,
+        );
       }
     }
   }

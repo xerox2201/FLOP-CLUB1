@@ -18,10 +18,18 @@ export interface UserStats {
   trophies: number;
 }
 
+export interface FreeChips {
+  chips: string;
+  total_hands: number;
+  free_hands?: number;
+  free_won?: number;
+  free_hands_won?: number;
+}
+
 export interface AuthState {
   user: User | null;
   wallet: { balance_usd: string; locked_usd: string } | null;
-  freeChips: { chips: string; total_hands: number } | null;
+  freeChips: FreeChips | null;
   stats: UserStats | null;
   token: string | null;
   loading: boolean;
