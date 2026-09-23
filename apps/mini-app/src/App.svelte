@@ -30,6 +30,7 @@
   import Splash from './routes/Splash.svelte';
   import TableSwitcher from './components/TableSwitcher.svelte';
   import TurnAlert from './components/TurnAlert.svelte';
+import { startServerTimeSync } from './lib/serverTime';
 
   type Page =
     | 'home'
@@ -82,6 +83,7 @@
       splashElapsed = true;
     }, 3000);
     await auth.init();
+    startServerTimeSync();
     const token = localStorage.getItem('token');
     if (token) initRealtime(token);
     if (token) startBroadcastPolling();

@@ -10,6 +10,7 @@
 import SeedClaimModal from '../components/SeedClaimModal.svelte';
 import XPConvertModal from '../components/XPConvertModal.svelte';
 import DailyRefillButton from '../components/DailyRefillButton.svelte';
+import WorldClock from '../components/WorldClock.svelte';
 
   export let onNavigate: (page: any) => void = () => {};
 
@@ -250,7 +251,7 @@ let showXpConvert = false;
       </div>
     </div>
   </div>
-
+<WorldClock />
   <!-- REAL MONEY -->
   <div
     class="mx-4 rounded-3xl mb-3 overflow-hidden"
@@ -528,7 +529,7 @@ let showXpConvert = false;
 
   <!-- ACCOUNT MENU -->
   <h2 class="text-[10px] uppercase tracking-widest text-white/40 font-extrabold mb-2 px-5 mt-5">Account</h2>
-  <div class="mx-4 rounded-2xl overflow-hidden mb-4" style="background: linear-gradient(180deg, rgba(15,31,58,0.7), rgba(7,14,27,0.9)); border: 1px solid rgba(212,175,55,0.15);">
+  <div class="mx-4 rounded-2xl overflow-hidden mb-4" style="background: linear-gradient(180deg, rgba(15,31,58,0.7), rgba(7,14,27,0.9)); border: 1px solid rgba(212,175,55,0.15);">hero
     {#each ACCOUNT_MENU as item, i}
       <button on:click={() => onNavigate(item.page)} class="w-full flex items-center gap-3 px-4 py-3 text-left active:bg-white/5 transition" style="border-bottom: {i < ACCOUNT_MENU.length - 1 ? '1px solid rgba(212,175,55,0.08)' : 'none'};">
         <div class="w-9 h-9 rounded-xl flex items-center justify-center text-base shrink-0" style="background: rgba(212,175,55,0.08); border: 1px solid rgba(212,175,55,0.15);">{item.icon}</div>
