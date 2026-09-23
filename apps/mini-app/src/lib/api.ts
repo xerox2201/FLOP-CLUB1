@@ -64,10 +64,12 @@ class ApiClient {
     });
   }
 
+
   async me(): Promise<ApiResponse<{ user: any; wallet: any; free_chips: any }>> {
     return this.request('/api/me');
   }
 
+  
   async updateAvatar(avatarId: string): Promise<ApiResponse<{ ok: boolean; avatar_id: string }>> {
     return this.request('/api/me/avatar', {
       method: 'POST',

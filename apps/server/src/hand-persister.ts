@@ -205,7 +205,7 @@ export class HandPersister {
     }
   }
 
-  private async persistRealMoney(
+    private async persistRealMoney(
     stacks: Array<{ seat: number; userId: number; stack: number }>,
   ): Promise<void> {
     for (const s of stacks) {
@@ -213,6 +213,13 @@ export class HandPersister {
         await this.db.query(
           `UPDATE wallets SET balance_usd = $1, updated_at = NOW() WHERE user_id = $2`,
           [s.stack, s.userId],
+        );
+        // Decrement bonus pending counters
+        await this.db.query(
+          `UPDATE users
+           SET bonus_real_hands_pending = GREATEST(0, bonus_real_hands_pending - 1)
+           WHERE id = $1`,
+          [s.userId],
         );
       } catch (e: any) {
         console.error(`[hand-persister] persistRealMoney user ${s.userId} failed:`, e.message);

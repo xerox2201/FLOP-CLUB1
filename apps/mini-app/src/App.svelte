@@ -21,14 +21,15 @@
   import HelpCenter from './routes/HelpCenter.svelte';
   import Admin from './routes/Admin.svelte';
   import MyTournaments from './routes/MyTournaments.svelte';
+  import Loyalty from './routes/Loyalty.svelte';
+  import RewardsHistory from './routes/RewardsHistory.svelte';
   import SideNav from './components/SideNav.svelte';
   import BottomNav from './components/BottomNav.svelte';
   import ToastStack from './components/ToastStack.svelte';
   import AdminPrompt from './components/AdminPrompt.svelte';
   import Splash from './routes/Splash.svelte';
   import TableSwitcher from './components/TableSwitcher.svelte';
-import TurnAlert from './components/TurnAlert.svelte';
-import { activeTables } from './lib/activeTables';
+  import TurnAlert from './components/TurnAlert.svelte';
 
   type Page =
     | 'home'
@@ -46,7 +47,9 @@ import { activeTables } from './lib/activeTables';
     | 'notifications'
     | 'settings'
     | 'help'
-    | 'admin';
+    | 'admin'
+    | 'loyalty'
+    | 'rewards-history';
 
   let currentPage: Page = 'home';
   let activeTableId = 1;
@@ -64,7 +67,9 @@ import { activeTables } from './lib/activeTables';
     currentPage === 'notifications' ||
     currentPage === 'settings' ||
     currentPage === 'help' ||
-    currentPage === 'admin';
+    currentPage === 'admin' ||
+    currentPage === 'loyalty' ||
+    currentPage === 'rewards-history';
 
   let splashElapsed = false;
   $: forceSplash = $auth.loading || !splashElapsed;
@@ -80,7 +85,6 @@ import { activeTables } from './lib/activeTables';
     const token = localStorage.getItem('token');
     if (token) initRealtime(token);
     if (token) startBroadcastPolling();
-    // ============ SECRET ADMIN (after password prompt) ============
     adminRequested.subscribe((v) => {
       if (v) {
         currentPage = 'admin';
@@ -133,53 +137,15 @@ import { activeTables } from './lib/activeTables';
   }
 
   function switchTable(id: number) {
-  activeTableId = id;
-  currentPage = 'table';
-  window.scrollTo({ top: 0 });
-}
+    activeTableId = id;
+    currentPage = 'table';
+    window.scrollTo({ top: 0 });
+  }
 
-function goToTablesToAdd() {
-  navigate('tables');
-}
+  function goToTablesToAdd() {
+    navigate('tables');
+  }
 </script>
-
-<!-- ============ OUTER BACKGROUND ============ -->
-<div class="fixed inset-0 -z-10" style="background: #05080f;">
-  <div
-    class="absolute inset-0"
-    style="
-      background-image: url('/bg-pattern.png');
-      background-size: 600px auto;
-      background-repeat: repeat;
-      opacity: 0.35;
-    "
-  ></div>
-  <div
-    class="absolute inset-0"
-    style="
-      background:
-        radial-gradient(ellipse at 50% -10%, rgba(30,58,138,0.5) 0%, transparent 55%),
-        radial-gradient(ellipse at 50% 110%, rgba(212,175,55,0.12) 0%, transparent 55%),
-        linear-gradient(180deg, rgba(7,14,27,0.55) 0%, rgba(5,8,15,0.9) 100%);
-    "
-  ></div>
-</div>
-
-{#if forceSplash}
-  <Splash />
-{:else if !$auth.user}
-  <Login />
-{:else}
-  <div class="relative flex" style="min-height: 100dvh;">
-    {#if !hideNav}
-      <SideNav current={currentPage as any} onNavigate={navigate} />
-    {/if}
-
-    <main class="flex-1 relative min-w-0" class:with-side={!hideNav} style="min-height: 100dvh;">
-      <div
-        class="mx-auto w-full"
-        style="max-width: {currentPage === 'table' ? '100%' : 'min(520px, 100%)'};"
-      >
         {#if currentPage === 'home'}
           <Home onNavigate={navigate} onQuickSeat={quickSeat} />
         {:else if currentPage === 'tables'}
@@ -219,6 +185,10 @@ function goToTablesToAdd() {
             onBack={() => navigate('tournaments')}
             onOpenTable={openTournamentTable}
           />
+        {:else if currentPage === 'loyalty'}
+          <Loyalty onBack={() => navigate('profile')} />
+        {:else if currentPage === 'rewards-history'}
+          <RewardsHistory onBack={() => navigate('profile')} />
         {:else if currentPage === 'achievements'}
           <Achievements onBack={() => navigate('profile')} />
         {:else if currentPage === 'my-tournaments'}
@@ -234,33 +204,3 @@ function goToTablesToAdd() {
         {:else if currentPage === 'admin'}
           <Admin onBack={() => navigate('profile')} />
         {/if}
-      </div>
-    </main>
-
-    {#if !hideNav}
-      <BottomNav current={currentPage as any} onNavigate={navigate} />
-    {/if}
-
-    <ToastStack />
-  </div>
-  <TurnAlert
-  currentTableId={currentPage === 'table' ? activeTableId : null}
-  onGo={switchTable}
-/>
-{/if}
-
-<!-- Admin password prompt (global) -->
-<AdminPrompt />
-
-<style>
-  @media (min-width: 1024px) {
-    :global(main.with-side) {
-      margin-left: 240px;
-    }
-  }
-  @media (max-width: 1023px) {
-    :global(main.with-side) {
-      padding-bottom: 90px;
-    }
-  }
-</style>

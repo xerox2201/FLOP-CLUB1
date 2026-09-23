@@ -185,6 +185,15 @@ export class LoyaltyService {
           [c.userId, newTierDef.name, newLifetimeRake],
         );
 
+        // 4b. Decrement bonus pending counters
+        await client.query(
+          `UPDATE users
+           SET bonus_playthrough_pending = GREATEST(0, bonus_playthrough_pending - $1),
+               bonus_rake_pending = GREATEST(0, bonus_rake_pending - $2)
+           WHERE id = $3`,
+          [c.contribution, rakeShare, c.userId],
+        );
+
         // 5. Voucher progress
         await client.query(
           `UPDATE vouchers
@@ -227,6 +236,15 @@ export class LoyaltyService {
                 `UPDATE vouchers SET used = TRUE, used_at = NOW() WHERE id = $1`,
                 [v.id],
               );
+              await client.query(
+                `UPDATE users
+                 SET bonus_playthrough_pending = bonus_playthrough_pending + $1,
+                     bonus_rake_pending = bonus_rake_pending + 15,
+                     bonus_real_hands_pending = bonus_real_hands_pending + 150,
+                     bonus_received_at = NOW()
+                 WHERE id = $2`,
+                [amt * 10, c.userId],
+              );
             }
           }
         }
@@ -268,7 +286,6 @@ export class LoyaltyService {
   // getSummary — everything for /api/me loyalty block
   // ============================================================
   async getSummary(userId: number) {
-    // XP
     const xpRow = await this.db.query(
       'SELECT lifetime_xp, claimed_xp FROM user_xp WHERE user_id = $1',
       [userId],
@@ -278,7 +295,6 @@ export class LoyaltyService {
     const availableXp = Math.max(0, lifetimeXp - claimedXp);
     const levelInfo = levelFromLifetimeXP(lifetimeXp);
 
-    // Tier
     const tierRow = await this.db.query(
       'SELECT tier, lifetime_rake FROM user_tier WHERE user_id = $1',
       [userId],
@@ -296,14 +312,12 @@ export class LoyaltyService {
           : 0;
     }
 
-    // Rakeback earned lifetime
     const rbRow = await this.db.query(
       'SELECT COALESCE(SUM(amount), 0)::numeric AS total FROM rakeback_log WHERE user_id = $1',
       [userId],
     );
     const rakebackEarned = Number(rbRow.rows[0]?.total ?? 0);
 
-    // Vouchers
     const vRows = await this.db.query(
       `SELECT id, amount, min_rake, current_rake, used, expires_at
        FROM vouchers
@@ -329,7 +343,6 @@ export class LoyaltyService {
       };
     });
 
-    // Free stats for seed eligibility
     const fc = await this.db.query(
       'SELECT total_hands, free_hands_won FROM free_chips WHERE user_id = $1',
       [userId],
@@ -337,7 +350,6 @@ export class LoyaltyService {
     const freeHands = Number(fc.rows[0]?.total_hands ?? 0);
     const freeWins = Number(fc.rows[0]?.free_hands_won ?? 0);
 
-    // Seeds — claimed status
     const sRows = await this.db.query(
       'SELECT seed_type, claimed, claimed_at FROM seeds WHERE user_id = $1',
       [userId],
@@ -451,6 +463,21 @@ export class LoyaltyService {
       [userId, type, def.amount],
     );
 
+    await this.db.query(
+      `UPDATE users
+       SET bonus_playthrough_pending = bonus_playthrough_pending + $1,
+           bonus_rake_pending = bonus_rake_pending + $2,
+           bonus_real_hands_pending = bonus_real_hands_pending + $3,
+           bonus_received_at = NOW()
+       WHERE id = $4`,
+      [
+        def.amount * def.playthroughMultiplier,
+        def.minRakeAfter,
+        def.minRealHandsAfter,
+        userId,
+      ],
+    );
+
     return { ok: true, amount: def.amount };
   }
 
@@ -484,7 +511,6 @@ export class LoyaltyService {
 
     if (available < xp) return { ok: false, error: 'insufficient_xp' };
 
-    // 24h cooldown
     const recent = await this.db.query(
       `SELECT created_at FROM xp_transactions
        WHERE user_id = $1 AND source = 'claim'
@@ -500,7 +526,6 @@ export class LoyaltyService {
       }
     }
 
-    // Monthly cap (rolling 30d)
     const monthly = await this.db.query(
       `SELECT COALESCE(SUM(ABS(amount)), 0)::bigint AS total
        FROM xp_transactions

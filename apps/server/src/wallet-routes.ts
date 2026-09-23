@@ -148,7 +148,36 @@ export async function registerWalletRoutes(app: FastifyInstance, db: Pool): Prom
             required: amountUsd,
           });
         }
-
+        // Bonus conditions check
+        const u = await db.query(
+          `SELECT bonus_playthrough_pending, bonus_rake_pending, bonus_real_hands_pending, bonus_received_at
+           FROM users WHERE id = $1`,
+          [userId],
+        );
+        const pending = u.rows[0];
+        if (
+          Number(pending?.bonus_playthrough_pending ?? 0) > 0 ||
+          Number(pending?.bonus_rake_pending ?? 0) > 0 ||
+          Number(pending?.bonus_real_hands_pending ?? 0) > 0
+        ) {
+          return reply.code(400).send({
+            error: 'bonus_conditions_not_met',
+            conditions: {
+              playthroughRemaining: Number(pending.bonus_playthrough_pending ?? 0),
+              rakeRemaining: Number(pending.bonus_rake_pending ?? 0),
+              handsRemaining: Number(pending.bonus_real_hands_pending ?? 0),
+            },
+          });
+        }
+        if (pending?.bonus_received_at) {
+          const daysSince = (Date.now() - new Date(pending.bonus_received_at).getTime()) / 86400000;
+          if (daysSince < 14) {
+            return reply.code(400).send({
+              error: 'bonus_wait_period',
+              daysRemaining: Math.ceil(14 - daysSince),
+            });
+          }
+        }
         const escrowAcc = await ledger.getAccountId('SYSTEM_ESCROW');
         if (!escrowAcc) return reply.code(500).send({ error: 'escrow_not_found' });
 
@@ -207,6 +236,7 @@ export async function registerWalletRoutes(app: FastifyInstance, db: Pool): Prom
                   { accountId: userAcc, amount: amountUsd },
                 ],
                 idempotencyKey: `wd_refund_${txId}`,
+                
               });
             }
           }

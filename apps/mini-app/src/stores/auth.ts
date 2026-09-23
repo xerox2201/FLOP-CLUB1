@@ -26,11 +26,59 @@ export interface FreeChips {
   free_hands_won?: number;
 }
 
+export interface LoyaltyVoucher {
+  id: number;
+  amount: number;
+  minRake: number;
+  currentRake: number;
+  used: boolean;
+  expiresAt: string;
+  progressPct: number;
+}
+
+export interface LoyaltySeed {
+  type: 'bronze' | 'silver' | 'gold' | 'platinum';
+  label: string;
+  icon: string;
+  amount: number;
+  claimed: boolean;
+  claimedAt: string | null;
+  eligible: boolean;
+  progress: {
+    freeHands: number;
+    freeWins: number;
+    minFreeHands: number;
+    minFreeWins: number;
+  };
+}
+
+export interface Loyalty {
+  lifetimeXp: number;
+  claimedXp: number;
+  availableXp: number;
+  level: number;
+  xpIntoLevel: number;
+  xpForNextLevel: number;
+  tier: 'welcome' | 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
+  tierLabel: string;
+  tierIcon: string;
+  tierColor: string;
+  lifetimeRake: number;
+  rakebackPct: number;
+  nextTier: { name: string; label: string; minRake: number } | null;
+  progressToNextTier: number;
+  rakePaidLifetime: number;
+  rakebackEarned: number;
+  vouchers: LoyaltyVoucher[];
+  seeds: LoyaltySeed[];
+}
+
 export interface AuthState {
   user: User | null;
   wallet: { balance_usd: string; locked_usd: string } | null;
   freeChips: FreeChips | null;
   stats: UserStats | null;
+  loyalty: Loyalty | null;
   token: string | null;
   loading: boolean;
   error: string | null;
@@ -42,6 +90,7 @@ function createAuthStore() {
     wallet: null,
     freeChips: null,
     stats: null,
+    loyalty: null,
     token: null,
     loading: true,
     error: null,
@@ -130,6 +179,7 @@ function createAuthStore() {
           wallet: data.wallet,
           freeChips: data.free_chips,
           stats: data.stats ?? null,
+          loyalty: data.loyalty ?? null,
           loading: false,
           error: null,
         }));
@@ -147,6 +197,7 @@ function createAuthStore() {
         wallet: null,
         freeChips: null,
         stats: null,
+        loyalty: null,
         token: null,
         loading: false,
         error: null,

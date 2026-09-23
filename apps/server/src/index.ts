@@ -24,6 +24,11 @@ import { registerSettingsRoutes } from './settings-routes.js';
 import { registerOverviewRoutes } from './overview-routes.js';
 import { registerAchievementsRoutes } from './achievements-routes.js';
 import { registerLoyaltyRoutes } from './loyalty-routes.js';
+import { registerShopRoutes } from './shop-routes.js';
+// ...
+import { registerDailyRefillRoutes } from './daily-refill-routes.js';
+// ...
+
 
 const PORT = Number(process.env.PORT ?? 4000);
 const DATABASE_URL = process.env.DATABASE_URL ?? 'postgres://poker:pokerpass@localhost:5432/poker';
@@ -306,6 +311,8 @@ async function main() {
   await registerOverviewRoutes(app, db);
   await registerAchievementsRoutes(app, db)
   await registerLoyaltyRoutes(app, db)
+  await registerShopRoutes(app, db);
+  await registerDailyRefillRoutes(app, db);
 
   // 🔴 Tournament Manager
   const tournamentManager = new TournamentManager(db);

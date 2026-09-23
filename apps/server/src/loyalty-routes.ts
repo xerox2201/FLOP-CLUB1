@@ -16,7 +16,9 @@ function authUser(req: any): number | null {
 export async function registerLoyaltyRoutes(app: FastifyInstance, db: Pool) {
   const svc = new LoyaltyService(db);
 
-  // GET /api/me/loyalty
+  // ============================================================
+  // GET /api/me/loyalty — full loyalty summary
+  // ============================================================
   app.get('/api/me/loyalty', async (req, reply) => {
     const userId = authUser(req);
     if (!userId) return reply.code(401).send({ error: 'notoken' });
@@ -24,7 +26,9 @@ export async function registerLoyaltyRoutes(app: FastifyInstance, db: Pool) {
     return summary;
   });
 
-  // POST /api/seeds/claim
+  // ============================================================
+  // POST /api/seeds/claim — { type }
+  // ============================================================
   app.post<{ Body: { type: SeedType } }>(
     '/api/seeds/claim',
     async (req, reply) => {
@@ -38,7 +42,9 @@ export async function registerLoyaltyRoutes(app: FastifyInstance, db: Pool) {
     },
   );
 
-  // POST /api/xp/convert
+  // ============================================================
+  // POST /api/xp/convert — { xp }
+  // ============================================================
   app.post<{ Body: { xp: number } }>(
     '/api/xp/convert',
     async (req, reply) => {
@@ -54,7 +60,9 @@ export async function registerLoyaltyRoutes(app: FastifyInstance, db: Pool) {
     },
   );
 
+  // ============================================================
   // GET /api/shop/packs — with level-based discount
+  // ============================================================
   app.get('/api/shop/packs', async (req, reply) => {
     const userId = authUser(req);
     let level = 1;
@@ -87,5 +95,20 @@ export async function registerLoyaltyRoutes(app: FastifyInstance, db: Pool) {
           Math.round(p.priceTon * (1 - discount) * 1000) / 1000,
       })),
     };
+  });
+
+  // ============================================================
+  // GET /api/xp/history — recent XP transactions
+  // ============================================================
+  app.get('/api/xp/history', async (req, reply) => {
+    const userId = authUser(req);
+    if (!userId) return reply.code(401).send({ error: 'notoken' });
+    const res = await db.query(
+      `SELECT id, amount, source, ref_id, meta, created_at
+       FROM xp_transactions WHERE user_id = $1
+       ORDER BY created_at DESC LIMIT 100`,
+      [userId],
+    );
+    return { transactions: res.rows };
   });
 }
