@@ -146,6 +146,44 @@
     navigate('tables');
   }
 </script>
+
+<!-- ============ OUTER BACKGROUND ============ -->
+<div class="fixed inset-0 -z-10" style="background: #05080f;">
+  <div
+    class="absolute inset-0"
+    style="
+      background-image: url('/bg-pattern.png');
+      background-size: 600px auto;
+      background-repeat: repeat;
+      opacity: 0.35;
+    "
+  ></div>
+  <div
+    class="absolute inset-0"
+    style="
+      background:
+        radial-gradient(ellipse at 50% -10%, rgba(30,58,138,0.5) 0%, transparent 55%),
+        radial-gradient(ellipse at 50% 110%, rgba(212,175,55,0.12) 0%, transparent 55%),
+        linear-gradient(180deg, rgba(7,14,27,0.55) 0%, rgba(5,8,15,0.9) 100%);
+    "
+  ></div>
+</div>
+
+{#if forceSplash}
+  <Splash />
+{:else if !$auth.user}
+  <Login />
+{:else}
+  <div class="relative flex" style="min-height: 100dvh;">
+    {#if !hideNav}
+      <SideNav current={currentPage as any} onNavigate={navigate} />
+    {/if}
+
+    <main class="flex-1 relative min-w-0" class:with-side={!hideNav} style="min-height: 100dvh;">
+      <div
+        class="mx-auto w-full"
+        style="max-width: {currentPage === 'table' ? '100%' : 'min(520px, 100%)'};"
+      >
         {#if currentPage === 'home'}
           <Home onNavigate={navigate} onQuickSeat={quickSeat} />
         {:else if currentPage === 'tables'}
@@ -204,3 +242,34 @@
         {:else if currentPage === 'admin'}
           <Admin onBack={() => navigate('profile')} />
         {/if}
+      </div>
+    </main>
+
+    {#if !hideNav}
+      <BottomNav current={currentPage as any} onNavigate={navigate} />
+    {/if}
+
+    <ToastStack />
+  </div>
+
+  <TurnAlert
+    currentTableId={currentPage === 'table' ? activeTableId : null}
+    onGo={switchTable}
+  />
+{/if}
+
+<!-- Admin password prompt (global) -->
+<AdminPrompt />
+
+<style>
+  @media (min-width: 1024px) {
+    :global(main.with-side) {
+      margin-left: 240px;
+    }
+  }
+  @media (max-width: 1023px) {
+    :global(main.with-side) {
+      padding-bottom: 90px;
+    }
+  }
+</style>
