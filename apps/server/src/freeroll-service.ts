@@ -13,6 +13,8 @@ export interface FreerollConfig {
   variant: string;
   blind_structure_id: number | null;
   min_prize_usd: string;
+  launch_grace_until: string | null;
+  grace_min_prize_usd: string;
   updated_at: string;
 }
 
@@ -37,6 +39,8 @@ export class FreerollService {
       'variant',
       'blind_structure_id',
       'min_prize_usd',
+      'launch_grace_until',
+      'grace_min_prize_usd',
     ];
     const sets: string[] = [];
     const vals: any[] = [];
@@ -129,15 +133,24 @@ export class FreerollService {
     const to = new Date();
     const from = new Date(to.getTime() - 24 * 60 * 60 * 1000);
     const net = await this.calculateNetRevenueUsd(from, to);
-    const prize = Math.max(0, Math.ceil(net));
-    const minPrize = Number(cfg.min_prize_usd);
 
-    if (prize < minPrize) {
-      console.log(
-        `[freeroll] skip: net=$${net.toFixed(2)} -> prize=$${prize} < min=$${minPrize}`,
-      );
-      return null;
-    }
+    // Determine effective min prize (launch grace vs normal)
+    const now = new Date();
+    const graceUntil = cfg.launch_grace_until
+      ? new Date(cfg.launch_grace_until)
+      : new Date(0);
+    const inGrace = now.getTime() < graceUntil.getTime();
+
+    const minPrize = inGrace
+      ? Number(cfg.grace_min_prize_usd)
+      : Number(cfg.min_prize_usd);
+
+    // prize = max(minPrize, ceil(net))
+    const prize = Math.max(minPrize, Math.ceil(net));
+
+    console.log(
+      `[freeroll] net=$${net.toFixed(2)} grace=${inGrace} min=$${minPrize} -> prize=$${prize}`,
+    );
 
     // Blind structure (Turbo MTT fallback)
     let blindId = cfg.blind_structure_id ? Number(cfg.blind_structure_id) : 0;

@@ -321,47 +321,130 @@
   {/if}
 
   <!-- WITHDRAW -->
-  {#if activeTab === 'withdraw'}
+   {#if activeTab === 'withdraw'}
     <div class="mx-4 space-y-3">
       {#if !withdrawStatus}
         <p class="text-center text-white/40 py-8">Loading withdraw status…</p>
       {:else}
-        <!-- Info panel: conditions, limits -->
-        <div class="rounded-2xl p-4 space-y-3" style="background: linear-gradient(180deg, rgba(15,31,58,0.7), rgba(11,19,36,0.9)); border: 1.5px solid rgba(212,175,55,0.25);">
-          <div class="grid grid-cols-1 gap-2">
+        <!-- Available -->
+        <div class="rounded-2xl p-4" style="background: linear-gradient(180deg, rgba(15,31,58,0.7), rgba(11,19,36,0.9)); border: 1.5px solid rgba(212,175,55,0.25);">
+          <div class="flex justify-between items-center">
             <div>
               <p class="text-[9px] text-white/40 uppercase font-bold tracking-wider mb-0.5">Available</p>
-              <p class="text-[16px] font-extrabold text-emerald-400 tabular-nums">${fmt(withdrawStatus.availableBalance)}</p>
+              <p class="text-[18px] font-extrabold text-emerald-400 tabular-nums">${fmt(withdrawStatus.availableBalance)}</p>
             </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-2 pt-2" style="border-top: 1px solid rgba(212,175,55,0.12);">
-            <div>
-              <p class="text-[9px] text-white/40 uppercase font-bold tracking-wider mb-0.5">Fee</p>
-              <p class="text-[11px] font-extrabold text-white/80 tabular-nums">{withdrawStatus.feeTon} TON</p>
-            </div>
-            <div>
-              <p class="text-[9px] text-white/40 uppercase font-bold tracking-wider mb-0.5">Min</p>
-              <p class="text-[11px] font-extrabold text-white/80 tabular-nums">{withdrawStatus.minWithdrawTon} TON</p>
+            <div class="text-right">
+              <p class="text-[9px] text-white/40 uppercase font-bold tracking-wider mb-0.5">Fee · Min</p>
+              <p class="text-[11px] font-extrabold text-white/80 tabular-nums">{withdrawStatus.feeTon} TON · {withdrawStatus.minWithdrawTon} TON</p>
             </div>
           </div>
         </div>
 
-        {#if !withdrawStatus.conditionsMet}
+        <!-- Anti-abuse checklist (first withdrawal) -->
+        {#if !withdrawStatus.antiAbuse?.alreadyUnlocked}
+          {@const a = withdrawStatus.antiAbuse}
+          {@const c = a.current}
+          {@const r = a.required}
+          <div class="rounded-2xl p-4" style="background: linear-gradient(180deg, rgba(139,92,246,0.08), rgba(7,14,27,0.95)); border: 1.5px solid rgba(139,92,246,0.4);">
+            <div class="flex items-center gap-2 mb-3">
+              <span class="text-base">🔓</span>
+              <p class="text-[11px] font-extrabold uppercase tracking-wider flex-1" style="color: #a78bfa;">First Withdrawal Unlock</p>
+            </div>
+
+            <div class="space-y-2">
+              <div class="flex items-center gap-2.5">
+                {#if a.checks.depositOk}
+                  <span class="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style="background: rgba(16,185,129,0.25); border: 1px solid #10b981;">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#6ee7b7" stroke-width="3.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5" /></svg>
+                  </span>
+                {:else}
+                  <span class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px]" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.4);">○</span>
+                {/if}
+                <div class="flex-1 min-w-0">
+                  <p class="text-[11px] font-bold" style="color: {a.checks.depositOk ? '#6ee7b7' : 'rgba(255,255,255,0.75)'};">Deposit $5+ (total)</p>
+                  <p class="text-[9px] tabular-nums" style="color: rgba(255,255,255,0.4);">${fmt(c.lifetimeDepositUsd)} / ${r.minDeposit}</p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2.5">
+                {#if a.checks.rakeOk}
+                  <span class="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style="background: rgba(16,185,129,0.25); border: 1px solid #10b981;">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#6ee7b7" stroke-width="3.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5" /></svg>
+                  </span>
+                {:else}
+                  <span class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px]" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.4);">○</span>
+                {/if}
+                <div class="flex-1 min-w-0">
+                  <p class="text-[11px] font-bold" style="color: {a.checks.rakeOk ? '#6ee7b7' : 'rgba(255,255,255,0.75)'};">Play $0.50+ rake</p>
+                  <p class="text-[9px] tabular-nums" style="color: rgba(255,255,255,0.4);">${fmt(c.lifetimeRakeUsd)} / ${r.minRake}</p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2.5">
+                {#if a.checks.handsOk}
+                  <span class="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style="background: rgba(16,185,129,0.25); border: 1px solid #10b981;">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#6ee7b7" stroke-width="3.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5" /></svg>
+                  </span>
+                {:else}
+                  <span class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px]" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.4);">○</span>
+                {/if}
+                <div class="flex-1 min-w-0">
+                  <p class="text-[11px] font-bold" style="color: {a.checks.handsOk ? '#6ee7b7' : 'rgba(255,255,255,0.75)'};">Play 20+ real hands</p>
+                  <p class="text-[9px] tabular-nums" style="color: rgba(255,255,255,0.4);">{c.realHandsPlayed} / {r.minHands}</p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2.5">
+                {#if a.checks.accountAgeOk}
+                  <span class="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style="background: rgba(16,185,129,0.25); border: 1px solid #10b981;">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#6ee7b7" stroke-width="3.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5" /></svg>
+                  </span>
+                {:else}
+                  <span class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px]" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.4);">○</span>
+                {/if}
+                <div class="flex-1 min-w-0">
+                  <p class="text-[11px] font-bold" style="color: {a.checks.accountAgeOk ? '#6ee7b7' : 'rgba(255,255,255,0.75)'};">Account age 24h+</p>
+                  <p class="text-[9px] tabular-nums" style="color: rgba(255,255,255,0.4);">{c.accountAgeHours}h / {r.minAccountAgeH}h</p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2.5">
+                {#if a.checks.depositAgeOk}
+                  <span class="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style="background: rgba(16,185,129,0.25); border: 1px solid #10b981;">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#6ee7b7" stroke-width="3.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5" /></svg>
+                  </span>
+                {:else}
+                  <span class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px]" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.4);">○</span>
+                {/if}
+                <div class="flex-1 min-w-0">
+                  <p class="text-[11px] font-bold" style="color: {a.checks.depositAgeOk ? '#6ee7b7' : 'rgba(255,255,255,0.75)'};">Deposit age 6h+</p>
+                  <p class="text-[9px] tabular-nums" style="color: rgba(255,255,255,0.4);">{c.depositAgeHours}h / {r.minDepositAgeH}h</p>
+                </div>
+              </div>
+            </div>
+
+            <p class="text-[10px] text-white/50 leading-relaxed mt-3 pt-3" style="border-top: 1px solid rgba(139,92,246,0.2);">
+              ℹ️ These conditions prevent abuse. Once met, withdrawals are unlocked forever.
+            </p>
+          </div>
+        {/if}
+
+        <!-- Bonus conditions (باقیمونده) -->
+        {#if !withdrawStatus.bonusConditionsMet}
           <div class="rounded-2xl p-3.5" style="background: rgba(245,158,11,0.12); border: 1.5px solid rgba(245,158,11,0.4);">
-            <p class="text-[11px] font-extrabold text-amber-300 mb-2">🔒 Bonus conditions not met yet</p>
+            <p class="text-[11px] font-extrabold text-amber-300 mb-2">🔒 Bonus conditions</p>
             <div class="space-y-1 text-[10px] text-amber-200/90">
               {#if withdrawStatus.conditions.playthroughRemaining > 0}
-                <p>• Playthrough: ${fmt(withdrawStatus.conditions.playthroughRemaining)} remaining on real tables</p>
+                <p>• Playthrough: ${fmt(withdrawStatus.conditions.playthroughRemaining)}</p>
               {/if}
               {#if withdrawStatus.conditions.rakeRemaining > 0}
-                <p>• Rake: ${fmt(withdrawStatus.conditions.rakeRemaining)} remaining</p>
+                <p>• Rake: ${fmt(withdrawStatus.conditions.rakeRemaining)}</p>
               {/if}
               {#if withdrawStatus.conditions.handsRemaining > 0}
-                <p>• Hands: {withdrawStatus.conditions.handsRemaining} real hands remaining</p>
+                <p>• Hands: {withdrawStatus.conditions.handsRemaining}</p>
               {/if}
               {#if withdrawStatus.conditions.waitDaysRemaining > 0}
-                <p>• Wait: {withdrawStatus.conditions.waitDaysRemaining} days remaining</p>
+                <p>• Wait: {withdrawStatus.conditions.waitDaysRemaining} days</p>
               {/if}
             </div>
           </div>
@@ -373,20 +456,14 @@
           </div>
         {/if}
 
-        <!-- Form -->
+        <!-- Withdraw form (disabled until conditions met) -->
         <div class="rounded-2xl p-4 space-y-4" style="background: linear-gradient(180deg, rgba(15,31,58,0.7), rgba(11,19,36,0.9)); border: 1px solid rgba(212,175,55,0.15);">
           <div>
             <p class="text-[10px] uppercase tracking-widest text-white/40 font-bold mb-2">To Address</p>
             <div class="flex gap-2">
-              <input
-                type="text"
-                bind:value={withdrawAddress}
-                placeholder="EQ..."
-                class="flex-1 rounded-xl p-3 text-sm text-white border outline-none font-mono"
-                style="background: rgba(0,0,0,0.4); border-color: rgba(212,175,55,0.2);"
-              />
+              <input type="text" bind:value={withdrawAddress} placeholder="EQ..." disabled={!withdrawStatus.canWithdraw} class="flex-1 rounded-xl p-3 text-sm text-white border outline-none font-mono disabled:opacity-50" style="background: rgba(0,0,0,0.4); border-color: rgba(212,175,55,0.2);" />
               {#if walletAddress}
-                <button on:click={useConnectedAddress} class="px-3 rounded-xl text-[10px] font-extrabold text-gold active:scale-95" style="background: linear-gradient(180deg, rgba(212,175,55,0.2), rgba(168,122,21,0.1)); border: 1px solid rgba(212,175,55,0.4);">USE</button>
+                <button on:click={useConnectedAddress} disabled={!withdrawStatus.canWithdraw} class="px-3 rounded-xl text-[10px] font-extrabold text-gold active:scale-95 disabled:opacity-50" style="background: linear-gradient(180deg, rgba(212,175,55,0.2), rgba(168,122,21,0.1)); border: 1px solid rgba(212,175,55,0.4);">USE</button>
               {/if}
             </div>
           </div>
@@ -394,21 +471,14 @@
           <div>
             <div class="flex items-center justify-between mb-2">
               <p class="text-[10px] uppercase tracking-widest text-white/40 font-bold">Amount (TON)</p>
-              <button on:click={setMaxWithdraw} class="text-[10px] font-extrabold text-gold active:opacity-70">MAX</button>
+              <button on:click={setMaxWithdraw} disabled={!withdrawStatus.canWithdraw} class="text-[10px] font-extrabold text-gold active:opacity-70 disabled:opacity-40">MAX</button>
             </div>
-            <input
-              type="text"
-              inputmode="decimal"
-              bind:value={withdrawAmount}
-              placeholder="0.0"
-              class="w-full rounded-xl p-3 text-2xl font-extrabold border outline-none tabular-nums"
-              style="background: rgba(0,0,0,0.4); border-color: rgba(212,175,55,0.3); color: #f4e5a8; text-shadow: 0 0 8px rgba(212,175,55,0.4);"
-            />
+            <input type="text" inputmode="decimal" bind:value={withdrawAmount} placeholder="0.0" disabled={!withdrawStatus.canWithdraw} class="w-full rounded-xl p-3 text-2xl font-extrabold border outline-none tabular-nums disabled:opacity-50" style="background: rgba(0,0,0,0.4); border-color: rgba(212,175,55,0.3); color: #f4e5a8; text-shadow: 0 0 8px rgba(212,175,55,0.4);" />
           </div>
 
           <div class="grid grid-cols-4 gap-1.5">
             {#each [0.1, 0.5, 1, 5] as v}
-              <button on:click={() => (withdrawAmount = String(v))} class="py-2 rounded-lg text-[11px] font-extrabold text-white/85 active:scale-95" style="background: linear-gradient(180deg, rgba(30,58,138,0.4), rgba(15,31,58,0.6)); border: 1px solid rgba(96,165,250,0.3);">{v}</button>
+              <button on:click={() => (withdrawAmount = String(v))} disabled={!withdrawStatus.canWithdraw} class="py-2 rounded-lg text-[11px] font-extrabold text-white/85 active:scale-95 disabled:opacity-40" style="background: linear-gradient(180deg, rgba(30,58,138,0.4), rgba(15,31,58,0.6)); border: 1px solid rgba(96,165,250,0.3);">{v}</button>
             {/each}
           </div>
 
@@ -426,18 +496,11 @@
             </div>
           {/if}
 
-          <button
-            on:click={doWithdraw}
-            disabled={withdrawing || !withdrawStatus.canWithdraw || !withdrawAmount || !withdrawAddress}
-            class="btn-gold w-full disabled:opacity-40"
-            style="padding: 14px; font-size: 14px;"
-          >
-            {withdrawing ? 'Sending…' : '⚡ Withdraw Instantly'}
+          <button on:click={doWithdraw} disabled={withdrawing || !withdrawStatus.canWithdraw || !withdrawAmount || !withdrawAddress} class="btn-gold w-full disabled:opacity-40" style="padding: 14px; font-size: 14px;">
+            {withdrawing ? 'Sending…' : withdrawStatus.canWithdraw ? '⚡ Withdraw Instantly' : '🔒 Locked'}
           </button>
 
-          <p class="text-[10px] text-white/40 text-center font-mono">
-            Automated · Instant · Flat {withdrawStatus.feeTon} TON fee
-          </p>
+          <p class="text-[10px] text-white/40 text-center font-mono">Automated · Instant · Flat {withdrawStatus.feeTon} TON fee</p>
         </div>
       {/if}
     </div>

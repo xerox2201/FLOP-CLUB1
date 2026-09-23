@@ -115,12 +115,86 @@ export async function registerWalletRoutes(app: FastifyInstance, db: Pool): Prom
         const daysSince = (Date.now() - new Date(p.bonus_received_at).getTime()) / 86400000;
         waitDaysRemaining = Math.max(0, Math.ceil(14 - daysSince));
       }
+      // First-withdrawal anti-abuse conditions
+      const firstWd = await db.query(
+        `SELECT
+           u.first_withdrawal_unlocked,
+           u.created_at AS account_created,
+           (SELECT COALESCE(SUM(amount_usd), 0)::numeric
+              FROM ton_transactions
+              WHERE user_id = u.id AND direction='deposit' AND status='confirmed'
+           ) AS lifetime_deposit_usd,
+           (SELECT MAX(confirmed_at)
+              FROM ton_transactions
+              WHERE user_id = u.id AND direction='deposit' AND status='confirmed'
+           ) AS last_deposit_at,
+           (SELECT COALESCE(SUM(amount), 0)::numeric
+              FROM rakeback_log WHERE user_id = u.id
+           ) AS lifetime_rake_usd,
+           (SELECT COALESCE(SUM(amount), 0)::numeric
+              FROM rakeback_log WHERE user_id = u.id
+           ) AS lifetime_rakeback_usd
+         FROM users u WHERE u.id = $1`,
+        [userId],
+      );
+      const fw = firstWd.rows[0] || {};
 
-      const conditionsMet =
+      const lifetimeDepositUsd = Number(fw.lifetime_deposit_usd ?? 0);
+      const lifetimeRakeUsd = Number(fw.lifetime_rake_usd ?? 0);
+      const accountAgeHours =
+        (Date.now() - new Date(fw.account_created).getTime()) / 3_600_000;
+      const depositAgeHours = fw.last_deposit_at
+        ? (Date.now() - new Date(fw.last_deposit_at).getTime()) / 3_600_000
+        : 0;
+
+      // Real hands played (reset-aware)
+      const handsRes = await db.query(
+        `SELECT COUNT(*)::int AS hands
+         FROM hands h
+         JOIN hand_snapshots hs ON hs.hand_id = h.id AND hs.sequence = 0
+         WHERE h.finished = TRUE AND h.mode = 'real'
+           AND h.ended_at > COALESCE(
+             (SELECT reset_at FROM user_stats_reset WHERE user_id = $1),
+             '1970-01-01'::timestamptz)
+           AND EXISTS (
+             SELECT 1 FROM jsonb_array_elements(hs.state->'players') p
+             WHERE (p->>'userId')::bigint = $1
+           )`,
+        [userId],
+      );
+      const realHandsPlayed = Number(handsRes.rows[0]?.hands ?? 0);
+
+      const ANTI_ABUSE = {
+        minDeposit: 5,
+        minRake: 0.5,
+        minHands: 20,
+        minAccountAgeH: 24,
+        minDepositAgeH: 6,
+      };
+
+      const antiAbuseChecks = {
+        alreadyUnlocked: !!fw.first_withdrawal_unlocked,
+        depositOk: lifetimeDepositUsd >= ANTI_ABUSE.minDeposit,
+        rakeOk: lifetimeRakeUsd >= ANTI_ABUSE.minRake,
+        handsOk: realHandsPlayed >= ANTI_ABUSE.minHands,
+        accountAgeOk: accountAgeHours >= ANTI_ABUSE.minAccountAgeH,
+        depositAgeOk: depositAgeHours >= ANTI_ABUSE.minDepositAgeH,
+      };
+
+      const antiAbuseMet =
+        antiAbuseChecks.alreadyUnlocked ||
+        (antiAbuseChecks.depositOk &&
+          antiAbuseChecks.rakeOk &&
+          antiAbuseChecks.handsOk &&
+          antiAbuseChecks.accountAgeOk &&
+          antiAbuseChecks.depositAgeOk);
+      const bonusConditionsMet =
         playthroughRemaining <= 0 &&
         rakeRemaining <= 0 &&
         handsRemaining <= 0 &&
         waitDaysRemaining <= 0;
+
+      const conditionsMet = bonusConditionsMet && antiAbuseMet;
 
       const bonusLocked = conditionsMet ? 0 : Number(p.bonus_playthrough_pending ?? 0);
       const availableBalance = Math.max(0, balance - bonusLocked);
@@ -144,6 +218,20 @@ export async function registerWalletRoutes(app: FastifyInstance, db: Pool): Prom
         tonPriceUsd: TON_PRICE_USD,
         level,
         conditionsMet,
+        bonusConditionsMet,
+        antiAbuseMet,
+        antiAbuse: {
+          alreadyUnlocked: antiAbuseChecks.alreadyUnlocked,
+          checks: antiAbuseChecks,
+          current: {
+            lifetimeDepositUsd,
+            lifetimeRakeUsd,
+            realHandsPlayed,
+            accountAgeHours: Math.round(accountAgeHours * 10) / 10,
+            depositAgeHours: Math.round(depositAgeHours * 10) / 10,
+          },
+          required: ANTI_ABUSE,
+        },
         conditions: {
           playthroughRemaining,
           rakeRemaining,
@@ -266,7 +354,81 @@ export async function registerWalletRoutes(app: FastifyInstance, db: Pool): Prom
             },
           });
         }
+        // Anti-abuse first-withdrawal gate
+        const fw = await db.query(
+          `SELECT
+             u.first_withdrawal_unlocked,
+             u.created_at AS account_created,
+             (SELECT COALESCE(SUM(amount_usd), 0)::numeric
+                FROM ton_transactions
+                WHERE user_id = u.id AND direction='deposit' AND status='confirmed'
+             ) AS lifetime_deposit_usd,
+             (SELECT MAX(confirmed_at)
+                FROM ton_transactions
+                WHERE user_id = u.id AND direction='deposit' AND status='confirmed'
+             ) AS last_deposit_at,
+             (SELECT COALESCE(SUM(amount), 0)::numeric
+                FROM rakeback_log WHERE user_id = u.id
+             ) AS lifetime_rake_usd
+           FROM users u WHERE u.id = $1`,
+          [userId],
+        );
+        const fwRow = fw.rows[0] || {};
 
+        if (!fwRow.first_withdrawal_unlocked) {
+          const depositUsd = Number(fwRow.lifetime_deposit_usd ?? 0);
+          const rakeUsd = Number(fwRow.lifetime_rake_usd ?? 0);
+          const accAgeH =
+            (Date.now() - new Date(fwRow.account_created).getTime()) / 3_600_000;
+          const depAgeH = fwRow.last_deposit_at
+            ? (Date.now() - new Date(fwRow.last_deposit_at).getTime()) / 3_600_000
+            : 0;
+
+          const handsQ = await db.query(
+            `SELECT COUNT(*)::int AS hands
+             FROM hands h
+             JOIN hand_snapshots hs ON hs.hand_id = h.id AND hs.sequence = 0
+             WHERE h.finished = TRUE AND h.mode = 'real'
+               AND h.ended_at > COALESCE(
+                 (SELECT reset_at FROM user_stats_reset WHERE user_id = $1),
+                 '1970-01-01'::timestamptz)
+               AND EXISTS (
+                 SELECT 1 FROM jsonb_array_elements(hs.state->'players') p
+                 WHERE (p->>'userId')::bigint = $1
+               )`,
+            [userId],
+          );
+          const handsN = Number(handsQ.rows[0]?.hands ?? 0);
+
+          const missing: string[] = [];
+          if (depositUsd < 5) missing.push('lifetime_deposit_5usd');
+          if (rakeUsd < 0.5) missing.push('lifetime_rake_0_50usd');
+          if (handsN < 20) missing.push('real_hands_20');
+          if (accAgeH < 24) missing.push('account_age_24h');
+          if (depAgeH < 6) missing.push('deposit_age_6h');
+
+          if (missing.length > 0) {
+            return reply.code(400).send({
+              error: 'first_withdrawal_locked',
+              missing,
+              current: {
+                lifetimeDepositUsd: depositUsd,
+                lifetimeRakeUsd: rakeUsd,
+                realHandsPlayed: handsN,
+                accountAgeHours: Math.round(accAgeH * 10) / 10,
+                depositAgeHours: Math.round(depAgeH * 10) / 10,
+              },
+            });
+          }
+
+          // All conditions met — unlock now
+          await db.query(
+            `UPDATE users SET first_withdrawal_unlocked = TRUE,
+                              first_withdrawal_at = NOW()
+             WHERE id = $1`,
+            [userId],
+          );
+        }
         const amountUsd = amountTon * TON_PRICE_USD;
 
         // Balance check (incl. fee)
