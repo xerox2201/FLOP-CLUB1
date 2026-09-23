@@ -27,8 +27,10 @@ import { registerLoyaltyRoutes } from './loyalty-routes.js';
 import { registerShopRoutes } from './shop-routes.js';
 // ...
 import { registerDailyRefillRoutes } from './daily-refill-routes.js';
-// ...
 import { registerTimeRoutes } from './time-routes.js';
+import { FreerollService } from './freeroll-service.js';
+import { FreerollScheduler } from './freeroll-scheduler.js';
+import { registerFreerollRoutes } from './freeroll-routes.js';
 
 const PORT = Number(process.env.PORT ?? 4000);
 const DATABASE_URL = process.env.DATABASE_URL ?? 'postgres://poker:pokerpass@localhost:5432/poker';
@@ -312,7 +314,12 @@ async function main() {
   await registerAchievementsRoutes(app, db)
   await registerLoyaltyRoutes(app, db)
   await registerShopRoutes(app, db);
-  await registerDailyRefillRoutes(app, db);await registerTimeRoutes(app);
+  await registerDailyRefillRoutes(app, db);
+  await registerTimeRoutes(app);
+
+  const freerollSvc = new FreerollService(db);
+  const freerollScheduler = new FreerollScheduler(db, freerollSvc);
+  await registerFreerollRoutes(app, db, freerollScheduler);
 
   // 🔴 Tournament Manager
   const tournamentManager = new TournamentManager(db);
@@ -358,7 +365,10 @@ async function main() {
   const depositWatcher = new DepositWatcher(db);
   depositWatcher.start();
 
+  freerollScheduler.start(5 * 60 * 1000);
+
   process.on('SIGINT', () => {
+    freerollScheduler.stop();
     depositWatcher.stop();
     process.exit(0);
   });

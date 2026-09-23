@@ -6,6 +6,7 @@
   import PlayingCard from '../components/PlayingCard.svelte';
   import PokerChip from '../components/PokerChip.svelte';
   import QuickSeatSheet from '../components/QuickSeatSheet.svelte';
+import FreerollBanner from '../components/FreerollBanner.svelte';
 
   export let onNavigate: (page: any) => void = () => {};
   export let onQuickSeat: (variant: string, mode: 'free' | 'real') => void = () => {};
@@ -115,7 +116,7 @@
 <div class="pb-44 lg:pb-8">
   <!-- TOP BAR -->
   <TopBar onOpenSettings={() => onNavigate('profile')} onOpenWallet={() => onNavigate('wallet')} />
-
+<FreerollBanner onOpen={(id) => onNavigate('tournaments')} />
   <!-- ============ HERO ============ -->
   <div
     class="relative mt-3 mb-4 mx-4 rounded-3xl overflow-hidden"

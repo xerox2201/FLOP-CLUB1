@@ -343,6 +343,32 @@ constructor(private db: Pool) {
         return { ok: false, error: 'already_registered' };
       }
     }
+    // ============================================================
+    // Freeroll eligibility: min lifetime deposit
+    // ============================================================
+    if (t.config.format === 'freeroll') {
+      try {
+        const cfg = await this.db.query(
+          'SELECT min_deposit_usd FROM freeroll_config WHERE id = 1',
+        );
+        const minReq = Number(cfg.rows[0]?.min_deposit_usd ?? 5);
+        const dep = await this.db.query(
+          `SELECT COALESCE(SUM(amount_usd), 0)::numeric AS total
+           FROM ton_transactions
+           WHERE user_id = $1 AND direction = 'deposit' AND status = 'confirmed'`,
+          [userId],
+        );
+        const total = Number(dep.rows[0]?.total ?? 0);
+        if (total < minReq) {
+          return {
+            ok: false,
+            error: `min_deposit_${minReq}_usd_required`,
+          };
+        }
+      } catch (e: any) {
+        console.error('[freeroll] eligibility check failed:', e.message);
+      }
+    }
 
     // 🔴 D5.4: Check if user has an unused satellite ticket for this tournament
     let hasTicket = false;

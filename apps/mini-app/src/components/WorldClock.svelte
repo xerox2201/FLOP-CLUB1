@@ -46,18 +46,28 @@
 
   $: utc = fmt(nowServer, 'UTC');
   $: local = fmt(nowServer, tz);
-  $: offsetHrs = (() => {
+  $: offsetLabel = (() => {
     try {
       const d = new Date(nowServer);
-      const utcH = d.getUTCHours();
-      const locH = parseInt(
-        d.toLocaleTimeString('en-GB', { timeZone: tz, hour: '2-digit', hour12: false }),
-        10,
+      // Get offset in minutes by comparing UTC and local parts
+      const utcMs = Date.UTC(
+        d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(),
+        d.getUTCHours(), d.getUTCMinutes(),
       );
-      const diff = ((locH - utcH + 12 + 24) % 24) - 12;
-      return diff >= 0 ? `+${diff}` : `${diff}`;
+      const parts = new Intl.DateTimeFormat('en-GB', {
+        timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: false,
+      }).formatToParts(d);
+      const get = (t: string) => Number(parts.find(p => p.type === t)?.value || 0);
+      const locMs = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'));
+      const diffMin = Math.round((locMs - utcMs) / 60000);
+      const sign = diffMin >= 0 ? '+' : '-';
+      const abs = Math.abs(diffMin);
+      const h = Math.floor(abs / 60);
+      const m = abs % 60;
+      return m === 0 ? `UTC${sign}${h}` : `UTC${sign}${h}:${m.toString().padStart(2, '0')}`;
     } catch {
-      return '0';
+      return 'UTC';
     }
   })();
 </script>
@@ -95,7 +105,7 @@
     </div>
     <div class="min-w-0">
       <p class="text-[9px] text-white/40 uppercase tracking-wider font-bold leading-none mb-1 truncate">
-        Local (UTC{offsetHrs})
+        Local ({offsetLabel})
       </p>
       <p class="text-[15px] font-extrabold text-gold tabular-nums leading-none">
         {local.time}
