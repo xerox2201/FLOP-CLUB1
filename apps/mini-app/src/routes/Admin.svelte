@@ -60,6 +60,16 @@
     seatsAwarded: 0,
     blindStructureId: 0,
     scheduledStart: '',
+    // Rebuy / Addon
+    allowRebuy: false,
+    maxRebuys: 3,
+    rebuyAmount: 0,
+    rebuyStack: 0,
+    rebuyUntilLevel: 0,
+    allowAddon: false,
+    addonAmount: 0,
+    addonStack: 0,
+    addonAtLevel: 0,
   };
   let tform = {
     name: '',
@@ -82,6 +92,16 @@
     scheduleType: 'daily' as 'hourly' | 'daily' | 'weekly',
     scheduleTime: '14:00',
     scheduleDay: 0,
+    // Rebuy / Addon
+    allowRebuy: false,
+    maxRebuys: 3,
+    rebuyAmount: 0,
+    rebuyStack: 0,
+    rebuyUntilLevel: 0,
+    allowAddon: false,
+    addonAmount: 0,
+    addonStack: 0,
+    addonAtLevel: 0,
   };
 
   // ============ TABLES ============
@@ -371,6 +391,14 @@
         seatsAwarded: Number(form.seatsAwarded) || 0,
         blindStructureId: Number(form.blindStructureId),
         scheduledStart: form.scheduledStart ? new Date(form.scheduledStart).toISOString() : null,
+        // Rebuy / Addon
+        maxRebuys: Number(form.maxRebuys) || 0,
+        rebuyAmount: Number(form.rebuyAmount) || 0,
+        rebuyStack: Number(form.rebuyStack) || 0,
+        rebuyUntilLevel: Number(form.rebuyUntilLevel) || 0,
+        addonAmount: Number(form.addonAmount) || 0,
+        addonStack: Number(form.addonStack) || 0,
+        addonAtLevel: Number(form.addonAtLevel) || 0,
       };
       const res = await fetch(`${API}/api/tournaments`, {
         method: 'POST',
@@ -1502,7 +1530,131 @@
               </p>
             </div>
           </div>
+          <!-- ══════════ REBUY / ADDON ══════════ -->
+          <div
+            class="rounded-xl p-3"
+            style="background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.25);"
+          >
+            <p class="text-[10px] uppercase tracking-wider text-blue-300 font-extrabold mb-3">
+              🔄 Rebuy / Addon
+            </p>
 
+            <!-- Rebuy -->
+            <label
+              class="flex items-center gap-2 text-[11px] font-bold text-white/80 py-1 cursor-pointer mb-2"
+            >
+              <input
+                type="checkbox"
+                bind:checked={form.allowRebuy}
+                class="w-4 h-4 accent-blue-500"
+              />
+              <span>Enable Rebuy</span>
+            </label>
+            {#if form.allowRebuy}
+              <div class="grid grid-cols-2 gap-2 mb-2">
+                <div>
+                  <span class="block text-[9px] text-white/50 font-bold mb-1">Max Rebuys</span>
+                  <input
+                    type="number"
+                    min="0"
+                    bind:value={form.maxRebuys}
+                    placeholder="3"
+                    class="w-full rounded-lg px-2 py-2 text-xs text-white outline-none"
+                    style="background: rgba(0,0,0,0.4); border: 1px solid rgba(59,130,246,0.3);"
+                  />
+                  <p class="text-[9px] text-white/40 mt-0.5">0 = unlimited</p>
+                </div>
+                <div>
+                  <span class="block text-[9px] text-white/50 font-bold mb-1">Rebuy $ Cost</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    bind:value={form.rebuyAmount}
+                    placeholder="0"
+                    class="w-full rounded-lg px-2 py-2 text-xs text-white outline-none"
+                    style="background: rgba(0,0,0,0.4); border: 1px solid rgba(59,130,246,0.3);"
+                  />
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <span class="block text-[9px] text-white/50 font-bold mb-1">Rebuy Stack</span>
+                  <input
+                    type="number"
+                    min="0"
+                    bind:value={form.rebuyStack}
+                    placeholder="0 (use starting stack)"
+                    class="w-full rounded-lg px-2 py-2 text-xs text-white outline-none"
+                    style="background: rgba(0,0,0,0.4); border: 1px solid rgba(59,130,246,0.3);"
+                  />
+                </div>
+                <div>
+                  <span class="block text-[9px] text-white/50 font-bold mb-1">Until Level</span>
+                  <input
+                    type="number"
+                    min="0"
+                    bind:value={form.rebuyUntilLevel}
+                    placeholder="6"
+                    class="w-full rounded-lg px-2 py-2 text-xs text-white outline-none"
+                    style="background: rgba(0,0,0,0.4); border: 1px solid rgba(59,130,246,0.3);"
+                  />
+                </div>
+              </div>
+            {/if}
+
+            <!-- Addon -->
+            <label
+              class="flex items-center gap-2 text-[11px] font-bold text-white/80 py-1 cursor-pointer mt-3 mb-2"
+            >
+              <input
+                type="checkbox"
+                bind:checked={form.allowAddon}
+                class="w-4 h-4 accent-violet-500"
+              />
+              <span>Enable Addon</span>
+            </label>
+            {#if form.allowAddon}
+              <div class="grid grid-cols-2 gap-2 mb-2">
+                <div>
+                  <span class="block text-[9px] text-white/50 font-bold mb-1">Addon $ Cost</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    bind:value={form.addonAmount}
+                    placeholder="0"
+                    class="w-full rounded-lg px-2 py-2 text-xs text-white outline-none"
+                    style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.3);"
+                  />
+                </div>
+                <div>
+                  <span class="block text-[9px] text-white/50 font-bold mb-1">Addon Stack</span>
+                  <input
+                    type="number"
+                    min="0"
+                    bind:value={form.addonStack}
+                    placeholder="0 (use starting stack)"
+                    class="w-full rounded-lg px-2 py-2 text-xs text-white outline-none"
+                    style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.3);"
+                  />
+                </div>
+              </div>
+              <div>
+                <span class="block text-[9px] text-white/50 font-bold mb-1">At Level</span>
+                <input
+                  type="number"
+                  min="0"
+                  bind:value={form.addonAtLevel}
+                  placeholder="6"
+                  class="w-full rounded-lg px-2 py-2 text-xs text-white outline-none"
+                  style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.3);"
+                />
+                <p class="text-[9px] text-white/40 mt-0.5">Addon offered only at this level</p>
+              </div>
+            {/if}
+          </div>
+          <!-- ══════════ SUBMIT ══════════ -->
           <button
             on:click={createTournament}
             disabled={creating}
@@ -1550,6 +1702,26 @@
                 <p class="text-[10px] text-white/40">
                   {t.variant.toUpperCase()} · {t.format} · {t.buyIn > 0 ? `$${t.buyIn}` : 'FREE'}
                 </p>
+                {#if t.allowRebuy || t.allowAddon}
+                  <div class="flex gap-1.5 mt-1">
+                    {#if t.allowRebuy}
+                      <span
+                        class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
+                        style="background: rgba(59,130,246,0.2); color: #93c5fd; border: 1px solid rgba(59,130,246,0.4);"
+                      >
+                        🔄 Rebuy
+                      </span>
+                    {/if}
+                    {#if t.allowAddon}
+                      <span
+                        class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
+                        style="background: rgba(139,92,246,0.2); color: #c4b5fd; border: 1px solid rgba(139,92,246,0.4);"
+                      >
+                        🎁 Addon
+                      </span>
+                    {/if}
+                  </div>
+                {/if}
               </div>
               <div class="text-right shrink-0 ml-2">
                 <p class="text-[11px] font-bold text-emerald-400 tabular-nums">
@@ -1684,6 +1856,106 @@
               style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
             />
           {/if}
+          <!-- Rebuy / Addon (template) -->
+          <div
+            class="rounded-xl p-3"
+            style="background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.25);"
+          >
+            <p class="text-[10px] uppercase tracking-wider text-blue-300 font-extrabold mb-3">
+              🔄 Rebuy / Addon
+            </p>
+
+            <label
+              class="flex items-center gap-2 text-[11px] font-bold text-white/80 py-1 cursor-pointer mb-2"
+            >
+              <input
+                type="checkbox"
+                bind:checked={tform.allowRebuy}
+                class="w-4 h-4 accent-blue-500"
+              />
+              <span>Enable Rebuy</span>
+            </label>
+            {#if tform.allowRebuy}
+              <div class="grid grid-cols-2 gap-2 mb-2">
+                <input
+                  type="number"
+                  min="0"
+                  bind:value={tform.maxRebuys}
+                  placeholder="Max"
+                  class="rounded-lg px-2 py-2 text-xs text-white"
+                  style="background: rgba(0,0,0,0.4); border: 1px solid rgba(59,130,246,0.3);"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  bind:value={tform.rebuyAmount}
+                  placeholder="$ Cost"
+                  class="rounded-lg px-2 py-2 text-xs text-white"
+                  style="background: rgba(0,0,0,0.4); border: 1px solid rgba(59,130,246,0.3);"
+                />
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <input
+                  type="number"
+                  min="0"
+                  bind:value={tform.rebuyStack}
+                  placeholder="Stack"
+                  class="rounded-lg px-2 py-2 text-xs text-white"
+                  style="background: rgba(0,0,0,0.4); border: 1px solid rgba(59,130,246,0.3);"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  bind:value={tform.rebuyUntilLevel}
+                  placeholder="Until L"
+                  class="rounded-lg px-2 py-2 text-xs text-white"
+                  style="background: rgba(0,0,0,0.4); border: 1px solid rgba(59,130,246,0.3);"
+                />
+              </div>
+            {/if}
+
+            <label
+              class="flex items-center gap-2 text-[11px] font-bold text-white/80 py-1 cursor-pointer mt-3 mb-2"
+            >
+              <input
+                type="checkbox"
+                bind:checked={tform.allowAddon}
+                class="w-4 h-4 accent-violet-500"
+              />
+              <span>Enable Addon</span>
+            </label>
+            {#if tform.allowAddon}
+              <div class="grid grid-cols-2 gap-2 mb-2">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  bind:value={tform.addonAmount}
+                  placeholder="$ Cost"
+                  class="rounded-lg px-2 py-2 text-xs text-white"
+                  style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.3);"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  bind:value={tform.addonStack}
+                  placeholder="Stack"
+                  class="rounded-lg px-2 py-2 text-xs text-white"
+                  style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.3);"
+                />
+              </div>
+              <input
+                type="number"
+                min="0"
+                bind:value={tform.addonAtLevel}
+                placeholder="At Level"
+                class="w-full rounded-lg px-2 py-2 text-xs text-white"
+                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.3);"
+              />
+            {/if}
+          </div>
+
           <button
             on:click={createTemplate}
             disabled={creatingTemplate}
