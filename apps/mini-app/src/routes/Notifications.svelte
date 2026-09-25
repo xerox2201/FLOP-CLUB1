@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import TopBar from '../components/TopBar.svelte';
+
   import {
     broadcasts,
     broadcastsLoading,
@@ -9,7 +10,7 @@
     markRead,
     markAllRead,
   } from '../lib/broadcasts';
-
+  import Icon from '../components/Icon.svelte';
   export let onBack: () => void = () => {};
 
   const ICONS: Record<string, string> = {
@@ -70,7 +71,10 @@
         <path d="M15 18l-6-6 6-6" />
       </svg>
     </button>
-    <h1 class="text-xl font-extrabold text-white flex-1">🔔 Notifications</h1>
+    <h1 class="text-xl font-extrabold text-white flex-1 flex items-center gap-2">
+      <Icon name="bell" size={22} />
+      <span>Notifications</span>
+    </h1>
     {#if $unreadCount > 0}
       <button
         on:click={markAllRead}
@@ -96,7 +100,9 @@
       class="rounded-2xl p-8 text-center mx-4"
       style="background: linear-gradient(180deg, rgba(15,31,58,0.7), rgba(7,14,27,0.9)); border: 1px solid rgba(212,175,55,0.15);"
     >
-      <p class="text-4xl mb-2">🔔</p>
+      <div class="flex justify-center mb-2">
+        <Icon name="bell" size={48} />
+      </div>
       <p class="text-white/50 text-sm">No notifications</p>
       <p class="text-white/30 text-[11px] mt-1">You're all caught up</p>
     </div>
