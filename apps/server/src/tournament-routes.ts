@@ -50,13 +50,14 @@ export async function registerTournamentRoutes(
   );
 
   app.get<{ Params: { id: string } }>('/api/tournaments/:id', async (req, reply) => {
-    const id = Number(req.params.id);
-    if (!id) return reply.code(400).send({ error: 'invalid_id' });
+  const id = Number(req.params.id);
+  if (!id) return reply.code(400).send({ error: 'invalid_id' });
 
-    const t = await tm.get(id);
-    if (!t) return reply.code(404).send({ error: 'not_found' });
-    return t;
-  });
+  const userId = authUser(req);
+  const t = await tm.get(id, userId);
+  if (!t) return reply.code(404).send({ error: 'not_found' });
+  return t;
+});
 
   app.post<{ Body: Record<string, any> }>('/api/tournaments', async (req, reply) => {
     const userId = authUserOrAdmin(req);

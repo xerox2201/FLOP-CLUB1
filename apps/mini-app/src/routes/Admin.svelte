@@ -886,59 +886,236 @@
       </div>
 
       {#if showCreate}
-        <div class="card space-y-3 mb-4">
-          <input type="text" bind:value={form.name} placeholder="Tournament name" class="w-full rounded-lg px-3 py-2.5 text-sm text-white outline-none" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);" />
+        <div class="card space-y-4 mb-4">
+
+          <!-- ══════════ NAME ══════════ -->
           <div>
-            <label for="t-start" class="block text-[10px] uppercase tracking-wider text-white/50 font-bold mb-1">Scheduled Start (optional)</label>
-            <input id="t-start" type="datetime-local" bind:value={form.scheduledStart} class="w-full rounded-lg px-3 py-2.5 text-sm text-white outline-none font-mono" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25); color-scheme: dark;" />
+            <span class="block text-[10px] uppercase tracking-wider text-white/60 font-bold mb-1">
+  Tournament Name
+</span>
+            <input
+              type="text"
+              bind:value={form.name}
+              placeholder="e.g. Daily Freeroll #1"
+              class="w-full rounded-lg px-3 py-2.5 text-sm text-white outline-none"
+              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+            />
+            <p class="text-[9px] text-white/40 mt-1 leading-snug">
+              Display name shown to all players in the tournaments list.
+            </p>
           </div>
-          <div class="grid grid-cols-3 gap-2">
-            <select bind:value={form.variant} class="rounded-lg px-2 py-2.5 text-xs text-white outline-none" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);">
-              <option value="holdem">Hold'em</option>
-              <option value="omaha4">Omaha 4</option>
-              <option value="omaha5">Omaha 5</option>
-            </select>
-            <select bind:value={form.mode} class="rounded-lg px-2 py-2.5 text-xs text-white outline-none" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);">
-              <option value="free">Free</option>
-              <option value="real">Real</option>
-            </select>
-            <select bind:value={form.format} class="rounded-lg px-2 py-2.5 text-xs text-white outline-none" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);">
-              <option value="sng">SNG</option>
-              <option value="mtt">MTT</option>
-              <option value="freeroll">Freeroll</option>
-            </select>
-          </div>
-          <div class="grid grid-cols-3 gap-2">
-            <input type="number" bind:value={form.buyIn} placeholder="Buy-in" class="rounded-lg px-2 py-2.5 text-xs text-white outline-none" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);" />
-            <input type="number" bind:value={form.fee} placeholder="Fee" class="rounded-lg px-2 py-2.5 text-xs text-white outline-none" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);" />
-            <input type="number" bind:value={form.startingStack} placeholder="Stack" class="rounded-lg px-2 py-2.5 text-xs text-white outline-none" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);" />
-          </div>
-          <div class="grid grid-cols-3 gap-2">
-            <input type="number" bind:value={form.minPlayers} placeholder="Min" class="rounded-lg px-2 py-2.5 text-xs text-white outline-none" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);" />
-            <input type="number" bind:value={form.maxPlayers} placeholder="Max" class="rounded-lg px-2 py-2.5 text-xs text-white outline-none" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);" />
-            <select bind:value={form.speed} class="rounded-lg px-2 py-2.5 text-xs text-white outline-none" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);">
-              <option value="regular">Regular</option>
-              <option value="turbo">Turbo</option>
-              <option value="hyper">Hyper</option>
-            </select>
-          </div>
-          <div class="grid grid-cols-2 gap-2">
-            <input type="number" bind:value={form.lateRegLevel} placeholder="Late reg level (0=off)" class="rounded-lg px-2 py-2.5 text-xs text-white outline-none" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);" />
-            <select bind:value={form.blindStructureId} class="rounded-lg px-2 py-2.5 text-xs text-white outline-none" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);">
-              {#each blindStructures as b}<option value={b.id}>{b.name}</option>{/each}
-            </select>
-          </div>
-          <div class="grid grid-cols-2 gap-2">
-            <label class="flex items-center gap-2 text-[11px] font-bold text-white/80 py-1">
-              <input type="checkbox" bind:checked={form.allowReEntry} class="w-4 h-4 accent-gold" />
-              <span>Re-entry</span>
+
+          <!-- ══════════ SCHEDULED START ══════════ -->
+          <div>
+            <label for="t-start" class="block text-[10px] uppercase tracking-wider text-white/60 font-bold mb-1">
+              Scheduled Start <span class="text-white/30 normal-case font-normal">(optional)</span>
             </label>
-            <label class="flex items-center gap-2 text-[11px] font-bold text-white/80 py-1">
-              <input type="checkbox" bind:checked={form.isBounty} class="w-4 h-4 accent-gold" />
-              <span>Bounty</span>
-            </label>
+            <input
+              id="t-start"
+              type="datetime-local"
+              bind:value={form.scheduledStart}
+              class="w-full rounded-lg px-3 py-2.5 text-sm text-white outline-none font-mono"
+              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25); color-scheme: dark;"
+            />
+            <p class="text-[9px] text-white/40 mt-1 leading-snug">
+              Leave empty for instant SNG. Set a future UTC time to auto-start an MTT.
+            </p>
           </div>
-          <button on:click={createTournament} disabled={creating} class="w-full btn-gold disabled:opacity-40">
+
+          <!-- ══════════ VARIANT / MODE / FORMAT ══════════ -->
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <span class="block text-[10px] uppercase tracking-wider text-white/60 font-bold mb-1">Variant</span>
+              <select
+                bind:value={form.variant}
+                class="w-full rounded-lg px-2 py-2.5 text-xs text-white outline-none"
+                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+              >
+                <option value="holdem">Hold'em</option>
+                <option value="omaha4">Omaha 4</option>
+                <option value="omaha5">Omaha 5</option>
+              </select>
+              <p class="text-[9px] text-white/40 mt-1 leading-snug">
+                Poker variant. Hold'em = 2 hole cards, Omaha = 4 or 5.
+              </p>
+            </div>
+            <div>
+              <span class="block text-[10px] uppercase tracking-wider text-white/60 font-bold mb-1">Mode</span>
+              <select
+                bind:value={form.mode}
+                class="w-full rounded-lg px-2 py-2.5 text-xs text-white outline-none"
+                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+              >
+                <option value="free">Free</option>
+                <option value="real">Real</option>
+              </select>
+              <p class="text-[9px] text-white/40 mt-1 leading-snug">
+                Free = play money chips. Real = USD balance.
+              </p>
+            </div>
+            <div>
+              <span class="block text-[10px] uppercase tracking-wider text-white/60 font-bold mb-1">Format</span>
+              <select
+                bind:value={form.format}
+                class="w-full rounded-lg px-2 py-2.5 text-xs text-white outline-none"
+                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+              >
+                <option value="sng">SNG</option>
+                <option value="mtt">MTT</option>
+                <option value="freeroll">Freeroll</option>
+              </select>
+              <p class="text-[9px] text-white/40 mt-1 leading-snug">
+                SNG = starts when full. MTT = scheduled. Freeroll = no buy-in.
+              </p>
+            </div>
+          </div>
+
+          <!-- ══════════ BUY-IN / FEE / STACK ══════════ -->
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <span class="block text-[10px] uppercase tracking-wider text-white/60 font-bold mb-1">Buy-in ($)</span>
+              <input
+                type="number"
+                bind:value={form.buyIn}
+                placeholder="0"
+                class="w-full rounded-lg px-2 py-2.5 text-xs text-white outline-none"
+                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+              />
+              <p class="text-[9px] text-white/40 mt-1 leading-snug">
+                Entry cost in USD. Use 0 for freeroll.
+              </p>
+            </div>
+            <div>
+              <span class="block text-[10px] uppercase tracking-wider text-white/60 font-bold mb-1">Fee ($)</span>
+              <input
+                type="number"
+                bind:value={form.fee}
+                placeholder="0"
+                class="w-full rounded-lg px-2 py-2.5 text-xs text-white outline-none"
+                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+              />
+              <p class="text-[9px] text-white/40 mt-1 leading-snug">
+                Platform rake per player. Standard: SNG 6%, MTT 8%.
+              </p>
+            </div>
+            <div>
+              <span class="block text-[10px] uppercase tracking-wider text-white/60 font-bold mb-1">Starting Stack</span>
+              <input
+                type="number"
+                bind:value={form.startingStack}
+                placeholder="1500"
+                class="w-full rounded-lg px-2 py-2.5 text-xs text-white outline-none"
+                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+              />
+              <p class="text-[9px] text-white/40 mt-1 leading-snug">
+                Chips each player starts with. Typical: 1500 SNG, 5000 Turbo MTT.
+              </p>
+            </div>
+          </div>
+
+          <!-- ══════════ MIN / MAX / SPEED ══════════ -->
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <span class="block text-[10px] uppercase tracking-wider text-white/60 font-bold mb-1">Min Players</span>
+              <input
+                type="number"
+                bind:value={form.minPlayers}
+                placeholder="2"
+                class="w-full rounded-lg px-2 py-2.5 text-xs text-white outline-none"
+                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+              />
+              <p class="text-[9px] text-white/40 mt-1 leading-snug">
+                Won't start below this. Typical: 2 for HU, 6 for SNG, 10+ for MTT.
+              </p>
+            </div>
+            <div>
+              <span class="block text-[10px] uppercase tracking-wider text-white/60 font-bold mb-1">Max Players</span>
+              <input
+                type="number"
+                bind:value={form.maxPlayers}
+                placeholder="9"
+                class="w-full rounded-lg px-2 py-2.5 text-xs text-white outline-none"
+                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+              />
+              <p class="text-[9px] text-white/40 mt-1 leading-snug">
+                Hard cap on seats. Typical: 9 for SNG, 100+ for MTT.
+              </p>
+            </div>
+            <div>
+              <span class="block text-[10px] uppercase tracking-wider text-white/60 font-bold mb-1">Speed</span>
+              <select
+                bind:value={form.speed}
+                class="w-full rounded-lg px-2 py-2.5 text-xs text-white outline-none"
+                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+              >
+                <option value="regular">Regular</option>
+                <option value="turbo">Turbo</option>
+                <option value="hyper">Hyper</option>
+              </select>
+              <p class="text-[9px] text-white/40 mt-1 leading-snug">
+                Action timer per turn. Regular 30s, Turbo 10s, Hyper 8s.
+              </p>
+            </div>
+          </div>
+
+          <!-- ══════════ LATE REG / BLIND STRUCTURE ══════════ -->
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <span class="block text-[10px] uppercase tracking-wider text-white/60 font-bold mb-1">Late Reg Level</span>
+              <input
+                type="number"
+                bind:value={form.lateRegLevel}
+                placeholder="0"
+                class="w-full rounded-lg px-2 py-2.5 text-xs text-white outline-none"
+                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+              />
+              <p class="text-[9px] text-white/40 mt-1 leading-snug">
+                Last blind level allowing late registration. 0 = disabled.
+              </p>
+            </div>
+            <div>
+              <span class="block text-[10px] uppercase tracking-wider text-white/60 font-bold mb-1">Blind Structure</span>
+              <select
+                bind:value={form.blindStructureId}
+                class="w-full rounded-lg px-2 py-2.5 text-xs text-white outline-none"
+                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+              >
+                {#each blindStructures as b}<option value={b.id}>{b.name}</option>{/each}
+              </select>
+              <p class="text-[9px] text-white/40 mt-1 leading-snug">
+                Predefined blind progression (sb/bb/ante per level).
+              </p>
+            </div>
+          </div>
+
+          <!-- ══════════ OPTIONS ══════════ -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="flex items-center gap-2 text-[11px] font-bold text-white/80 py-1 cursor-pointer">
+                <input type="checkbox" bind:checked={form.allowReEntry} class="w-4 h-4 accent-gold" />
+                <span>Allow Re-entry</span>
+              </label>
+              <p class="text-[9px] text-white/40 leading-snug pl-6">
+                Eliminated players can buy back in during late reg.
+              </p>
+            </div>
+            <div>
+              <label class="flex items-center gap-2 text-[11px] font-bold text-white/80 py-1 cursor-pointer">
+                <input type="checkbox" bind:checked={form.isBounty} class="w-4 h-4 accent-gold" />
+                <span>Bounty Mode</span>
+              </label>
+              <p class="text-[9px] text-white/40 leading-snug pl-6">
+                Killer earns extra prize per elimination (paid from fee).
+              </p>
+            </div>
+          </div>
+
+          <!-- ══════════ SUBMIT ══════════ -->
+          <button
+            on:click={createTournament}
+            disabled={creating}
+            class="w-full btn-gold disabled:opacity-40"
+          >
             {creating ? 'Creating…' : '✓ Create'}
           </button>
         </div>
@@ -1473,8 +1650,8 @@
        tabindex="-1"
        aria-label="Close player details">
     <div class="w-full max-w-md rounded-3xl p-5 max-h-[85vh] overflow-y-auto no-scrollbar"
-         style="..."
-         on:click={(e) => e.stopPropagation()}
+     style="background: linear-gradient(180deg, #101a3a, #080d24); border: 1.5px solid rgba(139,92,246,0.4); box-shadow: 0 20px 60px rgba(0,0,0,0.9);"
+     on:click={(e) => e.stopPropagation()}
          on:keydown={(e) => e.stopPropagation()}
          role="dialog"
          aria-modal="true"

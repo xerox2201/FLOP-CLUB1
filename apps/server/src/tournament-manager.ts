@@ -90,7 +90,124 @@ constructor(private db: Pool) {
   setIO(io: any): void {
     this.io = io;
   }
+async recoverActiveRooms(): Promise<void> {
+  try {
+    // 🔴 Only recover tournaments that:
+    //   1. are actively running
+    //   2. started within the last 6 hours (avoid zombie rooms from old tests)
+    //   3. have at least 2 active players in DB
+    const res = await this.db.query(
+      `SELECT t.id, t.name, t.variant, t.speed, t.blind_structure_id,
+              t.current_level, t.status
+       FROM tournaments t
+       WHERE t.status IN ('running', 'final_table')
+         AND t.started_at > NOW() - INTERVAL '6 hours'
+         AND (
+           SELECT COUNT(*) FROM tournament_players tp
+           WHERE tp.tournament_id = t.id AND tp.status = 'active'
+         ) >= 2
+       ORDER BY t.id ASC`,
+    );
 
+    if (res.rows.length === 0) {
+      console.log('[tournament] 🔄 recovery: no eligible tournaments to restore');
+      return;
+    }
+
+    // 🔴 Auto-cancel stale running tournaments (>6h old or <2 active players)
+    const stale = await this.db.query(
+      `UPDATE tournaments
+       SET status = 'cancelled', finished_at = NOW()
+       WHERE status IN ('running', 'final_table')
+         AND (
+           started_at < NOW() - INTERVAL '6 hours'
+           OR (
+             SELECT COUNT(*) FROM tournament_players tp
+             WHERE tp.tournament_id = tournaments.id AND tp.status = 'active'
+           ) < 2
+         )
+       RETURNING id, name`,
+    );
+    if (stale.rows.length > 0) {
+      console.log(`[tournament] 🧹 auto-cancelled ${stale.rows.length} stale tournament(s):`);
+      for (const s of stale.rows) {
+        console.log(`   #${s.id} ${s.name}`);
+      }
+      // Clean orphan player rows
+      for (const s of stale.rows) {
+        await this.db.query(
+          `UPDATE tournament_players SET status = 'eliminated', eliminated_at = NOW()
+           WHERE tournament_id = $1 AND status = 'active'`,
+          [s.id],
+        );
+      }
+    }
+
+    console.log(`[tournament] 🔄 recovery: restoring ${res.rows.length} tournament(s)`);
+
+    for (const row of res.rows) {
+      const tid = Number(row.id);
+      const t = await this.loadFromDB(tid);
+      if (!t) continue;
+
+      const players = await this.db.query(
+        `SELECT tp.user_id, tp.stack, tp.table_number, tp.seat, tp.status,
+                u.display_name
+         FROM tournament_players tp
+         JOIN users u ON u.id = tp.user_id
+         WHERE tp.tournament_id = $1 AND tp.status = 'active'
+         ORDER BY tp.table_number, tp.seat`,
+        [tid],
+      );
+
+      if (players.rows.length < 2) continue;
+
+      const byTable = new Map<
+        number,
+        Array<{ userId: number; displayName: string; stack: number }>
+      >();
+      for (const p of players.rows) {
+        const tn = Number(p.table_number ?? 1);
+        if (!byTable.has(tn)) byTable.set(tn, []);
+        byTable.get(tn)!.push({
+          userId: Number(p.user_id),
+          displayName: p.display_name,
+          stack: Number(p.stack),
+        });
+      }
+
+      const levelData = await this.blindService.getLevel(
+        t.config.blindStructureId,
+        Math.max(1, t.currentLevel),
+      );
+      const blinds = levelData
+        ? { sb: levelData.sb, bb: levelData.bb, ante: levelData.ante }
+        : { sb: 10, bb: 20, ante: 0 };
+
+      for (const [tableNumber, tablePlayers] of byTable.entries()) {
+        if (tablePlayers.length < 2) continue;
+        gameManager.createTournamentRoom({
+          tournamentId: tid,
+          tableNumber,
+          variant: t.config.variant,
+          speed: t.config.speed,
+          blinds,
+          players: tablePlayers.map((p) => ({ ...p, socketId: '' })),
+        });
+      }
+
+      t.status = row.status === 'final_table' ? 'final_table' : 'running';
+      this.tournaments.set(tid, t);
+      this.startBlindTimer(tid);
+
+      console.log(
+        `[tournament] ✅ recovered #${tid} "${t.config.name}" — ${byTable.size} table(s), ${players.rows.length} players`,
+      );
+    }
+  } catch (e: any) {
+    console.error('[tournament] recovery failed:', e.message);
+  }
+}
   // ============================================================
   // CREATE
   // ============================================================
@@ -1070,53 +1187,172 @@ constructor(private db: Pool) {
     return res.rows.map((r) => this.serializeRow(r));
   }
 
-  async get(tournamentId: number): Promise<any | null> {
-    const res = await this.db.query(
-      `SELECT t.*,
-         (SELECT COUNT(*) FROM tournament_entries WHERE tournament_id = t.id AND status = 'registered') AS registered_count,
-         (SELECT COUNT(*) FROM tournament_players WHERE tournament_id = t.id AND status = 'active') AS active_count
-       FROM tournaments t WHERE id = $1`,
-      [tournamentId],
-    );
-    if (res.rows.length === 0) return null;
+  async get(tournamentId: number, userId?: number | null): Promise<any | null> {
+  const res = await this.db.query(
+    `SELECT t.*,
+       (SELECT COUNT(*) FROM tournament_entries WHERE tournament_id = t.id AND status = 'registered') AS registered_count,
+       (SELECT COUNT(*) FROM tournament_players WHERE tournament_id = t.id AND status = 'active') AS active_count
+     FROM tournaments t WHERE id = $1`,
+    [tournamentId],
+  );
+  if (res.rows.length === 0) return null;
 
-    const base = this.serializeRow(res.rows[0]);
-    const players = await this.db.query(
-      `SELECT tp.user_id, u.display_name, tp.stack, tp.table_number, tp.seat, tp.status, tp.final_position, tp.bounty_earned
-       FROM tournament_players tp
-       JOIN users u ON u.id = tp.user_id
-       WHERE tp.tournament_id = $1
-       ORDER BY tp.stack DESC`,
-      [tournamentId],
-    );
+  const base = this.serializeRow(res.rows[0]);
 
-    const payouts = await this.db.query(
-      `SELECT position, percentage, fixed_amount FROM tournament_payouts
-       WHERE tournament_id = $1 ORDER BY position ASC`,
-      [tournamentId],
-    );
+  // ── Players with avatar + rebuy/addon info ──
+  const players = await this.db.query(
+    `SELECT tp.user_id, u.display_name, u.avatar_id,
+            tp.stack, tp.table_number, tp.seat, tp.status,
+            tp.final_position, tp.bounty_earned,
+            tp.rebuy_count, tp.has_addon
+     FROM tournament_players tp
+     JOIN users u ON u.id = tp.user_id
+     WHERE tp.tournament_id = $1
+     ORDER BY tp.stack DESC, tp.final_position ASC NULLS LAST`,
+    [tournamentId],
+  );
 
-    return {
-      ...base,
-      players: players.rows.map((p) => ({
-        userId: p.user_id,
-        displayName: p.display_name,
-        stack: Number(p.stack),
-        tableNumber: p.table_number,
-        seat: p.seat,
-        status: p.status,
-        finalPosition: p.final_position,
-        bountyEarned: Number(p.bounty_earned ?? 0),
-        virtualTableId:
-          p.table_number != null ? 1_000_000 + tournamentId * 1000 + p.table_number : null,
-      })),
-      payouts: payouts.rows.map((p) => ({
-        position: p.position,
-        percentage: Number(p.percentage),
-        fixedAmount: p.fixed_amount ? Number(p.fixed_amount) : null,
-      })),
-    };
+  // ── Payouts (raw %) ──
+  const payouts = await this.db.query(
+    `SELECT position, percentage, fixed_amount FROM tournament_payouts
+     WHERE tournament_id = $1 ORDER BY position ASC`,
+    [tournamentId],
+  );
+
+  // ── Blind structure + timer ──
+  let blindStructure: any[] = [];
+  let currentLevelData: any = null;
+  let nextLevelData: any = null;
+  let nextLevelIn = 0;
+  const structureId = Number(base.blindStructureId);
+  if (structureId) {
+    try {
+      blindStructure = await this.blindService.getLevels(structureId);
+    } catch (e: any) {
+      console.error('[tournament] getLevels failed:', e.message);
+    }
+    if (base.currentLevel > 0) {
+      currentLevelData = blindStructure.find((b) => b.level === base.currentLevel) ?? null;
+      nextLevelData = blindStructure.find((b) => b.level === base.currentLevel + 1) ?? null;
+      if (
+        (base.status === 'running' || base.status === 'final_table') &&
+        currentLevelData
+      ) {
+        const startMs = base.levelStartedAt ? new Date(base.levelStartedAt).getTime() : 0;
+        if (startMs > 0) {
+          const elapsed = (Date.now() - startMs) / 1000;
+          nextLevelIn = Math.max(0, Math.round(currentLevelData.durationSec - elapsed));
+        }
+      }
+    }
   }
+
+  // ── Live prize pool + overlay ──
+  const totalBuyIn = base.registeredCount * base.buyIn;
+  const livePrizePool = Math.max(base.totalPrizePool, totalBuyIn, base.guaranteed);
+  const overlay = Math.max(0, base.guaranteed - totalBuyIn);
+  const rakeCollected = base.registeredCount * base.fee;
+
+  const payoutsWithAmount = payouts.rows.map((p: any) => {
+    const pct = Number(p.percentage);
+    const fixed = p.fixed_amount ? Number(p.fixed_amount) : null;
+    return {
+      position: p.position,
+      percentage: pct,
+      fixedAmount: fixed,
+      amount: fixed != null ? fixed : Math.round(livePrizePool * pct * 100) / 100,
+    };
+  });
+
+  // ── Your entry (if authenticated) ──
+  let yourEntry: any = null;
+  if (userId) {
+    try {
+      const entryRes = await this.db.query(
+        `SELECT te.status, te.re_entry_count, te.final_position, te.payout_amount,
+                te.points_earned, te.starting_stack,
+                tp.stack, tp.table_number, tp.seat, tp.status AS player_status,
+                tp.bounty_earned, tp.rebuy_count, tp.has_addon
+         FROM tournament_entries te
+         LEFT JOIN tournament_players tp
+           ON tp.user_id = te.user_id AND tp.tournament_id = te.tournament_id
+         WHERE te.tournament_id = $1 AND te.user_id = $2`,
+        [tournamentId, userId],
+      );
+      if (entryRes.rows.length > 0) {
+        const e = entryRes.rows[0];
+        const virtualTableId =
+          e.table_number != null
+            ? 1_000_000 + tournamentId * 1000 + e.table_number
+            : null;
+        const isRegistered = e.status === 'registered' || e.status === 'playing';
+        const canRegister = base.status === 'registering' || base.status === 'scheduled';
+        const isLateReg =
+          base.status === 'running' &&
+          base.lateRegLevel > 0 &&
+          base.currentLevel <= base.lateRegLevel &&
+          !isRegistered;
+        const isEliminated =
+          e.player_status === 'eliminated' || e.status === 'eliminated';
+        const canReEnter =
+          isEliminated &&
+          base.allowReEntry &&
+          (Number(e.re_entry_count) || 0) < base.maxReEntries &&
+          (canRegister || isLateReg);
+
+        yourEntry = {
+          isRegistered,
+          entryStatus: e.status,
+          reEntryCount: Number(e.re_entry_count ?? 0),
+          hasAddon: !!e.has_addon,
+          rebuyCount: Number(e.rebuy_count ?? 0),
+          finalPosition: e.final_position,
+          payoutAmount: Number(e.payout_amount ?? 0),
+          pointsEarned: Number(e.points_earned ?? 0),
+          stack: e.stack != null ? Number(e.stack) : null,
+          tableNumber: e.table_number,
+          seat: e.seat,
+          virtualTableId,
+          canRegister: !isRegistered && canRegister,
+          canReEnter,
+          canRebuy: false, // Phase C
+          canAddon: false, // Phase C
+        };
+      }
+    } catch (e: any) {
+      console.error('[tournament] yourEntry fetch failed:', e.message);
+    }
+  }
+
+  return {
+    ...base,
+    totalPrizePool: livePrizePool,
+    totalBuyIn,
+    overlay,
+    rakeCollected,
+    nextLevelIn,
+    currentLevelData,
+    nextLevelData,
+    blindStructure,
+    players: players.rows.map((p: any) => ({
+      userId: p.user_id,
+      displayName: p.display_name,
+      avatarId: p.avatar_id || 'king',
+      stack: Number(p.stack),
+      tableNumber: p.table_number,
+      seat: p.seat,
+      status: p.status,
+      finalPosition: p.final_position,
+      bountyEarned: Number(p.bounty_earned ?? 0),
+      rebuyCount: Number(p.rebuy_count ?? 0),
+      hasAddon: !!p.has_addon,
+      virtualTableId:
+        p.table_number != null ? 1_000_000 + tournamentId * 1000 + p.table_number : null,
+    })),
+    payouts: payoutsWithAmount,
+    yourEntry,
+  };
+}
 
   private serializeRow(r: any): any {
     return {

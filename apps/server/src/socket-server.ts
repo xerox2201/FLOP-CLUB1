@@ -122,6 +122,46 @@ export function setupSocketServer(io: SocketIOServer, db: Pool): void {
             table = tableRes.rows[0];
           }
 
+          // 🔴 Disconnect any previous sockets for the same user+table
+          //    This prevents multi-connect spam from rapid reconnect loops
+          try {
+            const existingRoom = gameManager.getRoom(tableId);
+            if (existingRoom) {
+              for (const [playerId, playerInfo] of existingRoom.players) {
+                if (
+                  playerInfo.userId === userId &&
+                  playerInfo.socketId &&
+                  playerInfo.socketId !== socket.id
+                ) {
+                  const oldSocketId = playerInfo.socketId;
+                  console.log(
+                    `[socket] replacing old socket for user=${userId} table=${tableId}: ${oldSocketId} → ${socket.id}`,
+                  );
+
+                  // 🔴 CRITICAL: remove the old socketId from socketToPlayer BEFORE
+                  //    calling disconnect, so leaveRoom(oldSocketId) will find nothing
+                  //    and won't wipe the new socketId from the player record.
+                  const room = gameManager.getRoom(tableId);
+                  if (room) {
+                    room.socketToPlayer.delete(oldSocketId);
+                  }
+
+                  try {
+                    const oldSocket = io.sockets.sockets.get(oldSocketId);
+                    if (oldSocket) {
+                      oldSocket.leave(`table:${tableId}`);
+                      oldSocket.disconnect(true);
+                    }
+                  } catch (e: any) {
+                    console.warn('[socket] failed to disconnect old socket:', e.message);
+                  }
+                }
+              }
+            }
+          } catch (e: any) {
+            console.warn('[socket] dedup failed:', e.message);
+          }
+
           const room = gameManager.joinRoom({
             tableId,
             userId,
@@ -345,17 +385,21 @@ export function setupSocketServer(io: SocketIOServer, db: Pool): void {
         }
       },
     );
-    socket.on('disconnect', (reason) => {      lastChatAt.delete(socket.id);
+    socket.on('disconnect', (reason) => {
+      lastChatAt.delete(socket.id);
       console.log(`[socket.io] disconnected: ${displayName} (${socket.id}) - ${reason}`);
+
+      // 🔴 Only run leaveRoom if this socket is STILL the active one for this user.
+      //    If dedup already replaced it, do nothing — the new socket owns the seat.
       const ctx = gameManager.getPlayerBySocket(socket.id);
-      if (ctx) {
+      if (ctx && ctx.player.socketId === socket.id) {
         const tableId = ctx.room.tableId;
         socket.to(`table:${tableId}`).emit('table:player_left', {
           userId,
           total: Math.max(0, ctx.room.players.size - 1),
         });
+        gameManager.leaveRoom(socket.id);
       }
-      gameManager.leaveRoom(socket.id);
     });
 
     socket.on('ping:app', (cb?: Function) => {

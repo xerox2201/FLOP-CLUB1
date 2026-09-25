@@ -74,7 +74,9 @@ export class TableSocketIO {
     this.token = token;
     this.autoMuck = autoMuck;
   }
-
+  isClosed(): boolean {
+    return this.closedByUser || this.socket === null;
+  }
   connect(): void {
     this.closedByUser = false;
 
@@ -89,9 +91,11 @@ export class TableSocketIO {
       reconnectionDelayMax: 5000,
       reconnectionAttempts: Infinity,
       timeout: 20000,
+      autoConnect: true,
     });
 
     this.socket.on('connect', () => {
+      // ...existing code...
       const isReconnect = this.reconnectAttempt > 0;
       this.emit({ type: 'connected' });
       this.reconnectAttempt = 0;
@@ -106,7 +110,26 @@ export class TableSocketIO {
         },
         (res: any) => {
           if (!res?.ok) {
-            this.emit({ type: 'error', message: res?.error ?? 'join_failed', code: res?.code });
+            const code = res?.code;
+            const message = res?.error ?? 'join_failed';
+            this.emit({ type: 'error', message, code });
+
+            // 🔴 STALE_TOURNAMENT: kill this socket permanently
+            if (code === 'STALE_TOURNAMENT') {
+              console.warn(
+                `[TableSocketIO] STALE_TOURNAMENT for table ${this.tableId} — closing socket permanently`,
+              );
+              this.closedByUser = true;
+              try {
+                this.socket?.removeAllListeners();
+                this.socket?.disconnect();
+                this.socket = null;
+              } catch {}
+              this.emit({
+                type: 'disconnected',
+                reason: 'stale_room',
+              });
+            }
             return;
           }
           if (isReconnect) {
@@ -267,11 +290,13 @@ export class TableSocketIO {
   }
 
   close(): void {
+    
     this.closedByUser = true;
     this.listeners.clear();
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
+      
     }
   }
 }

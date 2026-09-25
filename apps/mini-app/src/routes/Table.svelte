@@ -201,10 +201,22 @@
   // ===== Socket errors (pushed by store) =====
   $: if (entry?.lastError && entry.lastError.at !== lastErrorAt) {
     lastErrorAt = entry.lastError.at;
-    errorMsg = entry.lastError.message;
-    setTimeout(() => {
-      errorMsg = '';
-    }, 3000);
+    const msg = entry.lastError.message;
+
+    // 🔴 Stale tournament room → auto-cleanup + navigate back
+    if (msg === 'STALE_TOURNAMENT' || msg.includes('STALE')) {
+      errorMsg = 'Table no longer exists — returning to tournaments';
+      setTimeout(() => {
+        // Remove this table from the active list and go back
+        activeTables.leave(tableId);
+        onBack();
+      }, 1500);
+    } else {
+      errorMsg = msg;
+      setTimeout(() => {
+        errorMsg = '';
+      }, 3000);
+    }
   }
 
   // ===== Reconnecting toast =====

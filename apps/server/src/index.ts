@@ -25,7 +25,7 @@ import { registerOverviewRoutes } from './overview-routes.js';
 import { registerAchievementsRoutes } from './achievements-routes.js';
 import { registerLoyaltyRoutes } from './loyalty-routes.js';
 import { registerShopRoutes } from './shop-routes.js';
-// ...
+import { TournamentCleanupJob } from './tournament-cleanup.js';
 import { registerDailyRefillRoutes } from './daily-refill-routes.js';
 import { registerTimeRoutes } from './time-routes.js';
 import { FreerollService } from './freeroll-service.js';
@@ -358,7 +358,13 @@ async function main() {
   tournamentManager.startAutoStartScheduler(30_000);
     // 🔴 D6.1: Start recurring tournament scheduler (checks every 60s)
   scheduler.start(60_000);
-
+    // 🔴 Recover rooms for active tournaments after restart
+  await tournamentManager.recoverActiveRooms();
+  // 🔴 Recover rooms for running tournaments (server restart safety)
+  await tournamentManager.recoverActiveRooms();
+    // 🔴 Start stale tournament cleanup job
+  const cleanupJob = new TournamentCleanupJob(db);
+  cleanupJob.start(10 * 60 * 1000);
   // ============================================================
   // Deposit watcher
   // ============================================================
@@ -369,6 +375,7 @@ async function main() {
 
   process.on('SIGINT', () => {
     freerollScheduler.stop();
+    cleanupJob.stop();
     depositWatcher.stop();
     process.exit(0);
   });
