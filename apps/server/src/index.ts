@@ -95,8 +95,7 @@ async function main() {
       }
     }
 
-    const displayName =
-      parsed.user.first_name || parsed.user.username || `User${parsed.user.id}`;
+    const displayName = parsed.user.first_name || parsed.user.username || `User${parsed.user.id}`;
     const dbUser = await upsertUser(parsed.user.id, displayName);
     const token = signToken({ uid: dbUser.id, tg: parsed.user.id }, JWT_SECRET);
     return { token, user: dbUser };
@@ -231,7 +230,8 @@ async function main() {
         free_won: freeWon,
         free_hands_won: freeHandsWon,
       },
-      stats: {       loyalty,
+      stats: {
+        loyalty,
         handsWon,
         handsPlayedReal,
         totalWon,
@@ -311,8 +311,8 @@ async function main() {
   await registerBroadcastRoutes(app, db);
   await registerSettingsRoutes(app, db);
   await registerOverviewRoutes(app, db);
-  await registerAchievementsRoutes(app, db)
-  await registerLoyaltyRoutes(app, db)
+  await registerAchievementsRoutes(app, db);
+  await registerLoyaltyRoutes(app, db);
   await registerShopRoutes(app, db);
   await registerDailyRefillRoutes(app, db);
   await registerTimeRoutes(app);
@@ -323,7 +323,7 @@ async function main() {
 
   // 🔴 Tournament Manager
   const tournamentManager = new TournamentManager(db);
-    const scheduler = new TournamentScheduler(db, tournamentManager);
+  const scheduler = new TournamentScheduler(db, tournamentManager);
   await registerTournamentRoutes(app, db, tournamentManager, scheduler);
 
   // 🔴 Wire game-manager ↔ tournament-manager
@@ -356,14 +356,9 @@ async function main() {
 
   // 🔴 D5.1: Start auto-start scheduler (checks every 30s for scheduled tournaments)
   tournamentManager.startAutoStartScheduler(30_000);
-    // 🔴 D6.1: Start recurring tournament scheduler (checks every 60s)
+  // 🔴 D6.1: Start recurring tournament scheduler (checks every 60s)
   scheduler.start(60_000);
-    // 🔴 Recover rooms for active tournaments after restart
-  await tournamentManager.recoverActiveRooms();
-  // 🔴 Recover rooms for running tournaments (server restart safety)
-  await tournamentManager.recoverActiveRooms();
-    // 🔴 Start stale tournament cleanup job
-  const cleanupJob = new TournamentCleanupJob(db);
+
   cleanupJob.start(10 * 60 * 1000);
   // ============================================================
   // Deposit watcher
