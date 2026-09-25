@@ -1,6 +1,7 @@
 <script lang="ts">
   import Avatar from './Avatar.svelte';
   import { AVATARS } from '../lib/avatars';
+  import Icon from './Icon.svelte';
 
   export let open: boolean = false;
   export let avatarId: string = 'king';
@@ -41,16 +42,17 @@
       class="flex items-center gap-2 px-4 py-3.5 shrink-0"
       style="border-bottom: 1px solid rgba(212,175,55,0.15);"
     >
-      <h2 class="text-sm font-extrabold text-white flex-1">🎨 Customize</h2>
+      <h2 class="text-sm font-extrabold text-white flex-1 flex items-center gap-2">
+        <Icon name="edit" size={16} />
+        <span>Customize</span>
+      </h2>
       <button
         on:click={onClose}
         aria-label="Close"
         class="w-9 h-9 rounded-xl flex items-center justify-center text-white/60 active:scale-95"
         style="background: rgba(255,255,255,0.06);"
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-          <path d="M6 6l12 12M18 6L6 18" />
-        </svg>
+        <Icon name="close" size={14} color="rgba(255,255,255,0.6)" />
       </button>
     </div>
 
@@ -63,7 +65,11 @@
         <button
           on:click={() => (tab = k as any)}
           class="flex-1 py-3 text-[11px] font-extrabold uppercase tracking-wider"
-          style="color: {tab === k ? '#f4e5a8' : 'rgba(255,255,255,0.4)'}; border-bottom: 2px solid {tab === k ? '#d4af37' : 'transparent'};"
+          style="color: {tab === k
+            ? '#f4e5a8'
+            : 'rgba(255,255,255,0.4)'}; border-bottom: 2px solid {tab === k
+            ? '#d4af37'
+            : 'transparent'};"
         >
           {l}
         </button>
@@ -81,7 +87,9 @@
               class="aspect-square rounded-2xl overflow-hidden transition-all active:scale-95"
               style="
                 background: radial-gradient(circle, #1a3a5c, #05080f);
-                {avatarId === a.id ? 'box-shadow: 0 0 0 2.5px #d4af37, 0 0 20px rgba(212,175,55,0.6);' : 'opacity: 0.85;'}
+                {avatarId === a.id
+                ? 'box-shadow: 0 0 0 2.5px #d4af37, 0 0 20px rgba(212,175,55,0.6);'
+                : 'opacity: 0.85;'}
               "
             >
               <img
@@ -112,7 +120,7 @@
                   <span class="text-[10px] font-bold text-white/50">None</span>
                 </div>
               {:else}
-                <Avatar avatarId={avatarId} size="lg" frame={f.id} />
+                <Avatar {avatarId} size="lg" frame={f.id} />
               {/if}
               <span
                 class="text-[9px] font-bold"

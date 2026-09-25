@@ -1,5 +1,6 @@
 <script lang="ts">
   import { adminPromptOpen, confirmAdmin, cancelAdmin } from '../stores/admin';
+  import Icon from './Icon.svelte';
 
   let secret = '';
   let busy = false;
@@ -72,20 +73,12 @@
             border: 1.5px solid rgba(212,175,55,0.4);
           "
         >
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
-               stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="11" width="18" height="11" rx="2" />
-            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-          </svg>
+          <Icon name="lock" size={28} color="#d4af37" />
         </div>
       </div>
 
-      <h2 class="text-center text-lg font-extrabold text-white mb-1">
-        Admin Access
-      </h2>
-      <p class="text-center text-[11px] text-white/50 mb-5">
-        Enter your admin secret key
-      </p>
+      <h2 class="text-center text-lg font-extrabold text-white mb-1">Admin Access</h2>
+      <p class="text-center text-[11px] text-white/50 mb-5">Enter your admin secret key</p>
 
       <input
         type="password"
@@ -140,9 +133,22 @@
     animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97);
   }
   @keyframes shake {
-    10%, 90% { transform: translateX(-2px); }
-    20%, 80% { transform: translateX(4px); }
-    30%, 50%, 70% { transform: translateX(-6px); }
-    40%, 60% { transform: translateX(6px); }
+    10%,
+    90% {
+      transform: translateX(-2px);
+    }
+    20%,
+    80% {
+      transform: translateX(4px);
+    }
+    30%,
+    50%,
+    70% {
+      transform: translateX(-6px);
+    }
+    40%,
+    60% {
+      transform: translateX(6px);
+    }
   }
 </style>

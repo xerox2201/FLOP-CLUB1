@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Icon from './Icon.svelte';
+
   export let open: boolean = false;
   export let title: string = '';
   export let icon: string = 'ℹ️';
@@ -25,7 +27,10 @@
     "
   >
     <!-- Drag handle -->
-    <div class="w-12 h-1 rounded-full mx-auto mt-2 mb-1 shrink-0" style="background: rgba(212,175,55,0.4);"></div>
+    <div
+      class="w-12 h-1 rounded-full mx-auto mt-2 mb-1 shrink-0"
+      style="background: rgba(212,175,55,0.4);"
+    ></div>
 
     <!-- Header -->
     <div
@@ -45,14 +50,14 @@
         class="w-8 h-8 rounded-full flex items-center justify-center text-white/60 active:scale-95"
         style="background: rgba(255,255,255,0.06);"
       >
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-          <path d="M6 6l12 12M18 6L6 18" />
-        </svg>
+        <Icon name="close" size={12} color="rgba(255,255,255,0.6)" />
       </button>
     </div>
 
     <!-- Content -->
-    <div class="flex-1 overflow-y-auto no-scrollbar px-5 py-4 text-[12px] text-white/80 leading-relaxed">
+    <div
+      class="flex-1 overflow-y-auto no-scrollbar px-5 py-4 text-[12px] text-white/80 leading-relaxed"
+    >
       <slot />
     </div>
 

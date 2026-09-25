@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Icon from './Icon.svelte';
+
   export let open: boolean = false;
   export let stats: {
     free_hands: number;
@@ -13,9 +15,7 @@
   }
 
   $: winRate =
-    stats && stats.free_hands > 0
-      ? Math.round((stats.free_hands_won / stats.free_hands) * 100)
-      : 0;
+    stats && stats.free_hands > 0 ? Math.round((stats.free_hands_won / stats.free_hands) * 100) : 0;
 </script>
 
 {#if open && stats}
@@ -33,10 +33,10 @@
     <div class="flex items-center justify-between mb-4">
       <div class="flex items-center gap-2">
         <div
-          class="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
+          class="w-10 h-10 rounded-xl flex items-center justify-center"
           style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.4);"
         >
-          🎁
+          <Icon name="gift" size={20} />
         </div>
         <h2 class="text-base font-extrabold text-white">Free Play</h2>
       </div>
@@ -46,9 +46,7 @@
         class="w-8 h-8 rounded-xl flex items-center justify-center text-white/60"
         style="background: rgba(255,255,255,0.06);"
       >
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-          <path d="M6 6l12 12M18 6L6 18" />
-        </svg>
+        <Icon name="close" size={12} color="rgba(255,255,255,0.6)" />
       </button>
     </div>
 
@@ -57,9 +55,7 @@
         class="rounded-2xl p-3 text-center"
         style="background: rgba(0,0,0,0.4); border: 1px solid rgba(16,185,129,0.25);"
       >
-        <p class="text-[9px] text-white/40 uppercase tracking-wider font-bold mb-1">
-          Hands Played
-        </p>
+        <p class="text-[9px] text-white/40 uppercase tracking-wider font-bold mb-1">Hands Played</p>
         <p class="text-xl font-extrabold text-white tabular-nums">
           {stats.free_hands.toLocaleString()}
         </p>
