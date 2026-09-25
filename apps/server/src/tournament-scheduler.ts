@@ -30,6 +30,15 @@ export interface TemplateRow {
   next_run_at: Date | null;
   last_run_at: Date | null;
   created_by: number | null;
+  allow_rebuy: boolean;
+  max_rebuys: number;
+  rebuy_amount: string;
+  rebuy_stack: string;
+  rebuy_until_level: number;
+  allow_addon: boolean;
+  addon_amount: string;
+  addon_stack: string;
+  addon_at_level: number;
 }
 
 export class TournamentScheduler {
@@ -46,11 +55,7 @@ export class TournamentScheduler {
    * schedule_time: "HH:MM" (UTC)
    * schedule_day: 0=Sun..6=Sat (only for weekly)
    */
-  computeNextRun(t: {
-    schedule_type: string;
-    schedule_time: string;
-    schedule_day: number;
-  }): Date {
+  computeNextRun(t: { schedule_type: string; schedule_time: string; schedule_day: number }): Date {
     const now = new Date();
     const [hh, mm] = (t.schedule_time || '14:00').split(':').map((x) => parseInt(x, 10));
     const next = new Date(now);
@@ -112,6 +117,16 @@ export class TournamentScheduler {
     schedule_time: string;
     schedule_day: number;
     created_by: number | null;
+    // Rebuy / Addon
+    allow_rebuy?: boolean;
+    max_rebuys?: number;
+    rebuy_amount?: number;
+    rebuy_stack?: number;
+    rebuy_until_level?: number;
+    allow_addon?: boolean;
+    addon_amount?: number;
+    addon_stack?: number;
+    addon_at_level?: number;
   }): Promise<{ ok: boolean; templateId?: number; error?: string }> {
     try {
       const nextRun = this.computeNextRun({
@@ -127,20 +142,49 @@ export class TournamentScheduler {
             allow_re_entry, max_re_entries, is_bounty, bounty_amount,
             satellite_target_id, seats_awarded, blind_structure_id,
             schedule_type, schedule_time, schedule_day,
-            is_active, next_run_at, created_by)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,TRUE,$24,$25)
+            is_active, next_run_at, created_by,
+            allow_rebuy, max_rebuys, rebuy_amount, rebuy_stack, rebuy_until_level,
+            allow_addon, addon_amount, addon_stack, addon_at_level)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,
+                 TRUE,$24,$25,
+                 $26,$27,$28,$29,$30,
+                 $31,$32,$33,$34)
          RETURNING id`,
         [
-          input.name, input.variant, input.mode, input.format, input.speed,
-          input.buy_in, input.fee, input.starting_stack,
-          input.min_players, input.max_players, input.guaranteed,
-          input.late_reg_min, input.late_reg_level,
-          input.allow_re_entry, input.max_re_entries,
-          input.is_bounty, input.bounty_amount,
-          input.satellite_target_id, input.seats_awarded,
+          input.name,
+          input.variant,
+          input.mode,
+          input.format,
+          input.speed,
+          input.buy_in,
+          input.fee,
+          input.starting_stack,
+          input.min_players,
+          input.max_players,
+          input.guaranteed,
+          input.late_reg_min,
+          input.late_reg_level,
+          input.allow_re_entry,
+          input.max_re_entries,
+          input.is_bounty,
+          input.bounty_amount,
+          input.satellite_target_id,
+          input.seats_awarded,
           input.blind_structure_id,
-          input.schedule_type, input.schedule_time, input.schedule_day,
-          nextRun, input.created_by,
+          input.schedule_type,
+          input.schedule_time,
+          input.schedule_day,
+          nextRun,
+          input.created_by,
+          input.allow_rebuy ?? false,
+          input.max_rebuys ?? 0,
+          input.rebuy_amount ?? 0,
+          input.rebuy_stack ?? 0,
+          input.rebuy_until_level ?? 0,
+          input.allow_addon ?? false,
+          input.addon_amount ?? 0,
+          input.addon_stack ?? 0,
+          input.addon_at_level ?? 0,
         ],
       );
       return { ok: true, templateId: res.rows[0].id };
@@ -242,6 +286,15 @@ export class TournamentScheduler {
         blindStructureId: tpl.blind_structure_id,
         isPrivate: false,
         createdBy: tpl.created_by ?? 1,
+        allowRebuy: tpl.allow_rebuy,
+        maxRebuys: tpl.max_rebuys,
+        rebuyAmount: Number(tpl.rebuy_amount),
+        rebuyStack: Number(tpl.rebuy_stack),
+        rebuyUntilLevel: tpl.rebuy_until_level,
+        allowAddon: tpl.allow_addon,
+        addonAmount: Number(tpl.addon_amount),
+        addonStack: Number(tpl.addon_stack),
+        addonAtLevel: tpl.addon_at_level,
       });
 
       const nextRun = this.computeNextRun(tpl);
@@ -259,10 +312,10 @@ export class TournamentScheduler {
       // advance next_run even on failure to avoid stuck loop
       try {
         const nextRun = this.computeNextRun(tpl);
-        await this.db.query(
-          `UPDATE tournament_templates SET next_run_at = $1 WHERE id = $2`,
-          [nextRun, tpl.id],
-        );
+        await this.db.query(`UPDATE tournament_templates SET next_run_at = $1 WHERE id = $2`, [
+          nextRun,
+          tpl.id,
+        ]);
       } catch {}
     }
   }

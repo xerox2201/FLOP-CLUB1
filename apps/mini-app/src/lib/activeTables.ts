@@ -36,11 +36,7 @@ function teardownSocket(socket: TableSocketIO): void {
   }, 250);
 }
 
-function join(
-  meta: ActiveTableMeta,
-  token: string,
-  myUserId: number | null,
-): ActiveTable {
+function join(meta: ActiveTableMeta, token: string, myUserId: number | null): ActiveTable {
   const cur = get(store);
   const existing = cur.get(meta.tableId);
 
@@ -94,7 +90,7 @@ function join(
             if (ee && ee.handResult === hr) ee.handResult = null;
             return new globalThis.Map(mm);
           });
-        }, 7000);
+        }, 10000);
       } else if (evt.type === 'connected') {
         e.connected = true;
         e.reconnecting = false;
@@ -154,17 +150,10 @@ export const myTurnTables = derived(activeTables, ($t) => {
   const out: number[] = [];
   for (const [id, t] of $t) {
     if (!t.state || !t.myUserId) continue;
-    const seat = t.state.seats.find(
-      (s: any) => Number(s.userId) === Number(t.myUserId),
-    );
+    const seat = t.state.seats.find((s: any) => Number(s.userId) === Number(t.myUserId));
     if (!seat) continue;
     const winners = t.state.winners ?? [];
-    if (
-      t.state.currentSeat === seat.seat &&
-      !seat.folded &&
-      !seat.allIn &&
-      winners.length === 0
-    ) {
+    if (t.state.currentSeat === seat.seat && !seat.folded && !seat.allIn && winners.length === 0) {
       out.push(id);
     }
   }

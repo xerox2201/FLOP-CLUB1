@@ -405,7 +405,15 @@ class GameManager {
       console.error('[finishHand] ERROR:', e);
     }
 
-    const handInterval = Number(process.env.HANDS_INTERVAL_MS ?? 5000);
+    const HAND_INTERVALS: Record<string, number> = {
+      regular: 9000,
+      fast: 7000,
+      turbo: 6000,
+      hyper: 5000,
+    };
+    const handInterval = Number(
+      process.env.HANDS_INTERVAL_MS ?? HAND_INTERVALS[room.speed] ?? 9000,
+    );
     setTimeout(() => {
       const r = this.rooms.get(room.tableId);
       if (!r) return;
@@ -539,7 +547,36 @@ class GameManager {
       );
     }
   }
+  // ============================================================
+  // Tournament rebuy/addon: update player stack in-room
+  // Called by TournamentManager after DB + ledger are updated.
+  // Only safe to call between hands (not mid-action).
+  // ============================================================
+  updatePlayerStackInTournament(tournamentId: number, userId: number, newStack: number): void {
+    for (const room of this.rooms.values()) {
+      if (room.tournamentId !== tournamentId) continue;
+      const seatIdx = room.game.state.seats.findIndex(
+        (s: any) => Number(s.userId) === Number(userId),
+      );
+      if (seatIdx >= 0) {
+        room.game.state.seats[seatIdx].stack = newStack;
+        room.game.state.seats[seatIdx].allIn = false;
+      }
+      const p = room.players.get(`user_${userId}`);
+      if (p) p.tournamentStack = newStack;
+      console.log(`[room] 🔄 stack updated: T#${tournamentId} user=${userId} newStack=${newStack}`);
+    }
+  }
 
+  getRoomForUserInTournament(tournamentId: number, userId: number): TableRoom | null {
+    for (const room of this.rooms.values()) {
+      if (room.tournamentId !== tournamentId) continue;
+      if (room.game.state.seats.some((s: any) => Number(s.userId) === Number(userId))) {
+        return room;
+      }
+    }
+    return null;
+  }
   getRoom(tableId: number | string): TableRoom | undefined {
     return this.rooms.get(Number(tableId));
   }

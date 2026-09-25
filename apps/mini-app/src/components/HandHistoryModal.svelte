@@ -149,7 +149,15 @@
           class="w-9 h-9 rounded-xl flex items-center justify-center text-white/70 active:scale-95"
           style="background: rgba(30,58,138,0.4); border: 1px solid rgba(96,165,250,0.3);"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+          >
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
@@ -158,7 +166,16 @@
           class="w-9 h-9 rounded-xl flex items-center justify-center"
           style="background: linear-gradient(180deg, rgba(212,175,55,0.2), rgba(168,122,21,0.1)); border: 1px solid rgba(212,175,55,0.4);"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#d4af37"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
             <path d="M14 2v6h6" />
             <path d="M8 13h8M8 17h5" />
@@ -192,7 +209,15 @@
         class="w-9 h-9 rounded-xl flex items-center justify-center text-white/60 active:scale-95"
         style="background: rgba(255,255,255,0.06);"
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+        >
           <path d="M6 6l12 12M18 6L6 18" />
         </svg>
       </button>
@@ -202,7 +227,9 @@
     <div class="flex-1 overflow-y-auto no-scrollbar">
       {#if loading}
         <div class="flex items-center justify-center h-full">
-          <div class="w-8 h-8 border-2 border-gold/30 border-t-gold rounded-full animate-spin"></div>
+          <div
+            class="w-8 h-8 border-2 border-gold/30 border-t-gold rounded-full animate-spin"
+          ></div>
         </div>
       {:else if error}
         <div class="flex items-center justify-center h-full p-4">
@@ -237,20 +264,14 @@
 
         <!-- Filter chips -->
         <div class="flex gap-1.5 px-3 py-3 overflow-x-auto no-scrollbar">
-          {#each [
-            { k: 'all', l: 'All' },
-            { k: 'won', l: 'Won' },
-            { k: 'lost', l: 'Lost' },
-            { k: 'real', l: 'Real' },
-            { k: 'free', l: 'Free' },
-          ] as f}
+          {#each [{ k: 'all', l: 'All' }, { k: 'won', l: 'Won' }, { k: 'lost', l: 'Lost' }, { k: 'real', l: 'Real' }, { k: 'free', l: 'Free' }] as f}
             <button
               on:click={() => (filter = f.k as any)}
               class="shrink-0 px-3 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider"
               style="
                 background: {filter === f.k
-                  ? 'linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15)'
-                  : 'rgba(15,31,58,0.7)'};
+                ? 'linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15)'
+                : 'rgba(15,31,58,0.7)'};
                 color: {filter === f.k ? '#0a0800' : 'rgba(255,255,255,0.65)'};
                 border: 1px solid {filter === f.k ? 'transparent' : 'rgba(212,175,55,0.2)'};
               "
@@ -262,7 +283,17 @@
 
         {#if filteredHands.length === 0}
           <div class="flex flex-col items-center justify-center py-12 px-6 text-center">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="rgba(212,175,55,0.3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mb-3">
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="rgba(212,175,55,0.3)"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="mb-3"
+            >
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
               <path d="M14 2v6h6" />
             </svg>
@@ -284,7 +315,9 @@
                 <!-- Left accent -->
                 <div
                   class="absolute left-0 top-0 bottom-0 w-1"
-                  style="background: linear-gradient(180deg, {isWin ? '#10b981' : '#6b7280'}, {isWin ? '#10b98166' : '#6b728066'});"
+                  style="background: linear-gradient(180deg, {isWin ? '#10b981' : '#6b7280'}, {isWin
+                    ? '#10b98166'
+                    : '#6b728066'});"
                 ></div>
 
                 <div class="pl-2 flex items-center gap-3">
@@ -293,15 +326,34 @@
                     class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                     style="
                       background: {isWin ? 'rgba(16,185,129,0.15)' : 'rgba(107,114,128,0.15)'};
-                      border: 1.5px solid {isWin ? 'rgba(16,185,129,0.4)' : 'rgba(107,114,128,0.3)'};
+                      border: 1.5px solid {isWin
+                      ? 'rgba(16,185,129,0.4)'
+                      : 'rgba(107,114,128,0.3)'};
                     "
                   >
                     {#if isWin}
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6ee7b7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#6ee7b7"
+                        stroke-width="3"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
                         <path d="M20 6L9 17l-5-5" />
                       </svg>
                     {:else}
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="3" stroke-linecap="round">
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="rgba(255,255,255,0.4)"
+                        stroke-width="3"
+                        stroke-linecap="round"
+                      >
                         <path d="M6 6l12 12M18 6L6 18" />
                       </svg>
                     {/if}
@@ -314,7 +366,9 @@
                       <span
                         class="text-[8px] font-extrabold px-1.5 py-0.5 rounded-full tracking-wider"
                         style="
-                          background: {h.mode === 'free' ? 'rgba(16,185,129,0.2)' : 'linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15)'};
+                          background: {h.mode === 'free'
+                          ? 'rgba(16,185,129,0.2)'
+                          : 'linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15)'};
                           color: {h.mode === 'free' ? '#6ee7b7' : '#0a0800'};
                         "
                       >
@@ -367,7 +421,9 @@
                 class="rounded-2xl p-3"
                 style="background: rgba(15,31,58,0.7); border: 1px solid rgba(212,175,55,0.15);"
               >
-                <div class="text-[9px] uppercase tracking-widest text-gold/70 mb-2 font-bold">Info</div>
+                <div class="text-[9px] uppercase tracking-widest text-gold/70 mb-2 font-bold">
+                  Info
+                </div>
                 <div class="space-y-1.5 text-[11px] font-mono">
                   <div class="flex justify-between">
                     <span class="text-white/40">Date</span>
@@ -375,11 +431,15 @@
                   </div>
                   <div class="flex justify-between">
                     <span class="text-white/40">Table</span>
-                    <span class="text-white/85 truncate ml-2">{selectedDetail.hand.tableName || selectedHand.tableName}</span>
+                    <span class="text-white/85 truncate ml-2"
+                      >{selectedDetail.hand.tableName || selectedHand.tableName}</span
+                    >
                   </div>
                   <div class="flex justify-between">
                     <span class="text-white/40">Blinds</span>
-                    <span class="text-white/85 tabular-nums">${fmt(selectedHand.smallBlind)} / ${fmt(selectedHand.bigBlind)}</span>
+                    <span class="text-white/85 tabular-nums"
+                      >${fmt(selectedHand.smallBlind)} / ${fmt(selectedHand.bigBlind)}</span
+                    >
                   </div>
                   <div class="flex justify-between">
                     <span class="text-white/40">Players</span>
@@ -397,8 +457,12 @@
                 "
               >
                 <div class="flex items-baseline justify-between mb-1">
-                  <span class="text-[10px] uppercase tracking-widest text-gold/80 font-bold">Total Pot</span>
-                  <span class="text-xl font-extrabold text-gold tabular-nums">${fmt(selectedHand.pot)}</span>
+                  <span class="text-[10px] uppercase tracking-widest text-gold/80 font-bold"
+                    >Total Pot</span
+                  >
+                  <span class="text-xl font-extrabold text-gold tabular-nums"
+                    >${fmt(selectedHand.pot)}</span
+                  >
                 </div>
                 <div class="flex justify-between text-[10px] text-white/50">
                   <span>Rake</span>
@@ -412,10 +476,24 @@
                   class="rounded-2xl p-3"
                   style="background: rgba(15,31,58,0.7); border: 1px solid rgba(212,175,55,0.15);"
                 >
-                  <div class="text-[9px] uppercase tracking-widest text-gold/70 mb-2 font-bold">Board</div>
+                  <div class="text-[9px] uppercase tracking-widest text-gold/70 mb-2 font-bold">
+                    Board ({selectedDetail.hand.community.length}/5)
+                  </div>
                   <div class="flex gap-1.5 justify-center py-1">
-                    {#each selectedDetail.hand.community as c}
-                      <PlayingCard rank={c.r} suit={suitChar(c.s)} size="md" />
+                    {#each Array(5) as _, i}
+                      {#if selectedDetail.hand.community[i]}
+                        <PlayingCard
+                          rank={selectedDetail.hand.community[i].r}
+                          suit={suitChar(selectedDetail.hand.community[i].s)}
+                          size="md"
+                        />
+                      {:else}
+                        <div
+                          class="w-[50px] h-[70px] rounded-md"
+                          style="background: rgba(0,0,0,0.3);
+                      border: 1px dashed rgba(255,255,255,0.1);"
+                        ></div>
+                      {/if}
                     {/each}
                   </div>
                 </div>
@@ -435,29 +513,73 @@
                   <div class="space-y-1">
                     {#each selectedDetail.hand.players as p}
                       {@const won = selectedHand.winners.includes(p.seat)}
+                      {@const sp = selectedDetail.hand.showdownPlayers?.find(
+                        (x: any) => x.seat === p.seat,
+                      )}
+                      {@const hole = sp?.hole ?? []}
+                      {@const best = sp?.best ?? []}
                       <div
-                        class="flex items-center justify-between px-2.5 py-2 rounded-xl"
+                        class="px-2.5 py-2 rounded-xl"
                         style="
-                          background: {won ? 'linear-gradient(90deg, rgba(212,175,55,0.15), rgba(212,175,55,0.03))' : 'rgba(0,0,0,0.25)'};
-                          border: 1px solid {won ? 'rgba(212,175,55,0.4)' : 'rgba(255,255,255,0.04)'};
-                        "
+         background: {won
+                          ? 'linear-gradient(90deg, rgba(212,175,55,0.15), rgba(212,175,55,0.03))'
+                          : 'rgba(0,0,0,0.25)'};
+         border: 1px solid {won ? 'rgba(212,175,55,0.4)' : 'rgba(255,255,255,0.04)'};
+         {won ? 'box-shadow: 0 0 10px rgba(212,175,55,0.15);' : ''}
+       "
                       >
-                        <div class="flex items-center gap-2">
-                          {#if won}
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="#f4c95d">
-                              <path d="M3 7l4 5 5-7 5 7 4-5v12H3V7z" />
-                            </svg>
-                          {:else}
-                            <span class="w-3"></span>
-                          {/if}
-                          <span class="text-[11px] font-bold" style="color: {won ? '#f4e5a8' : 'rgba(255,255,255,0.75)'};">
-                            {p.displayName}
+                        <div class="flex items-center justify-between">
+                          <div class="flex items-center gap-2">
+                            {#if won}
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="#f4c95d">
+                                <path d="M3 7l4 5 5-7 5 7 4-5v12H3V7z" />
+                              </svg>
+                            {:else}
+                              <span class="w-3"></span>
+                            {/if}
+                            <span
+                              class="text-[11px] font-bold"
+                              style="color: {won ? '#f4e5a8' : 'rgba(255,255,255,0.75)'};"
+                            >
+                              {p.displayName}
+                            </span>
+                            <span class="text-[9px] text-white/30 font-mono">S{p.seat}</span>
+                          </div>
+                          <span
+                            class="text-[11px] font-mono tabular-nums"
+                            style="color: {won ? '#d4af37' : 'rgba(255,255,255,0.6)'};"
+                          >
+                            ${fmt(p.stack)}
                           </span>
-                          <span class="text-[9px] text-white/30 font-mono">S{p.seat}</span>
                         </div>
-                        <span class="text-[11px] font-mono tabular-nums" style="color: {won ? '#d4af37' : 'rgba(255,255,255,0.6)'};">
-                          ${fmt(p.stack)}
-                        </span>
+                        {#if hole.length > 0}
+                          <div class="flex gap-1 mt-1.5">
+                            {#each hole as c}
+                              {@const isBest = best.some((b: any) => b.r === c.r && b.s === c.s)}
+                              <div class="relative">
+                                <PlayingCard
+                                  rank={c.r}
+                                  suit={suitChar(c.s)}
+                                  size="xs"
+                                  dim={!isBest && won}
+                                />
+                                {#if isBest}
+                                  <div
+                                    class="absolute -inset-0.5 rounded-md winning-card-glow pointer-events-none"
+                                  ></div>
+                                {/if}
+                              </div>
+                            {/each}
+                            {#if sp?.handName}
+                              <span
+                                class="text-[9px] font-bold self-center ml-1"
+                                style="color: {won ? '#f4c95d' : 'rgba(255,255,255,0.5)'};"
+                              >
+                                {sp.handName}
+                              </span>
+                            {/if}
+                          </div>
+                        {/if}
                       </div>
                     {/each}
                   </div>
@@ -472,7 +594,9 @@
                     class="rounded-2xl p-3"
                     style="background: rgba(15,31,58,0.7); border: 1px solid rgba(212,175,55,0.15);"
                   >
-                    <div class="text-[10px] uppercase tracking-widest text-gold/80 mb-2 font-bold flex items-center gap-2">
+                    <div
+                      class="text-[10px] uppercase tracking-widest text-gold/80 mb-2 font-bold flex items-center gap-2"
+                    >
                       <span>{label}</span>
                       <span class="text-white/30 font-normal">· {actionsByStreet[key].length}</span>
                     </div>
@@ -487,19 +611,19 @@
                               class="font-extrabold uppercase text-[10px] px-2 py-0.5 rounded-md"
                               style="
                                 background: {a.action === 'FOLD'
-                                  ? 'rgba(239,68,68,0.15)'
-                                  : a.action === 'CALL'
-                                    ? 'rgba(16,185,129,0.15)'
-                                    : a.action === 'RAISE' || a.action === 'BET'
-                                      ? 'rgba(59,130,246,0.15)'
-                                      : 'rgba(139,92,246,0.15)'};
+                                ? 'rgba(239,68,68,0.15)'
+                                : a.action === 'CALL'
+                                  ? 'rgba(16,185,129,0.15)'
+                                  : a.action === 'RAISE' || a.action === 'BET'
+                                    ? 'rgba(59,130,246,0.15)'
+                                    : 'rgba(139,92,246,0.15)'};
                                 color: {a.action === 'FOLD'
-                                  ? '#fca5a5'
-                                  : a.action === 'CALL'
-                                    ? '#6ee7b7'
-                                    : a.action === 'RAISE' || a.action === 'BET'
-                                      ? '#93c5fd'
-                                      : '#c4b5fd'};
+                                ? '#fca5a5'
+                                : a.action === 'CALL'
+                                  ? '#6ee7b7'
+                                  : a.action === 'RAISE' || a.action === 'BET'
+                                    ? '#93c5fd'
+                                    : '#c4b5fd'};
                               "
                             >
                               {a.action}
@@ -521,7 +645,7 @@
           {:else if activeTab === 'results'}
             <div class="space-y-3">
               {#if selectedDetail.hand.players && selectedDetail.hand.players.length > 0}
-                {#each selectedDetail.hand.players.filter((p: any) => selectedHand.winners.includes(p.seat)) as w}
+                {#each selectedDetail.hand.players.filter( (p: any) => selectedHand.winners.includes(p.seat) ) as w}
                   <div
                     class="rounded-2xl p-4"
                     style="
@@ -545,7 +669,9 @@
                   class="rounded-2xl p-3 text-center"
                   style="background: linear-gradient(135deg, rgba(244,201,93,0.15), rgba(168,121,34,0.05)); border: 1px solid rgba(244,201,93,0.4);"
                 >
-                  <p class="text-[11px] text-white/70">Winners: Seats {selectedHand.winners.join(', ')}</p>
+                  <p class="text-[11px] text-white/70">
+                    Winners: Seats {selectedHand.winners.join(', ')}
+                  </p>
                 </div>
               {/if}
 
@@ -553,7 +679,9 @@
                 class="rounded-2xl p-3"
                 style="background: rgba(15,31,58,0.7); border: 1px solid rgba(212,175,55,0.15);"
               >
-                <div class="text-[9px] uppercase tracking-widest text-gold/70 mb-2 font-bold">Final</div>
+                <div class="text-[9px] uppercase tracking-widest text-gold/70 mb-2 font-bold">
+                  Final
+                </div>
                 <div class="space-y-1.5 text-[11px] font-mono">
                   <div class="flex justify-between">
                     <span class="text-white/40">Pot</span>
@@ -572,3 +700,23 @@
     </div>
   </div>
 {/if}
+
+<style>
+  @keyframes winning-card-glow-kf {
+    0%,
+    100% {
+      box-shadow:
+        0 0 6px rgba(244, 201, 93, 0.6),
+        0 0 0 1.5px rgba(244, 201, 93, 0.8);
+    }
+    50% {
+      box-shadow:
+        0 0 16px rgba(244, 201, 93, 1),
+        0 0 0 2px rgba(244, 201, 93, 1);
+    }
+  }
+  .winning-card-glow {
+    animation: winning-card-glow-kf 1.4s ease-in-out infinite;
+    border-radius: 6px;
+  }
+</style>

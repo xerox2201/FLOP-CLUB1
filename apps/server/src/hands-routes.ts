@@ -182,6 +182,8 @@ export async function registerHandsRoutes(app: FastifyInstance, db: Pool): Promi
           bigBlind: Number(row.big_blind || 0),
           playerCount: row.player_count,
           players,
+          showdownPlayers: row.result?.showdownPlayers ?? [],
+          sidePots: row.result?.sidePots ?? [],
         },
         events: enrichedEvents,
       };

@@ -28,15 +28,18 @@ function isAdmin(req: any): boolean {
   const auth = req.headers.authorization;
   return auth === `Bearer ${ADMIN_SECRET}`;
 }
+
 import type { TournamentScheduler } from './tournament-scheduler.js';
 import { SeasonManager } from './season-manager.js';
+
 export async function registerTournamentRoutes(
   app: FastifyInstance,
   db: Pool,
-    tm: TournamentManager,
+  tm: TournamentManager,
   scheduler: TournamentScheduler,
 ): Promise<void> {
   const seasons = new SeasonManager(db);
+
   app.get<{ Querystring: { status?: string; variant?: string; mode?: string } }>(
     '/api/tournaments',
     async (req) => {
@@ -50,14 +53,14 @@ export async function registerTournamentRoutes(
   );
 
   app.get<{ Params: { id: string } }>('/api/tournaments/:id', async (req, reply) => {
-  const id = Number(req.params.id);
-  if (!id) return reply.code(400).send({ error: 'invalid_id' });
+    const id = Number(req.params.id);
+    if (!id) return reply.code(400).send({ error: 'invalid_id' });
 
-  const userId = authUser(req);
-  const t = await tm.get(id, userId);
-  if (!t) return reply.code(404).send({ error: 'not_found' });
-  return t;
-});
+    const userId = authUser(req);
+    const t = await tm.get(id, userId);
+    if (!t) return reply.code(404).send({ error: 'not_found' });
+    return t;
+  });
 
   app.post<{ Body: Record<string, any> }>('/api/tournaments', async (req, reply) => {
     const userId = authUserOrAdmin(req);
@@ -94,6 +97,16 @@ export async function registerTournamentRoutes(
         blindStructureId: Number(body.blindStructureId),
         isPrivate: !!body.isPrivate,
         createdBy: userId,
+        // Rebuy/Addon
+        allowRebuy: !!body.allowRebuy,
+        maxRebuys: Number(body.maxRebuys || 0),
+        rebuyAmount: Number(body.rebuyAmount || 0),
+        rebuyStack: Number(body.rebuyStack || 0),
+        rebuyUntilLevel: Number(body.rebuyUntilLevel || 0),
+        allowAddon: !!body.allowAddon,
+        addonAmount: Number(body.addonAmount || 0),
+        addonStack: Number(body.addonStack || 0),
+        addonAtLevel: Number(body.addonAtLevel || 0),
       });
       return { ok: true, tournamentId: id };
     } catch (e: any) {
@@ -121,6 +134,36 @@ export async function registerTournamentRoutes(
     if (!id) return reply.code(400).send({ error: 'invalid_id' });
 
     const result = await tm.unregister(id, userId);
+    if (!result.ok) return reply.code(400).send({ error: result.error });
+    return { ok: true };
+  });
+
+  // ============================================================
+  // REBUY
+  // ============================================================
+  app.post<{ Params: { id: string } }>('/api/tournaments/:id/rebuy', async (req, reply) => {
+    const userId = authUserOrAdmin(req);
+    if (!userId) return reply.code(401).send({ error: 'notoken' });
+
+    const id = Number(req.params.id);
+    if (!id) return reply.code(400).send({ error: 'invalid_id' });
+
+    const result = await tm.rebuy(id, userId);
+    if (!result.ok) return reply.code(400).send({ error: result.error });
+    return { ok: true };
+  });
+
+  // ============================================================
+  // ADDON
+  // ============================================================
+  app.post<{ Params: { id: string } }>('/api/tournaments/:id/addon', async (req, reply) => {
+    const userId = authUserOrAdmin(req);
+    if (!userId) return reply.code(401).send({ error: 'notoken' });
+
+    const id = Number(req.params.id);
+    if (!id) return reply.code(400).send({ error: 'invalid_id' });
+
+    const result = await tm.addon(id, userId);
     if (!result.ok) return reply.code(400).send({ error: result.error });
     return { ok: true };
   });
@@ -169,7 +212,7 @@ export async function registerTournamentRoutes(
   );
 
   // ============================================================
-  // D5.4: SATELLITE TICKETS
+  // SATELLITE TICKETS
   // ============================================================
   app.get('/api/tournaments/satellite/tickets', async (req, reply) => {
     const userId = authUser(req);
@@ -193,8 +236,9 @@ export async function registerTournamentRoutes(
       })),
     };
   });
+
   // ============================================================
-  // D6.2: SEASONS + TOURNAMENT LEADERBOARD
+  // SEASONS + TOURNAMENT LEADERBOARD
   // ============================================================
   app.get('/api/leaderboard/season', async () => {
     const season = await seasons.ensureActiveSeason();
@@ -224,8 +268,9 @@ export async function registerTournamentRoutes(
     const list = await seasons.list();
     return { seasons: list };
   });
+
   // ============================================================
-  // D6.3: MY TOURNAMENT HISTORY
+  // MY TOURNAMENT HISTORY
   // ============================================================
   app.get<{ Querystring: { filter?: string; limit?: string } }>(
     '/api/my/tournaments',
@@ -262,7 +307,6 @@ export async function registerTournamentRoutes(
           [userId, limit],
         );
 
-        // Aggregate stats
         const statsRes = await db.query(
           `SELECT
              COUNT(*)::int AS total,
@@ -327,10 +371,7 @@ export async function registerTournamentRoutes(
   );
 
   // ============================================================
-  // ADMIN ENDPOINTS
-  // ============================================================
-  // ============================================================
-  // D6.1: TOURNAMENT TEMPLATES (Recurring)
+  // ADMIN — TEMPLATES
   // ============================================================
   app.get('/api/admin/tournament-templates', async (req, reply) => {
     if (!isAdmin(req)) return reply.code(403).send({ error: 'forbidden' });
@@ -361,6 +402,15 @@ export async function registerTournamentRoutes(
         scheduleTime: t.schedule_time,
         scheduleDay: t.schedule_day,
         isActive: t.is_active,
+        allowRebuy: t.allow_rebuy ?? false,
+        maxRebuys: Number(t.max_rebuys ?? 0),
+        rebuyAmount: Number(t.rebuy_amount ?? 0),
+        rebuyStack: Number(t.rebuy_stack ?? 0),
+        rebuyUntilLevel: Number(t.rebuy_until_level ?? 0),
+        allowAddon: t.allow_addon ?? false,
+        addonAmount: Number(t.addon_amount ?? 0),
+        addonStack: Number(t.addon_stack ?? 0),
+        addonAtLevel: Number(t.addon_at_level ?? 0),
         nextRunAt: t.next_run_at,
         lastRunAt: t.last_run_at,
         createdAt: t.created_at,
@@ -368,44 +418,50 @@ export async function registerTournamentRoutes(
     };
   });
 
-  app.post<{ Body: Record<string, any> }>(
-    '/api/admin/tournament-templates',
-    async (req, reply) => {
-      if (!isAdmin(req)) return reply.code(403).send({ error: 'forbidden' });
-      const b: Record<string, any> = req.body ?? {};
-      if (!b.name || !b.blindStructureId || !b.scheduleType) {
-        return reply.code(400).send({ error: 'missing_fields' });
-      }
-      const result = await scheduler.create({
-        name: b.name,
-        variant: b.variant || 'holdem',
-        mode: b.mode || 'free',
-        format: b.format || 'sng',
-        speed: b.speed || 'regular',
-        buy_in: Number(b.buyIn || 0),
-        fee: Number(b.fee || 0),
-        starting_stack: Number(b.startingStack || 5000),
-        min_players: Number(b.minPlayers || 2),
-        max_players: Number(b.maxPlayers || 100),
-        guaranteed: Number(b.guaranteed || 0),
-        late_reg_min: Number(b.lateRegMin || 0),
-        late_reg_level: Number(b.lateRegLevel || 0),
-        allow_re_entry: !!b.allowReEntry,
-        max_re_entries: Number(b.maxReEntries || 1),
-        is_bounty: !!b.isBounty,
-        bounty_amount: Number(b.bountyAmount || 0),
-        satellite_target_id: b.satelliteTargetId ? Number(b.satelliteTargetId) : null,
-        seats_awarded: Number(b.seatsAwarded || 0),
-        blind_structure_id: Number(b.blindStructureId),
-        schedule_type: b.scheduleType,
-        schedule_time: b.scheduleTime || '14:00',
-        schedule_day: Number(b.scheduleDay || 0),
-        created_by: 1,
-      });
-      if (!result.ok) return reply.code(400).send({ error: result.error });
-      return { ok: true, templateId: result.templateId };
-    },
-  );
+  app.post<{ Body: Record<string, any> }>('/api/admin/tournament-templates', async (req, reply) => {
+    if (!isAdmin(req)) return reply.code(403).send({ error: 'forbidden' });
+    const b: Record<string, any> = req.body ?? {};
+    if (!b.name || !b.blindStructureId || !b.scheduleType) {
+      return reply.code(400).send({ error: 'missing_fields' });
+    }
+    const result = await scheduler.create({
+      name: b.name,
+      variant: b.variant || 'holdem',
+      mode: b.mode || 'free',
+      format: b.format || 'sng',
+      speed: b.speed || 'regular',
+      buy_in: Number(b.buyIn || 0),
+      fee: Number(b.fee || 0),
+      starting_stack: Number(b.startingStack || 5000),
+      min_players: Number(b.minPlayers || 2),
+      max_players: Number(b.maxPlayers || 100),
+      guaranteed: Number(b.guaranteed || 0),
+      late_reg_min: Number(b.lateRegMin || 0),
+      late_reg_level: Number(b.lateRegLevel || 0),
+      allow_re_entry: !!b.allowReEntry,
+      max_re_entries: Number(b.maxReEntries || 1),
+      is_bounty: !!b.isBounty,
+      bounty_amount: Number(b.bountyAmount || 0),
+      satellite_target_id: b.satelliteTargetId ? Number(b.satelliteTargetId) : null,
+      seats_awarded: Number(b.seatsAwarded || 0),
+      blind_structure_id: Number(b.blindStructureId),
+      schedule_type: b.scheduleType,
+      schedule_time: b.scheduleTime || '14:00',
+      schedule_day: Number(b.scheduleDay || 0),
+      allow_rebuy: !!b.allowRebuy,
+      max_rebuys: Number(b.maxRebuys || 0),
+      rebuy_amount: Number(b.rebuyAmount || 0),
+      rebuy_stack: Number(b.rebuyStack || 0),
+      rebuy_until_level: Number(b.rebuyUntilLevel || 0),
+      allow_addon: !!b.allowAddon,
+      addon_amount: Number(b.addonAmount || 0),
+      addon_stack: Number(b.addonStack || 0),
+      addon_at_level: Number(b.addonAtLevel || 0),
+      created_by: 1,
+    });
+    if (!result.ok) return reply.code(400).send({ error: result.error });
+    return { ok: true, templateId: result.templateId };
+  });
 
   app.post<{ Params: { id: string }; Body: { active: boolean } }>(
     '/api/admin/tournament-templates/:id/toggle',
@@ -430,136 +486,126 @@ export async function registerTournamentRoutes(
     },
   );
 
-  // Pause
-  app.post<{ Params: { id: string } }>(
-    '/api/admin/tournaments/:id/pause',
-    async (req, reply) => {
-      if (!isAdmin(req)) return reply.code(403).send({ error: 'forbidden' });
-      const id = Number(req.params.id);
-      if (!id) return reply.code(400).send({ error: 'invalid_id' });
-      const result = await tm.pause(id);
-      if (!result.ok) return reply.code(400).send({ error: result.error });
-      return { ok: true, status: 'paused' };
-    },
-  );
+  // ============================================================
+  // ADMIN — PAUSE / RESUME / CANCEL
+  // ============================================================
+  app.post<{ Params: { id: string } }>('/api/admin/tournaments/:id/pause', async (req, reply) => {
+    if (!isAdmin(req)) return reply.code(403).send({ error: 'forbidden' });
+    const id = Number(req.params.id);
+    if (!id) return reply.code(400).send({ error: 'invalid_id' });
+    const result = await tm.pause(id);
+    if (!result.ok) return reply.code(400).send({ error: result.error });
+    return { ok: true, status: 'paused' };
+  });
 
-  // Resume
-  app.post<{ Params: { id: string } }>(
-    '/api/admin/tournaments/:id/resume',
-    async (req, reply) => {
-      if (!isAdmin(req)) return reply.code(403).send({ error: 'forbidden' });
-      const id = Number(req.params.id);
-      if (!id) return reply.code(400).send({ error: 'invalid_id' });
-      const result = await tm.resume(id);
-      if (!result.ok) return reply.code(400).send({ error: result.error });
-      return { ok: true, status: 'running' };
-    },
-  );
+  app.post<{ Params: { id: string } }>('/api/admin/tournaments/:id/resume', async (req, reply) => {
+    if (!isAdmin(req)) return reply.code(403).send({ error: 'forbidden' });
+    const id = Number(req.params.id);
+    if (!id) return reply.code(400).send({ error: 'invalid_id' });
+    const result = await tm.resume(id);
+    if (!result.ok) return reply.code(400).send({ error: result.error });
+    return { ok: true, status: 'running' };
+  });
 
-  // Cancel + refund
-  app.post<{ Params: { id: string } }>(
-    '/api/admin/tournaments/:id/cancel',
-    async (req, reply) => {
-      if (!isAdmin(req)) return reply.code(403).send({ error: 'forbidden' });
+  app.post<{ Params: { id: string } }>('/api/admin/tournaments/:id/cancel', async (req, reply) => {
+    if (!isAdmin(req)) return reply.code(403).send({ error: 'forbidden' });
 
-      const id = Number(req.params.id);
-      if (!id) return reply.code(400).send({ error: 'invalid_id' });
+    const id = Number(req.params.id);
+    if (!id) return reply.code(400).send({ error: 'invalid_id' });
 
-      const client = await db.connect();
-      try {
-        await client.query('BEGIN');
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
 
-        const tRes = await client.query(
-          'SELECT id, status, buy_in, fee FROM tournaments WHERE id = $1 FOR UPDATE',
-          [id],
-        );
-        if (tRes.rows.length === 0) {
-          await client.query('ROLLBACK');
-          return reply.code(404).send({ error: 'not_found' });
-        }
-        const t = tRes.rows[0];
-        if (t.status === 'cancelled' || t.status === 'finished') {
-          await client.query('ROLLBACK');
-          return reply.code(400).send({ error: 'already_done', status: t.status });
-        }
+      const tRes = await client.query(
+        'SELECT id, status, buy_in, fee FROM tournaments WHERE id = $1 FOR UPDATE',
+        [id],
+      );
+      if (tRes.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return reply.code(404).send({ error: 'not_found' });
+      }
+      const t = tRes.rows[0];
+      if (t.status === 'cancelled' || t.status === 'finished') {
+        await client.query('ROLLBACK');
+        return reply.code(400).send({ error: 'already_done', status: t.status });
+      }
 
-        const entries = await client.query(
-          `SELECT user_id FROM tournament_entries 
+      const entries = await client.query(
+        `SELECT user_id FROM tournament_entries 
            WHERE tournament_id = $1 AND status = 'registered'`,
-          [id],
+        [id],
+      );
+
+      const refundTotal = Number(t.buy_in) + Number(t.fee);
+      let refunded = 0;
+      if (refundTotal > 0 && entries.rows.length > 0) {
+        const entryAcc = await client.query(
+          `SELECT id FROM accounts WHERE code = 'SYSTEM_TOURNAMENT_ENTRY'`,
         );
+        if (entryAcc.rows.length > 0) {
+          const entryAccId = entryAcc.rows[0].id;
+          for (const e of entries.rows) {
+            const userAcc = await client.query(`SELECT id FROM accounts WHERE code = $1`, [
+              `USER_${e.user_id}`,
+            ]);
+            if (userAcc.rows.length === 0) continue;
+            const userAccId = userAcc.rows[0].id;
 
-        const refundTotal = Number(t.buy_in) + Number(t.fee);
-        let refunded = 0;
-        if (refundTotal > 0 && entries.rows.length > 0) {
-          const entryAcc = await client.query(
-            `SELECT id FROM accounts WHERE code = 'SYSTEM_TOURNAMENT_ENTRY'`,
-          );
-          if (entryAcc.rows.length > 0) {
-            const entryAccId = entryAcc.rows[0].id;
-            for (const e of entries.rows) {
-              const userAcc = await client.query(`SELECT id FROM accounts WHERE code = $1`, [
-                `USER_${e.user_id}`,
-              ]);
-              if (userAcc.rows.length === 0) continue;
-              const userAccId = userAcc.rows[0].id;
-
-              const txRes = await client.query(
-                `INSERT INTO transactions (kind, ref, meta, status, user_id, amount, completed_at)
+            const txRes = await client.query(
+              `INSERT INTO transactions (kind, ref, meta, status, user_id, amount, completed_at)
                  VALUES ('TOURNAMENT_REFUND', $1, $2, 'completed', $3, $4, NOW())
                  RETURNING id`,
-                [
-                  `tourney_cancel_${id}_user_${e.user_id}`,
-                  JSON.stringify({ tournamentId: id, reason: 'cancelled' }),
-                  e.user_id,
-                  refundTotal,
-                ],
-              );
-              const txId = txRes.rows[0].id;
+              [
+                `tourney_cancel_${id}_user_${e.user_id}`,
+                JSON.stringify({ tournamentId: id, reason: 'cancelled' }),
+                e.user_id,
+                refundTotal,
+              ],
+            );
+            const txId = txRes.rows[0].id;
 
-              await client.query(
-                `INSERT INTO entries (tx_id, account_id, amount, currency)
+            await client.query(
+              `INSERT INTO entries (tx_id, account_id, amount, currency)
                  VALUES ($1, $2, $3, 'USD'), ($1, $4, $5, 'USD')`,
-                [txId, entryAccId, -refundTotal, userAccId, refundTotal],
-              );
+              [txId, entryAccId, -refundTotal, userAccId, refundTotal],
+            );
 
-              await client.query(
-                `UPDATE wallets SET balance_usd = balance_usd + $1, updated_at = NOW() WHERE user_id = $2`,
-                [refundTotal, e.user_id],
-              );
+            await client.query(
+              `UPDATE wallets SET balance_usd = balance_usd + $1, updated_at = NOW() WHERE user_id = $2`,
+              [refundTotal, e.user_id],
+            );
 
-              refunded++;
-            }
+            refunded++;
           }
         }
-
-        await client.query(
-          `UPDATE tournament_entries SET status = 'refunded' WHERE tournament_id = $1`,
-          [id],
-        );
-
-        await client.query(
-          `UPDATE tournaments SET status = 'cancelled', finished_at = NOW() WHERE id = $1`,
-          [id],
-        );
-
-        await client.query('COMMIT');
-
-        console.log(`[tournament] ❌ cancelled #${id}, refunded ${refunded} players`);
-
-        return { ok: true, refunded, refundTotal: refundTotal * refunded };
-      } catch (e: any) {
-        try {
-          await client.query('ROLLBACK');
-        } catch {}
-        return reply.code(500).send({ error: e.message });
-      } finally {
-        client.release();
       }
-    },
-  );
 
-  // List all (including cancelled/finished)
+      await client.query(
+        `UPDATE tournament_entries SET status = 'refunded' WHERE tournament_id = $1`,
+        [id],
+      );
+
+      await client.query(
+        `UPDATE tournaments SET status = 'cancelled', finished_at = NOW() WHERE id = $1`,
+        [id],
+      );
+
+      await client.query('COMMIT');
+
+      console.log(`[tournament] ❌ cancelled #${id}, refunded ${refunded} players`);
+
+      return { ok: true, refunded, refundTotal: refundTotal * refunded };
+    } catch (e: any) {
+      try {
+        await client.query('ROLLBACK');
+      } catch {}
+      return reply.code(500).send({ error: e.message });
+    } finally {
+      client.release();
+    }
+  });
+
   app.get('/api/admin/tournaments', async (req, reply) => {
     if (!isAdmin(req)) return reply.code(403).send({ error: 'forbidden' });
 
@@ -602,11 +648,20 @@ export async function registerTournamentRoutes(
         createdAt: r.created_at,
         startedAt: r.started_at,
         finishedAt: r.finished_at,
+        // Rebuy/Addon
+        allowRebuy: r.allow_rebuy ?? false,
+        maxRebuys: Number(r.max_rebuys ?? 0),
+        rebuyAmount: Number(r.rebuy_amount ?? 0),
+        rebuyStack: Number(r.rebuy_stack ?? 0),
+        rebuyUntilLevel: Number(r.rebuy_until_level ?? 0),
+        allowAddon: r.allow_addon ?? false,
+        addonAmount: Number(r.addon_amount ?? 0),
+        addonStack: Number(r.addon_stack ?? 0),
+        addonAtLevel: Number(r.addon_at_level ?? 0),
       })),
     };
   });
 
-  // Global stats
   app.get('/api/admin/stats', async (req, reply) => {
     if (!isAdmin(req)) return reply.code(403).send({ error: 'forbidden' });
 
