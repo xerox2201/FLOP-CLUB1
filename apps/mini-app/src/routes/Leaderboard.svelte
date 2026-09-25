@@ -4,6 +4,7 @@
   import Avatar from '../components/Avatar.svelte';
   import { api } from '../lib/api';
   import { t } from '../i18n';
+  import Icon from '../components/Icon.svelte';
 
   let loading = true;
   let period: any = null;
@@ -35,10 +36,7 @@
 
   async function loadAll() {
     try {
-      const [cur, me] = await Promise.all([
-        api.getSeasonLeaderboard(),
-        api.getMySeasonRank(),
-      ]);
+      const [cur, me] = await Promise.all([api.getSeasonLeaderboard(), api.getMySeasonRank()]);
       if (cur.ok && cur.data) {
         period = cur.data.period ?? null;
         const raw = cur.data.entries ?? cur.data.leaderboard ?? [];
@@ -65,7 +63,9 @@
         period = res.data.period ?? null;
         displayPrizePool = res.data.livePrizePool ?? res.data.prizePool ?? 0;
       }
-    } catch {}
+    } catch {
+      // silent refresh — keep last known state
+    }
   }
 
   onMount(async () => {
@@ -77,10 +77,10 @@
     if (refreshTimer) clearInterval(refreshTimer);
   });
 
-  $: first  = entries[0] ?? null;
+  $: first = entries[0] ?? null;
   $: second = entries[1] ?? null;
-  $: third  = entries[2] ?? null;
-  $: rest   = entries.slice(3);
+  $: third = entries[2] ?? null;
+  $: rest = entries.slice(3);
 </script>
 
 <div class="px-4 pb-28">
@@ -127,7 +127,9 @@
     <p class="text-white/40 text-center py-12">{$t('common.loading')}</p>
   {:else if entries.length === 0}
     <div class="card text-center py-10">
-      <p class="text-4xl mb-2">🏅</p>
+      <div class="flex justify-center mb-2">
+        <Icon name="medal" size={48} />
+      </div>
       <p class="text-white/50 text-sm">{$t('leaderboard.noData')}</p>
     </div>
   {:else}
@@ -199,7 +201,8 @@
             <div class="flex-1 min-w-0">
               <p class="font-bold text-sm truncate text-white">{e.display_name}</p>
               <p class="text-[10px] text-white/50">
-                {e.hands_played} {handsLabel(e.hands_played)}
+                {e.hands_played}
+                {handsLabel(e.hands_played)}
               </p>
             </div>
             <div class="text-right shrink-0">
@@ -207,8 +210,11 @@
                 +${fmt(e.total_won_usd)}
               </p>
               {#if e.prize_usd > 0}
-                <p class="text-[10px] text-gold font-bold tabular-nums">
-                  🏆 ${fmt(e.prize_usd)}
+                <p
+                  class="text-[10px] text-gold font-bold tabular-nums flex items-center gap-1 justify-end"
+                >
+                  <Icon name="trophy" size={10} />
+                  <span>${fmt(e.prize_usd)}</span>
                 </p>
               {/if}
             </div>
@@ -251,22 +257,29 @@
     gap: 0.5rem;
     padding: 0.75rem 0.5rem 1rem;
     border-radius: 16px 16px 0 0;
-    background: linear-gradient(180deg, rgba(15,31,58,0.85), rgba(7,14,27,0.95));
-    border: 1px solid rgba(212,175,55,0.2);
+    background: linear-gradient(180deg, rgba(15, 31, 58, 0.85), rgba(7, 14, 27, 0.95));
+    border: 1px solid rgba(212, 175, 55, 0.2);
     border-bottom: none;
     position: relative;
     justify-content: flex-end;
   }
-  .slot-1 { min-height: 240px; border-color: rgba(244,201,93,0.5); }
-  .slot-2 { min-height: 205px; }
-  .slot-3 { min-height: 180px; }
+  .slot-1 {
+    min-height: 240px;
+    border-color: rgba(244, 201, 93, 0.5);
+  }
+  .slot-2 {
+    min-height: 205px;
+  }
+  .slot-3 {
+    min-height: 180px;
+  }
 
   .slot-1::before {
     content: '';
     position: absolute;
     inset: 0;
     border-radius: 16px 16px 0 0;
-    background: radial-gradient(ellipse at 50% 0%, rgba(244,201,93,0.15) 0%, transparent 70%);
+    background: radial-gradient(ellipse at 50% 0%, rgba(244, 201, 93, 0.15) 0%, transparent 70%);
     pointer-events: none;
   }
 
@@ -278,16 +291,21 @@
     height: 56px;
     width: 100%;
   }
-  .slot-1 .medal-wrap { height: 72px; }
+  .slot-1 .medal-wrap {
+    height: 72px;
+  }
 
   .medal {
     width: 96px;
     height: 96px;
     object-fit: contain;
-    filter: drop-shadow(0 3px 10px rgba(0,0,0,0.75));
+    filter: drop-shadow(0 3px 10px rgba(0, 0, 0, 0.75));
     flex-shrink: 0;
   }
-  .slot-1 .medal { width: 124px; height: 124px; }
+  .slot-1 .medal {
+    width: 124px;
+    height: 124px;
+  }
 
   .avatar-wrap {
     display: grid;
@@ -296,7 +314,7 @@
   .empty-slot {
     opacity: 0.3;
     font-size: 1.5rem;
-    color: rgba(255,255,255,0.5);
+    color: rgba(255, 255, 255, 0.5);
     align-self: center;
   }
   .name {
@@ -319,7 +337,7 @@
     top: -18px;
     width: 34px;
     height: 34px;
-    filter: drop-shadow(0 3px 8px rgba(244,201,93,0.7));
+    filter: drop-shadow(0 3px 8px rgba(244, 201, 93, 0.7));
     z-index: 2;
   }
 </style>

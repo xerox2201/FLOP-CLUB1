@@ -3,6 +3,7 @@
   import { api } from '../lib/api';
   import { getRealtime, realtimeConnected, TOURNAMENT_EVENT_RE } from '../lib/realtime';
   import TopBar from '../components/TopBar.svelte';
+  import Icon from '../components/Icon.svelte';
 
   export let onOpenTournament: (id: number) => void = () => {};
 
@@ -28,7 +29,9 @@
       if (min < 60) return `in ${min}m`;
       const h = Math.floor(min / 60);
       return `in ${h}h`;
-    } catch { return '—'; }
+    } catch {
+      return '—';
+    }
   }
 
   const FILTERS: { key: Filter; label: string; color: string }[] = [
@@ -46,8 +49,11 @@
       const res = await api.listTournaments({ status: statusParam });
       if (res.ok && res.data) tournaments = res.data.tournaments || [];
       else error = res.error || 'failed';
-    } catch (e: any) { error = e.message; }
-    finally { loading = false; }
+    } catch (e: any) {
+      error = e.message;
+    } finally {
+      loading = false;
+    }
   }
 
   function onAnyEvent(event: string): void {
@@ -57,12 +63,17 @@
   onMount(() => {
     load();
     pollTimer = setInterval(load, 20000);
-    return () => { if (pollTimer) clearInterval(pollTimer); };
+    return () => {
+      if (pollTimer) clearInterval(pollTimer);
+    };
   });
 
   $: if ($realtimeConnected) {
     const s = getRealtime();
-    if (s) { s.offAny(onAnyEvent); s.onAny(onAnyEvent); }
+    if (s) {
+      s.offAny(onAnyEvent);
+      s.onAny(onAnyEvent);
+    }
   }
 
   onDestroy(() => {
@@ -85,14 +96,20 @@
   }
 
   function formatLabel(t: any): string {
-    const map: Record<string, string> = { sng: 'SNG', mtt: 'MTT', freeroll: 'FREE', satellite: 'SAT' };
+    const map: Record<string, string> = {
+      sng: 'SNG',
+      mtt: 'MTT',
+      freeroll: 'FREE',
+      satellite: 'SAT',
+    };
     return map[t.format] || t.format.toUpperCase();
   }
 
   // Featured = running tournament with biggest prize pool
-  $: featured = tournaments
-    .filter((t) => t.status === 'running' || t.status === 'final_table')
-    .sort((a, b) => Number(b.totalPrizePool) - Number(a.totalPrizePool))[0] || null;
+  $: featured =
+    tournaments
+      .filter((t) => t.status === 'running' || t.status === 'final_table')
+      .sort((a, b) => Number(b.totalPrizePool) - Number(a.totalPrizePool))[0] || null;
 
   $: others = featured ? tournaments.filter((t) => t.id !== featured.id) : tournaments;
 </script>
@@ -103,11 +120,10 @@
   <!-- HEADER -->
   <div class="flex items-center justify-between mt-3 mb-4 px-4">
     <div>
-      <h1 class="text-2xl font-extrabold text-white flex items-center gap-2">
-        Tournaments
-      </h1>
+      <h1 class="text-2xl font-extrabold text-white flex items-center gap-2">Tournaments</h1>
       <p class="text-[11px] text-white/50 mt-0.5">
-        {tournaments.length} {tournaments.length === 1 ? 'event' : 'events'}
+        {tournaments.length}
+        {tournaments.length === 1 ? 'event' : 'events'}
       </p>
     </div>
     <button
@@ -116,7 +132,7 @@
       class="w-10 h-10 rounded-2xl flex items-center justify-center active:scale-95 transition-all"
       style="background: linear-gradient(180deg, rgba(15,31,58,0.7), rgba(11,19,36,0.9)); border: 1px solid rgba(212,175,55,0.25);"
     >
-      <span class="text-base">🔄</span>
+      <Icon name="refresh" size={18} />
     </button>
   </div>
 
@@ -124,12 +140,16 @@
   <div class="flex gap-1.5 mb-4 overflow-x-auto no-scrollbar pb-1 px-4">
     {#each FILTERS as f}
       <button
-        on:click={() => { filter = f.key; loading = true; load(); }}
+        on:click={() => {
+          filter = f.key;
+          loading = true;
+          load();
+        }}
         class="px-3.5 py-2 rounded-xl text-[11px] font-extrabold whitespace-nowrap active:scale-95 transition-all uppercase tracking-wider"
         style="
           background: {filter === f.key
-            ? `linear-gradient(180deg, ${f.color}, ${f.color}bb)`
-            : 'linear-gradient(180deg, rgba(15,31,58,0.7), rgba(11,19,36,0.9))'};
+          ? `linear-gradient(180deg, ${f.color}, ${f.color}bb)`
+          : 'linear-gradient(180deg, rgba(15,31,58,0.7), rgba(11,19,36,0.9))'};
           color: {filter === f.key ? '#ffffff' : 'rgba(255,255,255,0.65)'};
           border: 1px solid {filter === f.key ? `${f.color}dd` : 'rgba(212,175,55,0.15)'};
           {filter === f.key ? `box-shadow: 0 3px 12px ${f.color}60;` : ''}
@@ -219,8 +239,15 @@
               <span class="text-[10px] text-gold/70 font-bold uppercase">Prize Pool</span>
             </div>
             <div class="flex items-center gap-3 text-[10px] text-white/60">
-              <span>👥 {featured.activeCount || featured.registeredCount}/{featured.maxPlayers}</span>
-              <span>💵 ${fmt(featured.buyIn)}</span>
+              <span class="flex items-center gap-1">
+                <Icon name="users" size={11} />
+                <span>{featured.activeCount || featured.registeredCount}/{featured.maxPlayers}</span
+                >
+              </span>
+              <span class="flex items-center gap-1">
+                <Icon name="dollar" size={11} />
+                <span>${fmt(featured.buyIn)}</span>
+              </span>
               {#if featured.status === 'running' || featured.status === 'final_table'}
                 <span class="text-gold">Lvl {featured.currentLevel}</span>
               {/if}
@@ -235,20 +262,30 @@
   {#if loading}
     <div class="space-y-3 px-4">
       {#each Array(3) as _}
-        <div class="rounded-2xl p-4 h-[120px] shimmer"
-             style="background: linear-gradient(180deg, rgba(15,31,58,0.6), rgba(11,19,36,0.8)); border: 1px solid rgba(212,175,55,0.1);"></div>
+        <div
+          class="rounded-2xl p-4 h-[120px] shimmer"
+          style="background: linear-gradient(180deg, rgba(15,31,58,0.6), rgba(11,19,36,0.8)); border: 1px solid rgba(212,175,55,0.1);"
+        ></div>
       {/each}
     </div>
   {:else if error}
-    <div class="rounded-2xl p-4 text-center mx-4" style="background: rgba(153,27,27,0.15); border: 1px solid rgba(239,68,68,0.3);">
+    <div
+      class="rounded-2xl p-4 text-center mx-4"
+      style="background: rgba(153,27,27,0.15); border: 1px solid rgba(239,68,68,0.3);"
+    >
       <p class="text-red-300 text-sm font-bold">{error}</p>
     </div>
   {:else if others.length === 0 && !featured}
-    <div class="rounded-3xl p-8 text-center mx-4" style="background: linear-gradient(180deg, rgba(15,31,58,0.6), rgba(11,19,36,0.85)); border: 1px solid rgba(212,175,55,0.15);">
+    <div
+      class="rounded-3xl p-8 text-center mx-4"
+      style="background: linear-gradient(180deg, rgba(15,31,58,0.6), rgba(11,19,36,0.85)); border: 1px solid rgba(212,175,55,0.15);"
+    >
       <div class="w-16 h-16 rounded-2xl mx-auto mb-3 flex items-center justify-center">
         <img src="/trophy.png" alt="" class="w-full h-full object-contain opacity-40" />
       </div>
-      <p class="text-white/60 text-sm font-bold">No tournaments {filter === 'all' ? 'yet' : `in "${filter}"`}</p>
+      <p class="text-white/60 text-sm font-bold">
+        No tournaments {filter === 'all' ? 'yet' : `in "${filter}"`}
+      </p>
       <p class="text-white/40 text-[11px] mt-1">Check back soon</p>
     </div>
   {:else}
@@ -264,11 +301,15 @@
             box-shadow: 0 6px 20px rgba(0,0,0,0.5), 0 0 20px {sc}15;
           "
         >
-          <div class="absolute left-0 top-0 bottom-0 w-1.5"
-               style="background: linear-gradient(180deg, {sc}, {sc}66); box-shadow: 0 0 12px {sc}80;"></div>
+          <div
+            class="absolute left-0 top-0 bottom-0 w-1.5"
+            style="background: linear-gradient(180deg, {sc}, {sc}66); box-shadow: 0 0 12px {sc}80;"
+          ></div>
 
-          <div class="absolute -top-10 -right-10 w-32 h-32 rounded-full opacity-20 pointer-events-none"
-               style="background: radial-gradient(circle, {sc}, transparent 70%);"></div>
+          <div
+            class="absolute -top-10 -right-10 w-32 h-32 rounded-full opacity-20 pointer-events-none"
+            style="background: radial-gradient(circle, {sc}, transparent 70%);"
+          ></div>
 
           <div class="p-3.5 pl-5 relative">
             <div class="flex items-start justify-between gap-2 mb-3">
@@ -280,13 +321,19 @@
                   >
                     {statusLabel(t.status)}
                   </span>
-                  <span class="text-[9px] font-extrabold text-white/60 tracking-wider">{formatLabel(t)}</span>
+                  <span class="text-[9px] font-extrabold text-white/60 tracking-wider"
+                    >{formatLabel(t)}</span
+                  >
                   {#if t.mode === 'free'}
-                    <span class="text-[9px] font-extrabold tracking-wider" style="color: #6ee7b7;">FREE</span>
+                    <span class="text-[9px] font-extrabold tracking-wider" style="color: #6ee7b7;"
+                      >FREE</span
+                    >
                   {/if}
                 </div>
                 <p class="text-[15px] font-extrabold text-white truncate leading-tight">{t.name}</p>
-                <p class="text-[10px] text-white/45 mt-1 font-mono uppercase">{t.variant} · {t.speed}</p>
+                <p class="text-[10px] text-white/45 mt-1 font-mono uppercase">
+                  {t.variant} · {t.speed}
+                </p>
               </div>
 
               <div class="text-right shrink-0">
@@ -302,22 +349,33 @@
                   {t.buyIn > 0 ? `$${fmt(t.buyIn)}` : 'FREE'}
                 </div>
                 {#if t.guaranteed > 0}
-                  <div class="text-[9px] text-gold/60 mt-1 tabular-nums">GTD ${fmt(t.guaranteed)}</div>
+                  <div class="text-[9px] text-gold/60 mt-1 tabular-nums">
+                    GTD ${fmt(t.guaranteed)}
+                  </div>
                 {/if}
               </div>
             </div>
 
-            <div class="grid grid-cols-3 gap-2 pt-3" style="border-top: 1px solid rgba(212,175,55,0.1);">
+            <div
+              class="grid grid-cols-3 gap-2 pt-3"
+              style="border-top: 1px solid rgba(212,175,55,0.1);"
+            >
               <div>
-                <p class="text-[9px] uppercase tracking-wider text-white/40 font-bold mb-0.5">Players</p>
+                <p class="text-[9px] uppercase tracking-wider text-white/40 font-bold mb-0.5">
+                  Players
+                </p>
                 <p class="text-[12px] font-extrabold text-white tabular-nums">
                   {t.activeCount > 0 ? t.activeCount : t.registeredCount}
                   <span class="text-white/40 font-bold"> / {t.maxPlayers}</span>
                 </p>
               </div>
               <div>
-                <p class="text-[9px] uppercase tracking-wider text-white/40 font-bold mb-0.5">Prize</p>
-                <p class="text-[12px] font-extrabold tabular-nums" style="color: #6ee7b7;">${fmt(t.totalPrizePool)}</p>
+                <p class="text-[9px] uppercase tracking-wider text-white/40 font-bold mb-0.5">
+                  Prize
+                </p>
+                <p class="text-[12px] font-extrabold tabular-nums" style="color: #6ee7b7;">
+                  ${fmt(t.totalPrizePool)}
+                </p>
               </div>
               <div>
                 <p class="text-[9px] uppercase tracking-wider text-white/40 font-bold mb-0.5">

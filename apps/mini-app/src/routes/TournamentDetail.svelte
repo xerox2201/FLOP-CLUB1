@@ -5,6 +5,7 @@
   import { getRealtime, realtimeConnected, TOURNAMENT_EVENT_RE } from '../lib/realtime';
   import { pushNotif } from '../lib/notifications';
   import Avatar from '../components/Avatar.svelte';
+  import Icon from '../components/Icon.svelte';
 
   export let tournamentId: number;
   export let onBack: () => void = () => {};
@@ -322,7 +323,7 @@
             {statusLabel(t.status)}
           </span>
           <button on:click={copyId} class="text-[9px] text-white/40 font-mono active:text-white/80">
-            #{t.id} 📋
+            #{t.id}
           </button>
         </div>
       {/if}
@@ -443,7 +444,7 @@
       >
         <div class="flex items-center justify-between mb-3">
           <div class="flex items-center gap-2">
-            <span class="text-base">{isPaused ? '⏸️' : '⏱️'}</span>
+            <span><Icon name={isPaused ? 'pause' : 'clock'} size={16} /></span>
             <p
               class="text-[10px] uppercase tracking-widest font-extrabold"
               style="color: {isPaused ? '#fbbf24' : '#fb923c'};"
@@ -552,7 +553,7 @@
         "
       >
         <div class="flex items-center gap-2 mb-3">
-          <span class="text-base">{ye.isRegistered ? '✅' : '🎯'}</span>
+          <span><Icon name={ye.isRegistered ? 'success' : 'target'} size={18} /></span>
           <p
             class="text-[10px] uppercase tracking-widest font-extrabold flex-1"
             style="color: {ye.isRegistered ? '#6ee7b7' : '#a78bfa'};"
@@ -597,7 +598,7 @@
                 class="flex-1 rounded-xl py-3 text-[12px] font-extrabold active:scale-95"
                 style="background: linear-gradient(180deg, #22c55e, #15803d); color: white; box-shadow: 0 3px 0 #14532d;"
               >
-                🎰 Go to Table
+                Go to Table
               </button>
             {/if}
             {#if ye.entryStatus === 'registered' && !isLive}
@@ -621,7 +622,7 @@
                   class="flex-1 rounded-xl py-3 text-[12px] font-extrabold active:scale-95"
                   style="background: linear-gradient(180deg, #3b82f6, #1d4ed8); color: white; box-shadow: 0 3px 0 #1e3a8a;"
                 >
-                  🔄 Rebuy {t.rebuyAmount > 0 ? `· $${fmt(t.rebuyAmount)}` : ''}
+                  Rebuy {t.rebuyAmount > 0 ? `· $${fmt(t.rebuyAmount)}` : ''}
                 </button>
               {/if}
               {#if ye.canAddon}
@@ -630,7 +631,7 @@
                   class="flex-1 rounded-xl py-3 text-[12px] font-extrabold active:scale-95"
                   style="background: linear-gradient(180deg, #8b5cf6, #6d28d9); color: white; box-shadow: 0 3px 0 #4c1d95;"
                 >
-                  🎁 Addon {t.addonAmount > 0 ? `· $${fmt(t.addonAmount)}` : ''}
+                  Addon {t.addonAmount > 0 ? `· $${fmt(t.addonAmount)}` : ''}
                 </button>
               {/if}
             </div>
@@ -715,7 +716,7 @@
         style="background: linear-gradient(180deg, rgba(15,31,58,0.7), rgba(7,14,27,0.95)); border: 1.5px solid rgba(212,175,55,0.2);"
       >
         <div class="flex items-center gap-2 mb-3">
-          <span class="text-base">🏆</span>
+          <span><Icon name="trophy" size={18} /></span>
           <p class="text-[10px] uppercase tracking-widest font-extrabold text-gold/80 flex-1">
             Payouts
           </p>
@@ -753,7 +754,7 @@
         style="background: linear-gradient(180deg, rgba(15,31,58,0.7), rgba(7,14,27,0.95)); border: 1.5px solid rgba(212,175,55,0.2);"
       >
         <div class="flex items-center gap-2 mb-3">
-          <span class="text-base">👥</span>
+          <span><Icon name="users" size={18} /></span>
           <p class="text-[10px] uppercase tracking-widest font-extrabold text-gold/80 flex-1">
             Players ({allPlayers.length})
           </p>
@@ -896,7 +897,7 @@
           on:click={() => (expandBlinds = !expandBlinds)}
           class="w-full flex items-center gap-2 mb-3 active:opacity-80"
         >
-          <span class="text-base">📊</span>
+          <span><Icon name="chart" size={18} /></span>
           <p
             class="text-[10px] uppercase tracking-widest font-extrabold text-gold/80 flex-1 text-left"
           >
@@ -947,7 +948,7 @@
 
               {#if b.isBreak}
                 <span class="text-[10px] font-bold text-cyan-300 flex-1">
-                  ☕ Break · {Math.round(b.durationSec / 60)}min
+                  Break · {Math.round(b.durationSec / 60)}min
                 </span>
               {:else}
                 <span
@@ -973,10 +974,12 @@
                 <span
                   class="text-[8px] font-extrabold text-orange-300 uppercase tracking-wider shrink-0"
                 >
-                  🔵 Current
+                  Current
                 </span>
               {:else if isPast}
-                <span class="text-[9px] text-emerald-400/70 shrink-0">✓</span>
+                <span class="shrink-0 flex items-center">
+                  <Icon name="check" size={10} color="#6ee7b7" />
+                </span>
               {/if}
             </div>
           {/each}
@@ -1075,7 +1078,9 @@
       style="background: linear-gradient(180deg, #101a3a, #080d24); border: 1.5px solid rgba(59,130,246,0.5); box-shadow: 0 20px 60px rgba(0,0,0,0.9);"
     >
       <div class="text-center mb-4">
-        <div class="text-5xl mb-2">🔄</div>
+        <div class="flex justify-center mb-2">
+          <Icon name="refresh" size={48} />
+        </div>
         <h2 class="text-lg font-extrabold text-white">Confirm Rebuy</h2>
         <p class="text-[11px] text-white/50 mt-1">
           Top up your stack by {t.rebuyStack > 0 ? fmtInt(t.rebuyStack) : fmtInt(t.startingStack)} chips
@@ -1140,7 +1145,9 @@
       style="background: linear-gradient(180deg, #101a3a, #080d24); border: 1.5px solid rgba(139,92,246,0.5); box-shadow: 0 20px 60px rgba(0,0,0,0.9);"
     >
       <div class="text-center mb-4">
-        <div class="text-5xl mb-2">🎁</div>
+        <div class="flex justify-center mb-2">
+          <Icon name="gift" size={48} />
+        </div>
         <h2 class="text-lg font-extrabold text-white">Confirm Addon</h2>
         <p class="text-[11px] text-white/50 mt-1">
           One-time stack top-up available at level {t.addonAtLevel}

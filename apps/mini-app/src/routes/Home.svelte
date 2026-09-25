@@ -6,7 +6,8 @@
   import PlayingCard from '../components/PlayingCard.svelte';
   import PokerChip from '../components/PokerChip.svelte';
   import QuickSeatSheet from '../components/QuickSeatSheet.svelte';
-import FreerollBanner from '../components/FreerollBanner.svelte';
+  import FreerollBanner from '../components/FreerollBanner.svelte';
+  import Icon from '../components/Icon.svelte';
 
   export let onNavigate: (page: any) => void = () => {};
   export let onQuickSeat: (variant: string, mode: 'free' | 'real') => void = () => {};
@@ -57,30 +58,9 @@ import FreerollBanner from '../components/FreerollBanner.svelte';
   ];
 
   const features = [
-    {
-      id: 'fast',
-      title: 'Fast Payouts',
-      sub: 'Get your winnings quickly',
-      paths: [
-        'M13 2L4.09 12.97a1 1 0 0 0 .78 1.63H10l-1 7.4 8.91-10.97a1 1 0 0 0-.78-1.63H12l1-7.4z',
-      ],
-    },
-    {
-      id: 'global',
-      title: 'Global Players',
-      sub: 'Play worldwide',
-      paths: [
-        'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z',
-        'M2 12h20',
-        'M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z',
-      ],
-    },
-    {
-      id: 'secure',
-      title: 'Secure & Fair',
-      sub: 'Trusted platform',
-      paths: ['M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z', 'M9 12l2 2 4-4'],
-    },
+    { id: 'fast', title: 'Fast Payouts', sub: 'Get your winnings quickly', icon: 'zap' },
+    { id: 'global', title: 'Global Players', sub: 'Play worldwide', icon: 'target' },
+    { id: 'secure', title: 'Secure & Fair', sub: 'Trusted platform', icon: 'shield' },
   ];
 
   async function loadData() {
@@ -116,7 +96,8 @@ import FreerollBanner from '../components/FreerollBanner.svelte';
 <div class="pb-44 lg:pb-8">
   <!-- TOP BAR -->
   <TopBar onOpenSettings={() => onNavigate('profile')} onOpenWallet={() => onNavigate('wallet')} />
-<FreerollBanner onOpen={(id) => onNavigate('tournaments')} />
+  <FreerollBanner onOpen={(id) => onNavigate('tournaments')} />
+
   <!-- ============ HERO ============ -->
   <div
     class="relative mt-3 mb-4 mx-4 rounded-3xl overflow-hidden"
@@ -171,19 +152,7 @@ import FreerollBanner from '../components/FreerollBanner.svelte';
         "
       >
         <span>Play Now</span>
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="3"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M5 12h14" />
-          <path d="M13 5l7 7-7 7" />
-        </svg>
+        <Icon name="arrow-right" size={14} />
       </button>
     </div>
   </div>
@@ -206,20 +175,7 @@ import FreerollBanner from '../components/FreerollBanner.svelte';
             border: 1px solid rgba(212,175,55,0.35);
           "
         >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#d4af37"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            {#each f.paths as d}
-              <path {d} />
-            {/each}
-          </svg>
+          <Icon name={f.icon} size={18} />
         </div>
         <p class="text-[10px] font-extrabold text-white leading-tight">{f.title}</p>
         <p class="text-[8px] text-white/50 leading-tight mt-0.5">{f.sub}</p>
@@ -235,19 +191,7 @@ import FreerollBanner from '../components/FreerollBanner.svelte';
       class="text-[10px] font-bold text-gold active:opacity-70 flex items-center gap-1"
     >
       <span>See All</span>
-      <svg
-        width="10"
-        height="10"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="3"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <path d="M5 12h14" />
-        <path d="M13 5l7 7-7 7" />
-      </svg>
+      <Icon name="arrow-right" size={10} />
     </button>
   </div>
 
@@ -314,22 +258,7 @@ import FreerollBanner from '../components/FreerollBanner.svelte';
           class="w-10 h-10 rounded-xl flex items-center justify-center"
           style="background: rgba(16,185,129,0.25); border: 1px solid rgba(16,185,129,0.5);"
         >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#6ee7b7"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M20 12v10H4V12" />
-            <path d="M2 7h20v5H2z" />
-            <path d="M12 22V7" />
-            <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
-            <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
-          </svg>
+          <Icon name="gift" size={20} />
         </div>
         <div class="text-left">
           <p
@@ -345,19 +274,7 @@ import FreerollBanner from '../components/FreerollBanner.svelte';
       </div>
       <div class="text-right flex items-center gap-1" style="color: #6ee7b7;">
         <span class="text-[11px] font-extrabold">Play Free</span>
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="3"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M5 12h14" />
-          <path d="M13 5l7 7-7 7" />
-        </svg>
+        <Icon name="arrow-right" size={12} />
       </div>
     </button>
   </div>
@@ -374,19 +291,7 @@ import FreerollBanner from '../components/FreerollBanner.svelte';
         class="text-[10px] font-bold text-gold flex items-center gap-1"
       >
         <span>See All</span>
-        <svg
-          width="10"
-          height="10"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="3"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M5 12h14" />
-          <path d="M13 5l7 7-7 7" />
-        </svg>
+        <Icon name="arrow-right" size={10} />
       </button>
     </div>
 
