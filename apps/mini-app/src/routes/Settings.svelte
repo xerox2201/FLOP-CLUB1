@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import TopBar from '../components/TopBar.svelte';
+  import Icon from '../components/Icon.svelte';
   import { auth } from '../stores/auth';
   import { cardTheme, CARD_THEMES } from '../stores/cardTheme';
   import { preferences } from '../lib/preferences';
@@ -30,9 +31,6 @@
 
   function openWallet() {
     window.location.hash = '#wallet';
-    // Fallback: use onNavigate if provided externally — but this component
-    // doesn't receive onNavigate, so we go via the parent by pushing a custom event
-    // For now: just go back to profile and let user tap Wallet from menu
     onBack();
   }
   function changeLang(code: Lang) {
@@ -55,37 +53,14 @@
         border: 1.5px solid rgba(96,165,250,0.3);
       "
     >
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="white"
-        stroke-width="2.5"
-        stroke-linecap="round"
-      >
-        <path d="M15 18l-6-6 6-6" />
-      </svg>
+      <Icon name="arrow-left" size={18} color="#ffffff" />
     </button>
     <h1 class="text-xl font-extrabold flex-1 flex items-center gap-2">
-      <svg
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="#d4af37"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <circle cx="12" cy="12" r="3" />
-        <path
-          d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
-        />
-      </svg>
+      <Icon name="settings" size={20} />
       <span>Settings</span>
     </h1>
   </div>
+
   <!-- ============ LANGUAGE ============ -->
   <h2 class="t-label text-white/40 mb-2 px-1">Language</h2>
   <div
@@ -139,6 +114,7 @@
       </button>
     {/each}
   </div>
+
   <!-- ============ CARD THEME ============ -->
   <h2 class="t-label text-gold/60 mb-2 px-1">Card Theme</h2>
   <div
@@ -196,19 +172,7 @@
       style="border-bottom: 1px solid rgba(212,175,55,0.08);"
     >
       <div class="flex items-center gap-3">
-        <svg
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#d4af37"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M11 5L6 9H2v6h4l5 4V5z" />
-          <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
-        </svg>
+        <Icon name="bell" size={22} />
         <div>
           <p class="text-sm font-bold text-white">Sound Effects</p>
           <p class="text-[10px] text-white/50">Card & chip sounds</p>
@@ -223,20 +187,7 @@
     </label>
     <label class="flex items-center justify-between px-4 py-3 cursor-pointer">
       <div class="flex items-center gap-3">
-        <svg
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#d4af37"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M9 18V5l12-2v13" />
-          <circle cx="6" cy="18" r="3" />
-          <circle cx="18" cy="16" r="3" />
-        </svg>
+        <Icon name="play" size={22} />
         <div>
           <p class="text-sm font-bold text-white">Background Music</p>
           <p class="text-[10px] text-white/50">Ambient pad</p>
@@ -259,19 +210,7 @@
       style="border-bottom: 1px solid rgba(212,175,55,0.08);"
     >
       <div class="flex items-center gap-3">
-        <svg
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#d4af37"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <rect x="5" y="2" width="14" height="20" rx="2" />
-          <path d="M12 18h.01" />
-        </svg>
+        <Icon name="zap" size={22} />
         <div>
           <p class="text-sm font-bold text-white">Haptics</p>
           <p class="text-[10px] text-white/50">Vibration feedback</p>
@@ -289,18 +228,7 @@
       style="border-bottom: 1px solid rgba(212,175,55,0.08);"
     >
       <div class="flex items-center gap-3">
-        <svg
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#d4af37"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M12 3l1.9 5.8L20 10l-6.1 1.2L12 17l-1.9-5.8L4 10l6.1-1.2z" />
-        </svg>
+        <Icon name="sparkles" size={22} />
         <div>
           <p class="text-sm font-bold text-white">Animations</p>
           <p class="text-[10px] text-white/50">Card & chip animations</p>
@@ -315,24 +243,7 @@
     </label>
     <div class="px-4 py-3">
       <div class="flex items-center gap-3 mb-2">
-        <svg
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#d4af37"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <circle cx="13.5" cy="6.5" r=".5" />
-          <circle cx="17.5" cy="10.5" r=".5" />
-          <circle cx="8.5" cy="7.5" r=".5" />
-          <circle cx="6.5" cy="12.5" r=".5" />
-          <path
-            d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"
-          />
-        </svg>
+        <Icon name="chart" size={22} />
         <div>
           <p class="text-sm font-bold text-white">Graphics Quality</p>
           <p class="text-[10px] text-white/50">Visual fidelity & performance</p>
@@ -362,20 +273,7 @@
       style="border-bottom: 1px solid rgba(212,175,55,0.08);"
     >
       <div class="flex items-center gap-3">
-        <svg
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#d4af37"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <line x1="4" y1="21" x2="4" y2="14" /><line x1="4" y1="10" x2="4" y2="3" />
-          <line x1="12" y1="21" x2="12" y2="12" /><line x1="12" y1="8" x2="12" y2="3" />
-          <line x1="20" y1="21" x2="20" y2="16" /><line x1="20" y1="12" x2="20" y2="3" />
-        </svg>
+        <Icon name="chart" size={22} />
         <div>
           <p class="text-sm font-bold text-white">Bet Slider</p>
           <p class="text-[10px] text-white/50">Show slider on raise</p>
@@ -393,22 +291,7 @@
       style="border-bottom: 1px solid rgba(212,175,55,0.08);"
     >
       <div class="flex items-center gap-3">
-        <svg
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#d4af37"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path
-            d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"
-          />
-          <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
-          <line x1="1" y1="1" x2="23" y2="23" />
-        </svg>
+        <Icon name="eye" size={22} />
         <div>
           <p class="text-sm font-bold text-white">Auto-Muck</p>
           <p class="text-[10px] text-white/50">Auto-fold losing hands at showdown</p>
@@ -423,19 +306,7 @@
     </label>
     <label class="flex items-center justify-between px-4 py-3 cursor-pointer">
       <div class="flex items-center gap-3">
-        <svg
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#d4af37"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <circle cx="8" cy="8" r="6" />
-          <path d="M18.09 10.37A6 6 0 1 1 10.34 18" />
-        </svg>
+        <Icon name="spade" size={22} />
         <div>
           <p class="text-sm font-bold text-white">Four-Color Cards</p>
           <p class="text-[10px] text-white/50">♣ green · ♦ blue</p>
@@ -458,87 +329,30 @@
       class="w-full flex items-center gap-3 px-4 py-3 text-left active:bg-white/5"
       style="border-bottom: 1px solid rgba(212,175,55,0.08);"
     >
-      <svg
-        width="22"
-        height="22"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="#d4af37"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <rect x="3" y="11" width="18" height="11" rx="2" />
-        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-      </svg>
+      <Icon name="lock" size={22} />
       <div class="flex-1">
         <p class="text-sm font-bold text-white">Security</p>
         <p class="text-[10px] text-white/50">Telegram account settings</p>
       </div>
-      <svg
-        width="14"
-        height="14"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="rgba(255,255,255,0.3)"
-        stroke-width="2.5"
-        stroke-linecap="round"
-      >
-        <path d="M9 18l6-6-6-6" />
-      </svg>
+      <Icon name="chevron-down" size={14} color="rgba(255,255,255,0.3)" />
     </button>
     <button
       on:click={openWallet}
       class="w-full flex items-center gap-3 px-4 py-3 text-left active:bg-white/5"
       style="border-bottom: 1px solid rgba(212,175,55,0.08);"
     >
-      <svg
-        width="22"
-        height="22"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="#d4af37"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <path d="M12 22v-5" /><path d="M9 8V2" /><path d="M15 8V2" />
-        <path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8z" />
-      </svg>
+      <Icon name="wallet" size={22} />
       <div class="flex-1">
         <p class="text-sm font-bold text-white">Connected Wallets</p>
         <p class="text-[10px] text-white/50">Manage TON wallet</p>
       </div>
-      <svg
-        width="14"
-        height="14"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="rgba(255,255,255,0.3)"
-        stroke-width="2.5"
-        stroke-linecap="round"
-      >
-        <path d="M9 18l6-6-6-6" />
-      </svg>
+      <Icon name="chevron-down" size={14} color="rgba(255,255,255,0.3)" />
     </button>
     <button
       on:click={() => auth.logout()}
       class="w-full flex items-center gap-3 px-4 py-3 text-left active:bg-white/5"
     >
-      <svg
-        width="22"
-        height="22"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="#f87171"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-        <polyline points="16 17 21 12 16 7" />
-        <line x1="21" y1="12" x2="9" y2="12" />
-      </svg>
+      <Icon name="logout" size={22} />
       <div class="flex-1">
         <p class="text-sm font-bold text-red-400">Log Out</p>
         <p class="text-[10px] text-white/50">Sign out of account</p>
