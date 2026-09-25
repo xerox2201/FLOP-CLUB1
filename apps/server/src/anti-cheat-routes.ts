@@ -128,4 +128,56 @@ export async function registerAntiCheatRoutes(app: FastifyInstance, db: Pool) {
       byType: byType.rows,
     };
   });
+  // ============================================================
+  // SHADOWBAN list + manual toggle
+  // ============================================================
+  app.get('/api/admin/anticheat/shadowbanned', async (req, reply) => {
+    if (!requireAdmin(req, reply)) return;
+    const res = await db.query(
+      `SELECT pr.user_id, pr.score, pr.flags, pr.action_taken, pr.last_updated,
+              u.display_name, u.telegram_id, u.is_banned
+       FROM player_risk pr
+       JOIN users u ON u.id = pr.user_id
+       WHERE pr.action_taken IN ('shadowban', 'ban')
+       ORDER BY pr.score DESC, pr.last_updated DESC
+       LIMIT 100`,
+    );
+    return { users: res.rows };
+  });
+
+  app.post<{ Params: { userId: string } }>(
+    '/api/admin/anticheat/user/:userId/shadowban',
+    async (req, reply) => {
+      if (!requireAdmin(req, reply)) return;
+      const userId = Number(req.params.userId);
+      if (!userId) return reply.code(400).send({ error: 'invalid_user_id' });
+
+      await db.query(
+        `INSERT INTO player_risk (user_id, score, flags, action_taken, last_updated)
+         VALUES ($1, 0, '{}'::jsonb, 'shadowban', NOW())
+         ON CONFLICT (user_id) DO UPDATE
+           SET action_taken = 'shadowban', last_updated = NOW()`,
+        [userId],
+      );
+      console.log(`[anti-cheat] 👻 manual shadowban: user=${userId}`);
+      return { ok: true };
+    },
+  );
+
+  app.post<{ Params: { userId: string } }>(
+    '/api/admin/anticheat/user/:userId/unshadowban',
+    async (req, reply) => {
+      if (!requireAdmin(req, reply)) return;
+      const userId = Number(req.params.userId);
+      if (!userId) return reply.code(400).send({ error: 'invalid_user_id' });
+
+      await db.query(
+        `UPDATE player_risk SET action_taken = 'none', last_updated = NOW()
+         WHERE user_id = $1`,
+        [userId],
+      );
+      console.log(`[anti-cheat] ✅ manual unshadowban: user=${userId}`);
+      return { ok: true };
+    },
+  );
 }

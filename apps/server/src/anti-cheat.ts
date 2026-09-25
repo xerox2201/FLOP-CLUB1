@@ -1,27 +1,46 @@
 import { Pool } from 'pg';
 
+// ============================================================
+// Anti-cheat thresholds
+// ------------------------------------------------------------
+// Production = strict (auto-ban active).
+// Dev/test    = relaxed (avoids false positives from fast actions).
+// Each value can be overridden via env var — for tuning without redeploy.
+// ============================================================
+
+function envNum(name: string, def: number): number {
+  const raw = process.env[name];
+  if (raw === undefined || raw === '') return def;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : def;
+}
+
+const IS_PROD = process.env.NODE_ENV === 'production';
+
 const THRESHOLDS = {
-  // 🔴 Relaxed for testing / dev
-  botFastActionMs: 150,
-  botFastActionCount: 30,
-  botStdDevMs: 50,
-  sameIpTablesTogether: 6,
-  sameDeviceTablesTogether: 4,
-  minHandsTogether: 50,
-  chipDumpingThreshold: 0.85,
-  warnScore: 70,
-  shadowbanScore: 90,
-  banScore: 99, // effectively disable auto-ban during testing
+  // Fast-action / bot detection
+  botFastActionMs: envNum('AC_BOT_FAST_MS', IS_PROD ? 250 : 150),
+  botFastActionCount: envNum('AC_BOT_FAST_COUNT', IS_PROD ? 15 : 30),
+  botStdDevMs: envNum('AC_BOT_STDDEV_MS', IS_PROD ? 80 : 50),
+
+  // Multi-account / collusion
+  sameIpTablesTogether: envNum('AC_SAME_IP_TABLES', IS_PROD ? 4 : 6),
+  sameDeviceTablesTogether: envNum('AC_SAME_DEVICE_TABLES', IS_PROD ? 3 : 4),
+  minHandsTogether: envNum('AC_MIN_HANDS_TOGETHER', IS_PROD ? 25 : 50),
+
+  // Chip dumping
+  chipDumpingThreshold: envNum('AC_CHIP_DUMP_THRESHOLD', IS_PROD ? 0.8 : 0.85),
+
+  // Risk score → action
+  warnScore: envNum('AC_WARN_SCORE', IS_PROD ? 60 : 70),
+  shadowbanScore: envNum('AC_SHADOWBAN_SCORE', IS_PROD ? 80 : 90),
+  banScore: envNum('AC_BAN_SCORE', IS_PROD ? 92 : 99),
 };
 
-export interface ActionRecord {
-  userId: number;
-  tableId: number;
-  handNo: number;
-  action: 'fold' | 'check' | 'call' | 'raise';
-  amount: number;
-  street: string;
-  responseMs: number;
+if (IS_PROD) {
+  console.log('[anti-cheat] 🛡️ running with PRODUCTION thresholds:', THRESHOLDS);
+} else {
+  console.log('[anti-cheat] 🧪 running with relaxed (dev) thresholds:', THRESHOLDS);
 }
 
 export async function recordIp(db: Pool, userId: number, ip: string) {
@@ -239,6 +258,35 @@ export async function updateRiskScore(db: Pool, userId: number): Promise<number>
     if (action === 'ban') {
       await db.query('UPDATE users SET is_banned = TRUE WHERE id = $1', [userId]);
       console.log(`[anti-cheat] 🚫 user ${userId} auto-banned (score ${score})`);
+
+      // 🔴 Alert admin via broadcast (visible in Notifications)
+      try {
+        await db.query(
+          `INSERT INTO admin_broadcasts (title, message, target, severity)
+           VALUES ($1, $2, 'high_risk', 'danger')`,
+          [
+            '🚫 Auto-ban triggered',
+            `User #${userId} auto-banned. Score: ${score}. Flags: ${JSON.stringify(flags)}`,
+          ],
+        );
+      } catch (e: any) {
+        console.error('[anti-cheat] alert broadcast failed:', e.message);
+      }
+    } else if (action === 'shadowban') {
+      console.log(`[anti-cheat] 👻 user ${userId} shadowbanned (score ${score})`);
+
+      try {
+        await db.query(
+          `INSERT INTO admin_broadcasts (title, message, target, severity)
+           VALUES ($1, $2, 'high_risk', 'warning')`,
+          [
+            '👻 Shadowban triggered',
+            `User #${userId} shadowbanned. Score: ${score}. Flags: ${JSON.stringify(flags)}`,
+          ],
+        );
+      } catch (e: any) {
+        console.error('[anti-cheat] alert broadcast failed:', e.message);
+      }
     }
   } catch (e) {}
 
