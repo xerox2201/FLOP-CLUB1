@@ -51,19 +51,47 @@
   function getSizes(isCompact: boolean): Sizes {
     if (isCompact) {
       return {
-        avatarPx: 38, avatarBorder: 2, panelMinW: 54, panelPad: '1px 6px',
-        nameFont: 9, stackFont: 9, holeCardSize: 'sm', boardCardSize: 'sm',
-        holeGap: 1, holeTop: 74, heroTop: 92, heroAvatarPx: 46,
-        timerSize: 52, timerHeroSize: 58, potFont: 11, potChipSize: 13,
-        seatMT: 4, betFont: 9, betChipSize: 10,
+        avatarPx: 38,
+        avatarBorder: 2,
+        panelMinW: 54,
+        panelPad: '1px 6px',
+        nameFont: 9,
+        stackFont: 9,
+        holeCardSize: 'sm',
+        boardCardSize: 'sm',
+        holeGap: 1,
+        holeTop: 74,
+        heroTop: 92,
+        heroAvatarPx: 46,
+        timerSize: 52,
+        timerHeroSize: 58,
+        potFont: 11,
+        potChipSize: 13,
+        seatMT: 4,
+        betFont: 9,
+        betChipSize: 10,
       };
     }
     return {
-      avatarPx: 52, avatarBorder: 3, panelMinW: 72, panelPad: '2px 10px',
-      nameFont: 10, stackFont: 10, holeCardSize: 'lg', boardCardSize: 'md',
-      holeGap: 2, holeTop: 68, heroTop: 92, heroAvatarPx: 64,
-      timerSize: 70, timerHeroSize: 78, potFont: 14, potChipSize: 16,
-      seatMT: 8, betFont: 11, betChipSize: 12,
+      avatarPx: 52,
+      avatarBorder: 3,
+      panelMinW: 72,
+      panelPad: '2px 10px',
+      nameFont: 10,
+      stackFont: 10,
+      holeCardSize: 'lg',
+      boardCardSize: 'md',
+      holeGap: 2,
+      holeTop: 68,
+      heroTop: 92,
+      heroAvatarPx: 64,
+      timerSize: 70,
+      timerHeroSize: 78,
+      potFont: 14,
+      potChipSize: 16,
+      seatMT: 8,
+      betFont: 11,
+      betChipSize: 12,
     };
   }
 
@@ -215,7 +243,6 @@
   "
 >
   <div class="relative w-full" style="aspect-ratio: 1 / 1.12;">
-
     {#if theme === 'tournament' && tournamentTitle}
       <div class="absolute -top-3 left-1/2 -translate-x-1/2 z-[60] pointer-events-none">
         <div
@@ -251,17 +278,23 @@
     {#if gameState && totalPot > 0 && winners.length === 0}
       {#if sidePots.length > 1}
         <div
-          class="absolute {compact ? 'top-[31%]' : 'top-[33%]'} left-1/2 -translate-x-1/2 z-[25] flex flex-col items-center gap-1"
+          class="absolute {compact
+            ? 'top-[31%]'
+            : 'top-[33%]'} left-1/2 -translate-x-1/2 z-[25] flex flex-col items-center gap-1"
         >
           {#each sidePots as pot}
             <div
-              class="rounded-full {compact ? 'px-2 py-0.5' : 'px-3 py-0.5'} flex items-center gap-1.5"
+              class="rounded-full {compact
+                ? 'px-2 py-0.5'
+                : 'px-3 py-0.5'} flex items-center gap-1.5"
               style="background: rgba(0,0,0,0.92); border: 1.5px solid {pot.type === 'main'
                 ? '#f4c95d'
                 : '#22d3ee'}; box-shadow: 0 4px 12px rgba(0,0,0,0.9);"
             >
               <span
-                class="text-[{compact ? 7 : 9}px] uppercase tracking-widest font-extrabold {pot.type === 'main'
+                class="text-[{compact
+                  ? 7
+                  : 9}px] uppercase tracking-widest font-extrabold {pot.type === 'main'
                   ? 'text-gold'
                   : 'text-cyan'}"
               >
@@ -278,13 +311,21 @@
           {/each}
         </div>
       {:else}
-        <div class="absolute {compact ? 'top-[31%]' : 'top-[33%]'} left-1/2 -translate-x-1/2 z-[25]">
+        <div
+          class="absolute {compact ? 'top-[31%]' : 'top-[33%]'} left-1/2 -translate-x-1/2 z-[25]"
+        >
           <div
-            class="rounded-full {compact ? 'pl-1 pr-3 py-0.5' : 'pl-1.5 pr-3.5 py-0.5'} flex items-center gap-2"
+            class="rounded-full {compact
+              ? 'pl-1 pr-3 py-0.5'
+              : 'pl-1.5 pr-3.5 py-0.5'} flex items-center gap-2"
             style="background: rgba(0,0,0,0.92); border: 1.5px solid #f4c95d; box-shadow: 0 4px 16px rgba(0,0,0,0.9), 0 0 16px rgba(244,201,93,0.25);"
           >
             <PokerChip amount={totalPot} size={SZ.potChipSize} />
-            <span class="text-[{compact ? 8 : 10}px] uppercase tracking-widest font-extrabold text-white/70">
+            <span
+              class="text-[{compact
+                ? 8
+                : 10}px] uppercase tracking-widest font-extrabold text-white/70"
+            >
               POT
             </span>
             <span class="text-[{SZ.potFont}px] font-extrabold text-gold tabular-nums">
@@ -310,7 +351,9 @@
             />
           {:else}
             <div
-              class="{compact ? 'w-8 h-[44px]' : 'w-11 h-[60px]'} rounded-md bg-black/25 border border-white/5"
+              class="{compact
+                ? 'w-8 h-[44px]'
+                : 'w-11 h-[60px]'} rounded-md bg-black/25 border border-white/5"
             ></div>
           {/if}
         {/each}
@@ -327,6 +370,15 @@
       {@const isShowdown = inShowdown(s.seat)}
       {@const isShowdownWin = showdownWin(s.seat)}
       {@const isShowdownLose = showdownLose(s.seat)}
+      {@const oppHole = (() => {
+        const raw = s.hole ?? [];
+        const sp = handResult?.showdownPlayers?.find((x: any) => x.seat === s.seat);
+        if (sp?.hole?.length > 0 && sp.hole[0]?.r !== '?') return sp.hole;
+        if (raw.length > 0 && raw[0]?.r !== '?') return raw;
+        if (isShowdown) return [];
+        const count = gameState?.variant === 'omaha5' ? 5 : gameState?.variant === 'omaha4' ? 4 : 2;
+        return Array.from({ length: count }, () => ({ r: '?', s: '?' }));
+      })()}
 
       <div
         class="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-[20] cursor-pointer"
@@ -337,6 +389,23 @@
         tabindex="0"
       >
         <div class="relative">
+          {#if oppHole.length > 0}
+            <div
+              class="absolute left-1/2 -translate-x-1/2 flex justify-center pointer-events-none"
+              style="bottom: calc(100% + 4px); gap: 2px; z-index: 25; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.85));"
+            >
+              {#each oppHole as c}
+                <PlayingCard
+                  rank={c.r}
+                  suit={suitChar(c.s)}
+                  size={compact ? 'xs' : 'sm'}
+                  faceDown={!isShowdown}
+                  dim={s.folded}
+                />
+              {/each}
+            </div>
+          {/if}
+
           {#if isTurn}
             <div class="absolute -inset-[6px] pointer-events-none z-[2]">
               <TimerRing
@@ -352,7 +421,9 @@
           {/if}
 
           <div
-            class="relative rounded-full p-[{SZ.avatarBorder}px] bg-black {s.folded ? 'opacity-40' : ''}"
+            class="relative rounded-full p-[{SZ.avatarBorder}px] bg-black {s.folded
+              ? 'opacity-40'
+              : ''}"
             style="border: {SZ.avatarBorder}px solid {isWin
               ? '#f4c95d'
               : isShowdownLose
@@ -396,9 +467,9 @@
           {#if gameState?.dealerSeat === s.seat}
             <div
               class="absolute -bottom-1.5 left-1/2 -translate-x-1/2 rounded-full flex items-center justify-center font-extrabold z-[15] badge-gold"
-              style="width: {compact ? 16 : 22}px; height: {compact ? 16 : 22}px; font-size: {compact
-                ? 8
-                : 10}px;"
+              style="width: {compact ? 16 : 22}px; height: {compact
+                ? 16
+                : 22}px; font-size: {compact ? 8 : 10}px;"
             >
               D
             </div>
@@ -440,14 +511,18 @@
           </div>
           {#if payoutForSeat(s.seat) > 0 && !gameState?.tournamentId}
             <div
-              class="mt-0.5 px-2 py-0.5 rounded-full text-[{compact ? 8 : 10}px] font-extrabold text-emerald-300 z-[20]"
+              class="mt-0.5 px-2 py-0.5 rounded-full text-[{compact
+                ? 8
+                : 10}px] font-extrabold text-emerald-300 z-[20]"
               style="background: rgba(0,0,0,0.85);"
             >
               +${fmt(payoutForSeat(s.seat))}
             </div>
           {/if}
           {#if handName(s.seat)}
-            <div class="mt-0.5 text-[{compact ? 7 : 9}px] font-bold text-white/70 whitespace-nowrap">
+            <div
+              class="mt-0.5 text-[{compact ? 7 : 9}px] font-bold text-white/70 whitespace-nowrap"
+            >
               {handName(s.seat)}
             </div>
           {/if}
@@ -531,7 +606,8 @@
           {/if}
 
           <div
-            class="relative rounded-full p-[{SZ.avatarBorder}px] bg-black {mySeat.folded || isEliminated
+            class="relative rounded-full p-[{SZ.avatarBorder}px] bg-black {mySeat.folded ||
+            isEliminated
               ? 'opacity-40'
               : ''}"
             style="border: {SZ.avatarBorder}px solid {isWin
@@ -555,9 +631,9 @@
           {#if gameState.dealerSeat === mySeat.seat}
             <div
               class="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full flex items-center justify-center font-extrabold z-[15] badge-gold"
-              style="width: {compact ? 18 : 24}px; height: {compact ? 18 : 24}px; font-size: {compact
-                ? 9
-                : 11}px;"
+              style="width: {compact ? 18 : 24}px; height: {compact
+                ? 18
+                : 24}px; font-size: {compact ? 9 : 11}px;"
             >
               D
             </div>
@@ -572,10 +648,7 @@
               ? '#6b7280'
               : 'rgba(0,0,0,0.35)'}; min-width: {SZ.panelMinW + 14}px;"
         >
-          <p
-            class="font-extrabold text-black leading-none"
-            style="font-size: {SZ.nameFont + 1}px;"
-          >
+          <p class="font-extrabold text-black leading-none" style="font-size: {SZ.nameFont + 1}px;">
             You
           </p>
           <p
@@ -599,7 +672,9 @@
           </div>
           {#if payoutForSeat(mySeat.seat) > 0 && !gameState?.tournamentId}
             <div
-              class="mt-0.5 px-2 py-0.5 rounded-full text-[{compact ? 9 : 11}px] font-extrabold text-emerald-300 z-[20]"
+              class="mt-0.5 px-2 py-0.5 rounded-full text-[{compact
+                ? 9
+                : 11}px] font-extrabold text-emerald-300 z-[20]"
               style="background: rgba(0,0,0,0.85);"
             >
               +${fmt(payoutForSeat(mySeat.seat))}
@@ -629,6 +704,5 @@
         {/if}
       </div>
     {/if}
-
   </div>
 </div>
