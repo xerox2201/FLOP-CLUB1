@@ -6,13 +6,7 @@ import { SeasonManager } from './season-manager.js';
 import { getAchievementsService } from './achievement-service.js';
 
 export type TournamentStatus =
-  | 'scheduled'
-  | 'registering'
-  | 'running'
-  | 'paused'
-  | 'final_table'
-  | 'finished'
-  | 'cancelled';
+  'scheduled' | 'registering' | 'running' | 'paused' | 'final_table' | 'finished' | 'cancelled';
 
 export type TournamentFormat = 'mtt' | 'sng' | 'freeroll' | 'satellite';
 
@@ -41,6 +35,16 @@ export interface TournamentConfig {
   blindStructureId: number;
   isPrivate: boolean;
   createdBy: number;
+  // Rebuy/Addon
+  allowRebuy?: boolean;
+  maxRebuys?: number;
+  rebuyAmount?: number;
+  rebuyStack?: number;
+  rebuyUntilLevel?: number;
+  allowAddon?: boolean;
+  addonAmount?: number;
+  addonStack?: number;
+  addonAtLevel?: number;
 }
 
 export interface TournamentPlayer {
@@ -52,6 +56,8 @@ export interface TournamentPlayer {
   status: 'active' | 'sitting_out' | 'eliminated' | 'winner';
   eliminatedAt?: Date;
   finalPosition?: number;
+  rebuyCount?: number;
+  hasAddon?: boolean;
 }
 
 export interface Tournament {
@@ -73,15 +79,18 @@ export interface Tournament {
   lateRegClosed?: boolean;
 }
 
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
 export class TournamentManager {
   private ledger: LedgerService;
   private blindService: BlindStructureService;
   private tournaments: Map<number, Tournament> = new Map();
   private io: any = null;
+  private seasons: SeasonManager;
 
-    private seasons: SeasonManager;
-
-constructor(private db: Pool) {
+  constructor(private db: Pool) {
     this.ledger = new LedgerService(db);
     this.blindService = new BlindStructureService(db);
     this.seasons = new SeasonManager(db);
@@ -90,124 +99,120 @@ constructor(private db: Pool) {
   setIO(io: any): void {
     this.io = io;
   }
-async recoverActiveRooms(): Promise<void> {
-  try {
-    // 🔴 Only recover tournaments that:
-    //   1. are actively running
-    //   2. started within the last 6 hours (avoid zombie rooms from old tests)
-    //   3. have at least 2 active players in DB
-    const res = await this.db.query(
-      `SELECT t.id, t.name, t.variant, t.speed, t.blind_structure_id,
-              t.current_level, t.status
-       FROM tournaments t
-       WHERE t.status IN ('running', 'final_table')
-         AND t.started_at > NOW() - INTERVAL '6 hours'
-         AND (
-           SELECT COUNT(*) FROM tournament_players tp
-           WHERE tp.tournament_id = t.id AND tp.status = 'active'
-         ) >= 2
-       ORDER BY t.id ASC`,
-    );
 
-    if (res.rows.length === 0) {
-      console.log('[tournament] 🔄 recovery: no eligible tournaments to restore');
-      return;
-    }
-
-    // 🔴 Auto-cancel stale running tournaments (>6h old or <2 active players)
-    const stale = await this.db.query(
-      `UPDATE tournaments
-       SET status = 'cancelled', finished_at = NOW()
-       WHERE status IN ('running', 'final_table')
-         AND (
-           started_at < NOW() - INTERVAL '6 hours'
-           OR (
+  async recoverActiveRooms(): Promise<void> {
+    try {
+      const res = await this.db.query(
+        `SELECT t.id, t.name, t.variant, t.speed, t.blind_structure_id,
+                t.current_level, t.status
+         FROM tournaments t
+         WHERE t.status IN ('running', 'final_table')
+           AND t.started_at > NOW() - INTERVAL '6 hours'
+           AND (
              SELECT COUNT(*) FROM tournament_players tp
-             WHERE tp.tournament_id = tournaments.id AND tp.status = 'active'
-           ) < 2
-         )
-       RETURNING id, name`,
-    );
-    if (stale.rows.length > 0) {
-      console.log(`[tournament] 🧹 auto-cancelled ${stale.rows.length} stale tournament(s):`);
-      for (const s of stale.rows) {
-        console.log(`   #${s.id} ${s.name}`);
+             WHERE tp.tournament_id = t.id AND tp.status = 'active'
+           ) >= 2
+         ORDER BY t.id ASC`,
+      );
+
+      if (res.rows.length === 0) {
+        console.log('[tournament] 🔄 recovery: no eligible tournaments to restore');
+        return;
       }
-      // Clean orphan player rows
-      for (const s of stale.rows) {
-        await this.db.query(
-          `UPDATE tournament_players SET status = 'eliminated', eliminated_at = NOW()
-           WHERE tournament_id = $1 AND status = 'active'`,
-          [s.id],
+
+      const stale = await this.db.query(
+        `UPDATE tournaments
+         SET status = 'cancelled', finished_at = NOW()
+         WHERE status IN ('running', 'final_table')
+           AND (
+             started_at < NOW() - INTERVAL '6 hours'
+             OR (
+               SELECT COUNT(*) FROM tournament_players tp
+               WHERE tp.tournament_id = tournaments.id AND tp.status = 'active'
+             ) < 2
+           )
+         RETURNING id, name`,
+      );
+      if (stale.rows.length > 0) {
+        console.log(`[tournament] 🧹 auto-cancelled ${stale.rows.length} stale tournament(s):`);
+        for (const s of stale.rows) {
+          console.log(`   #${s.id} ${s.name}`);
+        }
+        for (const s of stale.rows) {
+          await this.db.query(
+            `UPDATE tournament_players SET status = 'eliminated', eliminated_at = NOW()
+             WHERE tournament_id = $1 AND status = 'active'`,
+            [s.id],
+          );
+        }
+      }
+
+      console.log(`[tournament] 🔄 recovery: restoring ${res.rows.length} tournament(s)`);
+
+      for (const row of res.rows) {
+        const tid = Number(row.id);
+        const t = await this.loadFromDB(tid);
+        if (!t) continue;
+
+        const players = await this.db.query(
+          `SELECT tp.user_id, tp.stack, tp.table_number, tp.seat, tp.status,
+                  u.display_name
+           FROM tournament_players tp
+           JOIN users u ON u.id = tp.user_id
+           WHERE tp.tournament_id = $1 AND tp.status = 'active'
+           ORDER BY tp.table_number, tp.seat`,
+          [tid],
+        );
+
+        if (players.rows.length < 2) continue;
+
+        const byTable = new Map<
+          number,
+          Array<{ userId: number; displayName: string; stack: number }>
+        >();
+        for (const p of players.rows) {
+          const tn = Number(p.table_number ?? 1);
+          if (!byTable.has(tn)) byTable.set(tn, []);
+          byTable.get(tn)!.push({
+            userId: Number(p.user_id),
+            displayName: p.display_name,
+            stack: Number(p.stack),
+          });
+        }
+
+        const levelData = await this.blindService.getLevel(
+          t.config.blindStructureId,
+          Math.max(1, t.currentLevel),
+        );
+        const blinds = levelData
+          ? { sb: levelData.sb, bb: levelData.bb, ante: levelData.ante }
+          : { sb: 10, bb: 20, ante: 0 };
+
+        for (const [tableNumber, tablePlayers] of byTable.entries()) {
+          if (tablePlayers.length < 2) continue;
+          gameManager.createTournamentRoom({
+            tournamentId: tid,
+            tableNumber,
+            variant: t.config.variant,
+            speed: t.config.speed,
+            blinds,
+            players: tablePlayers.map((p) => ({ ...p, socketId: '' })),
+          });
+        }
+
+        t.status = row.status === 'final_table' ? 'final_table' : 'running';
+        this.tournaments.set(tid, t);
+        this.startBlindTimer(tid);
+
+        console.log(
+          `[tournament] ✅ recovered #${tid} "${t.config.name}" — ${byTable.size} table(s), ${players.rows.length} players`,
         );
       }
+    } catch (e: any) {
+      console.error('[tournament] recovery failed:', e.message);
     }
-
-    console.log(`[tournament] 🔄 recovery: restoring ${res.rows.length} tournament(s)`);
-
-    for (const row of res.rows) {
-      const tid = Number(row.id);
-      const t = await this.loadFromDB(tid);
-      if (!t) continue;
-
-      const players = await this.db.query(
-        `SELECT tp.user_id, tp.stack, tp.table_number, tp.seat, tp.status,
-                u.display_name
-         FROM tournament_players tp
-         JOIN users u ON u.id = tp.user_id
-         WHERE tp.tournament_id = $1 AND tp.status = 'active'
-         ORDER BY tp.table_number, tp.seat`,
-        [tid],
-      );
-
-      if (players.rows.length < 2) continue;
-
-      const byTable = new Map<
-        number,
-        Array<{ userId: number; displayName: string; stack: number }>
-      >();
-      for (const p of players.rows) {
-        const tn = Number(p.table_number ?? 1);
-        if (!byTable.has(tn)) byTable.set(tn, []);
-        byTable.get(tn)!.push({
-          userId: Number(p.user_id),
-          displayName: p.display_name,
-          stack: Number(p.stack),
-        });
-      }
-
-      const levelData = await this.blindService.getLevel(
-        t.config.blindStructureId,
-        Math.max(1, t.currentLevel),
-      );
-      const blinds = levelData
-        ? { sb: levelData.sb, bb: levelData.bb, ante: levelData.ante }
-        : { sb: 10, bb: 20, ante: 0 };
-
-      for (const [tableNumber, tablePlayers] of byTable.entries()) {
-        if (tablePlayers.length < 2) continue;
-        gameManager.createTournamentRoom({
-          tournamentId: tid,
-          tableNumber,
-          variant: t.config.variant,
-          speed: t.config.speed,
-          blinds,
-          players: tablePlayers.map((p) => ({ ...p, socketId: '' })),
-        });
-      }
-
-      t.status = row.status === 'final_table' ? 'final_table' : 'running';
-      this.tournaments.set(tid, t);
-      this.startBlindTimer(tid);
-
-      console.log(
-        `[tournament] ✅ recovered #${tid} "${t.config.name}" — ${byTable.size} table(s), ${players.rows.length} players`,
-      );
-    }
-  } catch (e: any) {
-    console.error('[tournament] recovery failed:', e.message);
   }
-}
+
   // ============================================================
   // CREATE
   // ============================================================
@@ -227,8 +232,11 @@ async recoverActiveRooms(): Promise<void> {
           min_players, max_players, guaranteed, scheduled_start, late_reg_min, late_reg_level,
           blind_structure_id, status, is_private, created_by,
           allow_re_entry, max_re_entries, is_bounty, bounty_amount,
-          satellite_target_id, seats_awarded)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)
+          satellite_target_id, seats_awarded,
+          allow_rebuy, max_rebuys, rebuy_amount, rebuy_stack, rebuy_until_level,
+          allow_addon, addon_amount, addon_stack, addon_at_level)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,
+               $25,$26,$27,$28,$29,$30,$31,$32,$33)
        RETURNING id`,
       [
         config.name,
@@ -255,6 +263,15 @@ async recoverActiveRooms(): Promise<void> {
         config.bountyAmount,
         config.satelliteTargetId ?? null,
         config.seatsAwarded ?? 0,
+        config.allowRebuy ?? false,
+        config.maxRebuys ?? 0,
+        config.rebuyAmount ?? 0,
+        config.rebuyStack ?? 0,
+        config.rebuyUntilLevel ?? 0,
+        config.allowAddon ?? false,
+        config.addonAmount ?? 0,
+        config.addonStack ?? 0,
+        config.addonAtLevel ?? 0,
       ],
     );
 
@@ -361,14 +378,10 @@ async recoverActiveRooms(): Promise<void> {
   // ============================================================
   // REGISTER
   // ============================================================
-  async register(
-    tournamentId: number,
-    userId: number,
-  ): Promise<{ ok: boolean; error?: string }> {
+  async register(tournamentId: number, userId: number): Promise<{ ok: boolean; error?: string }> {
     const t = await this.loadFromDB(tournamentId);
     if (!t) return { ok: false, error: 'tournament_not_found' };
 
-    // 🔴 Sync currentLevel + status from DB FIRST
     try {
       const dbRow = await this.db.query(
         'SELECT current_level, status FROM tournaments WHERE id = $1',
@@ -391,7 +404,6 @@ async recoverActiveRooms(): Promise<void> {
       return { ok: false, error: 'tournament_full' };
     }
 
-    // Allow registration during 'running' if late reg is open
     const isLateReg =
       t.status === 'running' &&
       t.config.lateRegLevel > 0 &&
@@ -419,7 +431,6 @@ async recoverActiveRooms(): Promise<void> {
     if (existing.rows.length > 0) {
       const e = existing.rows[0];
 
-      // Check if player is busted (stack=0) in tournament_players
       let isBusted = false;
       if (e.status === 'playing') {
         const pRow = await this.db.query(
@@ -444,9 +455,7 @@ async recoverActiveRooms(): Promise<void> {
       }
 
       const eligibleForReEntry =
-        (e.status === 'eliminated' || isBusted) &&
-        t.config.allowReEntry &&
-        isLateReg;
+        (e.status === 'eliminated' || isBusted) && t.config.allowReEntry && isLateReg;
 
       if (e.status === 'refunded') {
         // allow fresh registration
@@ -460,14 +469,10 @@ async recoverActiveRooms(): Promise<void> {
         return { ok: false, error: 'already_registered' };
       }
     }
-    // ============================================================
-    // Freeroll eligibility: min lifetime deposit
-    // ============================================================
+
     if (t.config.format === 'freeroll') {
       try {
-        const cfg = await this.db.query(
-          'SELECT min_deposit_usd FROM freeroll_config WHERE id = 1',
-        );
+        const cfg = await this.db.query('SELECT min_deposit_usd FROM freeroll_config WHERE id = 1');
         const minReq = Number(cfg.rows[0]?.min_deposit_usd ?? 5);
         const dep = await this.db.query(
           `SELECT COALESCE(SUM(amount_usd), 0)::numeric AS total
@@ -487,7 +492,6 @@ async recoverActiveRooms(): Promise<void> {
       }
     }
 
-    // 🔴 D5.4: Check if user has an unused satellite ticket for this tournament
     let hasTicket = false;
     try {
       const ticketRes = await this.db.query(
@@ -553,7 +557,6 @@ async recoverActiveRooms(): Promise<void> {
       );
     }
 
-    // Late reg OR re-entry → add to table
     if (isLateReg || isReEntry) {
       try {
         if (isReEntry) {
@@ -581,10 +584,7 @@ async recoverActiveRooms(): Promise<void> {
   // ============================================================
   // UNREGISTER
   // ============================================================
-  async unregister(
-    tournamentId: number,
-    userId: number,
-  ): Promise<{ ok: boolean; error?: string }> {
+  async unregister(tournamentId: number, userId: number): Promise<{ ok: boolean; error?: string }> {
     const t = await this.loadFromDB(tournamentId);
     if (!t) return { ok: false, error: 'tournament_not_found' };
 
@@ -707,6 +707,8 @@ async recoverActiveRooms(): Promise<void> {
         tableNumber,
         seat: seatIdx,
         status: 'active',
+        rebuyCount: 0,
+        hasAddon: false,
       });
 
       const table = t.tables.get(tableNumber)!;
@@ -837,6 +839,8 @@ async recoverActiveRooms(): Promise<void> {
       tableNumber: targetTableNum,
       seat: emptySeat,
       status: 'active',
+      rebuyCount: 0,
+      hasAddon: false,
     });
     const tbl = t.tables.get(targetTableNum)!;
     tbl.seats[emptySeat] = userId;
@@ -929,7 +933,6 @@ async recoverActiveRooms(): Promise<void> {
       return;
     }
 
-    // BREAK handling
     if (level.isBreak) {
       console.log(`[tournament] ☕ #${tournamentId} entered BREAK at level ${t.currentLevel}`);
       if (this.io) {
@@ -952,7 +955,6 @@ async recoverActiveRooms(): Promise<void> {
 
     gameManager.updateRoomBlinds(tournamentId, level.sb, level.bb, level.ante);
 
-    // Late reg close check
     if (
       !t.lateRegClosed &&
       t.config.lateRegLevel > 0 &&
@@ -969,11 +971,7 @@ async recoverActiveRooms(): Promise<void> {
       }
     }
 
-    // Break end
-    const prevLevelData = await this.blindService.getLevel(
-      t.config.blindStructureId,
-      prevLevel,
-    );
+    const prevLevelData = await this.blindService.getLevel(t.config.blindStructureId, prevLevel);
     if (prevLevelData?.isBreak && this.io) {
       this.io.emit(`tournament:${tournamentId}:break_end`, {
         newLevel: t.currentLevel,
@@ -1121,7 +1119,268 @@ async recoverActiveRooms(): Promise<void> {
   }
 
   // ============================================================
-  // D5.4: SATELLITE TICKETS
+  // REBUY
+  // ============================================================
+  async rebuy(tournamentId: number, userId: number): Promise<{ ok: boolean; error?: string }> {
+    const t = this.tournaments.get(tournamentId) ?? (await this.loadFromDB(tournamentId));
+    if (!t) return { ok: false, error: 'tournament_not_found' };
+
+    if (t.status !== 'running' && t.status !== 'final_table') {
+      return { ok: false, error: 'tournament_not_running' };
+    }
+    if (t.config.format === 'freeroll') {
+      return { ok: false, error: 'rebuy_not_allowed_for_freeroll' };
+    }
+
+    // Local defaults — interface fields are optional
+    const allowRebuy = t.config.allowRebuy ?? false;
+    const maxRebuys = t.config.maxRebuys ?? 0;
+    const rebuyAmount = t.config.rebuyAmount ?? 0;
+    const rebuyStackCfg = t.config.rebuyStack ?? 0;
+    const rebuyUntilLevel = t.config.rebuyUntilLevel ?? 0;
+
+    if (!allowRebuy || rebuyUntilLevel <= 0) {
+      return { ok: false, error: 'rebuy_not_allowed' };
+    }
+    if (t.currentLevel > rebuyUntilLevel) {
+      return { ok: false, error: 'rebuy_period_closed' };
+    }
+
+    const player = t.players.get(userId);
+    if (!player || player.status !== 'active') {
+      return { ok: false, error: 'not_active_player' };
+    }
+    if (player.stack >= t.config.startingStack) {
+      return { ok: false, error: 'stack_above_threshold' };
+    }
+
+    const currentCount = player.rebuyCount ?? 0;
+    if (maxRebuys > 0 && currentCount >= maxRebuys) {
+      return { ok: false, error: 'max_rebuys_reached' };
+    }
+
+    const room = gameManager.getRoomForUserInTournament(tournamentId, userId);
+    if (room && room.busy) {
+      return { ok: false, error: 'hand_in_progress' };
+    }
+
+    const rebuyStack = rebuyStackCfg > 0 ? rebuyStackCfg : t.config.startingStack;
+    const rebuyNumber = currentCount + 1;
+    const idem = `rebuy_${tournamentId}_${userId}_${rebuyNumber}`;
+
+    if (t.config.mode === 'real' && rebuyAmount > 0) {
+      const totalOriginal = t.config.buyIn + t.config.fee;
+      const feeRatio = totalOriginal > 0 ? t.config.fee / totalOriginal : 0;
+      const feePart = round2(rebuyAmount * feeRatio);
+      const prizePart = round2(rebuyAmount - feePart);
+
+      const userAcc = await this.ledger.getUserAccountId(userId);
+      const entryAcc = await this.ledger.getAccountId('SYSTEM_TOURNAMENT_ENTRY');
+      const rakeAcc = await this.ledger.getAccountId('SYSTEM_TOURNAMENT_RAKE');
+
+      if (!userAcc || !entryAcc) return { ok: false, error: 'account_missing' };
+
+      const entries: { accountId: number; amount: number }[] = [
+        { accountId: userAcc, amount: -rebuyAmount },
+        { accountId: entryAcc, amount: prizePart },
+      ];
+      if (feePart > 0 && rakeAcc) {
+        entries.push({ accountId: rakeAcc, amount: feePart });
+      }
+
+      const result = await this.ledger.record({
+        kind: 'REBUY',
+        userId,
+        ref: idem,
+        meta: { tournamentId, level: t.currentLevel, rebuyStack, prizePart, feePart },
+        entries,
+        idempotencyKey: idem,
+      });
+      if (!result.ok) return { ok: false, error: result.error || 'payment_failed' };
+
+      await this.db.query(
+        `UPDATE tournaments SET total_prize_pool = total_prize_pool + $1 WHERE id = $2`,
+        [prizePart, tournamentId],
+      );
+      t.totalPrizePool = round2(t.totalPrizePool + prizePart);
+    } else if (t.config.mode === 'free' && rebuyAmount > 0) {
+      const fc = await this.db.query('SELECT chips FROM free_chips WHERE user_id = $1', [userId]);
+      const bal = Number(fc.rows[0]?.chips ?? 0);
+      if (bal < rebuyAmount) return { ok: false, error: 'insufficient_chips' };
+
+      await this.db.query('UPDATE free_chips SET chips = chips - $1 WHERE user_id = $2', [
+        rebuyAmount,
+        userId,
+      ]);
+      await this.db.query(
+        `INSERT INTO play_money_log (user_id, delta, reason, balance_after)
+         VALUES ($1, $2, 'rebuy',
+           (SELECT chips FROM free_chips WHERE user_id = $1))`,
+        [userId, -rebuyAmount],
+      );
+    }
+
+    const newStack = round2(player.stack + rebuyStack);
+
+    await this.db.query(
+      `UPDATE tournament_players
+       SET stack = $1, rebuy_count = $2
+       WHERE tournament_id = $3 AND user_id = $4`,
+      [newStack, rebuyNumber, tournamentId, userId],
+    );
+
+    player.stack = newStack;
+    player.rebuyCount = rebuyNumber;
+
+    gameManager.updatePlayerStackInTournament(tournamentId, userId, newStack);
+
+    if (this.io) {
+      this.io.emit(`tournament:${tournamentId}:rebuy`, {
+        userId,
+        newStack,
+        rebuyCount: rebuyNumber,
+        tableNumber: player.tableNumber,
+        seat: player.seat,
+      });
+    }
+
+    console.log(
+      `[tournament] 🔄 rebuy: user=${userId} #${tournamentId} count=${rebuyNumber} stack=${newStack}`,
+    );
+    return { ok: true };
+  }
+
+  // ============================================================
+  // ADDON
+  // ============================================================
+  async addon(tournamentId: number, userId: number): Promise<{ ok: boolean; error?: string }> {
+    const t = this.tournaments.get(tournamentId) ?? (await this.loadFromDB(tournamentId));
+    if (!t) return { ok: false, error: 'tournament_not_found' };
+
+    if (t.status !== 'running' && t.status !== 'final_table') {
+      return { ok: false, error: 'tournament_not_running' };
+    }
+    if (t.config.format === 'freeroll') {
+      return { ok: false, error: 'addon_not_allowed_for_freeroll' };
+    }
+
+    // Local defaults — interface fields are optional
+    const allowAddon = t.config.allowAddon ?? false;
+    const addonAmount = t.config.addonAmount ?? 0;
+    const addonStackCfg = t.config.addonStack ?? 0;
+    const addonAtLevel = t.config.addonAtLevel ?? 0;
+
+    if (!allowAddon || addonAtLevel <= 0) {
+      return { ok: false, error: 'addon_not_allowed' };
+    }
+    if (t.currentLevel !== addonAtLevel) {
+      return { ok: false, error: 'addon_not_available' };
+    }
+
+    const player = t.players.get(userId);
+    if (!player || player.status !== 'active') {
+      return { ok: false, error: 'not_active_player' };
+    }
+    if (player.hasAddon) {
+      return { ok: false, error: 'addon_already_used' };
+    }
+
+    const room = gameManager.getRoomForUserInTournament(tournamentId, userId);
+    if (room && room.busy) {
+      return { ok: false, error: 'hand_in_progress' };
+    }
+
+    const addonStack = addonStackCfg > 0 ? addonStackCfg : t.config.startingStack;
+    const idem = `addon_${tournamentId}_${userId}`;
+
+    if (t.config.mode === 'real' && addonAmount > 0) {
+      const totalOriginal = t.config.buyIn + t.config.fee;
+      const feeRatio = totalOriginal > 0 ? t.config.fee / totalOriginal : 0;
+      const feePart = round2(addonAmount * feeRatio);
+      const prizePart = round2(addonAmount - feePart);
+
+      const userAcc = await this.ledger.getUserAccountId(userId);
+      const entryAcc = await this.ledger.getAccountId('SYSTEM_TOURNAMENT_ENTRY');
+      const rakeAcc = await this.ledger.getAccountId('SYSTEM_TOURNAMENT_RAKE');
+
+      if (!userAcc || !entryAcc) return { ok: false, error: 'account_missing' };
+
+      const entries: { accountId: number; amount: number }[] = [
+        { accountId: userAcc, amount: -addonAmount },
+        { accountId: entryAcc, amount: prizePart },
+      ];
+      if (feePart > 0 && rakeAcc) {
+        entries.push({ accountId: rakeAcc, amount: feePart });
+      }
+
+      const result = await this.ledger.record({
+        kind: 'REBUY',
+        userId,
+        ref: idem,
+        meta: {
+          tournamentId,
+          level: t.currentLevel,
+          addonStack,
+          prizePart,
+          feePart,
+          kind: 'addon',
+        },
+        entries,
+        idempotencyKey: idem,
+      });
+      if (!result.ok) return { ok: false, error: result.error || 'payment_failed' };
+
+      await this.db.query(
+        `UPDATE tournaments SET total_prize_pool = total_prize_pool + $1 WHERE id = $2`,
+        [prizePart, tournamentId],
+      );
+      t.totalPrizePool = round2(t.totalPrizePool + prizePart);
+    } else if (t.config.mode === 'free' && addonAmount > 0) {
+      const fc = await this.db.query('SELECT chips FROM free_chips WHERE user_id = $1', [userId]);
+      const bal = Number(fc.rows[0]?.chips ?? 0);
+      if (bal < addonAmount) return { ok: false, error: 'insufficient_chips' };
+
+      await this.db.query('UPDATE free_chips SET chips = chips - $1 WHERE user_id = $2', [
+        addonAmount,
+        userId,
+      ]);
+      await this.db.query(
+        `INSERT INTO play_money_log (user_id, delta, reason, balance_after)
+         VALUES ($1, $2, 'addon',
+           (SELECT chips FROM free_chips WHERE user_id = $1))`,
+        [userId, -addonAmount],
+      );
+    }
+
+    const newStack = round2(player.stack + addonStack);
+
+    await this.db.query(
+      `UPDATE tournament_players
+       SET stack = $1, has_addon = TRUE
+       WHERE tournament_id = $2 AND user_id = $3`,
+      [newStack, tournamentId, userId],
+    );
+
+    player.stack = newStack;
+    player.hasAddon = true;
+
+    gameManager.updatePlayerStackInTournament(tournamentId, userId, newStack);
+
+    if (this.io) {
+      this.io.emit(`tournament:${tournamentId}:addon`, {
+        userId,
+        newStack,
+        tableNumber: player.tableNumber,
+        seat: player.seat,
+      });
+    }
+
+    console.log(`[tournament] 🎁 addon: user=${userId} #${tournamentId} stack=${newStack}`);
+    return { ok: true };
+  }
+
+  // ============================================================
+  // SATELLITE TICKETS
   // ============================================================
   async getUserTickets(userId: number): Promise<any[]> {
     const res = await this.db.query(
@@ -1140,7 +1399,7 @@ async recoverActiveRooms(): Promise<void> {
   }
 
   // ============================================================
-  // LIST / GET
+  // LIST
   // ============================================================
   async list(
     filter: { status?: string; variant?: string; mode?: string; limit?: number } = {},
@@ -1153,9 +1412,7 @@ async recoverActiveRooms(): Promise<void> {
       conditions.push(`status = $${idx++}`);
       params.push(filter.status);
     } else {
-      conditions.push(
-        `status IN ('scheduled', 'registering', 'running', 'final_table', 'paused')`,
-      );
+      conditions.push(`status IN ('scheduled', 'registering', 'running', 'final_table', 'paused')`);
     }
 
     if (filter.variant) {
@@ -1187,172 +1444,197 @@ async recoverActiveRooms(): Promise<void> {
     return res.rows.map((r) => this.serializeRow(r));
   }
 
+  // ============================================================
+  // GET
+  // ============================================================
   async get(tournamentId: number, userId?: number | null): Promise<any | null> {
-  const res = await this.db.query(
-    `SELECT t.*,
-       (SELECT COUNT(*) FROM tournament_entries WHERE tournament_id = t.id AND status = 'registered') AS registered_count,
-       (SELECT COUNT(*) FROM tournament_players WHERE tournament_id = t.id AND status = 'active') AS active_count
-     FROM tournaments t WHERE id = $1`,
-    [tournamentId],
-  );
-  if (res.rows.length === 0) return null;
+    const res = await this.db.query(
+      `SELECT t.*,
+         (SELECT COUNT(*) FROM tournament_entries WHERE tournament_id = t.id AND status = 'registered') AS registered_count,
+         (SELECT COUNT(*) FROM tournament_players WHERE tournament_id = t.id AND status = 'active') AS active_count
+       FROM tournaments t WHERE id = $1`,
+      [tournamentId],
+    );
+    if (res.rows.length === 0) return null;
 
-  const base = this.serializeRow(res.rows[0]);
+    const base = this.serializeRow(res.rows[0]);
 
-  // ── Players with avatar + rebuy/addon info ──
-  const players = await this.db.query(
-    `SELECT tp.user_id, u.display_name, u.avatar_id,
-            tp.stack, tp.table_number, tp.seat, tp.status,
-            tp.final_position, tp.bounty_earned,
-            tp.rebuy_count, tp.has_addon
-     FROM tournament_players tp
-     JOIN users u ON u.id = tp.user_id
-     WHERE tp.tournament_id = $1
-     ORDER BY tp.stack DESC, tp.final_position ASC NULLS LAST`,
-    [tournamentId],
-  );
+    const players = await this.db.query(
+      `SELECT tp.user_id, u.display_name, u.avatar_id,
+              tp.stack, tp.table_number, tp.seat, tp.status,
+              tp.final_position, tp.bounty_earned,
+              tp.rebuy_count, tp.has_addon
+       FROM tournament_players tp
+       JOIN users u ON u.id = tp.user_id
+       WHERE tp.tournament_id = $1
+       ORDER BY tp.stack DESC, tp.final_position ASC NULLS LAST`,
+      [tournamentId],
+    );
 
-  // ── Payouts (raw %) ──
-  const payouts = await this.db.query(
-    `SELECT position, percentage, fixed_amount FROM tournament_payouts
-     WHERE tournament_id = $1 ORDER BY position ASC`,
-    [tournamentId],
-  );
+    const payouts = await this.db.query(
+      `SELECT position, percentage, fixed_amount FROM tournament_payouts
+       WHERE tournament_id = $1 ORDER BY position ASC`,
+      [tournamentId],
+    );
 
-  // ── Blind structure + timer ──
-  let blindStructure: any[] = [];
-  let currentLevelData: any = null;
-  let nextLevelData: any = null;
-  let nextLevelIn = 0;
-  const structureId = Number(base.blindStructureId);
-  if (structureId) {
-    try {
-      blindStructure = await this.blindService.getLevels(structureId);
-    } catch (e: any) {
-      console.error('[tournament] getLevels failed:', e.message);
-    }
-    if (base.currentLevel > 0) {
-      currentLevelData = blindStructure.find((b) => b.level === base.currentLevel) ?? null;
-      nextLevelData = blindStructure.find((b) => b.level === base.currentLevel + 1) ?? null;
-      if (
-        (base.status === 'running' || base.status === 'final_table') &&
-        currentLevelData
-      ) {
-        const startMs = base.levelStartedAt ? new Date(base.levelStartedAt).getTime() : 0;
-        if (startMs > 0) {
-          const elapsed = (Date.now() - startMs) / 1000;
-          nextLevelIn = Math.max(0, Math.round(currentLevelData.durationSec - elapsed));
+    let blindStructure: any[] = [];
+    let currentLevelData: any = null;
+    let nextLevelData: any = null;
+    let nextLevelIn = 0;
+    const structureId = Number(base.blindStructureId);
+    if (structureId) {
+      try {
+        blindStructure = await this.blindService.getLevels(structureId);
+      } catch (e: any) {
+        console.error('[tournament] getLevels failed:', e.message);
+      }
+      if (base.currentLevel > 0) {
+        currentLevelData = blindStructure.find((b) => b.level === base.currentLevel) ?? null;
+        nextLevelData = blindStructure.find((b) => b.level === base.currentLevel + 1) ?? null;
+        if ((base.status === 'running' || base.status === 'final_table') && currentLevelData) {
+          const startMs = base.levelStartedAt ? new Date(base.levelStartedAt).getTime() : 0;
+          if (startMs > 0) {
+            const elapsed = (Date.now() - startMs) / 1000;
+            nextLevelIn = Math.max(0, Math.round(currentLevelData.durationSec - elapsed));
+          }
         }
       }
     }
-  }
 
-  // ── Live prize pool + overlay ──
-  const totalBuyIn = base.registeredCount * base.buyIn;
-  const livePrizePool = Math.max(base.totalPrizePool, totalBuyIn, base.guaranteed);
-  const overlay = Math.max(0, base.guaranteed - totalBuyIn);
-  const rakeCollected = base.registeredCount * base.fee;
+    const totalBuyIn = base.registeredCount * base.buyIn;
+    const livePrizePool = Math.max(base.totalPrizePool, totalBuyIn, base.guaranteed);
+    const overlay = Math.max(0, base.guaranteed - totalBuyIn);
+    const rakeCollected = base.registeredCount * base.fee;
 
-  const payoutsWithAmount = payouts.rows.map((p: any) => {
-    const pct = Number(p.percentage);
-    const fixed = p.fixed_amount ? Number(p.fixed_amount) : null;
-    return {
-      position: p.position,
-      percentage: pct,
-      fixedAmount: fixed,
-      amount: fixed != null ? fixed : Math.round(livePrizePool * pct * 100) / 100,
-    };
-  });
+    const payoutsWithAmount = payouts.rows.map((p: any) => {
+      const pct = Number(p.percentage);
+      const fixed = p.fixed_amount ? Number(p.fixed_amount) : null;
+      return {
+        position: p.position,
+        percentage: pct,
+        fixedAmount: fixed,
+        amount: fixed != null ? fixed : Math.round(livePrizePool * pct * 100) / 100,
+      };
+    });
 
-  // ── Your entry (if authenticated) ──
-  let yourEntry: any = null;
-  if (userId) {
-    try {
-      const entryRes = await this.db.query(
-        `SELECT te.status, te.re_entry_count, te.final_position, te.payout_amount,
-                te.points_earned, te.starting_stack,
-                tp.stack, tp.table_number, tp.seat, tp.status AS player_status,
-                tp.bounty_earned, tp.rebuy_count, tp.has_addon
-         FROM tournament_entries te
-         LEFT JOIN tournament_players tp
-           ON tp.user_id = te.user_id AND tp.tournament_id = te.tournament_id
-         WHERE te.tournament_id = $1 AND te.user_id = $2`,
-        [tournamentId, userId],
-      );
-      if (entryRes.rows.length > 0) {
-        const e = entryRes.rows[0];
-        const virtualTableId =
-          e.table_number != null
-            ? 1_000_000 + tournamentId * 1000 + e.table_number
-            : null;
-        const isRegistered = e.status === 'registered' || e.status === 'playing';
-        const canRegister = base.status === 'registering' || base.status === 'scheduled';
-        const isLateReg =
-          base.status === 'running' &&
-          base.lateRegLevel > 0 &&
-          base.currentLevel <= base.lateRegLevel &&
-          !isRegistered;
-        const isEliminated =
-          e.player_status === 'eliminated' || e.status === 'eliminated';
-        const canReEnter =
-          isEliminated &&
-          base.allowReEntry &&
-          (Number(e.re_entry_count) || 0) < base.maxReEntries &&
-          (canRegister || isLateReg);
+    let yourEntry: any = null;
+    if (userId) {
+      try {
+        const entryRes = await this.db.query(
+          `SELECT te.status, te.re_entry_count, te.final_position, te.payout_amount,
+                  te.points_earned, te.starting_stack,
+                  tp.stack, tp.table_number, tp.seat, tp.status AS player_status,
+                  tp.bounty_earned, tp.rebuy_count, tp.has_addon
+           FROM tournament_entries te
+           LEFT JOIN tournament_players tp
+             ON tp.user_id = te.user_id AND tp.tournament_id = te.tournament_id
+           WHERE te.tournament_id = $1 AND te.user_id = $2`,
+          [tournamentId, userId],
+        );
+        if (entryRes.rows.length > 0) {
+          const e = entryRes.rows[0];
+          const virtualTableId =
+            e.table_number != null ? 1_000_000 + tournamentId * 1000 + e.table_number : null;
+          const isRegistered = e.status === 'registered' || e.status === 'playing';
+          const canRegister = base.status === 'registering' || base.status === 'scheduled';
+          const isLateReg =
+            base.status === 'running' &&
+            base.lateRegLevel > 0 &&
+            base.currentLevel <= base.lateRegLevel &&
+            !isRegistered;
+          const isEliminated = e.player_status === 'eliminated' || e.status === 'eliminated';
+          const canReEnter =
+            isEliminated &&
+            base.allowReEntry &&
+            (Number(e.re_entry_count) || 0) < base.maxReEntries &&
+            (canRegister || isLateReg);
 
-        yourEntry = {
-          isRegistered,
-          entryStatus: e.status,
-          reEntryCount: Number(e.re_entry_count ?? 0),
-          hasAddon: !!e.has_addon,
-          rebuyCount: Number(e.rebuy_count ?? 0),
-          finalPosition: e.final_position,
-          payoutAmount: Number(e.payout_amount ?? 0),
-          pointsEarned: Number(e.points_earned ?? 0),
-          stack: e.stack != null ? Number(e.stack) : null,
-          tableNumber: e.table_number,
-          seat: e.seat,
-          virtualTableId,
-          canRegister: !isRegistered && canRegister,
-          canReEnter,
-          canRebuy: false, // Phase C
-          canAddon: false, // Phase C
-        };
+          const currentLevel = Number(base.currentLevel ?? 0);
+          const playerStack = e.stack != null ? Number(e.stack) : null;
+          const isActive = e.player_status === 'active' || e.status === 'playing';
+          const rebuyCount = Number(e.rebuy_count ?? 0);
+          const hasAddon = !!e.has_addon;
+
+          const rebuyWindowOpen =
+            base.allowRebuy &&
+            base.format !== 'freeroll' &&
+            base.rebuyUntilLevel > 0 &&
+            currentLevel > 0 &&
+            currentLevel <= base.rebuyUntilLevel;
+
+          const addonWindowOpen =
+            base.allowAddon &&
+            base.format !== 'freeroll' &&
+            base.addonAtLevel > 0 &&
+            currentLevel === base.addonAtLevel &&
+            !hasAddon;
+
+          const canRebuy =
+            isActive &&
+            (base.status === 'running' || base.status === 'final_table') &&
+            rebuyWindowOpen &&
+            (base.maxRebuys === 0 || rebuyCount < base.maxRebuys) &&
+            playerStack != null &&
+            playerStack < base.startingStack;
+
+          const canAddon =
+            isActive &&
+            (base.status === 'running' || base.status === 'final_table') &&
+            addonWindowOpen;
+
+          yourEntry = {
+            isRegistered,
+            entryStatus: e.status,
+            reEntryCount: Number(e.re_entry_count ?? 0),
+            rebuyCount,
+            hasAddon,
+            finalPosition: e.final_position,
+            payoutAmount: Number(e.payout_amount ?? 0),
+            pointsEarned: Number(e.points_earned ?? 0),
+            stack: playerStack,
+            tableNumber: e.table_number,
+            seat: e.seat,
+            virtualTableId,
+            canRegister: !isRegistered && canRegister,
+            canReEnter,
+            canRebuy,
+            canAddon,
+          };
+        }
+      } catch (e: any) {
+        console.error('[tournament] yourEntry fetch failed:', e.message);
       }
-    } catch (e: any) {
-      console.error('[tournament] yourEntry fetch failed:', e.message);
     }
-  }
 
-  return {
-    ...base,
-    totalPrizePool: livePrizePool,
-    totalBuyIn,
-    overlay,
-    rakeCollected,
-    nextLevelIn,
-    currentLevelData,
-    nextLevelData,
-    blindStructure,
-    players: players.rows.map((p: any) => ({
-      userId: p.user_id,
-      displayName: p.display_name,
-      avatarId: p.avatar_id || 'king',
-      stack: Number(p.stack),
-      tableNumber: p.table_number,
-      seat: p.seat,
-      status: p.status,
-      finalPosition: p.final_position,
-      bountyEarned: Number(p.bounty_earned ?? 0),
-      rebuyCount: Number(p.rebuy_count ?? 0),
-      hasAddon: !!p.has_addon,
-      virtualTableId:
-        p.table_number != null ? 1_000_000 + tournamentId * 1000 + p.table_number : null,
-    })),
-    payouts: payoutsWithAmount,
-    yourEntry,
-  };
-}
+    return {
+      ...base,
+      totalPrizePool: livePrizePool,
+      totalBuyIn,
+      overlay,
+      rakeCollected,
+      nextLevelIn,
+      currentLevelData,
+      nextLevelData,
+      blindStructure,
+      players: players.rows.map((p: any) => ({
+        userId: p.user_id,
+        displayName: p.display_name,
+        avatarId: p.avatar_id || 'king',
+        stack: Number(p.stack),
+        tableNumber: p.table_number,
+        seat: p.seat,
+        status: p.status,
+        finalPosition: p.final_position,
+        bountyEarned: Number(p.bounty_earned ?? 0),
+        rebuyCount: Number(p.rebuy_count ?? 0),
+        hasAddon: !!p.has_addon,
+        virtualTableId:
+          p.table_number != null ? 1_000_000 + tournamentId * 1000 + p.table_number : null,
+      })),
+      payouts: payoutsWithAmount,
+      yourEntry,
+    };
+  }
 
   private serializeRow(r: any): any {
     return {
@@ -1390,6 +1672,16 @@ async recoverActiveRooms(): Promise<void> {
       startedAt: r.started_at,
       finishedAt: r.finished_at,
       createdAt: r.created_at,
+      // Rebuy/Addon
+      allowRebuy: r.allow_rebuy ?? false,
+      maxRebuys: Number(r.max_rebuys ?? 0),
+      rebuyAmount: Number(r.rebuy_amount ?? 0),
+      rebuyStack: Number(r.rebuy_stack ?? 0),
+      rebuyUntilLevel: Number(r.rebuy_until_level ?? 0),
+      allowAddon: r.allow_addon ?? false,
+      addonAmount: Number(r.addon_amount ?? 0),
+      addonStack: Number(r.addon_stack ?? 0),
+      addonAtLevel: Number(r.addon_at_level ?? 0),
     };
   }
 
@@ -1437,6 +1729,15 @@ async recoverActiveRooms(): Promise<void> {
         blindStructureId: r.blind_structure_id,
         isPrivate: r.is_private,
         createdBy: r.created_by,
+        allowRebuy: r.allow_rebuy ?? false,
+        maxRebuys: Number(r.max_rebuys ?? 0),
+        rebuyAmount: Number(r.rebuy_amount ?? 0),
+        rebuyStack: Number(r.rebuy_stack ?? 0),
+        rebuyUntilLevel: Number(r.rebuy_until_level ?? 0),
+        allowAddon: r.allow_addon ?? false,
+        addonAmount: Number(r.addon_amount ?? 0),
+        addonStack: Number(r.addon_stack ?? 0),
+        addonAtLevel: Number(r.addon_at_level ?? 0),
       },
       status: r.status,
       currentLevel: r.current_level || 0,
@@ -1462,6 +1763,8 @@ async recoverActiveRooms(): Promise<void> {
           seat: p.seat,
           status: p.status,
           finalPosition: p.final_position,
+          rebuyCount: Number(p.rebuy_count ?? 0),
+          hasAddon: !!p.has_addon,
         });
       }
 
@@ -1684,7 +1987,7 @@ async recoverActiveRooms(): Promise<void> {
   }
 
   // ============================================================
-  // FINISH + PAYOUTS (D5.4: supports satellite mode)
+  // FINISH + PAYOUTS
   // ============================================================
   private async finishTournament(tournamentId: number): Promise<void> {
     const t = this.tournaments.get(tournamentId);
@@ -1705,7 +2008,6 @@ async recoverActiveRooms(): Promise<void> {
     const totalPrize = t.totalPrizePool;
     const prizeAcc = !isFree ? await this.ledger.getAccountId('SYSTEM_TOURNAMENT_PRIZE') : null;
 
-    // 🔴 D5.4: Satellite mode — award tickets instead of money
     if (isSatellite) {
       const sorted = [...t.players.values()]
         .filter((p) => p.finalPosition != null)
@@ -1745,7 +2047,6 @@ async recoverActiveRooms(): Promise<void> {
         }
       }
     } else {
-      // Normal payout loop
       for (const po of payoutsRes.rows) {
         const position = po.position;
         const percentage = Number(po.percentage);
@@ -1783,9 +2084,7 @@ async recoverActiveRooms(): Promise<void> {
         } else {
           const userAcc = await this.ledger.getUserAccountId(winner.userId);
           if (!prizeAcc || !userAcc) {
-            console.error(
-              `[tournament] ❌ missing accounts for user=${winner.userId}`,
-            );
+            console.error(`[tournament] ❌ missing accounts for user=${winner.userId}`);
             continue;
           }
 
@@ -1815,14 +2114,10 @@ async recoverActiveRooms(): Promise<void> {
         );
       }
     }
-    // 🔴 D6.2: Award tournament points for the current season
+
     try {
       const season = await this.seasons.ensureActiveSeason();
 
-      // Attach this tournament to the season if not already
-      if (!t.config.id) {
-        // no-op; the tournament may have been created outside the manager
-      }
       await this.db.query(
         `UPDATE tournaments SET season_id = $1 WHERE id = $2 AND season_id IS NULL`,
         [season.id, tournamentId],
@@ -1877,7 +2172,7 @@ async recoverActiveRooms(): Promise<void> {
     }
 
     console.log(`[tournament] ✅ #${tournamentId} finished, winner=${winner?.userId}`);
-        // ============ ACHIEVEMENTS TRACKING ============
+
     try {
       const ach = getAchievementsService();
       if (ach) {
@@ -1895,11 +2190,10 @@ async recoverActiveRooms(): Promise<void> {
     } catch (e: any) {
       console.error('[achievements] tournament track failed:', e.message);
     }
-    // ============ END ACHIEVEMENTS ============
   }
 
   // ============================================================
-  // PUBLIC API console.log("[tournament] ✅ #${tournamentId} finished, winner=${winner?.userId}");
+  // PUBLIC API
   // ============================================================
   async handlePlayerBust(
     tournamentId: number,
@@ -1934,11 +2228,7 @@ async recoverActiveRooms(): Promise<void> {
   // ============================================================
   // Sync after each hand
   // ============================================================
-  async syncStacksAndEliminate(
-    tournamentId: number,
-    room: any,
-    handResult?: any,
-  ): Promise<void> {
+  async syncStacksAndEliminate(tournamentId: number, room: any, handResult?: any): Promise<void> {
     const t = this.tournaments.get(tournamentId) ?? (await this.loadFromDB(tournamentId));
     if (!t) return;
 
@@ -1959,7 +2249,6 @@ async recoverActiveRooms(): Promise<void> {
       if (stack <= 0) busted.push(userId);
     }
 
-    // Determine killer
     let killerUserId: number | undefined;
     if (handResult && Array.isArray(handResult.winners) && handResult.winners.length > 0) {
       const winnerSeat = handResult.winners[0];
@@ -1988,9 +2277,7 @@ async recoverActiveRooms(): Promise<void> {
             [newStack, bounty, tournamentId, killer],
           );
 
-          const killerSeatIdx = room.game.state.seats.findIndex(
-            (s: any) => s.userId === killer,
-          );
+          const killerSeatIdx = room.game.state.seats.findIndex((s: any) => s.userId === killer);
           if (killerSeatIdx >= 0) {
             room.game.state.seats[killerSeatIdx].stack = newStack;
           }
