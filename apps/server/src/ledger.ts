@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-
+const LEDGER_SCOPE = 'ledger';
 export type LedgerKind =
   | 'DEPOSIT'
   | 'WITHDRAWAL'
@@ -52,9 +52,10 @@ export class LedgerService {
     }
 
     if (input.idempotencyKey) {
-      const existing = await this.db.query('SELECT result FROM idempotency_keys WHERE key = $1', [
-        input.idempotencyKey,
-      ]);
+      const existing = await this.db.query(
+        'SELECT result FROM idempotency_keys WHERE key = $1 AND scope = $2',
+        [input.idempotencyKey, LEDGER_SCOPE],
+      );
       if (existing.rows.length > 0) {
         return {
           ok: true,
@@ -111,9 +112,15 @@ export class LedgerService {
 
       if (input.idempotencyKey) {
         await client.query(
-          `INSERT INTO idempotency_keys (key, user_id, result)
-           VALUES ($1, $2, $3)`,
-          [input.idempotencyKey, input.userId || null, JSON.stringify({ transactionId: txId })],
+          `INSERT INTO idempotency_keys (key, user_id, scope, result)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (key, scope) DO NOTHING`,
+          [
+            input.idempotencyKey,
+            input.userId || null,
+            LEDGER_SCOPE,
+            JSON.stringify({ transactionId: txId }),
+          ],
         );
       }
 
