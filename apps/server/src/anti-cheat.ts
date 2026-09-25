@@ -1,5 +1,13 @@
 import { Pool } from 'pg';
-
+export interface ActionRecord {
+  userId: number;
+  tableId: number;
+  handNo: number;
+  action: 'fold' | 'check' | 'call' | 'raise';
+  amount: number;
+  street: string;
+  responseMs: number;
+}
 // ============================================================
 // Anti-cheat thresholds
 // ------------------------------------------------------------

@@ -1,12 +1,12 @@
 import { Pool } from 'pg';
 import { LedgerService } from './ledger.js';
+import { getPriceOracle } from './price-oracle.js';
 
 const TON_NETWORK = process.env.TON_NETWORK || 'testnet';
 const TON_API_KEY = process.env.TON_API_KEY || '';
 const TON_DEPOSIT_ADDRESS = process.env.TON_DEPOSIT_ADDRESS || '';
 const TON_WITHDRAW_FEE = Number(process.env.TON_WITHDRAW_FEE || 0.05);
 const POLL_INTERVAL_MS = 15_000;
-const TON_PRICE_USD = Number(process.env.TON_PRICE_USD || 5);
 
 const API_BASE =
   TON_NETWORK === 'mainnet'
@@ -15,6 +15,7 @@ const API_BASE =
 
 export class DepositWatcher {
   private ledger: LedgerService;
+  private oracle: ReturnType<typeof getPriceOracle> | null = null;
   private timer: NodeJS.Timeout | null = null;
   private running = false;
 
@@ -22,6 +23,10 @@ export class DepositWatcher {
     this.ledger = new LedgerService(db);
   }
 
+  private getOracle() {
+    if (!this.oracle) this.oracle = getPriceOracle();
+    return this.oracle;
+  }
   start(): void {
     console.log(
       `[deposit-watcher] starting. address=${TON_DEPOSIT_ADDRESS} interval=${POLL_INTERVAL_MS}ms`,
@@ -106,7 +111,16 @@ export class DepositWatcher {
       return;
     }
 
-    const amountUsd = Math.round(amountTon * TON_PRICE_USD * 100) / 100;
+    let tonUsdRate: number;
+    try {
+      tonUsdRate = await this.getOracle().getTonUsd();
+    } catch (e: any) {
+      console.error(
+        `[deposit-watcher] ⚠️ price oracle unavailable for tx ${txHash.slice(0, 12)}: ${e.message} — skipping (will retry next tick)`,
+      );
+      return; // skip; tx remains in chain, retried on next poll
+    }
+    const amountUsd = Math.round(amountTon * tonUsdRate * 100) / 100;
     console.log(
       `[deposit-watcher] 💰 deposit: user=${userId} amount=${amountTon} TON ($${amountUsd})`,
     );

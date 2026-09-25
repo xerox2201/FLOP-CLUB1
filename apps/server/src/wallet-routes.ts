@@ -4,12 +4,11 @@ import { verifyToken } from './auth.js';
 import { LedgerService } from './ledger.js';
 import { tonAdapter } from './ton.js';
 import { levelFromLifetimeXP } from './loyalty/definitions.js';
-
+import { getPriceOracle } from './price-oracle.js';
 const JWT_SECRET = process.env.JWT_SECRET ?? 'dev_secret_change_me';
 const TON_DEPOSIT_ADDRESS = process.env.TON_DEPOSIT_ADDRESS || '';
 const TON_MIN_WITHDRAW = Number(process.env.TON_MIN_WITHDRAW || 1.0);
 const TON_WITHDRAW_FEE = 0.05; // flat fee — always
-const TON_PRICE_USD = 5;
 
 function authUser(req: any): number | null {
   const auth = req.headers.authorization;
@@ -18,10 +17,9 @@ function authUser(req: any): number | null {
   return payload?.uid ?? null;
 }
 
-
 export async function registerWalletRoutes(app: FastifyInstance, db: Pool): Promise<void> {
   const ledger = new LedgerService(db);
-
+  const oracle = getPriceOracle();
   // ============================================================
   // GET /api/wallet/deposit-info
   // ============================================================
@@ -89,13 +87,8 @@ export async function registerWalletRoutes(app: FastifyInstance, db: Pool): Prom
       const balance = userAcc ? await ledger.getBalance(userAcc) : 0;
 
       // Level (for info only)
-      const xpRow = await db.query(
-        'SELECT lifetime_xp FROM user_xp WHERE user_id = $1',
-        [userId],
-      );
-      const level = levelFromLifetimeXP(
-        Number(xpRow.rows[0]?.lifetime_xp ?? 0),
-      ).level;
+      const xpRow = await db.query('SELECT lifetime_xp FROM user_xp WHERE user_id = $1', [userId]);
+      const level = levelFromLifetimeXP(Number(xpRow.rows[0]?.lifetime_xp ?? 0)).level;
 
       // Bonus conditions
       const cond = await db.query(
@@ -128,21 +121,20 @@ export async function registerWalletRoutes(app: FastifyInstance, db: Pool): Prom
               FROM ton_transactions
               WHERE user_id = u.id AND direction='deposit' AND status='confirmed'
            ) AS last_deposit_at,
-           (SELECT COALESCE(SUM(amount), 0)::numeric
-              FROM rakeback_log WHERE user_id = u.id
-           ) AS lifetime_rake_usd,
+           COALESCE(ut.lifetime_rake, 0)::numeric AS lifetime_rake_usd,
            (SELECT COALESCE(SUM(amount), 0)::numeric
               FROM rakeback_log WHERE user_id = u.id
            ) AS lifetime_rakeback_usd
-         FROM users u WHERE u.id = $1`,
+         FROM users u
+         LEFT JOIN user_tier ut ON ut.user_id = u.id
+         WHERE u.id = $1`,
         [userId],
       );
       const fw = firstWd.rows[0] || {};
 
       const lifetimeDepositUsd = Number(fw.lifetime_deposit_usd ?? 0);
       const lifetimeRakeUsd = Number(fw.lifetime_rake_usd ?? 0);
-      const accountAgeHours =
-        (Date.now() - new Date(fw.account_created).getTime()) / 3_600_000;
+      const accountAgeHours = (Date.now() - new Date(fw.account_created).getTime()) / 3_600_000;
       const depositAgeHours = fw.last_deposit_at
         ? (Date.now() - new Date(fw.last_deposit_at).getTime()) / 3_600_000
         : 0;
@@ -181,6 +173,39 @@ export async function registerWalletRoutes(app: FastifyInstance, db: Pool): Prom
         depositAgeOk: depositAgeHours >= ANTI_ABUSE.minDepositAgeH,
       };
 
+      // 🔴 Auto-unlock: as soon as all 5 conditions pass, verify permanently.
+      //    This lets us hide the checklist from view without waiting for the
+      //    user to attempt a withdrawal.
+      let justUnlocked = false;
+      if (!antiAbuseChecks.alreadyUnlocked) {
+        const allMet =
+          antiAbuseChecks.depositOk &&
+          antiAbuseChecks.rakeOk &&
+          antiAbuseChecks.handsOk &&
+          antiAbuseChecks.accountAgeOk &&
+          antiAbuseChecks.depositAgeOk;
+
+        if (allMet) {
+          try {
+            const upd = await db.query(
+              `UPDATE users
+               SET first_withdrawal_unlocked = TRUE,
+                   first_withdrawal_at = NOW()
+               WHERE id = $1 AND first_withdrawal_unlocked = FALSE
+               RETURNING id`,
+              [userId],
+            );
+            antiAbuseChecks.alreadyUnlocked = true;
+            if ((upd.rowCount ?? 0) > 0) {
+              justUnlocked = true;
+              console.log(`[wallet] 🔓 auto-unlocked first withdrawal: user=${userId}`);
+            }
+          } catch (e: any) {
+            console.error('[wallet] auto-unlock failed:', e.message);
+          }
+        }
+      }
+
       const antiAbuseMet =
         antiAbuseChecks.alreadyUnlocked ||
         (antiAbuseChecks.depositOk &&
@@ -199,13 +224,15 @@ export async function registerWalletRoutes(app: FastifyInstance, db: Pool): Prom
       const bonusLocked = conditionsMet ? 0 : Number(p.bonus_playthrough_pending ?? 0);
       const availableBalance = Math.max(0, balance - bonusLocked);
 
-      const minWithdrawUsd = TON_MIN_WITHDRAW * TON_PRICE_USD;
-      const feeUsd = TON_WITHDRAW_FEE * TON_PRICE_USD;
+      const tonPriceUsd = (await oracle.tryGetTonUsd()) ?? 0;
+      if (tonPriceUsd <= 0) {
+        return reply.code(503).send({ error: 'price_unavailable' });
+      }
+      const minWithdrawUsd = TON_MIN_WITHDRAW * tonPriceUsd;
+      const feeUsd = TON_WITHDRAW_FEE * tonPriceUsd;
 
       const canWithdraw =
-        conditionsMet &&
-        availableBalance >= minWithdrawUsd + feeUsd &&
-        tonAdapter.isReady();
+        conditionsMet && availableBalance >= minWithdrawUsd + feeUsd && tonAdapter.isReady();
 
       return {
         balance,
@@ -215,13 +242,14 @@ export async function registerWalletRoutes(app: FastifyInstance, db: Pool): Prom
         minWithdrawTon: TON_MIN_WITHDRAW,
         feeTon: TON_WITHDRAW_FEE,
         feeUsd,
-        tonPriceUsd: TON_PRICE_USD,
+        tonPriceUsd,
         level,
         conditionsMet,
         bonusConditionsMet,
         antiAbuseMet,
         antiAbuse: {
           alreadyUnlocked: antiAbuseChecks.alreadyUnlocked,
+          justUnlocked,
           checks: antiAbuseChecks,
           current: {
             lifetimeDepositUsd,
@@ -338,8 +366,7 @@ export async function registerWalletRoutes(app: FastifyInstance, db: Pool): Prom
 
         let waitR = 0;
         if (pending?.bonus_received_at) {
-          const daysSince =
-            (Date.now() - new Date(pending.bonus_received_at).getTime()) / 86400000;
+          const daysSince = (Date.now() - new Date(pending.bonus_received_at).getTime()) / 86400000;
           waitR = Math.max(0, Math.ceil(14 - daysSince));
         }
 
@@ -367,10 +394,10 @@ export async function registerWalletRoutes(app: FastifyInstance, db: Pool): Prom
                 FROM ton_transactions
                 WHERE user_id = u.id AND direction='deposit' AND status='confirmed'
              ) AS last_deposit_at,
-             (SELECT COALESCE(SUM(amount), 0)::numeric
-                FROM rakeback_log WHERE user_id = u.id
-             ) AS lifetime_rake_usd
-           FROM users u WHERE u.id = $1`,
+             COALESCE(ut.lifetime_rake, 0)::numeric AS lifetime_rake_usd
+           FROM users u
+           LEFT JOIN user_tier ut ON ut.user_id = u.id
+           WHERE u.id = $1`,
           [userId],
         );
         const fwRow = fw.rows[0] || {};
@@ -378,8 +405,7 @@ export async function registerWalletRoutes(app: FastifyInstance, db: Pool): Prom
         if (!fwRow.first_withdrawal_unlocked) {
           const depositUsd = Number(fwRow.lifetime_deposit_usd ?? 0);
           const rakeUsd = Number(fwRow.lifetime_rake_usd ?? 0);
-          const accAgeH =
-            (Date.now() - new Date(fwRow.account_created).getTime()) / 3_600_000;
+          const accAgeH = (Date.now() - new Date(fwRow.account_created).getTime()) / 3_600_000;
           const depAgeH = fwRow.last_deposit_at
             ? (Date.now() - new Date(fwRow.last_deposit_at).getTime()) / 3_600_000
             : 0;
@@ -429,10 +455,16 @@ export async function registerWalletRoutes(app: FastifyInstance, db: Pool): Prom
             [userId],
           );
         }
-        const amountUsd = amountTon * TON_PRICE_USD;
+        let tonUsdRate: number;
+        try {
+          tonUsdRate = await oracle.getTonUsd();
+        } catch (e: any) {
+          console.error('[wallet] withdraw aborted — price oracle unavailable:', e.message);
+          return reply.code(503).send({ error: 'price_unavailable' });
+        }
 
-        // Balance check (incl. fee)
-        const feeUsd = TON_WITHDRAW_FEE * TON_PRICE_USD;
+        const amountUsd = amountTon * tonUsdRate;
+        const feeUsd = TON_WITHDRAW_FEE * tonUsdRate;
         const needed = amountUsd; // fee deducted from amount sent, not from balance
         if (balance < needed) {
           return reply.code(400).send({
@@ -476,10 +508,7 @@ export async function registerWalletRoutes(app: FastifyInstance, db: Pool): Prom
         // Send TON async — instant
         (async () => {
           try {
-            const txHash = await tonAdapter.sendTon(
-              toAddress,
-              amountTon - TON_WITHDRAW_FEE,
-            );
+            const txHash = await tonAdapter.sendTon(toAddress, amountTon - TON_WITHDRAW_FEE);
             await db.query(
               `UPDATE ton_transactions SET status='processing', tx_hash=$1 WHERE id=$2`,
               [txHash, txId],
@@ -489,10 +518,10 @@ export async function registerWalletRoutes(app: FastifyInstance, db: Pool): Prom
             );
           } catch (e: any) {
             console.error('[wallet] withdraw send failed:', e.message);
-            await db.query(
-              `UPDATE ton_transactions SET status='failed', error=$1 WHERE id=$2`,
-              [e.message, txId],
-            );
+            await db.query(`UPDATE ton_transactions SET status='failed', error=$1 WHERE id=$2`, [
+              e.message,
+              txId,
+            ]);
             // Refund
             const escrowAcc2 = await ledger.getAccountId('SYSTEM_ESCROW');
             if (escrowAcc2) {
