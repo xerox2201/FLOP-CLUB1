@@ -64,10 +64,7 @@ export async function registerUsersRoutes(app: FastifyInstance, db: Pool) {
       [...values, limit, offset],
     );
 
-    const countRes = await db.query(
-      `SELECT COUNT(*)::int AS c FROM users u ${whereSql}`,
-      values,
-    );
+    const countRes = await db.query(`SELECT COUNT(*)::int AS c FROM users u ${whereSql}`, values);
 
     return {
       users: res.rows.map((r) => ({
@@ -95,15 +92,13 @@ export async function registerUsersRoutes(app: FastifyInstance, db: Pool) {
   // ============================================================
   // GET ONE USER (full details)
   // ============================================================
-  app.get<{ Params: { id: string } }>(
-    '/api/admin/users/:id',
-    async (req, reply) => {
-      if (!isAdmin(req)) return reply.code(403).send({ error: 'forbidden' });
-      const id = Number(req.params.id);
-      if (!id) return reply.code(400).send({ error: 'invalid_id' });
+  app.get<{ Params: { id: string } }>('/api/admin/users/:id', async (req, reply) => {
+    if (!isAdmin(req)) return reply.code(403).send({ error: 'forbidden' });
+    const id = Number(req.params.id);
+    if (!id) return reply.code(400).send({ error: 'invalid_id' });
 
-      const res = await db.query(
-        `SELECT
+    const res = await db.query(
+      `SELECT
            u.*,
            COALESCE(w.balance_usd, 0) AS balance_usd,
            COALESCE(w.locked_usd, 0) AS locked_usd,
@@ -117,52 +112,51 @@ export async function registerUsersRoutes(app: FastifyInstance, db: Pool) {
          LEFT JOIN free_chips fc ON fc.user_id = u.id
          LEFT JOIN player_risk pr ON pr.user_id = u.id
          WHERE u.id = $1`,
-        [id],
-      );
-      if (res.rows.length === 0) {
-        return reply.code(404).send({ error: 'not_found' });
-      }
+      [id],
+    );
+    if (res.rows.length === 0) {
+      return reply.code(404).send({ error: 'not_found' });
+    }
 
-      const r = res.rows[0];
+    const r = res.rows[0];
 
-      const txRes = await db.query(
-        `SELECT id, kind, amount, currency, status, created_at
+    const txRes = await db.query(
+      `SELECT id, kind, amount, currency, status, created_at
          FROM transactions WHERE user_id = $1
          ORDER BY created_at DESC LIMIT 20`,
-        [id],
-      );
+      [id],
+    );
 
-      return {
-        user: {
-          id: Number(r.id),
-          telegramId: Number(r.telegram_id),
-          username: r.username,
-          displayName: r.display_name,
-          language: r.language,
-          country: r.country,
-          isBanned: r.is_banned,
-          riskScore: r.risk_score,
-          avatarId: r.avatar_id,
-          tonAddress: r.ton_address,
-          createdAt: r.created_at,
-          balanceUsd: Number(r.balance_usd),
-          lockedUsd: Number(r.locked_usd),
-          freeChips: Number(r.free_chips),
-          totalHands: Number(r.total_hands),
-          riskFlags: r.risk_flags || {},
-          riskAction: r.risk_action || 'none',
-        },
-        recentTx: txRes.rows.map((t) => ({
-          id: Number(t.id),
-          kind: t.kind,
-          amount: Number(t.amount),
-          currency: t.currency,
-          status: t.status,
-          createdAt: t.created_at,
-        })),
-      };
-    },
-  );
+    return {
+      user: {
+        id: Number(r.id),
+        telegramId: Number(r.telegram_id),
+        username: r.username,
+        displayName: r.display_name,
+        language: r.language,
+        country: r.country,
+        isBanned: r.is_banned,
+        riskScore: r.risk_score,
+        avatarId: r.avatar_id,
+        tonAddress: r.ton_address,
+        createdAt: r.created_at,
+        balanceUsd: Number(r.balance_usd),
+        lockedUsd: Number(r.locked_usd),
+        freeChips: Number(r.free_chips),
+        totalHands: Number(r.total_hands),
+        riskFlags: r.risk_flags || {},
+        riskAction: r.risk_action || 'none',
+      },
+      recentTx: txRes.rows.map((t) => ({
+        id: Number(t.id),
+        kind: t.kind,
+        amount: Number(t.amount),
+        currency: t.currency,
+        status: t.status,
+        createdAt: t.created_at,
+      })),
+    };
+  });
 
   // ============================================================
   // BAN / UNBAN
@@ -233,10 +227,7 @@ export async function registerUsersRoutes(app: FastifyInstance, db: Pool) {
     try {
       await client.query('BEGIN');
 
-      const userRes = await client.query(
-        'SELECT id FROM users WHERE id = $1 FOR UPDATE',
-        [id],
-      );
+      const userRes = await client.query('SELECT id FROM users WHERE id = $1 FOR UPDATE', [id]);
       if (userRes.rows.length === 0) {
         await client.query('ROLLBACK');
         return reply.code(404).send({ error: 'not_found' });
@@ -245,10 +236,7 @@ export async function registerUsersRoutes(app: FastifyInstance, db: Pool) {
       const sysAcc = await client.query(
         `SELECT id FROM accounts WHERE code = 'SYSTEM_ADMIN_ADJUST'`,
       );
-      const userAcc = await client.query(
-        `SELECT id FROM accounts WHERE code = $1`,
-        [`USER_${id}`],
-      );
+      const userAcc = await client.query(`SELECT id FROM accounts WHERE code = $1`, [`USER_${id}`]);
 
       if (sysAcc.rows.length === 0 || userAcc.rows.length === 0) {
         await client.query('ROLLBACK');
@@ -258,15 +246,14 @@ export async function registerUsersRoutes(app: FastifyInstance, db: Pool) {
       const sysAccId = sysAcc.rows[0].id;
       const userAccId = userAcc.rows[0].id;
 
-      const kind = amount > 0 ? 'ADMIN_CREDIT' : 'ADMIN_DEBIT';
       const txRes = await client.query(
         `INSERT INTO transactions (kind, ref, meta, status, user_id, amount, currency, completed_at)
-         VALUES ($1, $2, $3, 'completed', $4, $5, 'USD', NOW())
-         RETURNING id`,
+   VALUES ($1, $2, $3, 'completed', $4, $5, 'USD', NOW())
+   RETURNING id`,
         [
-          kind,
+          'ADMIN_ADJUSTMENT',
           `admin_adjust_${id}_${Date.now()}`,
-          JSON.stringify({ reason }),
+          JSON.stringify({ reason, direction: amount > 0 ? 'credit' : 'debit' }),
           id,
           Math.abs(amount),
         ],
@@ -301,10 +288,7 @@ export async function registerUsersRoutes(app: FastifyInstance, db: Pool) {
 
       await client.query('COMMIT');
 
-      const balRes = await db.query(
-        `SELECT balance_usd FROM wallets WHERE user_id = $1`,
-        [id],
-      );
+      const balRes = await db.query(`SELECT balance_usd FROM wallets WHERE user_id = $1`, [id]);
       return {
         ok: true,
         newBalance: Number(balRes.rows[0]?.balance_usd ?? 0),

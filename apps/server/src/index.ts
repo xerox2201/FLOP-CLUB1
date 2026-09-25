@@ -358,7 +358,8 @@ async function main() {
   tournamentManager.startAutoStartScheduler(30_000);
   // 🔴 D6.1: Start recurring tournament scheduler (checks every 60s)
   scheduler.start(60_000);
-
+  // 🔴 Start stale tournament cleanup job
+  const cleanupJob = new TournamentCleanupJob(db);
   cleanupJob.start(10 * 60 * 1000);
   // ============================================================
   // Deposit watcher
