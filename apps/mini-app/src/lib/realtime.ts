@@ -53,6 +53,7 @@ export function closeRealtime(): void {
 }
 
 // Regex to match tournament events:
-// tournament:123:level, tournament:123:elimination, etc.
+// tournament:123:level, tournament:123:elimination,
+// tournament:123:rebuy, tournament:123:addon, etc.
 export const TOURNAMENT_EVENT_RE =
-  /^tournament:(\d+):(level|elimination|balance|final_table|finished|started|paused|resumed|break_start|break_end|late_reg_closed)$/;
+  /^tournament:(\d+):(level|elimination|balance|final_table|finished|started|paused|resumed|break_start|break_end|late_reg_closed|rebuy|addon|bounty|ticket_won)$/;
