@@ -38,8 +38,20 @@ const REDIS_URL = process.env.REDIS_URL ?? 'redis://localhost:6379';
 const JWT_SECRET = process.env.JWT_SECRET ?? 'dev_secret_change_me';
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? '';
 
-const app = Fastify({ logger: true });
-const db = new Pool({ connectionString: DATABASE_URL });
+const IS_PROD = process.env.NODE_ENV === 'production';
+
+const app = Fastify({
+  logger: true,
+  trustProxy: IS_PROD,
+});
+
+const db = new Pool({
+  connectionString: DATABASE_URL,
+  max: Number(process.env.PG_POOL_MAX ?? (IS_PROD ? 20 : 5)),
+  idleTimeoutMillis: 30_000,
+  connectionTimeoutMillis: 5_000,
+  keepAlive: true,
+});
 
 // 🔴 Expose db pool for HandPersister
 (globalThis as any).__dbPool = db;
@@ -48,9 +60,44 @@ async function main() {
   // ============================================================
   // CORS
   // ============================================================
+  const allowedOrigins = (process.env.CORS_ORIGINS ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
   await app.register(cors, {
-    origin: true,
+    origin: IS_PROD ? (allowedOrigins.length > 0 ? allowedOrigins : false) : true,
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
+
+  if (IS_PROD && allowedOrigins.length === 0) {
+    console.warn('[cors] ⚠️  CORS_ORIGINS not set — all cross-origin requests will be blocked');
+  }
+
+  // ============================================================
+  // Global error handler
+  // ============================================================
+  app.setErrorHandler((error, req, reply) => {
+    const statusCode = error.statusCode ?? 500;
+
+    if (statusCode >= 500) {
+      req.log.error({ err: error, url: req.url, method: req.method }, 'unhandled error');
+    }
+
+    if (IS_PROD && statusCode >= 500) {
+      return reply.code(statusCode).send({ error: 'internal_error' });
+    }
+
+    return reply.code(statusCode).send({
+      error: error.message || 'internal_error',
+      code: (error as any).code,
+    });
+  });
+
+  app.setNotFoundHandler((req, reply) => {
+    reply.code(404).send({ error: 'not_found', path: req.url });
   });
 
   // ============================================================
