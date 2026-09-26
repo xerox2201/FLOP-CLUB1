@@ -41,8 +41,17 @@
 
   <!-- ============ CONTENT ============ -->
   <div class="relative z-10 flex flex-col items-center justify-between min-h-screen px-6 py-10">
-    <!-- TOP: Title -->
-    <div class="flex flex-col items-center w-full mt-10">
+    <!-- TOP: Logo + Title -->
+    <div class="flex flex-col items-center w-full mt-2">
+      <!-- Logo -->
+      <img
+        src="/logo-flop-club.png"
+        alt="Flop Club"
+        class="w-20 h-20 object-contain mb-3"
+        style="filter: drop-shadow(0 8px 32px rgba(212,175,55,0.6));"
+        draggable="false"
+      />
+
       <h1
         class="text-4xl font-extrabold tracking-[0.25em] text-center"
         style="
@@ -57,11 +66,17 @@
       </h1>
 
       <div class="flex items-center gap-3 mt-3">
-        <div class="h-px w-12" style="background: linear-gradient(to right, transparent, #d4af37);"></div>
+        <div
+          class="h-px w-12"
+          style="background: linear-gradient(to right, transparent, #d4af37);"
+        ></div>
         <p class="text-[10px] font-extrabold tracking-[0.4em] text-gold/90 uppercase">
           Play · Compete · Win
         </p>
-        <div class="h-px w-12" style="background: linear-gradient(to left, transparent, #d4af37);"></div>
+        <div
+          class="h-px w-12"
+          style="background: linear-gradient(to left, transparent, #d4af37);"
+        ></div>
       </div>
     </div>
 
@@ -69,7 +84,10 @@
     <div class="flex flex-col items-center w-full max-w-md text-center">
       <!-- MAKE OR BREAK — eyebrow -->
       <div class="flex items-center gap-3 mb-4">
-        <div class="h-px w-8" style="background: linear-gradient(to right, transparent, rgba(212,175,55,0.7));"></div>
+        <div
+          class="h-px w-8"
+          style="background: linear-gradient(to right, transparent, rgba(212,175,55,0.7));"
+        ></div>
         <p
           class="text-[11px] font-extrabold tracking-[0.55em] uppercase"
           style="
@@ -82,7 +100,10 @@
         >
           Make Or Break
         </p>
-        <div class="h-px w-8" style="background: linear-gradient(to left, transparent, rgba(212,175,55,0.7));"></div>
+        <div
+          class="h-px w-8"
+          style="background: linear-gradient(to left, transparent, rgba(212,175,55,0.7));"
+        ></div>
       </div>
 
       <!-- HERO LINE — big cinematic -->
@@ -133,7 +154,9 @@
           <span>Signing in…</span>
         {:else}
           <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"/>
+            <path
+              d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"
+            />
           </svg>
           <span>Enter with Telegram</span>
         {/if}
