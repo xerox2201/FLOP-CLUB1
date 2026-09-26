@@ -1,5 +1,6 @@
 <script lang="ts">
   import Avatar from './Avatar.svelte';
+  import Icon from './Icon.svelte';
 
   export let open: boolean = false;
   export let player: any = null;
@@ -118,7 +119,10 @@
           class="rounded-xl py-2.5 text-xs font-bold text-white/70 active:scale-[0.98]"
           style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3);"
         >
-          🔇 Mute
+          <span class="flex items-center justify-center gap-1.5">
+            <Icon name="close" size={12} color="rgba(255,255,255,0.7)" />
+            <span>Mute</span>
+          </span>
         </button>
       {/if}
       <button

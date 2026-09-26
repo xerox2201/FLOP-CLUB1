@@ -3,6 +3,7 @@
   import { api } from '../lib/api';
   import PlayingCard from './PlayingCard.svelte';
   import Avatar from './Avatar.svelte';
+  import Icon from './Icon.svelte';
 
   export let open: boolean = false;
   export let handId: number | null = null;
@@ -86,12 +87,12 @@
 
     const result: any[] = [];
     const currentState: any = {
-  phase: 'preflop',
-  pot: initialPot,
-  community: [] as any[],
-  players: JSON.parse(JSON.stringify(initialPlayers)),
-  lastAction: null,
-};
+      phase: 'preflop',
+      pot: initialPot,
+      community: [] as any[],
+      players: JSON.parse(JSON.stringify(initialPlayers)),
+      lastAction: null,
+    };
     result.push(JSON.parse(JSON.stringify(currentState)));
 
     let prevPhase = 'preflop';
@@ -248,9 +249,7 @@
         class="w-9 h-9 rounded-xl flex items-center justify-center text-white/70 active:scale-95"
         style="background: rgba(30,58,138,0.4); border: 1px solid rgba(96,165,250,0.3);"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-          <path d="M15 18l-6-6 6-6" />
-        </svg>
+        <Icon name="arrow-left" size={16} color="rgba(255,255,255,0.7)" />
       </button>
 
       <div class="flex-1 flex items-center gap-2">
@@ -258,9 +257,7 @@
           class="w-7 h-7 rounded-lg flex items-center justify-center"
           style="background: linear-gradient(180deg, rgba(212,175,55,0.2), rgba(168,122,21,0.1)); border: 1px solid rgba(212,175,55,0.4);"
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="#d4af37">
-            <path d="M6 4l14 8-14 8V4z" />
-          </svg>
+          <Icon name="play" size={12} color="#d4af37" />
         </div>
         <h2 class="text-sm font-extrabold text-white tracking-wide">Hand Replay</h2>
       </div>
@@ -308,18 +305,30 @@
               class="absolute inset-0 rounded-[50%] overflow-hidden"
               style="background: radial-gradient(ellipse at 50% 45%, #1a5c3a 0%, #0d3d24 55%, #072a1a 100%);"
             >
-              <div class="absolute inset-0 rounded-[50%]" style="box-shadow: inset 0 0 60px rgba(0,0,0,0.7);"></div>
+              <div
+                class="absolute inset-0 rounded-[50%]"
+                style="box-shadow: inset 0 0 60px rgba(0,0,0,0.7);"
+              ></div>
             </div>
 
             <!-- Community cards -->
-            <div class="absolute top-[44%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-1 z-[5]">
+            <div
+              class="absolute top-[44%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-1 z-[5]"
+            >
               {#each Array(5) as _, i}
                 {#if currentState.community[i]}
                   <div class="scale-[0.75] origin-center">
-                    <PlayingCard rank={currentState.community[i].r} suit={suitChar(currentState.community[i].s)} size="sm" />
+                    <PlayingCard
+                      rank={currentState.community[i].r}
+                      suit={suitChar(currentState.community[i].s)}
+                      size="sm"
+                    />
                   </div>
                 {:else}
-                  <div class="w-8 h-12 rounded-md" style="background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.06);"></div>
+                  <div
+                    class="w-8 h-12 rounded-md"
+                    style="background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.06);"
+                  ></div>
                 {/if}
               {/each}
             </div>
@@ -335,8 +344,12 @@
                     box-shadow: 0 2px 10px rgba(0,0,0,0.9);
                   "
                 >
-                  <span class="text-[8px] uppercase tracking-widest font-extrabold text-white/70">POT</span>
-                  <span class="text-[11px] font-extrabold text-gold tabular-nums">${fmt(currentState.pot)}</span>
+                  <span class="text-[8px] uppercase tracking-widest font-extrabold text-white/70"
+                    >POT</span
+                  >
+                  <span class="text-[11px] font-extrabold text-gold tabular-nums"
+                    >${fmt(currentState.pot)}</span
+                  >
                 </div>
               </div>
             {/if}
@@ -357,11 +370,15 @@
                         {p.isWinner ? '#f4e5a8' : isActor ? '#3b82f6' : '#1e3a8a'} 0%,
                         {p.isWinner ? '#d4af37' : isActor ? '#1e3a8a' : '#0f1f3a'} 50%,
                         {p.isWinner ? '#a87a15' : isActor ? '#1e3a8a' : '#05080f'} 100%);
-                      box-shadow: 0 3px 10px rgba(0,0,0,0.9){p.isWinner ? ', 0 0 18px rgba(212,175,55,0.9)' : ''}{isActor ? ', 0 0 14px rgba(59,130,246,0.8)' : ''};
+                      box-shadow: 0 3px 10px rgba(0,0,0,0.9){p.isWinner
+                      ? ', 0 0 18px rgba(212,175,55,0.9)'
+                      : ''}{isActor ? ', 0 0 14px rgba(59,130,246,0.8)' : ''};
                       {p.folded ? 'opacity: 0.35; filter: grayscale(0.7);' : ''}
                     "
                   >
-                    <div class="relative w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-[#1a3a5c] to-[#05080f] flex items-center justify-center">
+                    <div
+                      class="relative w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-[#1a3a5c] to-[#05080f] flex items-center justify-center"
+                    >
                       <Avatar avatarId="spade" size="sm" />
                     </div>
                   </div>
@@ -396,10 +413,15 @@
                     box-shadow: 0 2px 6px rgba(0,0,0,0.8);
                   "
                 >
-                  <p class="text-[9px] font-extrabold text-black leading-none whitespace-nowrap max-w-[72px] overflow-hidden text-ellipsis">
+                  <p
+                    class="text-[9px] font-extrabold text-black leading-none whitespace-nowrap max-w-[72px] overflow-hidden text-ellipsis"
+                  >
                     {p.displayName}
                   </p>
-                  <p class="text-[9px] font-extrabold leading-tight tabular-nums" style="color: #a87a15;">
+                  <p
+                    class="text-[9px] font-extrabold leading-tight tabular-nums"
+                    style="color: #a87a15;"
+                  >
                     ${fmt(p.stack)}
                   </p>
                 </div>
@@ -421,9 +443,14 @@
 
             <!-- Last action bubble -->
             {#if currentState.lastAction && step > 0}
-              {@const actor = currentState.players.find((x: any) => x.seat === currentState.lastAction.seat)}
+              {@const actor = currentState.players.find(
+                (x: any) => x.seat === currentState.lastAction.seat,
+              )}
               {#if actor}
-                {@const pos = seatPos(currentState.players.indexOf(actor), currentState.players.length)}
+                {@const pos = seatPos(
+                  currentState.players.indexOf(actor),
+                  currentState.players.length,
+                )}
                 <div
                   class="absolute -translate-x-1/2 -translate-y-1/2 z-[25] pointer-events-none"
                   style="left: {pos.x}%; top: {pos.y - 14}%;"
@@ -469,7 +496,9 @@
               }
             }}
           />
-          <span class="text-[10px] font-mono text-gold tabular-nums shrink-0 uppercase font-extrabold">
+          <span
+            class="text-[10px] font-mono text-gold tabular-nums shrink-0 uppercase font-extrabold"
+          >
             {currentStreet}
           </span>
         </div>
@@ -486,7 +515,9 @@
                 on:click={() => setSpeed(s)}
                 class="w-8 h-8 text-[10px] font-extrabold transition"
                 style="
-                  background: {speed === s ? 'linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15)' : 'transparent'};
+                  background: {speed === s
+                  ? 'linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15)'
+                  : 'transparent'};
                   color: {speed === s ? '#0a0800' : 'rgba(255,255,255,0.6)'};
                 "
               >
@@ -502,9 +533,9 @@
             style="background: rgba(255,255,255,0.06);"
             aria-label="Skip back"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z" />
-            </svg>
+            <span style="transform: rotate(180deg); display: inline-flex;">
+              <Icon name="play" size={14} color="rgba(255,255,255,0.7)" />
+            </span>
           </button>
 
           <!-- Play/pause -->
@@ -518,14 +549,9 @@
             aria-label={playing ? 'Pause' : 'Play'}
           >
             {#if playing}
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="6" y="4" width="4" height="16" rx="1" />
-                <rect x="14" y="4" width="4" height="16" rx="1" />
-              </svg>
+              <Icon name="pause" size={18} color="#0a0800" />
             {:else}
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M6 4l14 8-14 8V4z" />
-              </svg>
+              <Icon name="play" size={18} color="#0a0800" />
             {/if}
           </button>
 
@@ -536,9 +562,7 @@
             style="background: rgba(255,255,255,0.06);"
             aria-label="Skip forward"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M13 6v12l8.5-6L13 6zM4 18l8.5-6L4 6v12z" />
-            </svg>
+            <Icon name="play" size={14} color="rgba(255,255,255,0.7)" />
           </button>
         </div>
 
@@ -550,8 +574,8 @@
               class="flex-1 py-2 rounded-xl text-[9px] font-extrabold uppercase tracking-wider transition"
               style="
                 background: {currentStreet === key
-                  ? 'linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15)'
-                  : 'rgba(0,0,0,0.35)'};
+                ? 'linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15)'
+                : 'rgba(0,0,0,0.35)'};
                 color: {currentStreet === key ? '#0a0800' : 'rgba(255,255,255,0.5)'};
                 border: 1px solid {currentStreet === key ? 'transparent' : 'rgba(212,175,55,0.15)'};
               "
@@ -590,7 +614,9 @@
     background: #fff;
     border: 2px solid #d4af37;
     cursor: pointer;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.8), 0 0 0 3px rgba(212, 175, 55, 0.3);
+    box-shadow:
+      0 2px 6px rgba(0, 0, 0, 0.8),
+      0 0 0 3px rgba(212, 175, 55, 0.3);
   }
   .replay-slider::-moz-range-thumb {
     width: 14px;

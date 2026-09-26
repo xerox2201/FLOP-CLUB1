@@ -2,6 +2,7 @@
   import { onDestroy } from 'svelte';
   import Avatar from './Avatar.svelte';
   import type { TableSocketIO, ChatMessage } from '../lib/socket';
+  import Icon from './Icon.svelte';
 
   export let open: boolean = false;
   export let myUserId: number | null = null;
@@ -104,7 +105,9 @@
     unsub();
     unsub = null;
     // clear on close
-    setTimeout(() => { messages = []; }, 200);
+    setTimeout(() => {
+      messages = [];
+    }, 200);
   }
 
   $: if (open) {
@@ -134,7 +137,10 @@
     "
   >
     <!-- Handle -->
-    <div class="w-12 h-1 rounded-full mx-auto mt-2 mb-1" style="background: rgba(212,175,55,0.4);"></div>
+    <div
+      class="w-12 h-1 rounded-full mx-auto mt-2 mb-1"
+      style="background: rgba(212,175,55,0.4);"
+    ></div>
 
     <!-- Header -->
     <div
@@ -145,9 +151,7 @@
         class="w-9 h-9 rounded-xl flex items-center justify-center"
         style="background: linear-gradient(180deg, rgba(212,175,55,0.2), rgba(168,122,21,0.1)); border: 1px solid rgba(212,175,55,0.4);"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-        </svg>
+        <Icon name="chat" size={16} color="#d4af37" />
       </div>
       <h2 class="text-base font-extrabold text-white flex-1 tracking-wide">Table Chat</h2>
 
@@ -157,9 +161,7 @@
         class="w-9 h-9 rounded-xl flex items-center justify-center text-white/60 active:scale-95"
         style="background: rgba(255,255,255,0.06);"
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-          <path d="M6 6l12 12M18 6L6 18" />
-        </svg>
+        <Icon name="close" size={14} color="rgba(255,255,255,0.6)" />
       </button>
     </div>
 
@@ -171,9 +173,7 @@
             class="w-16 h-16 rounded-2xl flex items-center justify-center mb-3"
             style="background: linear-gradient(180deg, rgba(212,175,55,0.15), rgba(168,122,21,0.05)); border: 1px solid rgba(212,175,55,0.3);"
           >
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
+            <Icon name="chat" size={26} color="#d4af37" />
           </div>
           <p class="text-white/50 text-sm font-bold">No messages yet</p>
           <p class="text-white/35 text-[11px] mt-1">Say hi to your opponents</p>
@@ -193,20 +193,24 @@
               <Avatar avatarId={m.avatarId || myAvatarId || 'king'} size="sm" />
             </div>
             <div class="max-w-[75%] {isMine ? 'items-end' : 'items-start'} flex flex-col">
-              <p class="text-[9px] font-bold mb-0.5 {isMine ? 'text-right' : ''}"
-                 style="color: {isMine ? '#f4e5a8' : 'rgba(255,255,255,0.5)'};">
+              <p
+                class="text-[9px] font-bold mb-0.5 {isMine ? 'text-right' : ''}"
+                style="color: {isMine ? '#f4e5a8' : 'rgba(255,255,255,0.5)'};"
+              >
                 {isMine ? 'You' : m.displayName}
               </p>
               <div
                 class="rounded-2xl px-3 py-1.5 inline-block"
                 style="
                   background: {isMine
-                    ? 'linear-gradient(135deg, #d4af37, #a87a15)'
-                    : 'linear-gradient(135deg, rgba(15,31,58,0.95), rgba(7,14,27,0.98))'};
+                  ? 'linear-gradient(135deg, #d4af37, #a87a15)'
+                  : 'linear-gradient(135deg, rgba(15,31,58,0.95), rgba(7,14,27,0.98))'};
                   color: {isMine ? '#0a0800' : '#ffffff'};
                   border: 1px solid {isMine ? 'rgba(255,235,170,0.4)' : 'rgba(212,175,55,0.2)'};
                   box-shadow: 0 3px 10px rgba(0,0,0,0.4);
-                  {m.isEmoji ? 'font-size: 28px; line-height: 1; padding: 6px 10px;' : 'font-size: 13px; font-weight: 600;'}
+                  {m.isEmoji
+                  ? 'font-size: 28px; line-height: 1; padding: 6px 10px;'
+                  : 'font-size: 13px; font-weight: 600;'}
                 "
               >
                 {m.text}
@@ -250,8 +254,10 @@
     </div>
 
     <!-- Quick emoji -->
-    <div class="px-3 py-2 flex gap-1.5 overflow-x-auto no-scrollbar shrink-0"
-         style="border-top: 1px solid rgba(212,175,55,0.1);">
+    <div
+      class="px-3 py-2 flex gap-1.5 overflow-x-auto no-scrollbar shrink-0"
+      style="border-top: 1px solid rgba(212,175,55,0.1);"
+    >
       {#each QUICK_EMOJIS as emoji}
         <button
           on:click={() => sendEmoji(emoji)}
@@ -289,9 +295,7 @@
           color: #0a0800;
         "
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M2 21l21-9L2 3v7l15 2-15 2z" />
-        </svg>
+        <Icon name="send" size={16} color="#0a0800" />
       </button>
     </div>
   </div>
