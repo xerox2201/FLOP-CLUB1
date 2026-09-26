@@ -15,6 +15,8 @@
   let sheetOpen = false;
   let liveTournaments: any[] = [];
   let tables: any[] = [];
+  let livePlayers = 0;
+  let liveTables = 0;
 
   $: chips = Number($auth.freeChips?.chips || 0);
 
@@ -66,7 +68,11 @@
   async function loadData() {
     try {
       const tablesRes = await api.tables();
-      if (tablesRes.ok && tablesRes.data) tables = tablesRes.data.tables || [];
+      if (tablesRes.ok && tablesRes.data) {
+        tables = tablesRes.data.tables || [];
+        livePlayers = tables.reduce((sum: number, t: any) => sum + (Number(t.livePlayers) || 0), 0);
+        liveTables = tables.filter((t: any) => Number(t.livePlayers) > 0).length;
+      }
       const tourneyRes = await api.listTournaments({ status: 'running' });
       if (tourneyRes.ok && tourneyRes.data)
         liveTournaments = (tourneyRes.data.tournaments || []).slice(0, 3);
@@ -75,8 +81,14 @@
     }
   }
 
+  let refreshTimer: any = null;
+
   onMount(() => {
     loadData();
+    refreshTimer = setInterval(loadData, 8_000);
+    return () => {
+      if (refreshTimer) clearInterval(refreshTimer);
+    };
   });
 
   function openGame(g: (typeof games)[0]) {
@@ -104,8 +116,7 @@
     style="
       border: 1px solid rgba(212,175,55,0.35);
       box-shadow: 0 8px 24px rgba(0,0,0,0.6), 0 0 20px rgba(212,175,55,0.12);
-      aspect-ratio: 16 / 13;
-      max-height: 260px;
+      height: 220px;
     "
   >
     <img
@@ -124,6 +135,35 @@
       class="absolute inset-0"
       style="background: linear-gradient(180deg, rgba(5,8,15,0.5) 0%, transparent 25%, transparent 70%, rgba(5,8,15,0.6) 100%);"
     ></div>
+
+    <!-- Live stats pill — top right -->
+    <div
+      class="absolute top-3 right-3 flex items-center gap-2 px-2.5 py-1 rounded-full z-10"
+      style="
+        background: rgba(5,8,15,0.75);
+        border: 1px solid rgba(16,185,129,0.4);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      "
+    >
+      <span
+        class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"
+        style="box-shadow: 0 0 6px #34d399;"
+      ></span>
+      <span class="text-[11px] font-extrabold text-emerald-300 tabular-nums leading-none">
+        {livePlayers}
+      </span>
+      <span class="text-[8px] text-white/60 font-bold uppercase tracking-wider leading-none"
+        >online</span
+      >
+      <span class="w-px h-3" style="background: rgba(255,255,255,0.2);"></span>
+      <span class="text-[11px] font-extrabold text-gold tabular-nums leading-none">
+        {liveTables}
+      </span>
+      <span class="text-[8px] text-white/60 font-bold uppercase tracking-wider leading-none"
+        >tables</span
+      >
+    </div>
 
     <!-- Content — left-aligned, vertically centered -->
     <div class="relative h-full flex flex-col justify-center p-4 pl-5">
@@ -152,10 +192,10 @@
         Real players. Real action.
       </p>
 
-      <div>
+      <div class="flex items-end justify-between gap-3">
         <button
           on:click={() => (sheetOpen = true)}
-          class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl font-extrabold text-[12px] active:scale-95 transition-all"
+          class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl font-extrabold text-[12px] active:scale-95 transition-all shrink-0"
           style="
             background: linear-gradient(180deg, #f4e5a8 0%, #d4af37 45%, #a87a15 100%);
             color: #0a0800;
@@ -163,8 +203,38 @@
           "
         >
           <span>Play Now</span>
-          <Icon name="arrow-right" size={14} />
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="3"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M5 12h14M13 5l7 7-7 7" />
+          </svg>
         </button>
+
+        <!-- Verified badge — bottom right -->
+        <div class="flex items-center gap-2 shrink-0">
+          <Icon name="shield" size={14} color="#6ee7b7" />
+          <div class="text-right">
+            <p
+              class="text-[10px] font-extrabold text-emerald-300 leading-none"
+              style="text-shadow: 0 2px 6px rgba(0,0,0,0.9);"
+            >
+              Verified
+            </p>
+            <p
+              class="text-[7px] text-white/55 uppercase tracking-wider font-bold mt-0.5"
+              style="text-shadow: 0 1px 4px rgba(0,0,0,0.9);"
+            >
+              Provably Fair
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
