@@ -154,7 +154,7 @@
       <!-- 1st -->
       <div class="slot slot-1">
         {#if first}
-          <img class="crown" src="/crown.png" alt="" aria-hidden="true" />
+          <img class="crown" src="/crown.webp" alt="" aria-hidden="true" />
           <div class="medal-wrap">
             <img class="medal medal-lg" src="/medal-gold.png" alt="" aria-hidden="true" />
           </div>

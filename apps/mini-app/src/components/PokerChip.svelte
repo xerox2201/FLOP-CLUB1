@@ -1,28 +1,28 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-import { preferences } from '../lib/preferences';
+  import { preferences } from '../lib/preferences';
 
   export let amount: number = 0;
   export let size: number = 28;
   export let maxStack: number = 5;
 
   // Animation props
-  export let animate: boolean = true;   // pop-in on mount
-  export let pulse: boolean = false;    // winner highlight
+  export let animate: boolean = true; // pop-in on mount
+  export let pulse: boolean = false; // winner highlight
   export let collecting: boolean = false; // fly-away when pot collected
 
   const DENOMS = [
-    { value: 1,       row: 0, col: 0 },
-    { value: 5,       row: 0, col: 1 },
-    { value: 25,      row: 0, col: 2 },
-    { value: 100,     row: 0, col: 3 },
-    { value: 500,     row: 1, col: 0 },
-    { value: 1000,    row: 1, col: 1 },
-    { value: 5000,    row: 1, col: 2 },
-    { value: 10000,   row: 1, col: 3 },
-    { value: 50000,   row: 2, col: 0 },
-    { value: 100000,  row: 2, col: 1 },
-    { value: 500000,  row: 2, col: 2 },
+    { value: 1, row: 0, col: 0 },
+    { value: 5, row: 0, col: 1 },
+    { value: 25, row: 0, col: 2 },
+    { value: 100, row: 0, col: 3 },
+    { value: 500, row: 1, col: 0 },
+    { value: 1000, row: 1, col: 1 },
+    { value: 5000, row: 1, col: 2 },
+    { value: 10000, row: 1, col: 3 },
+    { value: 50000, row: 2, col: 0 },
+    { value: 100000, row: 2, col: 1 },
+    { value: 500000, row: 2, col: 2 },
     { value: 1000000, row: 2, col: 3 },
   ];
 
@@ -56,10 +56,7 @@ import { preferences } from '../lib/preferences';
 </script>
 
 {#if amount > 0}
-  <div
-    class="chip-root {popClass} {pulseClass} {collectClass}"
-    style="gap: {size * 0.1}px;"
-  >
+  <div class="chip-root {popClass} {pulseClass} {collectClass}" style="gap: {size * 0.1}px;">
     {#each stacks as s}
       <div
         class="relative"
@@ -76,7 +73,7 @@ import { preferences } from '../lib/preferences';
               height: {size}px;
               bottom: {i * (size * 0.16)}px;
               left: 0;
-              background-image: url('/chips-set-hq.png');
+              background-image: url('/chips-set-hq.webp');
               background-size: 400% 300%;
               background-position: {(s.col * 100) / 3}% {(s.row * 100) / 2}%;
               background-repeat: no-repeat;
@@ -132,12 +129,13 @@ import { preferences } from '../lib/preferences';
 
   /* ===== WINNER PULSE ===== */
   @keyframes chip-pulse {
-    0%, 100% {
-      filter: drop-shadow(0 0 4px rgba(244,201,93,0.5));
+    0%,
+    100% {
+      filter: drop-shadow(0 0 4px rgba(244, 201, 93, 0.5));
       transform: scale(1);
     }
     50% {
-      filter: drop-shadow(0 0 14px rgba(244,201,93,1));
+      filter: drop-shadow(0 0 14px rgba(244, 201, 93, 1));
       transform: scale(1.08);
     }
   }

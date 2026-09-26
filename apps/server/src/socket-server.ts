@@ -7,6 +7,18 @@ import { ErrorCode } from './errors.js';
 import { recordIp, recordDevice, analyzeUser } from './anti-cheat.js';
 
 const JWT_SECRET = process.env.JWT_SECRET ?? 'dev_secret_change_me';
+
+// ============================================================
+// Online users tracking (userId -> Set<socketId>)
+// Counts unique logged-in users, not per-table seated players.
+// User is "online" as long as at least one socket is connected.
+// ============================================================
+const onlineUsers = new Map<number, Set<string>>();
+
+export function getOnlineUserCount(): number {
+  return onlineUsers.size;
+}
+
 // ============================================================
 // Chat
 // ============================================================
@@ -28,7 +40,7 @@ const VIRTUAL_TABLE_THRESHOLD = 1_000_000;
 export function setupSocketServer(io: SocketIOServer, db: Pool): void {
   console.log('[socket.io] server setup');
   const commandQueue = new CommandQueue(db);
-    // ============================================================
+  // ============================================================
   // Chat state (in-memory, per table)
   // ============================================================
   const chatHistory = new Map<number, ChatMessage[]>();
@@ -71,7 +83,15 @@ export function setupSocketServer(io: SocketIOServer, db: Pool): void {
     const displayName = (socket as any).displayName;
     const avatarId = (socket as any).avatarId || 'king';
 
-    console.log(`[socket.io] connected: ${displayName} (${socket.id})`);
+    // ─── Online tracking ───
+    if (!onlineUsers.has(userId)) {
+      onlineUsers.set(userId, new Set());
+    }
+    onlineUsers.get(userId)!.add(socket.id);
+
+    console.log(
+      `[socket.io] connected: ${displayName} (${socket.id}) — online users: ${onlineUsers.size}`,
+    );
 
     socket.on(
       'table:join',
@@ -127,7 +147,7 @@ export function setupSocketServer(io: SocketIOServer, db: Pool): void {
           try {
             const existingRoom = gameManager.getRoom(tableId);
             if (existingRoom) {
-              for (const [playerId, playerInfo] of existingRoom.players) {
+              for (const playerInfo of existingRoom.players.values()) {
                 if (
                   playerInfo.userId === userId &&
                   playerInfo.socketId &&
@@ -299,52 +319,49 @@ export function setupSocketServer(io: SocketIOServer, db: Pool): void {
     // ============================================================
     // CHAT — send message
     // ============================================================
-    socket.on(
-      'table:chat',
-      async (data: { text: string; isEmoji?: boolean }, ack?: Function) => {
-        try {
-          const ctx = gameManager.getPlayerBySocket(socket.id);
-          if (!ctx) return ack?.({ ok: false, code: 'NOT_IN_TABLE' });
+    socket.on('table:chat', async (data: { text: string; isEmoji?: boolean }, ack?: Function) => {
+      try {
+        const ctx = gameManager.getPlayerBySocket(socket.id);
+        if (!ctx) return ack?.({ ok: false, code: 'NOT_IN_TABLE' });
 
-          const tableId = ctx.room.tableId;
-          const text = String(data?.text ?? '').trim();
+        const tableId = ctx.room.tableId;
+        const text = String(data?.text ?? '').trim();
 
-          if (!text) return ack?.({ ok: false, code: 'EMPTY' });
-          if (text.length > CHAT_MAX_LENGTH) return ack?.({ ok: false, code: 'TOO_LONG' });
+        if (!text) return ack?.({ ok: false, code: 'EMPTY' });
+        if (text.length > CHAT_MAX_LENGTH) return ack?.({ ok: false, code: 'TOO_LONG' });
 
-          // Anti-spam
-          const now = Date.now();
-          const lastAt = lastChatAt.get(socket.id) ?? 0;
-          if (now - lastAt < CHAT_COOLDOWN_MS) {
-            return ack?.({ ok: false, code: 'RATE_LIMIT' });
-          }
-          lastChatAt.set(socket.id, now);
-
-          const msg: ChatMessage = {
-            id: `${now}_${Math.random().toString(36).slice(2, 8)}`,
-            userId,
-            displayName: displayName,
-            avatarId: avatarId,
-            text,
-            isEmoji: !!data?.isEmoji || text.length <= 4,
-            timestamp: now,
-          };
-
-          // Save to history
-          const hist = chatHistory.get(tableId) ?? [];
-          hist.push(msg);
-          while (hist.length > CHAT_HISTORY_SIZE) hist.shift();
-          chatHistory.set(tableId, hist);
-
-          // Broadcast to all players at table
-          io.to(`table:${tableId}`).emit('table:chat_message', msg);
-
-          ack?.({ ok: true, messageId: msg.id });
-        } catch (e: any) {
-          ack?.({ ok: false, code: 'INTERNAL_ERROR', error: e.message });
+        // Anti-spam
+        const now = Date.now();
+        const lastAt = lastChatAt.get(socket.id) ?? 0;
+        if (now - lastAt < CHAT_COOLDOWN_MS) {
+          return ack?.({ ok: false, code: 'RATE_LIMIT' });
         }
-      },
-    );
+        lastChatAt.set(socket.id, now);
+
+        const msg: ChatMessage = {
+          id: `${now}_${Math.random().toString(36).slice(2, 8)}`,
+          userId,
+          displayName: displayName,
+          avatarId: avatarId,
+          text,
+          isEmoji: !!data?.isEmoji || text.length <= 4,
+          timestamp: now,
+        };
+
+        // Save to history
+        const hist = chatHistory.get(tableId) ?? [];
+        hist.push(msg);
+        while (hist.length > CHAT_HISTORY_SIZE) hist.shift();
+        chatHistory.set(tableId, hist);
+
+        // Broadcast to all players at table
+        io.to(`table:${tableId}`).emit('table:chat_message', msg);
+
+        ack?.({ ok: true, messageId: msg.id });
+      } catch (e: any) {
+        ack?.({ ok: false, code: 'INTERNAL_ERROR', error: e.message });
+      }
+    });
 
     // ============================================================
     // CHAT — request history
@@ -370,24 +387,33 @@ export function setupSocketServer(io: SocketIOServer, db: Pool): void {
         ack?.({ ok: false, code: 'INTERNAL_ERROR', error: e.message });
       }
     });
-    socket.on(
-      'table:update_prefs',
-      async (data: { autoMuck?: boolean }, ack?: Function) => {
-        try {
-          const ctx = gameManager.getPlayerBySocket(socket.id);
-          if (!ctx) return ack?.({ ok: false, code: 'NOT_IN_ROOM' });
-          if (typeof data?.autoMuck === 'boolean') {
-            ctx.player.autoMuck = data.autoMuck;
-          }
-          ack?.({ ok: true });
-        } catch (e: any) {
-          ack?.({ ok: false, code: 'INTERNAL_ERROR', error: e.message });
+    socket.on('table:update_prefs', async (data: { autoMuck?: boolean }, ack?: Function) => {
+      try {
+        const ctx = gameManager.getPlayerBySocket(socket.id);
+        if (!ctx) return ack?.({ ok: false, code: 'NOT_IN_ROOM' });
+        if (typeof data?.autoMuck === 'boolean') {
+          ctx.player.autoMuck = data.autoMuck;
         }
-      },
-    );
+        ack?.({ ok: true });
+      } catch (e: any) {
+        ack?.({ ok: false, code: 'INTERNAL_ERROR', error: e.message });
+      }
+    });
     socket.on('disconnect', (reason) => {
       lastChatAt.delete(socket.id);
-      console.log(`[socket.io] disconnected: ${displayName} (${socket.id}) - ${reason}`);
+
+      // ─── Online tracking cleanup ───
+      const userSockets = onlineUsers.get(userId);
+      if (userSockets) {
+        userSockets.delete(socket.id);
+        if (userSockets.size === 0) {
+          onlineUsers.delete(userId);
+        }
+      }
+
+      console.log(
+        `[socket.io] disconnected: ${displayName} (${socket.id}) - ${reason} — online users: ${onlineUsers.size}`,
+      );
 
       // 🔴 Only run leaveRoom if this socket is STILL the active one for this user.
       //    If dedup already replaced it, do nothing — the new socket owns the seat.

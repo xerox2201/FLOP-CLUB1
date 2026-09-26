@@ -181,7 +181,7 @@
         <div
           class="absolute inset-0"
           style="
-            background-image: url('/bg-tournament.png');
+            background-image: url('/bg-tournament.webp');
             background-size: cover;
             background-position: center;
             opacity: 0.4;
@@ -201,7 +201,7 @@
           <!-- Trophy image -->
           <div class="shrink-0">
             <img
-              src="/trophy.png"
+              src="/trophy.webp"
               alt=""
               class="w-24 h-24 object-contain"
               style="filter: drop-shadow(0 8px 20px rgba(212,175,55,0.7));"
@@ -281,7 +281,7 @@
       style="background: linear-gradient(180deg, rgba(15,31,58,0.6), rgba(11,19,36,0.85)); border: 1px solid rgba(212,175,55,0.15);"
     >
       <div class="w-16 h-16 rounded-2xl mx-auto mb-3 flex items-center justify-center">
-        <img src="/trophy.png" alt="" class="w-full h-full object-contain opacity-40" />
+        <img src="/trophy.webp" alt="" class="w-full h-full object-contain opacity-40" />
       </div>
       <p class="text-white/60 text-sm font-bold">
         No tournaments {filter === 'all' ? 'yet' : `in "${filter}"`}

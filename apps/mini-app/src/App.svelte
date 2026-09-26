@@ -30,7 +30,7 @@
   import Splash from './routes/Splash.svelte';
   import TableSwitcher from './components/TableSwitcher.svelte';
   import TurnAlert from './components/TurnAlert.svelte';
-import { startServerTimeSync } from './lib/serverTime';
+  import { startServerTimeSync } from './lib/serverTime';
 
   type Page =
     | 'home'
@@ -154,7 +154,7 @@ import { startServerTimeSync } from './lib/serverTime';
   <div
     class="absolute inset-0"
     style="
-      background-image: url('/bg-pattern.png');
+      background-image: url('/bg-pattern.webp');
       background-size: 600px auto;
       background-repeat: repeat;
       opacity: 0.35;
@@ -254,10 +254,7 @@ import { startServerTimeSync } from './lib/serverTime';
     <ToastStack />
   </div>
 
-  <TurnAlert
-    currentTableId={currentPage === 'table' ? activeTableId : null}
-    onGo={switchTable}
-  />
+  <TurnAlert currentTableId={currentPage === 'table' ? activeTableId : null} onGo={switchTable} />
 {/if}
 
 <!-- Admin password prompt (global) -->

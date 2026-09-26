@@ -5,14 +5,14 @@
 
   // ─── PNG (فایل‌های خودت) ────────────────────────────
   const PNG_MAP: Record<string, string> = {
-    home: '/icon-home.png',
-    tables: '/icon-tables.png',
-    tournaments: '/icon-tournaments.png',
-    sitgo: '/icon-sitgo.png',
-    shop: '/icon-shop.png',
-    wallet: '/icon-wallet.png',
-    trophy_png: '/trophy.png',
-    crown_png: '/crown.png',
+    home: '/icon-home.webp',
+    tables: '/icon-tables.webp',
+    tournaments: '/icon-tournaments.webp',
+    sitgo: '/icon-sitgo.webp',
+    shop: '/icon-shop.webp',
+    wallet: '/icon-wallet.webp',
+    trophy_png: '/trophy.webp',
+    crown_png: '/crown.webp',
     medal_gold: '/medal-gold.png',
     medal_silver: '/medal-silver.png',
     medal_bronze: '/medal-bronze.png',

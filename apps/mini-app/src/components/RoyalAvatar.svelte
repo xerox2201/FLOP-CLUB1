@@ -13,10 +13,7 @@
   $: innerSize = size * 1.0;
 </script>
 
-<div
-  class="relative inline-block"
-  style="width: {frameSize}px; height: {frameSize}px;"
->
+<div class="relative inline-block" style="width: {frameSize}px; height: {frameSize}px;">
   <!-- Avatar circle (fits perfectly inside frame opening) -->
   <div
     class="absolute rounded-full overflow-hidden"
@@ -46,7 +43,7 @@
 
   <!-- Frame image on top (gold ring overlaps avatar edge perfectly) -->
   <img
-    src="/avatar-frame.png"
+    src="/avatar-frame.webp"
     alt=""
     class="absolute inset-0 w-full h-full object-contain pointer-events-none select-none z-10"
     draggable="false"

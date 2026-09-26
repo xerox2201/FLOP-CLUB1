@@ -7,7 +7,7 @@ import { Server as SocketIOServer } from 'socket.io';
 import { Pool } from 'pg';
 import Redis from 'ioredis';
 import { verifyTelegramInitData, signToken, verifyToken } from './auth.js';
-import { setupSocketServer } from './socket-server.js';
+import { setupSocketServer, getOnlineUserCount } from './socket-server.js';
 import { registerLeaderboardRoutes } from './leaderboard.js';
 import { registerEventsRoutes } from './events.js';
 import { registerAntiCheatRoutes } from './anti-cheat-routes.js';
@@ -31,6 +31,7 @@ import { registerTimeRoutes } from './time-routes.js';
 import { FreerollService } from './freeroll-service.js';
 import { FreerollScheduler } from './freeroll-scheduler.js';
 import { registerFreerollRoutes } from './freeroll-routes.js';
+import { registerHomeRoutes } from './home-routes.js';
 
 const PORT = Number(process.env.PORT ?? 4000);
 const DATABASE_URL = process.env.DATABASE_URL ?? 'postgres://poker:pokerpass@localhost:5432/poker';
@@ -303,6 +304,18 @@ async function main() {
   });
 
   // ============================================================
+  // Live stats (public) — online users + active tables
+  // ============================================================
+  app.get('/api/live-stats', async () => {
+    const rooms = gameManager.getRooms();
+    const activeTables = rooms.filter((r: any) => r.players.size > 0).length;
+    return {
+      onlineUsers: getOnlineUserCount(),
+      activeTables,
+    };
+  });
+
+  // ============================================================
   // Tables (public list)
   // ============================================================
   app.get('/api/tables', async () => {
@@ -363,6 +376,7 @@ async function main() {
   await registerShopRoutes(app, db);
   await registerDailyRefillRoutes(app, db);
   await registerTimeRoutes(app);
+  await registerHomeRoutes(app, db);
 
   const freerollSvc = new FreerollService(db);
   const freerollScheduler = new FreerollScheduler(db, freerollSvc);

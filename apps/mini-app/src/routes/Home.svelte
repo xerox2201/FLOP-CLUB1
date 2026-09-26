@@ -4,19 +4,26 @@
   import { api } from '../lib/api';
   import TopBar from '../components/TopBar.svelte';
   import PlayingCard from '../components/PlayingCard.svelte';
-  import PokerChip from '../components/PokerChip.svelte';
   import QuickSeatSheet from '../components/QuickSeatSheet.svelte';
   import FreerollBanner from '../components/FreerollBanner.svelte';
+  import QuickActions from '../components/QuickActions.svelte';
+  import LiveNowGrid from '../components/LiveNowGrid.svelte';
+  import RewardsRow from '../components/RewardsRow.svelte';
+  import TopWinnersToday from '../components/TopWinnersToday.svelte';
+  import UserProgress from '../components/UserProgress.svelte';
   import Icon from '../components/Icon.svelte';
 
   export let onNavigate: (page: any) => void = () => {};
   export let onQuickSeat: (variant: string, mode: 'free' | 'real') => void = () => {};
 
   let sheetOpen = false;
-  let liveTournaments: any[] = [];
-  let tables: any[] = [];
+
+  // Home data from /api/home
   let livePlayers = 0;
-  let liveTables = 0;
+  let activeTables = 0;
+  let activeTournaments = 0;
+  let topWinners: any[] = [];
+  let userProgress: any = null;
 
   $: chips = Number($auth.freeChips?.chips || 0);
 
@@ -59,25 +66,24 @@
     },
   ];
 
-  const features = [
-    { id: 'fast', title: 'Fast Payouts', sub: 'Get your winnings quickly', icon: 'zap' },
-    { id: 'global', title: 'Global Players', sub: 'Play worldwide', icon: 'target' },
-    { id: 'secure', title: 'Secure & Fair', sub: 'Trusted platform', icon: 'shield' },
-  ];
-
   async function loadData() {
     try {
-      const tablesRes = await api.tables();
-      if (tablesRes.ok && tablesRes.data) {
-        tables = tablesRes.data.tables || [];
-        livePlayers = tables.reduce((sum: number, t: any) => sum + (Number(t.livePlayers) || 0), 0);
-        liveTables = tables.filter((t: any) => Number(t.livePlayers) > 0).length;
+      const res = await api.request<{
+        onlineUsers: number;
+        activeTables: number;
+        activeTournaments: number;
+        topWinnersToday: any[];
+        userProgress: any;
+      }>('/api/home');
+      if (res.ok && res.data) {
+        livePlayers = Number(res.data.onlineUsers) || 0;
+        activeTables = Number(res.data.activeTables) || 0;
+        activeTournaments = Number(res.data.activeTournaments) || 0;
+        topWinners = res.data.topWinnersToday || [];
+        userProgress = res.data.userProgress || null;
       }
-      const tourneyRes = await api.listTournaments({ status: 'running' });
-      if (tourneyRes.ok && tourneyRes.data)
-        liveTournaments = (tourneyRes.data.tournaments || []).slice(0, 3);
     } catch {
-      // ignore
+      // silent — Home still works without live data
     }
   }
 
@@ -85,7 +91,7 @@
 
   onMount(() => {
     loadData();
-    refreshTimer = setInterval(loadData, 8_000);
+    refreshTimer = setInterval(loadData, 10_000);
     return () => {
       if (refreshTimer) clearInterval(refreshTimer);
     };
@@ -105,10 +111,12 @@
   }
 </script>
 
-<div class="pb-44 lg:pb-8">
+<div class="pb-28 lg:pb-8">
   <!-- TOP BAR -->
   <TopBar onOpenSettings={() => onNavigate('profile')} onOpenWallet={() => onNavigate('wallet')} />
-  <FreerollBanner onOpen={(id) => onNavigate('tournaments')} />
+
+  <!-- ============ FREEROLL BANNER (if active) ============ -->
+  <FreerollBanner onOpen={() => onNavigate('tournaments')} />
 
   <!-- ============ HERO ============ -->
   <div
@@ -158,7 +166,7 @@
       >
       <span class="w-px h-3" style="background: rgba(255,255,255,0.2);"></span>
       <span class="text-[11px] font-extrabold text-gold tabular-nums leading-none">
-        {liveTables}
+        {activeTables}
       </span>
       <span class="text-[8px] text-white/60 font-bold uppercase tracking-wider leading-none"
         >tables</span
@@ -239,31 +247,12 @@
     </div>
   </div>
 
-  <!-- ============ FEATURES ============ -->
-  <div class="grid grid-cols-3 gap-2 px-4 mb-4">
-    {#each features as f}
-      <div
-        class="rounded-xl p-2 flex flex-col items-center text-center"
-        style="
-          background: linear-gradient(180deg, rgba(15,31,58,0.75), rgba(7,14,27,0.9));
-          border: 1px solid rgba(212,175,55,0.2);
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
-        "
-      >
-        <div
-          class="w-8 h-8 rounded-lg flex items-center justify-center mb-1"
-          style="
-            background: rgba(212,175,55,0.15);
-            border: 1px solid rgba(212,175,55,0.35);
-          "
-        >
-          <Icon name={f.icon} size={16} />
-        </div>
-        <p class="text-[9px] font-extrabold text-white leading-tight">{f.title}</p>
-        <p class="text-[7px] text-white/50 leading-tight mt-0.5">{f.sub}</p>
-      </div>
-    {/each}
-  </div>
+  <!-- ============ QUICK ACTIONS ============ -->
+  <QuickActions
+    onDeposit={() => onNavigate('wallet')}
+    onShop={() => onNavigate('shop')}
+    onLeaderboard={() => onNavigate('leaderboard')}
+  />
 
   <!-- ============ POPULAR GAMES ============ -->
   <div class="flex items-center justify-between mb-3 px-4">
@@ -277,20 +266,20 @@
     </button>
   </div>
 
-  <div class="flex gap-3 overflow-x-auto no-scrollbar px-4 pb-4 mb-4">
+  <div class="flex gap-2.5 overflow-x-auto no-scrollbar px-4 pb-4 mb-4 snap-x snap-mandatory">
     {#each games as g}
       <button
         on:click={() => openGame(g)}
-        class="shrink-0 rounded-2xl relative overflow-hidden active:scale-[0.97] transition-all text-left"
+        class="shrink-0 rounded-2xl relative overflow-hidden active:scale-[0.97] transition-all text-left snap-start"
         style="
-          width: 150px;
+          width: 118px;
           background: linear-gradient(180deg, rgba(15,31,58,0.9), rgba(5,8,15,0.95));
           border: 1.5px solid rgba(212,175,55,0.3);
-          box-shadow: 0 6px 20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+          box-shadow: 0 6px 18px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05);
         "
       >
         <div
-          class="relative w-full h-[90px] flex items-center justify-center overflow-hidden"
+          class="relative w-full h-[74px] flex items-center justify-center overflow-hidden"
           style="
             background: radial-gradient(ellipse at 50% 40%, #142d52 0%, #0a1a33 55%, #05080f 100%);
             border-bottom: 1px solid rgba(255,255,255,0.05);
@@ -298,17 +287,17 @@
         >
           <div
             class="absolute inset-0 opacity-20"
-            style="background-image: url('/bg-table-pattern.png'); background-size: 200px; background-position: center;"
+            style="background-image: url('/bg-table-pattern.webp'); background-size: 180px; background-position: center;"
           ></div>
           <div
-            class="absolute inset-2 rounded-[50%]"
-            style="border: 1px solid rgba(212,175,55,0.35);"
+            class="absolute inset-1.5 rounded-[50%]"
+            style="border: 1px solid rgba(212,175,55,0.3);"
           ></div>
 
-          <div class="flex justify-center -space-x-3 relative z-10">
+          <div class="flex justify-center -space-x-2.5 relative z-10">
             {#each g.cards as c}
               <div
-                style="transform: rotate({c.rot}deg); filter: drop-shadow(0 3px 6px rgba(0,0,0,0.7));"
+                style="transform: rotate({c.rot}deg); filter: drop-shadow(0 2px 5px rgba(0,0,0,0.7));"
               >
                 <PlayingCard rank={c.rank} suit={c.suit} size="xs" />
               </div>
@@ -316,99 +305,30 @@
           </div>
         </div>
 
-        <div class="p-2.5">
-          <p class="text-[11px] font-extrabold text-white truncate">{g.title}</p>
-          <p class="text-[9px] text-white/50 mt-0.5">{g.sub}</p>
+        <div class="px-2 py-1.5">
+          <p class="text-[10px] font-extrabold text-white truncate leading-tight">{g.title}</p>
+          <p class="text-[8px] text-white/45 mt-0.5 truncate leading-tight">{g.sub}</p>
         </div>
       </button>
     {/each}
   </div>
 
-  <!-- ============ FREE CHIPS ============ -->
-  <div class="px-4 mb-4">
-    <button
-      on:click={() => onQuickSeat('holdem', 'free')}
-      class="w-full rounded-2xl p-3 flex items-center justify-between active:scale-[0.98] transition-all"
-      style="
-        background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.08));
-        border: 1.5px solid rgba(16,185,129,0.4);
-        box-shadow: 0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
-      "
-    >
-      <div class="flex items-center gap-2.5">
-        <div
-          class="w-10 h-10 rounded-xl flex items-center justify-center"
-          style="background: rgba(16,185,129,0.25); border: 1px solid rgba(16,185,129,0.5);"
-        >
-          <Icon name="gift" size={20} />
-        </div>
-        <div class="text-left">
-          <p
-            class="text-[9px] font-extrabold uppercase tracking-widest"
-            style="color: rgba(110,231,183,0.9);"
-          >
-            Free Chips
-          </p>
-          <p class="text-lg font-extrabold text-white leading-tight tabular-nums">
-            {chips.toLocaleString()}
-          </p>
-        </div>
-      </div>
-      <div class="text-right flex items-center gap-1" style="color: #6ee7b7;">
-        <span class="text-[11px] font-extrabold">Play Free</span>
-        <Icon name="arrow-right" size={12} />
-      </div>
-    </button>
-  </div>
+  <!-- ============ LIVE NOW (cash tables + tournaments) ============ -->
+  <LiveNowGrid
+    {activeTables}
+    {activeTournaments}
+    onTables={() => onNavigate('tables')}
+    onTournaments={() => onNavigate('tournaments')}
+  />
 
-  <!-- ============ LIVE TOURNAMENTS ============ -->
-  {#if liveTournaments.length > 0}
-    <div class="flex items-center justify-between mb-3 px-4">
-      <h2 class="text-base font-extrabold text-white flex items-center gap-2">
-        Live Tournaments
-        <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
-      </h2>
-      <button
-        on:click={() => onNavigate('tournaments')}
-        class="text-[10px] font-bold text-gold flex items-center gap-1"
-      >
-        <span>See All</span>
-        <Icon name="arrow-right" size={10} />
-      </button>
-    </div>
+  <!-- ============ REWARDS ROW (Free Chips + Daily Bonus) ============ -->
+  <RewardsRow onPlayFree={() => onQuickSeat('holdem', 'free')} />
 
-    <div class="space-y-2 px-4">
-      {#each liveTournaments as t}
-        <button
-          on:click={() => onNavigate('tournaments')}
-          class="w-full text-left rounded-2xl p-3 active:scale-[0.98] transition-all relative overflow-hidden"
-          style="
-            background: linear-gradient(135deg, rgba(139,92,246,0.18), rgba(109,40,217,0.08));
-            border: 1px solid rgba(139,92,246,0.35);
-          "
-        >
-          <div class="flex items-center gap-2 relative">
-            <div
-              class="w-10 h-10 rounded-xl overflow-hidden shrink-0"
-              style="border: 1.5px solid rgba(244,201,93,0.5);"
-            >
-              <img src="/trophy.png" alt="" class="w-full h-full object-cover" />
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-[12px] font-extrabold text-white truncate">{t.name}</p>
-              <p class="text-[9px] text-white/50 uppercase">{t.variant} · {t.speed}</p>
-            </div>
-            <div class="text-right shrink-0">
-              <p class="text-[12px] font-extrabold text-emerald-400 tabular-nums">
-                ${Number(t.totalPrizePool || 0).toFixed(0)}
-              </p>
-              <p class="text-[9px] text-white/40">prize pool</p>
-            </div>
-          </div>
-        </button>
-      {/each}
-    </div>
-  {/if}
+  <!-- ============ TOP WINNERS TODAY ============ -->
+  <TopWinnersToday winners={topWinners} onSeeAll={() => onNavigate('leaderboard')} />
+
+  <!-- ============ USER PROGRESS (Level + Tier) ============ -->
+  <UserProgress progress={userProgress} onOpen={() => onNavigate('loyalty')} />
 </div>
 
 <QuickSeatSheet

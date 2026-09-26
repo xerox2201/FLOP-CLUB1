@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { cardTheme, CARD_THEMES } from '../stores/cardTheme';
-import { preferences } from '../lib/preferences';
+  import { preferences } from '../lib/preferences';
 
   export let rank: string = 'A';
   export let suit: '♠' | '♥' | '♦' | '♣' = '♠';
@@ -28,13 +28,26 @@ import { preferences } from '../lib/preferences';
   $: radius = Math.max(3, s.w * 0.09);
 
   const RANK_MAP: Record<string, string> = {
-    A: '1', K: 'king', Q: 'queen', J: 'jack',
-    T: '10', '10': '10',
-    '9': '9', '8': '8', '7': '7', '6': '6',
-    '5': '5', '4': '4', '3': '3', '2': '2',
+    A: '1',
+    K: 'king',
+    Q: 'queen',
+    J: 'jack',
+    T: '10',
+    '10': '10',
+    '9': '9',
+    '8': '8',
+    '7': '7',
+    '6': '6',
+    '5': '5',
+    '4': '4',
+    '3': '3',
+    '2': '2',
   };
   const SUIT_MAP: Record<string, string> = {
-    '♠': 'spade', '♥': 'heart', '♦': 'diamond', '♣': 'club',
+    '♠': 'spade',
+    '♥': 'heart',
+    '♦': 'diamond',
+    '♣': 'club',
   };
 
   $: rankFile = RANK_MAP[rank.toUpperCase()] ?? '1';
@@ -44,9 +57,11 @@ import { preferences } from '../lib/preferences';
   $: cardSrc = theme.path.replace('{suit}', suitFile).replace('{rank}', rankFile);
 
   $: backSrc =
-    activeThemeId === 'luxury' ? '/card-back-classic.png' :
-    activeThemeId === 'neon' ? '/card-back-dark.png' :
-    '/card-back-royal.png';
+    activeThemeId === 'luxury'
+      ? '/card-back-classic.webp'
+      : activeThemeId === 'neon'
+        ? '/card-back-dark.webp'
+        : '/card-back-royal.webp';
 
   $: cssFilter = theme.filter && theme.filter !== 'none' ? theme.filter : 'none';
   $: frontFilter = dim ? 'brightness(0.55) saturate(0.5)' : cssFilter;
@@ -57,7 +72,9 @@ import { preferences } from '../lib/preferences';
     if (dealFrom !== 'none') {
       playDeal = true;
       const totalMs = (dealDelay + 0.7) * 1000;
-      const t = setTimeout(() => { playDeal = false; }, totalMs);
+      const t = setTimeout(() => {
+        playDeal = false;
+      }, totalMs);
       return () => clearTimeout(t);
     }
   });
@@ -65,10 +82,13 @@ import { preferences } from '../lib/preferences';
   $: dealClass = playDeal ? 'deal-in' : '';
   $: foldClass = folding ? 'fold-out' : '';
   $: dealVars =
-    dealFrom === 'top-left' ? '--dx: -50vw; --dy: -40vh;' :
-    dealFrom === 'top-right' ? '--dx: 50vw; --dy: -40vh;' :
-    dealFrom === 'top' ? '--dx: 0vw; --dy: -40vh;' :
-    '';
+    dealFrom === 'top-left'
+      ? '--dx: -50vw; --dy: -40vh;'
+      : dealFrom === 'top-right'
+        ? '--dx: 50vw; --dy: -40vh;'
+        : dealFrom === 'top'
+          ? '--dx: 0vw; --dy: -40vh;'
+          : '';
 </script>
 
 <div
@@ -84,13 +104,15 @@ import { preferences } from '../lib/preferences';
     class="card-anim {dealClass} {foldClass}"
     style="
       animation-delay: {dealDelay}s;
-      {$preferences.animations ? '' : 'animation: none !important;'}
+      {$preferences.animations ? '' : 'animation-name: none !important;'}
     "
   >
     <div
       class="card-inner"
       style="
-        transform: {selected ? 'translateY(-6px) scale(1.05)' : ''} rotateY({faceDown ? 180 : 0}deg);
+        transform: {selected ? 'translateY(-6px) scale(1.05)' : ''} rotateY({faceDown
+        ? 180
+        : 0}deg);
       "
     >
       <!-- FRONT (actual card face) — flipped 180 so it appears when faceDown=true turns to 180 -->
@@ -100,7 +122,9 @@ import { preferences } from '../lib/preferences';
         class="card-face card-front"
         style="
           border-radius: {radius}px;
-          filter: {frontFilter} {$preferences.fourColor && suit === '♦' ? 'hue-rotate(160deg) saturate(2.5)' : ''} {$preferences.fourColor && suit === '♣' ? 'hue-rotate(80deg) saturate(2)' : ''};
+          filter: {frontFilter} {$preferences.fourColor && suit === '♦'
+          ? 'hue-rotate(160deg) saturate(2.5)'
+          : ''} {$preferences.fourColor && suit === '♣' ? 'hue-rotate(80deg) saturate(2)' : ''};
         "
         draggable="false"
         on:error={() => console.warn('[PlayingCard] 404:', cardSrc)}
@@ -148,19 +172,19 @@ import { preferences } from '../lib/preferences';
     -webkit-backface-visibility: hidden;
     object-fit: cover;
     box-shadow:
-      0 4px 10px rgba(0,0,0,0.6),
-      0 0 0 0.5px rgba(0,0,0,0.4),
-      inset 0 1px 0 rgba(255,255,255,0.15);
+      0 4px 10px rgba(0, 0, 0, 0.6),
+      0 0 0 0.5px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
     pointer-events: none;
   }
 
   .card-front {
-  transform: rotateY(0deg);
-}
+    transform: rotateY(0deg);
+  }
 
-.card-back {
-  transform: rotateY(180deg);
-}
+  .card-back {
+    transform: rotateY(180deg);
+  }
 
   /* ===== DEAL IN ===== */
   @keyframes card-deal-in {

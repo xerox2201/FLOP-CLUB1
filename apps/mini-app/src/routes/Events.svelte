@@ -110,7 +110,7 @@
     padding: 1rem;
     min-height: 100%;
     background:
-      url('/bg-pattern.png') center/cover no-repeat,
+      url('/bg-pattern.webp') center/cover no-repeat,
       var(--color-bg, #0e0e10);
   }
   .page-header {
