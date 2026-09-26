@@ -1,6 +1,7 @@
 <script lang="ts">
   import { api } from '../lib/api';
   import PlayingCard from './PlayingCard.svelte';
+  import Icon from './Icon.svelte';
 
   export let open: boolean = false;
   export let onClose: () => void = () => {};
@@ -42,8 +43,7 @@
     }
   }
 
-  // Winners from hand
-  $: myUserId = null; // will be filled from localStorage token or prop
+  $: myUserId = null;
 
   async function loadHands() {
     loading = true;
@@ -149,37 +149,14 @@
           class="w-9 h-9 rounded-xl flex items-center justify-center text-white/70 active:scale-95"
           style="background: rgba(30,58,138,0.4); border: 1px solid rgba(96,165,250,0.3);"
         >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-            stroke-linecap="round"
-          >
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
+          <Icon name="arrow-left" size={16} />
         </button>
       {:else}
         <div
           class="w-9 h-9 rounded-xl flex items-center justify-center"
           style="background: linear-gradient(180deg, rgba(212,175,55,0.2), rgba(168,122,21,0.1)); border: 1px solid rgba(212,175,55,0.4);"
         >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#d4af37"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <path d="M14 2v6h6" />
-            <path d="M8 13h8M8 17h5" />
-          </svg>
+          <Icon name="receipt" size={16} color="#d4af37" />
         </div>
       {/if}
 
@@ -190,16 +167,15 @@
       {#if view === 'detail' && selectedHand}
         <button
           on:click={() => onReplay(selectedHand.id)}
-          class="px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-near-black active:scale-95 flex items-center gap-1"
+          class="px-3 py-1.5 rounded-xl text-[10px] font-extrabold active:scale-95 flex items-center gap-1"
           style="
             background: linear-gradient(180deg, #f4e5a8 0%, #d4af37 45%, #a87a15 100%);
+            color: #0a0800;
             box-shadow: 0 2px 0 #7a560a, inset 0 1px 0 rgba(255,235,170,0.4);
           "
         >
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M6 4l14 8-14 8V4z" />
-          </svg>
-          REPLAY
+          <Icon name="play" size={10} color="#0a0800" />
+          <span>REPLAY</span>
         </button>
       {/if}
 
@@ -209,17 +185,7 @@
         class="w-9 h-9 rounded-xl flex items-center justify-center text-white/60 active:scale-95"
         style="background: rgba(255,255,255,0.06);"
       >
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.5"
-          stroke-linecap="round"
-        >
-          <path d="M6 6l12 12M18 6L6 18" />
-        </svg>
+        <Icon name="close" size={14} color="rgba(255,255,255,0.6)" />
       </button>
     </div>
 
@@ -239,19 +205,11 @@
         <!-- Search -->
         <div class="px-3 pt-3">
           <div class="relative">
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="rgba(255,255,255,0.4)"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+            <span
+              class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none flex items-center"
             >
-              <circle cx="11" cy="11" r="8" />
-              <path d="M21 21l-4.35-4.35" />
-            </svg>
+              <Icon name="search" size={14} color="rgba(255,255,255,0.4)" />
+            </span>
             <input
               type="text"
               bind:value={searchQuery}
@@ -283,20 +241,9 @@
 
         {#if filteredHands.length === 0}
           <div class="flex flex-col items-center justify-center py-12 px-6 text-center">
-            <svg
-              width="48"
-              height="48"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="rgba(212,175,55,0.3)"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="mb-3"
-            >
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <path d="M14 2v6h6" />
-            </svg>
+            <div class="mb-3 flex justify-center">
+              <Icon name="receipt" size={48} color="rgba(212,175,55,0.3)" />
+            </div>
             <p class="text-white/40 text-sm font-bold">No hands found</p>
             <p class="text-white/30 text-[11px] mt-1">Play some hands to see your history</p>
           </div>
@@ -332,30 +279,9 @@
                     "
                   >
                     {#if isWin}
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="#6ee7b7"
-                        stroke-width="3"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <path d="M20 6L9 17l-5-5" />
-                      </svg>
+                      <Icon name="check" size={16} color="#6ee7b7" />
                     {:else}
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="rgba(255,255,255,0.4)"
-                        stroke-width="3"
-                        stroke-linecap="round"
-                      >
-                        <path d="M6 6l12 12M18 6L6 18" />
-                      </svg>
+                      <Icon name="close" size={14} color="rgba(255,255,255,0.4)" />
                     {/if}
                   </div>
 
@@ -491,7 +417,7 @@
                         <div
                           class="w-[50px] h-[70px] rounded-md"
                           style="background: rgba(0,0,0,0.3);
-                      border: 1px dashed rgba(255,255,255,0.1);"
+                                    border: 1px dashed rgba(255,255,255,0.1);"
                         ></div>
                       {/if}
                     {/each}
@@ -521,19 +447,19 @@
                       <div
                         class="px-2.5 py-2 rounded-xl"
                         style="
-         background: {won
+                             background: {won
                           ? 'linear-gradient(90deg, rgba(212,175,55,0.15), rgba(212,175,55,0.03))'
                           : 'rgba(0,0,0,0.25)'};
-         border: 1px solid {won ? 'rgba(212,175,55,0.4)' : 'rgba(255,255,255,0.04)'};
-         {won ? 'box-shadow: 0 0 10px rgba(212,175,55,0.15);' : ''}
-       "
+                             border: 1px solid {won
+                          ? 'rgba(212,175,55,0.4)'
+                          : 'rgba(255,255,255,0.04)'};
+                             {won ? 'box-shadow: 0 0 10px rgba(212,175,55,0.15);' : ''}
+                           "
                       >
                         <div class="flex items-center justify-between">
                           <div class="flex items-center gap-2">
                             {#if won}
-                              <svg width="11" height="11" viewBox="0 0 24 24" fill="#f4c95d">
-                                <path d="M3 7l4 5 5-7 5 7 4-5v12H3V7z" />
-                              </svg>
+                              <Icon name="trophy" size={11} color="#f4c95d" />
                             {:else}
                               <span class="w-3"></span>
                             {/if}
@@ -654,9 +580,7 @@
                     "
                   >
                     <div class="flex items-center gap-2 mb-1.5">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="#f4c95d">
-                        <path d="M3 7l4 5 5-7 5 7 4-5v12H3V7z" />
-                      </svg>
+                      <Icon name="trophy" size={16} color="#f4c95d" />
                       <span class="text-[13px] font-extrabold text-gold">{w.displayName}</span>
                     </div>
                     <p class="text-[10px] text-white/60">
