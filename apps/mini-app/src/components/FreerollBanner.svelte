@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { api } from '../lib/api';
   import { serverOffset } from '../lib/serverTime';
+  import Icon from './Icon.svelte';
 
   export let onOpen: (id: number) => void = () => {};
 
@@ -68,7 +69,7 @@
 {#if !loading && freeroll && !isPast}
   <button
     on:click={() => onOpen(freeroll.id)}
-    class="mx-4 mb-4 w-[calc(100%-2rem)] rounded-3xl p-4 text-left active:scale-[0.98] transition relative overflow-hidden"
+    class="mx-4 mb-3 w-[calc(100%-2rem)] rounded-2xl p-3 text-left active:scale-[0.98] transition relative overflow-hidden"
     style="
       background:
         radial-gradient(ellipse at 100% 0%, rgba(244,201,93,0.35) 0%, transparent 55%),
@@ -84,30 +85,42 @@
 
     <div class="relative flex items-center gap-3">
       <div
-        class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shrink-0"
+        class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
         style="
           background: radial-gradient(circle, rgba(244,201,93,0.4), rgba(168,121,34,0.1));
-          border: 1.5px solid rgba(244,201,93,0.6);
+          border: 1px solid rgba(244,201,93,0.6);
           box-shadow: inset 0 1px 0 rgba(255,235,170,0.4);
         "
       >
-        🎁
+        <Icon name="gift" size={22} color="#f4c95d" />
       </div>
       <div class="flex-1 min-w-0">
-        <p class="text-[9px] uppercase tracking-[0.3em] font-extrabold mb-0.5" style="color: #f4c95d;">
-          {isLive ? '🔴 LIVE NOW' : 'DAILY FREEROLL'}
-        </p>
-        <p class="text-[15px] font-extrabold text-white leading-tight truncate">
+        <div class="flex items-center gap-1.5 mb-0.5">
+          {#if isLive}
+            <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
+          {/if}
+          <p class="text-[9px] uppercase tracking-[0.3em] font-extrabold" style="color: #f4c95d;">
+            {isLive ? 'LIVE NOW' : 'TODAY · FREEROLL'}
+          </p>
+        </div>
+        <p class="text-[13px] font-extrabold text-white leading-tight truncate">
           {freeroll.name}
         </p>
-        <div class="flex items-center gap-3 mt-1 text-[10px]">
-          <span class="text-emerald-400 font-extrabold tabular-nums">
-            {fmt(freeroll.prize_usd)} prize
+        <div class="flex items-center gap-2 mt-1.5">
+          <span
+            class="text-[12px] font-extrabold tabular-nums"
+            style="color: #6ee7b7; text-shadow: 0 0 10px rgba(110,231,183,0.4);"
+          >
+            {fmt(freeroll.prize_usd)}
           </span>
-          <span class="text-white/50">·</span>
-          <span class="text-white/60 tabular-nums">
-            {freeroll.registered} registered
+          <span class="text-[9px] uppercase tracking-wider text-emerald-300/70 font-bold"
+            >prize</span
+          >
+          <span class="text-white/30 text-[10px]">·</span>
+          <span class="text-[10px] text-white/70 tabular-nums font-bold">
+            {freeroll.registered}
           </span>
+          <span class="text-[9px] uppercase tracking-wider text-white/40 font-bold">joined</span>
         </div>
       </div>
     </div>
@@ -127,9 +140,12 @@
 
       {#if eligibility && !eligibility.eligible}
         <div class="text-right">
-          <p class="text-[9px] uppercase tracking-wider text-amber-300 font-bold">
-            🔒 Deposit {fmt(eligibility.minRequired)}+ to join
-          </p>
+          <div class="flex items-center gap-1 justify-end">
+            <Icon name="lock" size={10} color="#fcd34d" />
+            <p class="text-[9px] uppercase tracking-wider text-amber-300 font-bold">
+              Deposit {fmt(eligibility.minRequired)}+ to join
+            </p>
+          </div>
           <p class="text-[9px] text-white/50">
             You: {fmt(eligibility.lifetimeDepositUsd)}
           </p>

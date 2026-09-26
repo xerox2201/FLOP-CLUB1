@@ -38,8 +38,8 @@
     style="border-bottom: 1px solid rgba(212,175,55,0.1);"
   >
     <img
-      src="/logo.png"
-      alt="Royal Poker"
+      src="/logo-flop-club.png"
+      alt="Flop Club"
       class="w-14 h-14 object-contain mb-2"
       style="filter: drop-shadow(0 4px 12px rgba(212,175,55,0.5));"
     />
@@ -52,7 +52,7 @@
         -webkit-text-fill-color: transparent;
       "
     >
-      ROYAL POKER
+      FLOP CLUB
     </p>
     <p class="text-[7px] font-extrabold tracking-[0.4em] text-gold/60 mt-1 uppercase">
       Play · Compete · Win

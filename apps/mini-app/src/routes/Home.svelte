@@ -100,26 +100,33 @@
 
   <!-- ============ HERO ============ -->
   <div
-    class="relative mt-3 mb-4 mx-4 rounded-3xl overflow-hidden"
+    class="relative mt-2 mb-3 mx-4 rounded-2xl overflow-hidden"
     style="
-      border: 1.5px solid rgba(212,175,55,0.4);
-      box-shadow: 0 12px 40px rgba(0,0,0,0.7), 0 0 40px rgba(212,175,55,0.2);
-      min-height: 280px;
+      border: 1px solid rgba(212,175,55,0.35);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6), 0 0 20px rgba(212,175,55,0.12);
+      aspect-ratio: 16 / 13;
+      max-height: 260px;
     "
   >
     <img
-      src="/hero-character.png"
-      alt="Play Poker Win Big"
+      src="/hero-scene.jpg"
+      alt="Flop Club"
       class="absolute inset-0 w-full h-full object-cover"
       draggable="false"
     />
+    <!-- Left-to-right gradient: darkens LEFT for text readability -->
     <div
       class="absolute inset-0"
-      style="background: linear-gradient(180deg, rgba(5,8,15,0.35) 0%, rgba(5,8,15,0.7) 50%, rgba(5,8,15,0.95) 100%);"
+      style="background: linear-gradient(90deg, rgba(5,8,15,0.92) 0%, rgba(5,8,15,0.75) 30%, rgba(5,8,15,0.2) 55%, transparent 75%);"
+    ></div>
+    <!-- Top-to-bottom soft vignette -->
+    <div
+      class="absolute inset-0"
+      style="background: linear-gradient(180deg, rgba(5,8,15,0.5) 0%, transparent 25%, transparent 70%, rgba(5,8,15,0.6) 100%);"
     ></div>
 
-    <!-- Content -->
-    <div class="relative p-5 pt-6">
+    <!-- Content — left-aligned, vertically centered -->
+    <div class="relative h-full flex flex-col justify-center p-4 pl-5">
       <p
         class="text-[9px] font-extrabold tracking-[0.3em] uppercase mb-2"
         style="color: #e8c45a; text-shadow: 0 2px 8px rgba(0,0,0,0.8);"
@@ -127,41 +134,46 @@
         Welcome Back
       </p>
       <h2
-        class="text-3xl font-extrabold leading-tight mb-2"
+        class="text-[22px] font-extrabold leading-tight mb-1.5"
         style="
           background: linear-gradient(180deg, #ffffff 0%, #f4e5a8 60%, #d4af37 100%);
           -webkit-background-clip: text;
           background-clip: text;
           -webkit-text-fill-color: transparent;
-          filter: drop-shadow(0 4px 16px rgba(0,0,0,0.6));
+          filter: drop-shadow(0 4px 16px rgba(0,0,0,0.85)) drop-shadow(0 2px 8px rgba(0,0,0,0.6));
         "
       >
         Play Poker<br />Win Big
       </h2>
-      <p class="text-[11px] text-white/70 mb-5 max-w-[200px] leading-relaxed">
-        Real players. Real action.<br />The ultimate poker experience.
+      <p
+        class="text-[10px] text-white/85 mb-3 max-w-[170px] leading-relaxed"
+        style="text-shadow: 0 2px 8px rgba(0,0,0,0.9);"
+      >
+        Real players. Real action.
       </p>
 
-      <button
-        on:click={() => (sheetOpen = true)}
-        class="inline-flex items-center gap-2 px-5 py-3 rounded-2xl font-extrabold text-[13px] active:scale-95 transition-all"
-        style="
-          background: linear-gradient(180deg, #f4e5a8 0%, #d4af37 45%, #a87a15 100%);
-          color: #0a0800;
-          box-shadow: 0 4px 0 #7a560a, 0 8px 24px rgba(212,175,55,0.5), inset 0 1px 0 rgba(255,255,255,0.5);
-        "
-      >
-        <span>Play Now</span>
-        <Icon name="arrow-right" size={14} />
-      </button>
+      <div>
+        <button
+          on:click={() => (sheetOpen = true)}
+          class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl font-extrabold text-[12px] active:scale-95 transition-all"
+          style="
+            background: linear-gradient(180deg, #f4e5a8 0%, #d4af37 45%, #a87a15 100%);
+            color: #0a0800;
+            box-shadow: 0 4px 0 #7a560a, 0 8px 24px rgba(212,175,55,0.5), inset 0 1px 0 rgba(255,255,255,0.5);
+          "
+        >
+          <span>Play Now</span>
+          <Icon name="arrow-right" size={14} />
+        </button>
+      </div>
     </div>
   </div>
 
   <!-- ============ FEATURES ============ -->
-  <div class="grid grid-cols-3 gap-2 px-4 mb-5">
+  <div class="grid grid-cols-3 gap-2 px-4 mb-4">
     {#each features as f}
       <div
-        class="rounded-2xl p-2.5 flex flex-col items-center text-center"
+        class="rounded-xl p-2 flex flex-col items-center text-center"
         style="
           background: linear-gradient(180deg, rgba(15,31,58,0.75), rgba(7,14,27,0.9));
           border: 1px solid rgba(212,175,55,0.2);
@@ -169,16 +181,16 @@
         "
       >
         <div
-          class="w-9 h-9 rounded-xl flex items-center justify-center mb-1.5"
+          class="w-8 h-8 rounded-lg flex items-center justify-center mb-1"
           style="
             background: rgba(212,175,55,0.15);
             border: 1px solid rgba(212,175,55,0.35);
           "
         >
-          <Icon name={f.icon} size={18} />
+          <Icon name={f.icon} size={16} />
         </div>
-        <p class="text-[10px] font-extrabold text-white leading-tight">{f.title}</p>
-        <p class="text-[8px] text-white/50 leading-tight mt-0.5">{f.sub}</p>
+        <p class="text-[9px] font-extrabold text-white leading-tight">{f.title}</p>
+        <p class="text-[7px] text-white/50 leading-tight mt-0.5">{f.sub}</p>
       </div>
     {/each}
   </div>

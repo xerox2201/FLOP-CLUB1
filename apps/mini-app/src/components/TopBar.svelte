@@ -11,54 +11,48 @@
   $: avatarId = (user as any)?.avatar_id || 'spade';
 </script>
 
-<div class="flex items-center gap-2 px-1 pt-3 pb-1">
-  <!-- Logo -->
-  <img
-    src="/logo-flop-club.png"
-    alt="Flop Club"
-    class="w-9 h-9 object-contain shrink-0"
-    style="filter: drop-shadow(0 2px 10px rgba(212,175,55,0.5));"
-    draggable="false"
-  />
-
-  <!-- Wallet pill -->
+<div class="flex items-center justify-between gap-3 px-1 pt-3 pb-1">
   <button
     on:click={onOpenWallet}
     aria-label="Open Wallet"
-    class="rounded-full pl-1.5 pr-2.5 py-1 flex items-center gap-1.5 active:scale-95 transition shrink-0"
+    class="rounded-full pl-1.5 pr-3 py-1 flex items-center gap-2 active:scale-95 transition"
     style="background: linear-gradient(180deg, rgba(139,92,246,0.2), rgba(109,40,217,0.1)); border: 1px solid rgba(139,92,246,0.35);"
   >
-    <div class="w-7 h-7 rounded-full flex items-center justify-center badge-gold shrink-0">
-      <Icon name="dollar" size={14} color="#0a0800" />
+    <div class="w-8 h-8 flex items-center justify-center">
+      <img src="/wallet-badge.png" alt="" class="w-7 h-7 object-contain" draggable="false" />
     </div>
-    <span class="font-extrabold text-[13px] text-white tabular-nums">
+    <span
+      class="font-extrabold text-sm tabular-nums"
+      style="
+        background: linear-gradient(180deg, #f4e5a8 0%, #d4af37 50%, #a87a15 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        filter: drop-shadow(0 1px 4px rgba(212,175,55,0.5));
+      "
+    >
       ${Number((wallet as any)?.balance_usd || 0).toFixed(2)}
     </span>
     <span
-      class="w-4 h-4 rounded-full border border-gold/60 text-gold flex items-center justify-center text-[10px] leading-none font-bold shrink-0"
+      class="w-5 h-5 rounded-full border border-gold/60 flex items-center justify-center shrink-0"
     >
-      +
+      <Icon name="plus" size={11} color="#d4af37" />
     </span>
   </button>
 
-  <!-- Spacer (flexible) -->
-  <div class="flex-1 min-w-0"></div>
-
-  <!-- User -->
-  <div class="flex items-center gap-1.5 shrink-0">
-    <span class="font-bold text-[12px] max-w-[64px] truncate text-white/90">
+  <div class="flex items-center gap-2">
+    <span class="font-bold text-sm max-w-[80px] truncate text-white/90">
       {user?.display_name || 'Player'}
     </span>
-    <Avatar {avatarId} size="sm" showOnline={true} />
+    <Avatar {avatarId} size="md" showOnline={true} />
   </div>
 
-  <!-- Settings -->
   <button
     on:click={onOpenSettings}
     aria-label="Open Settings"
-    class="w-9 h-9 rounded-full flex items-center justify-center text-white/80 active:scale-95 transition shrink-0"
+    class="w-10 h-10 rounded-full flex items-center justify-center text-white/80 active:scale-95 transition"
     style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.25);"
   >
-    <Icon name="settings" size={16} />
+    <Icon name="settings" size={18} />
   </button>
 </div>
