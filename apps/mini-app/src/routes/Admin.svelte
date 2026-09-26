@@ -13,6 +13,7 @@
   let loading = false;
   let error = '';
   let toast = '';
+  let toastIcon: string | null = null;
 
   type Tab =
     | 'overview'
@@ -61,7 +62,6 @@
     seatsAwarded: 0,
     blindStructureId: 0,
     scheduledStart: '',
-    // Rebuy / Addon
     allowRebuy: false,
     maxRebuys: 3,
     rebuyAmount: 0,
@@ -93,7 +93,6 @@
     scheduleType: 'daily' as 'hourly' | 'daily' | 'weekly',
     scheduleTime: '14:00',
     scheduleDay: 0,
-    // Rebuy / Addon
     allowRebuy: false,
     maxRebuys: 3,
     rebuyAmount: 0,
@@ -170,9 +169,13 @@
     };
   }
 
-  function flash(msg: string) {
+  function flash(msg: string, icon?: string) {
     toast = msg;
-    setTimeout(() => (toast = ''), 3500);
+    toastIcon = icon ?? null;
+    setTimeout(() => {
+      toast = '';
+      toastIcon = null;
+    }, 3500);
   }
 
   async function login() {
@@ -392,7 +395,6 @@
         seatsAwarded: Number(form.seatsAwarded) || 0,
         blindStructureId: Number(form.blindStructureId),
         scheduledStart: form.scheduledStart ? new Date(form.scheduledStart).toISOString() : null,
-        // Rebuy / Addon
         maxRebuys: Number(form.maxRebuys) || 0,
         rebuyAmount: Number(form.rebuyAmount) || 0,
         rebuyStack: Number(form.rebuyStack) || 0,
@@ -408,7 +410,7 @@
       });
       const data = await res.json();
       if (res.ok) {
-        flash(`Tournament #${data.tournamentId} created`);
+        flash(`Tournament #${data.tournamentId} created`, 'success');
         showCreate = false;
         form.name = '';
         form.scheduledStart = '';
@@ -429,7 +431,7 @@
       body: '{}',
     });
     if (res.ok) {
-      flash(`Started #${id}`);
+      flash(`Started #${id}`, 'play');
       await loadTournaments();
     } else error = 'start_failed';
   }
@@ -442,7 +444,7 @@
       body: '{}',
     });
     if (res.ok) {
-      flash(`Paused #${id}`);
+      flash(`Paused #${id}`, 'pause');
       await loadTournaments();
     } else error = 'pause_failed';
   }
@@ -454,7 +456,7 @@
       body: '{}',
     });
     if (res.ok) {
-      flash(`Resumed #${id}`);
+      flash(`Resumed #${id}`, 'play');
       await loadTournaments();
     } else error = 'resume_failed';
   }
@@ -468,7 +470,7 @@
     });
     const data = await res.json();
     if (res.ok) {
-      flash(`Cancelled (${data.refunded} refunded)`);
+      flash(`Cancelled (${data.refunded} refunded)`, 'close');
       await loadTournaments();
     } else error = data.error || 'cancel_failed';
   }
@@ -489,7 +491,7 @@
       });
       const data = await res.json();
       if (res.ok) {
-        flash(`Template #${data.templateId} created`);
+        flash(`Template #${data.templateId} created`, 'success');
         showTemplateForm = false;
         tform.name = '';
         await loadTournaments();
@@ -508,7 +510,7 @@
       body: JSON.stringify({ active }),
     });
     if (res.ok) {
-      flash(active ? 'Activated' : 'Paused');
+      flash(active ? 'Activated' : 'Paused', active ? 'play' : 'pause');
       await loadTournaments();
     }
   }
@@ -520,7 +522,7 @@
       headers: headers(),
     });
     if (res.ok) {
-      flash('🗑️ Deleted');
+      flash('Deleted', 'trash');
       await loadTournaments();
     }
   }
@@ -570,7 +572,7 @@
       });
       const data = await res.json();
       if (res.ok) {
-        flash(`✅ Table "${payload.name}" created`);
+        flash(`Table "${payload.name}" created`, 'success');
         showTableForm = false;
         resetTableForm();
         await loadTables();
@@ -590,7 +592,7 @@
     });
     const data = await res.json();
     if (res.ok) {
-      flash(`🗑️ Deleted`);
+      flash('Deleted', 'trash');
       await loadTables();
     } else error = data.error === 'table_has_players' ? 'Table has live players' : data.error;
   }
@@ -602,7 +604,7 @@
       body: JSON.stringify({ active }),
     });
     if (res.ok) {
-      flash(active ? '▶️ Activated' : '⏸️ Paused');
+      flash(active ? 'Activated' : 'Paused', active ? 'play' : 'pause');
       await loadTables();
     }
   }
@@ -631,7 +633,7 @@
       body: JSON.stringify({ ban, reason }),
     });
     if (res.ok) {
-      flash(ban ? '🚫 Banned' : '✅ Unbanned');
+      flash(ban ? 'Banned' : 'Unbanned', ban ? 'close' : 'success');
       await loadPlayerDetail(id);
       await loadPlayers();
     } else error = 'ban_failed';
@@ -651,7 +653,7 @@
       });
       const data = await res.json();
       if (res.ok) {
-        flash(`💰 Balance: $${data.newBalance.toFixed(2)}`);
+        flash(`Balance: $${data.newBalance.toFixed(2)}`, 'dollar');
         walletAdjustAmount = 0;
         walletAdjustReason = '';
         await loadPlayerDetail(id);
@@ -671,7 +673,7 @@
       body: JSON.stringify({ note }),
     });
     if (res.ok) {
-      flash('✅ Resolved');
+      flash('Resolved', 'success');
       await loadAnticheat();
     }
   }
@@ -684,7 +686,7 @@
       body: JSON.stringify({ ban: true, reason: 'anticheat' }),
     });
     if (res.ok) {
-      flash('🚫 Banned');
+      flash('Banned', 'close');
       await loadAnticheat();
     }
   }
@@ -697,7 +699,7 @@
         : `${API}/api/admin/anticheat/user/${userId}/shadowban`;
       const res = await fetch(url, { method: 'POST', headers: headers() });
       if (res.ok) {
-        flash(isShadow ? '✅ Unshadowbanned' : '👻 Shadowbanned');
+        flash(isShadow ? 'Unshadowbanned' : 'Shadowbanned', isShadow ? 'success' : 'shield_alert');
         await loadAnticheat();
       } else {
         error = 'toggle failed';
@@ -725,7 +727,7 @@
       });
       const data = await res.json();
       if (res.ok) {
-        flash(`📢 Broadcast #${data.broadcastId} sent`);
+        flash(`Broadcast #${data.broadcastId} sent`, 'broadcast');
         showBroadcastForm = false;
         bcastForm = { title: '', message: '', target: 'all', severity: 'info' };
         await loadBroadcasts();
@@ -742,7 +744,7 @@
       headers: headers(),
     });
     if (res.ok) {
-      flash('🗑️ Deleted');
+      flash('Deleted', 'trash');
       await loadBroadcasts();
     }
   }
@@ -761,7 +763,7 @@
         body: JSON.stringify(payload),
       });
       if (res.ok) {
-        flash('💾 Settings saved');
+        flash('Settings saved', 'success');
         await loadSettings();
       } else error = 'save_failed';
     } finally {
@@ -921,18 +923,7 @@
       class="w-10 h-10 rounded-full flex items-center justify-center text-white/70 active:scale-95"
       style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.25);"
     >
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <path d="M15 18l-6-6 6-6" />
-      </svg>
+      <Icon name="arrow-left" size={18} color="#ffffff" />
     </button>
     <h1 class="text-xl font-extrabold flex-1 flex items-center gap-2">
       <Icon name="settings" size={20} />
@@ -953,20 +944,9 @@
     <!-- LOGIN -->
     <div class="card space-y-3 mt-8">
       <div class="text-center mb-2">
-        <svg
-          width="48"
-          height="48"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#d4af37"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="mx-auto mb-2"
-        >
-          <rect x="3" y="11" width="18" height="11" rx="2" />
-          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-        </svg>
+        <div class="flex justify-center mb-2">
+          <Icon name="lock" size={48} color="#d4af37" />
+        </div>
         <p class="text-sm text-white/60">Enter admin secret to continue</p>
       </div>
       <input
@@ -1045,21 +1025,7 @@
           <div class="card !p-3">
             <div class="flex items-center justify-between mb-2">
               <p class="text-[9px] text-white/40 uppercase tracking-wider font-bold">Users</p>
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#60a5fa"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                ><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle
-                  cx="9"
-                  cy="7"
-                  r="4"
-                /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg
-              >
+              <Icon name="users" size={14} color="#60a5fa" />
             </div>
             <p class="text-2xl font-extrabold text-white tabular-nums">{overview.users.total}</p>
             <div class="flex gap-2 mt-2 text-[10px]">
@@ -1068,8 +1034,9 @@
               <span class="text-red-300 font-bold">{overview.users.banned} banned</span>
             </div>
             {#if overview.users.highRisk > 0}
-              <p class="text-[10px] text-orange-400 font-bold mt-1">
-                ⚠️ {overview.users.highRisk} high risk
+              <p class="text-[10px] text-orange-400 font-bold mt-1 flex items-center gap-1">
+                <Icon name="warning" size={11} color="#fb923c" />
+                <span>{overview.users.highRisk} high risk</span>
               </p>
             {/if}
           </div>
@@ -1077,17 +1044,7 @@
           <div class="card !p-3">
             <div class="flex items-center justify-between mb-2">
               <p class="text-[9px] text-white/40 uppercase tracking-wider font-bold">Tables</p>
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#d4af37"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                ><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="4" /></svg
-              >
+              <Icon name="tables" size={14} color="#d4af37" />
             </div>
             <p class="text-2xl font-extrabold text-white tabular-nums">
               {overview.tables.active}<span class="text-white/40 text-sm"
@@ -1234,26 +1191,10 @@
           class="flex-1 btn-gold flex items-center justify-center gap-2"
         >
           {#if showCreate}
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="3"
-              stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg
-            >
+            <Icon name="close" size={14} color="#0a0800" />
             <span>Close</span>
           {:else}
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="3"
-              stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg
-            >
+            <Icon name="plus" size={14} color="#0a0800" />
             <span>Create Tournament</span>
           {/if}
         </button>
@@ -1263,19 +1204,7 @@
           class="w-12 rounded-xl text-white/70 active:scale-95 flex items-center justify-center"
           style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3);"
         >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            ><path d="M23 4v6h-6" /><path d="M1 20v-6h6" /><path
-              d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"
-            /><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14" /></svg
-          >
+          <Icon name="refresh" size={18} />
         </button>
       </div>
 
@@ -1533,8 +1462,11 @@
             class="rounded-xl p-3"
             style="background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.25);"
           >
-            <p class="text-[10px] uppercase tracking-wider text-blue-300 font-extrabold mb-3">
-              🔄 Rebuy / Addon
+            <p
+              class="text-[10px] uppercase tracking-wider text-blue-300 font-extrabold mb-3 flex items-center gap-1.5"
+            >
+              <Icon name="refresh" size={12} color="#93c5fd" />
+              <span>Rebuy / Addon</span>
             </p>
 
             <!-- Rebuy -->
@@ -1656,9 +1588,14 @@
           <button
             on:click={createTournament}
             disabled={creating}
-            class="w-full btn-gold disabled:opacity-40"
+            class="w-full btn-gold disabled:opacity-40 flex items-center justify-center gap-2"
           >
-            {creating ? 'Creating…' : '✓ Create'}
+            {#if creating}
+              <span>Creating…</span>
+            {:else}
+              <Icon name="check" size={14} color="#0a0800" />
+              <span>Create</span>
+            {/if}
           </button>
         </div>
       {/if}
@@ -1704,18 +1641,20 @@
                   <div class="flex gap-1.5 mt-1">
                     {#if t.allowRebuy}
                       <span
-                        class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
+                        class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider inline-flex items-center gap-1"
                         style="background: rgba(59,130,246,0.2); color: #93c5fd; border: 1px solid rgba(59,130,246,0.4);"
                       >
-                        🔄 Rebuy
+                        <Icon name="refresh" size={9} color="#93c5fd" />
+                        <span>Rebuy</span>
                       </span>
                     {/if}
                     {#if t.allowAddon}
                       <span
-                        class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
+                        class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider inline-flex items-center gap-1"
                         style="background: rgba(139,92,246,0.2); color: #c4b5fd; border: 1px solid rgba(139,92,246,0.4);"
                       >
-                        🎁 Addon
+                        <Icon name="gift" size={9} color="#c4b5fd" />
+                        <span>Addon</span>
                       </span>
                     {/if}
                   </div>
@@ -1789,7 +1728,7 @@
           class="text-[10px] font-bold text-gold px-2 py-1 rounded-full"
           style="background: rgba(212,175,55,0.15);"
         >
-          {showTemplateForm ? '✕' : '+ New'}
+          {showTemplateForm ? 'Close' : '+ New'}
         </button>
       </div>
 
@@ -1873,8 +1812,11 @@
             class="rounded-xl p-3"
             style="background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.25);"
           >
-            <p class="text-[10px] uppercase tracking-wider text-blue-300 font-extrabold mb-3">
-              🔄 Rebuy / Addon
+            <p
+              class="text-[10px] uppercase tracking-wider text-blue-300 font-extrabold mb-3 flex items-center gap-1.5"
+            >
+              <Icon name="refresh" size={12} color="#93c5fd" />
+              <span>Rebuy / Addon</span>
             </p>
 
             <label
@@ -1971,9 +1913,14 @@
           <button
             on:click={createTemplate}
             disabled={creatingTemplate}
-            class="w-full btn-gold disabled:opacity-40"
+            class="w-full btn-gold disabled:opacity-40 flex items-center justify-center gap-2"
           >
-            {creatingTemplate ? 'Creating…' : '✓ Create Template'}
+            {#if creatingTemplate}
+              <span>Creating…</span>
+            {:else}
+              <Icon name="check" size={14} color="#0a0800" />
+              <span>Create Template</span>
+            {/if}
           </button>
         </div>
       {/if}
@@ -2074,7 +2021,13 @@
           on:click={() => (showTableForm = !showTableForm)}
           class="flex-1 btn-gold flex items-center justify-center gap-2"
         >
-          {showTableForm ? '✕ Close' : '+ Add Table'}
+          {#if showTableForm}
+            <Icon name="close" size={14} color="#0a0800" />
+            <span>Close</span>
+          {:else}
+            <Icon name="plus" size={14} color="#0a0800" />
+            <span>Add Table</span>
+          {/if}
         </button>
         <button
           on:click={loadTables}
@@ -2169,9 +2122,15 @@
           <button
             on:click={createTable}
             disabled={creatingTable}
-            class="w-full btn-gold disabled:opacity-40"
-            >{creatingTable ? 'Creating…' : '✓ Create Table'}</button
+            class="w-full btn-gold disabled:opacity-40 flex items-center justify-center gap-2"
           >
+            {#if creatingTable}
+              <span>Creating…</span>
+            {:else}
+              <Icon name="check" size={14} color="#0a0800" />
+              <span>Create Table</span>
+            {/if}
+          </button>
         </div>
       {/if}
 
@@ -2400,7 +2359,10 @@
         {/if}
 
         <!-- Risky Users -->
-        <h3 class="text-sm font-extrabold text-white mb-2">⚠️ Risky Users</h3>
+        <h3 class="text-sm font-extrabold text-white mb-2 flex items-center gap-2">
+          <Icon name="warning" size={16} color="#fb923c" />
+          <span>Risky Users</span>
+        </h3>
         <div class="space-y-1.5 mb-4">
           {#each riskyUsers as u}
             <div
@@ -2427,13 +2389,19 @@
           {/each}
           {#if riskyUsers.length === 0}
             <div class="card text-center py-4">
-              <p class="text-white/50 text-xs">No risky users ✅</p>
+              <p class="text-white/50 text-xs flex items-center justify-center gap-1.5">
+                <Icon name="success" size={12} color="#6ee7b7" />
+                <span>No risky users</span>
+              </p>
             </div>
           {/if}
         </div>
 
         <!-- Shadowbanned -->
-        <h3 class="text-sm font-extrabold text-white mb-2 mt-4">👻 Shadowbanned / Banned</h3>
+        <h3 class="text-sm font-extrabold text-white mb-2 mt-4 flex items-center gap-2">
+          <Icon name="shield_alert" size={16} color="#c4b5fd" />
+          <span>Shadowbanned / Banned</span>
+        </h3>
         <div class="space-y-1.5 mb-4">
           {#each shadowbanned as u}
             {@const isShadow = u.action_taken === 'shadowban'}
@@ -2476,14 +2444,20 @@
           {/each}
           {#if shadowbanned.length === 0}
             <div class="card text-center py-4">
-              <p class="text-white/50 text-xs">No shadowbanned users ✅</p>
+              <p class="text-white/50 text-xs flex items-center justify-center gap-1.5">
+                <Icon name="success" size={12} color="#6ee7b7" />
+                <span>No shadowbanned users</span>
+              </p>
             </div>
           {/if}
         </div>
 
         <!-- Events -->
         <div class="flex items-center justify-between mb-2">
-          <h3 class="text-sm font-extrabold text-white">🚨 Events</h3>
+          <h3 class="text-sm font-extrabold text-white flex items-center gap-2">
+            <Icon name="warning" size={16} color="#ef4444" />
+            <span>Events</span>
+          </h3>
           <div class="flex gap-1">
             {#each [{ k: 'unresolved', l: 'Open' }, { k: 'resolved', l: 'Done' }, { k: 'all', l: 'All' }] as f}
               <button
@@ -2515,8 +2489,12 @@
                   style="background: rgba(239,68,68,0.2); color: #fca5a5;">{e.type}</span
                 >
                 <span class="text-[9px] text-white/40">sev {e.severity}</span>
-                {#if e.resolved}<span class="text-[9px] text-emerald-400 font-bold">✓ DONE</span
-                  >{/if}
+                {#if e.resolved}
+                  <span class="text-[9px] text-emerald-400 font-bold flex items-center gap-1">
+                    <Icon name="check" size={10} color="#6ee7b7" />
+                    <span>DONE</span>
+                  </span>
+                {/if}
                 <span class="text-[9px] text-white/30 ml-auto font-mono"
                   >{fmtDate(e.created_at)}</span
                 >
@@ -2576,16 +2554,22 @@
       {/if}
 
       <div class="card !p-3 mb-4" style="border-color: rgba(96,165,250,0.3);">
-        <p class="text-[11px] text-white/80">
-          <strong class="text-blue-300">💡 Tip:</strong>
-          To adjust a specific player's wallet, go to
-          <button on:click={() => loadTab('players')} class="text-gold underline font-bold"
-            >Players</button
-          > tab → click a player → Adjust Wallet.
+        <p class="text-[11px] text-white/80 flex items-start gap-2">
+          <Icon name="info" size={14} color="#93c5fd" />
+          <span>
+            <strong class="text-blue-300">Tip:</strong>
+            To adjust a specific player's wallet, go to
+            <button on:click={() => loadTab('players')} class="text-gold underline font-bold"
+              >Players</button
+            > tab → click a player → Adjust Wallet.
+          </span>
         </p>
       </div>
 
-      <h3 class="text-sm font-extrabold text-white mb-2">📜 Recent Wallet Activity</h3>
+      <h3 class="text-sm font-extrabold text-white mb-2 flex items-center gap-2">
+        <Icon name="receipt" size={16} />
+        <span>Recent Wallet Activity</span>
+      </h3>
       <div class="space-y-1.5">
         {#each walletActions as a}
           <div
@@ -2624,19 +2608,29 @@
         {/if}
       </div>
     {/if}
-
     <!-- TAB: BROADCAST -->
     {#if activeTab === 'broadcast'}
       <div class="flex gap-2 mb-3">
-        <button on:click={() => (showBroadcastForm = !showBroadcastForm)} class="flex-1 btn-gold">
-          {showBroadcastForm ? '✕ Close' : '+ New Broadcast'}
+        <button
+          on:click={() => (showBroadcastForm = !showBroadcastForm)}
+          class="flex-1 btn-gold flex items-center justify-center gap-2"
+        >
+          {#if showBroadcastForm}
+            <Icon name="close" size={14} color="#0a0800" />
+            <span>Close</span>
+          {:else}
+            <Icon name="plus" size={14} color="#0a0800" />
+            <span>New Broadcast</span>
+          {/if}
         </button>
         <button
           on:click={loadBroadcasts}
-          class="w-12 rounded-xl text-white/70"
+          aria-label="Refresh broadcasts"
+          class="w-12 rounded-xl text-white/70 flex items-center justify-center"
           style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3);"
-          >🔄</button
         >
+          <Icon name="refresh" size={18} />
+        </button>
       </div>
 
       {#if showBroadcastForm}
@@ -2671,23 +2665,31 @@
               class="rounded-lg px-2 py-2.5 text-xs text-white"
               style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
             >
-              <option value="info">Info 🔵</option>
-              <option value="success">Success 🟢</option>
-              <option value="warning">Warning 🟡</option>
-              <option value="danger">Danger 🔴</option>
+              <option value="info">Info</option>
+              <option value="success">Success</option>
+              <option value="warning">Warning</option>
+              <option value="danger">Danger</option>
             </select>
           </div>
           <button
             on:click={createBroadcast}
             disabled={broadcasting}
-            class="w-full btn-gold disabled:opacity-40"
+            class="w-full btn-gold disabled:opacity-40 flex items-center justify-center gap-2"
           >
-            {broadcasting ? 'Sending…' : '📢 Send Broadcast'}
+            {#if broadcasting}
+              <span>Sending…</span>
+            {:else}
+              <Icon name="broadcast" size={14} color="#0a0800" />
+              <span>Send Broadcast</span>
+            {/if}
           </button>
         </div>
       {/if}
 
-      <h3 class="text-sm font-extrabold text-white mb-2">📬 Sent Broadcasts</h3>
+      <h3 class="text-sm font-extrabold text-white mb-2 flex items-center gap-2">
+        <Icon name="bell" size={16} />
+        <span>Sent Broadcasts</span>
+      </h3>
       <div class="space-y-2">
         {#each broadcasts as b}
           {@const sevColor =
@@ -2721,8 +2723,11 @@
             <p class="text-[11px] text-white/70 mt-2">{b.message}</p>
             <button
               on:click={() => deleteBroadcast(b.id)}
-              class="mt-2 text-[10px] font-bold text-red-300">🗑 Delete</button
+              class="mt-2 text-[10px] font-bold text-red-300 flex items-center gap-1"
             >
+              <Icon name="trash" size={10} color="#fca5a5" />
+              <span>Delete</span>
+            </button>
           </div>
         {/each}
         {#if broadcasts.length === 0}
@@ -2738,7 +2743,10 @@
       {#if settingsLoading}
         <p class="text-white/40 text-center py-8">Loading…</p>
       {:else}
-        <h3 class="text-sm font-extrabold text-white mb-2">🎛️ Panel Settings</h3>
+        <h3 class="text-sm font-extrabold text-white mb-2 flex items-center gap-2">
+          <Icon name="settings" size={16} />
+          <span>Panel Settings</span>
+        </h3>
         <div class="card !p-0 overflow-hidden mb-3">
           {#each Object.entries(settings) as [key, val]}
             <div
@@ -2769,12 +2777,20 @@
         <button
           on:click={saveSettings}
           disabled={settingsSaving}
-          class="w-full btn-gold disabled:opacity-40 mb-5"
+          class="w-full btn-gold disabled:opacity-40 mb-5 flex items-center justify-center gap-2"
         >
-          {settingsSaving ? 'Saving…' : '💾 Save Settings'}
+          {#if settingsSaving}
+            <span>Saving…</span>
+          {:else}
+            <Icon name="success" size={14} color="#0a0800" />
+            <span>Save Settings</span>
+          {/if}
         </button>
 
-        <h3 class="text-sm font-extrabold text-white mb-2">📜 Action Log</h3>
+        <h3 class="text-sm font-extrabold text-white mb-2 flex items-center gap-2">
+          <Icon name="receipt" size={16} />
+          <span>Action Log</span>
+        </h3>
         <div class="space-y-1.5">
           {#each actionsLog as a}
             <div
@@ -2808,7 +2824,12 @@
       class="fixed top-20 left-1/2 -translate-x-1/2 z-40 rounded-2xl px-4 py-2 max-w-[90%]"
       style="background: rgba(6,78,59,0.95); border: 1px solid rgba(34,197,94,0.5);"
     >
-      <p class="text-xs font-bold text-emerald-100">{toast}</p>
+      <p class="text-xs font-bold text-emerald-100 flex items-center gap-2">
+        {#if toastIcon}
+          <Icon name={toastIcon} size={14} color="#a7f3d0" />
+        {/if}
+        <span>{toast}</span>
+      </p>
     </div>
   {/if}
 </div>
@@ -2857,21 +2878,26 @@
           </div>
           <button
             on:click={closePlayer}
+            aria-label="Close"
             class="w-8 h-8 rounded-full flex items-center justify-center text-white/50"
-            style="background: rgba(255,255,255,0.08);">✕</button
+            style="background: rgba(255,255,255,0.08);"
           >
+            <Icon name="close" size={14} color="rgba(255,255,255,0.5)" />
+          </button>
         </div>
 
         <div class="flex gap-1.5 mb-4 flex-wrap">
           {#if playerDetail.isBanned}<span
               class="text-[9px] font-bold px-2 py-1 rounded-full"
-              style="background: rgba(239,68,68,0.2); color: #fca5a5;">🚫 BANNED</span
+              style="background: rgba(239,68,68,0.2); color: #fca5a5;">BANNED</span
             >{/if}
           {#if playerDetail.riskScore >= 65}<span
-              class="text-[9px] font-bold px-2 py-1 rounded-full"
+              class="text-[9px] font-bold px-2 py-1 rounded-full flex items-center gap-1"
               style="background: rgba(245,158,11,0.2); color: #fcd34d;"
-              >⚠️ RISK {playerDetail.riskScore}</span
-            >{/if}
+            >
+              <Icon name="warning" size={10} color="#fcd34d" />
+              <span>RISK {playerDetail.riskScore}</span>
+            </span>{/if}
           <span
             class="text-[9px] font-bold px-2 py-1 rounded-full"
             style="background: rgba(139,92,246,0.15); color: #c4b5fd;"
@@ -2904,17 +2930,21 @@
           {#if playerDetail.isBanned}
             <button
               on:click={() => banPlayer(playerDetail.id, false)}
-              class="w-full rounded-xl py-2.5 text-[12px] font-extrabold"
+              class="w-full rounded-xl py-2.5 text-[12px] font-extrabold flex items-center justify-center gap-1.5"
               style="background: linear-gradient(180deg, #22c55e, #15803d); color: white;"
-              >✓ Unban User</button
             >
+              <Icon name="success" size={14} color="#ffffff" />
+              <span>Unban User</span>
+            </button>
           {:else}
             <button
               on:click={() => banPlayer(playerDetail.id, true)}
-              class="w-full rounded-xl py-2.5 text-[12px] font-extrabold"
+              class="w-full rounded-xl py-2.5 text-[12px] font-extrabold flex items-center justify-center gap-1.5"
               style="background: rgba(220,38,38,0.2); color: #fca5a5; border: 1px solid rgba(220,38,38,0.4);"
-              >🚫 Ban User</button
             >
+              <Icon name="close" size={14} color="#fca5a5" />
+              <span>Ban User</span>
+            </button>
           {/if}
         </div>
 
@@ -2922,8 +2952,11 @@
           class="rounded-xl p-3 mb-4"
           style="background: rgba(212,175,55,0.08); border: 1px solid rgba(212,175,55,0.25);"
         >
-          <p class="text-[10px] font-extrabold text-gold uppercase tracking-wider mb-2">
-            💰 Adjust Wallet
+          <p
+            class="text-[10px] font-extrabold text-gold uppercase tracking-wider mb-2 flex items-center gap-1.5"
+          >
+            <Icon name="dollar" size={12} color="#d4af37" />
+            <span>Adjust Wallet</span>
           </p>
           <div class="flex gap-2 mb-2">
             <input
@@ -2963,8 +2996,11 @@
         </div>
 
         {#if playerHistory?.transactions?.length > 0}
-          <p class="text-[10px] font-extrabold text-white/50 uppercase tracking-wider mb-2 mt-4">
-            📜 Recent Transactions
+          <p
+            class="text-[10px] font-extrabold text-white/50 uppercase tracking-wider mb-2 mt-4 flex items-center gap-1.5"
+          >
+            <Icon name="receipt" size={12} color="rgba(255,255,255,0.5)" />
+            <span>Recent Transactions</span>
           </p>
           <div class="space-y-1 mb-4">
             {#each playerHistory.transactions.slice(0, 10) as t}
@@ -2982,8 +3018,11 @@
         {/if}
 
         {#if playerHistory?.tournaments?.length > 0}
-          <p class="text-[10px] font-extrabold text-white/50 uppercase tracking-wider mb-2">
-            🏆 Recent Tournaments
+          <p
+            class="text-[10px] font-extrabold text-white/50 uppercase tracking-wider mb-2 flex items-center gap-1.5"
+          >
+            <Icon name="trophy" size={12} color="rgba(255,255,255,0.5)" />
+            <span>Recent Tournaments</span>
           </p>
           <div class="space-y-1">
             {#each playerHistory.tournaments.slice(0, 5) as tr}
