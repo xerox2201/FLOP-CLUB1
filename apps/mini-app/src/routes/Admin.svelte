@@ -408,7 +408,7 @@
       });
       const data = await res.json();
       if (res.ok) {
-        flash(`✅ Tournament #${data.tournamentId} created`);
+        flash(`Tournament #${data.tournamentId} created`);
         showCreate = false;
         form.name = '';
         form.scheduledStart = '';
@@ -429,7 +429,7 @@
       body: '{}',
     });
     if (res.ok) {
-      flash(`🚀 Started #${id}`);
+      flash(`Started #${id}`);
       await loadTournaments();
     } else error = 'start_failed';
   }
@@ -442,7 +442,7 @@
       body: '{}',
     });
     if (res.ok) {
-      flash(`⏸️ Paused #${id}`);
+      flash(`Paused #${id}`);
       await loadTournaments();
     } else error = 'pause_failed';
   }
@@ -454,7 +454,7 @@
       body: '{}',
     });
     if (res.ok) {
-      flash(`▶️ Resumed #${id}`);
+      flash(`Resumed #${id}`);
       await loadTournaments();
     } else error = 'resume_failed';
   }
@@ -468,7 +468,7 @@
     });
     const data = await res.json();
     if (res.ok) {
-      flash(`❌ Cancelled (${data.refunded} refunded)`);
+      flash(`Cancelled (${data.refunded} refunded)`);
       await loadTournaments();
     } else error = data.error || 'cancel_failed';
   }
@@ -489,7 +489,7 @@
       });
       const data = await res.json();
       if (res.ok) {
-        flash(`✅ Template #${data.templateId} created`);
+        flash(`Template #${data.templateId} created`);
         showTemplateForm = false;
         tform.name = '';
         await loadTournaments();
@@ -508,7 +508,7 @@
       body: JSON.stringify({ active }),
     });
     if (res.ok) {
-      flash(active ? '▶️ Activated' : '⏸️ Paused');
+      flash(active ? 'Activated' : 'Paused');
       await loadTournaments();
     }
   }
