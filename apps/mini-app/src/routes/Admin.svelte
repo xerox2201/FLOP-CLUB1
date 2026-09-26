@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import TopBar from '../components/TopBar.svelte';
+  import Icon from '../components/Icon.svelte';
 
   export let onBack: () => void = () => {};
 
@@ -934,20 +935,7 @@
       </svg>
     </button>
     <h1 class="text-xl font-extrabold flex-1 flex items-center gap-2">
-      <svg
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="#d4af37"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <path
-          d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"
-        />
-      </svg>
+      <Icon name="settings" size={20} />
       <span>Admin Panel</span>
     </h1>
     {#if authed}
@@ -1184,7 +1172,10 @@
         </div>
 
         {#if liveRooms.length > 0}
-          <h3 class="text-sm font-extrabold text-white mb-2 mt-4">🔴 Live Rooms</h3>
+          <h3 class="text-sm font-extrabold text-white mb-2 mt-4 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+            <span>Live Rooms</span>
+          </h3>
           <div class="space-y-2 mb-4">
             {#each liveRooms as r}
               <div
@@ -1206,7 +1197,10 @@
           </div>
         {/if}
 
-        <h3 class="text-sm font-extrabold text-white mb-2 mt-4">👥 Recent Signups</h3>
+        <h3 class="text-sm font-extrabold text-white mb-2 mt-4 flex items-center gap-2">
+          <Icon name="users" size={16} />
+          <span>Recent Signups</span>
+        </h3>
         <div class="space-y-1.5 mb-4">
           {#each overview.recentUsers as u}
             <div
@@ -1222,8 +1216,12 @@
           {/each}
         </div>
 
-        <button on:click={loadOverview} class="w-full btn-gold py-2.5 text-[12px]">
-          🔄 Refresh
+        <button
+          on:click={loadOverview}
+          class="w-full btn-gold py-2.5 text-[12px] flex items-center justify-center gap-2"
+        >
+          <Icon name="refresh" size={14} color="#0a0800" />
+          <span>Refresh</span>
         </button>
       {/if}
     {/if}
@@ -1734,31 +1732,42 @@
               {#if (t.status === 'registering' || t.status === 'scheduled') && t.registeredCount >= t.minPlayers}
                 <button
                   on:click={() => startTournament(t.id)}
-                  class="flex-1 rounded-lg py-1.5 text-[11px] font-bold text-white"
-                  style="background: linear-gradient(180deg, #22c55e, #15803d);">▶ Start</button
+                  class="flex-1 rounded-lg py-1.5 text-[11px] font-bold text-white flex items-center justify-center gap-1"
+                  style="background: linear-gradient(180deg, #22c55e, #15803d);"
                 >
+                  <Icon name="play" size={10} color="#ffffff" />
+                  <span>Start</span>
+                </button>
               {/if}
               {#if t.status === 'running' || t.status === 'final_table'}
                 <button
                   on:click={() => pauseTournament(t.id)}
-                  class="flex-1 rounded-lg py-1.5 text-[11px] font-bold text-white"
-                  style="background: linear-gradient(180deg, #f59e0b, #b45309);">⏸ Pause</button
+                  class="flex-1 rounded-lg py-1.5 text-[11px] font-bold text-white flex items-center justify-center gap-1"
+                  style="background: linear-gradient(180deg, #f59e0b, #b45309);"
                 >
+                  <Icon name="pause" size={10} color="#ffffff" />
+                  <span>Pause</span>
+                </button>
               {/if}
               {#if t.status === 'paused'}
                 <button
                   on:click={() => resumeTournament(t.id)}
-                  class="flex-1 rounded-lg py-1.5 text-[11px] font-bold text-white"
-                  style="background: linear-gradient(180deg, #22c55e, #15803d);">▶ Resume</button
+                  class="flex-1 rounded-lg py-1.5 text-[11px] font-bold text-white flex items-center justify-center gap-1"
+                  style="background: linear-gradient(180deg, #22c55e, #15803d);"
                 >
+                  <Icon name="play" size={10} color="#ffffff" />
+                  <span>Resume</span>
+                </button>
               {/if}
               {#if t.status !== 'finished' && t.status !== 'cancelled'}
                 <button
                   on:click={() => cancelTournament(t.id)}
-                  class="flex-1 rounded-lg py-1.5 text-[11px] font-bold text-red-300"
+                  class="flex-1 rounded-lg py-1.5 text-[11px] font-bold text-red-300 flex items-center justify-center gap-1"
                   style="background: rgba(220,38,38,0.15); border: 1px solid rgba(220,38,38,0.35);"
-                  >✕ Cancel</button
                 >
+                  <Icon name="close" size={10} color="#fca5a5" />
+                  <span>Cancel</span>
+                </button>
               {/if}
             </div>
           </div>
@@ -1771,7 +1780,10 @@
       </div>
 
       <div class="flex items-center justify-between mt-4 mb-3">
-        <h2 class="text-sm font-extrabold text-white">🗓️ Recurring Templates</h2>
+        <h2 class="text-sm font-extrabold text-white flex items-center gap-2">
+          <Icon name="calendar" size={16} />
+          <span>Recurring Templates</span>
+        </h2>
         <button
           on:click={() => (showTemplateForm = !showTemplateForm)}
           class="text-[10px] font-bold text-gold px-2 py-1 rounded-full"
@@ -1996,18 +2008,27 @@
             <div class="flex gap-2">
               <button
                 on:click={() => toggleTemplate(tpl.id, !tpl.isActive)}
-                class="flex-1 rounded-lg py-1.5 text-[11px] font-bold"
+                class="flex-1 rounded-lg py-1.5 text-[11px] font-bold flex items-center justify-center gap-1"
                 style="background: {tpl.isActive
                   ? 'rgba(245,158,11,0.15)'
                   : 'linear-gradient(180deg, #22c55e, #15803d)'}; color: {tpl.isActive
                   ? '#fcd34d'
-                  : 'white'};">{tpl.isActive ? '⏸ Pause' : '▶ Activate'}</button
+                  : 'white'};"
               >
+                <Icon
+                  name={tpl.isActive ? 'pause' : 'play'}
+                  size={10}
+                  color={tpl.isActive ? '#fcd34d' : '#ffffff'}
+                />
+                <span>{tpl.isActive ? 'Pause' : 'Activate'}</span>
+              </button>
               <button
                 on:click={() => deleteTemplate(tpl.id)}
-                class="rounded-lg px-3 py-1.5 text-[11px] font-bold text-red-300"
-                style="background: rgba(220,38,38,0.15);">🗑</button
+                class="rounded-lg px-3 py-1.5 text-[11px] font-bold text-red-300 flex items-center"
+                style="background: rgba(220,38,38,0.15);"
               >
+                <Icon name="trash" size={12} color="#fca5a5" />
+              </button>
             </div>
           </div>
         {/each}
@@ -2057,10 +2078,11 @@
         </button>
         <button
           on:click={loadTables}
-          class="w-12 rounded-xl text-white/70"
+          class="w-12 rounded-xl text-white/70 flex items-center justify-center"
           style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3);"
-          >🔄</button
         >
+          <Icon name="refresh" size={18} />
+        </button>
       </div>
 
       {#if showTableForm}
@@ -2211,18 +2233,27 @@
                 <div class="flex gap-2">
                   <button
                     on:click={() => toggleTable(tb.id, !tb.is_active)}
-                    class="flex-1 rounded-lg py-1.5 text-[11px] font-bold"
+                    class="flex-1 rounded-lg py-1.5 text-[11px] font-bold flex items-center justify-center gap-1"
                     style="background: {tb.is_active
                       ? 'rgba(245,158,11,0.15)'
                       : 'linear-gradient(180deg, #22c55e, #15803d)'}; color: {tb.is_active
                       ? '#fcd34d'
-                      : 'white'};">{tb.is_active ? '⏸ Pause' : '▶ Activate'}</button
+                      : 'white'};"
                   >
+                    <Icon
+                      name={tb.is_active ? 'pause' : 'play'}
+                      size={10}
+                      color={tb.is_active ? '#fcd34d' : '#ffffff'}
+                    />
+                    <span>{tb.is_active ? 'Pause' : 'Activate'}</span>
+                  </button>
                   <button
                     on:click={() => deleteTable(tb.id, tb.name)}
-                    class="rounded-lg px-3 py-1.5 text-[11px] font-bold text-red-300"
-                    style="background: rgba(220,38,38,0.15);">🗑</button
+                    class="rounded-lg px-3 py-1.5 text-[11px] font-bold text-red-300 flex items-center"
+                    style="background: rgba(220,38,38,0.15);"
                   >
+                    <Icon name="trash" size={12} color="#fca5a5" />
+                  </button>
                 </div>
               </div>
             </div>
@@ -2245,19 +2276,10 @@
         <button
           on:click={loadPlayers}
           aria-label="Search players"
-          class="px-3 rounded-xl text-white/70"
+          class="px-3 rounded-xl text-white/70 flex items-center justify-center"
           style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3);"
         >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-            stroke-linecap="round"
-            ><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg
-          >
+          <Icon name="search" size={16} />
         </button>
       </div>
 
