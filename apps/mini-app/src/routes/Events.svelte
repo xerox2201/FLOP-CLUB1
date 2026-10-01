@@ -404,7 +404,9 @@
         </button>
       </div>
 
-      <p class="text-[11px] text-white/70 leading-relaxed mb-3">{selected.description}</p>
+      {#if selected.description}
+        <p class="text-[11px] text-white/70 leading-relaxed mb-3">{selected.description}</p>
+      {/if}
 
       <div
         class="rounded-xl p-3 mb-4 flex items-center justify-between"

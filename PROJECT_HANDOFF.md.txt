@@ -47,45 +47,58 @@ Telegram Mini App Poker Platform.
 - Frontend pages: /referral, /my-money, /referral-team, /referral-milestones,
   /referral-leaderboard, /referral-history, /referral-affiliate, /books, /community
 - `npm -w apps/mini-app run check` passes with 0 errors
+- Phase 1 financial fixes live: flat 25% rakeback, 100 XP per $1 rake, freeroll cap, overlay cap
+- Bad Beat Jackpot + Daily Missions live (migration 033, services, routes, Home UI, daily cron)
+- Weekly Rake Race live (migration 034, service, routes, Leaderboard tab, full page, weekly cron)
+- 10 frontend pages redesigned to the Home/Profile/Leaderboard style
+- `npx tsx apps/server/src/test-e2e.ts` → 56/56 pass, repeatable across consecutive runs
+- `npx tsx apps/server/src/test-autopost.ts` → 8/8 pass
+- Two critical money bugs fixed in Phase 5: rakeback/XP were never paid, and per-hand
+  referral earnings were never recorded. See FINAL_REPORT section 5.
 
 ## Current Checkpoint — Not Verified
 
-- Auto-post "Tournament Finished" (code complete, not tested)
-- Auto-post "Daily Leader" (code complete, not tested)
-- Per-hand referral earnings (code complete, not tested)
-- Milestone claim flow
-- Duo bonus monthly job
+- Telegram delivery of auto-posts: the B2/B3 pipeline is verified (post slot, payload,
+  idempotency, cleanup) but the actual send failed here — the Telegram API proxy is
+  unreachable from this environment (`ECONNREFUSED 10.10.34.36:443`). Re-run
+  `test-autopost.ts` on a host with egress and look for `[tg-bot] announced tournament`.
+- Duo bonus monthly job (not exercised)
+- No browser/screenshot verification of the redesigned pages (svelte-check + scans only)
+- `users.grandfathered` is never read by the rakeback calculation (see FINAL_REPORT 6.2)
 
-## Next Tasks — Phase Order
+## Phases — Status
 
-### Phase 1 — Critical Financial Fixes (HIGHEST PRIORITY, ~2h)
+### Phase 1 — Critical Financial Fixes — DONE
 
-| # | File | Change |
-|---|---|---|
-| 1 | `apps/server/src/loyalty/definitions.ts` | `rakebackPct: 0.25` for all 6 tiers |
-| 2 | `apps/server/src/loyalty/definitions.ts` | `XP_PER_RAKE_USD = 100` (was 250) |
-| 3 | `apps/server/src/freeroll-service.ts` | Cap: `min(15% daily net, $300)` |
-| 4 | `apps/server/src/tournament-manager.ts` | Overlay cap: `min(guaranteed, 5×totalBuyIn)` |
+Flat 25% rakeback for all 6 tiers (`INSTANT_RAKEBACK_PCT`), `XP_PER_RAKE_USD = 100`,
+freeroll cap `min(15% daily net, $300)`, overlay cap `min(guaranteed, 5 × totalBuyIn)`.
 
-### Phase 2 — Engagement (~4-6h)
+### Phase 2 — Bad Beat Jackpot + Daily Missions — DONE
 
-- [x] Migration 033: `bad_beat_pool`, `bad_beat_payouts`, `missions`, `mission_progress` (applied)
-- [ ] `bad-beat-service.ts`
-- [ ] `mission-service.ts`
-- [ ] Frontend: Bad Beat Pool + Daily Missions UI
+Migration 033 (`bad_beat_pool`, `bad_beat_payouts`, `missions`, `mission_progress`),
+`bad-beat-service.ts`, `mission-service.ts`, `bad-beat-routes.ts`, `mission-routes.ts`,
+`BadBeatPool.svelte`, `Missions.svelte`, `routes/Missions.svelte`, daily reset cron.
 
-### Phase 3 — Weekly Race (~2-3h)
+### Phase 3 — Weekly Rake Race — DONE
 
-- Migration: `weekly_race_entries`
-- `weekly-race-service.ts`
-- Frontend: Weekly Race UI
+Migration 034 (`weekly_race_entries`), `weekly-race-service.ts`,
+`weekly-race-routes.ts`, `routes/WeeklyRace.svelte`, Leaderboard tab, weekly close cron.
 
-### Phase 4 — Testing
+### Phase 4 — Frontend Redesigns — DONE
 
-- Auto-post B2/B3
-- Per-hand referral earnings
-- Milestone claims
-- End-to-end
+Tournaments, Shop, Settings, Achievements, Loyalty, Notifications, MyTournaments, Events,
+HelpCenter, RewardsHistory.
+
+### Phase 5 — Testing — DONE (one environment limitation)
+
+`test-e2e.ts` (56 checks) and `test-autopost.ts` (8 checks). Telegram delivery could not be
+verified from this environment.
+
+### Phase 6 — Polish + Docs — DONE
+
+Dead exports removed, duplicate comment removed, empty UI paragraph hidden, the three
+pre-existing lint errors that blocked commits fixed, `CHANGELOG.md`, `PHASE_2..6_REPORT.md`
+and `FINAL_REPORT.md` written.
 
 ## Financial Model Target
 
@@ -146,6 +159,7 @@ TON_MIN_WITHDRAW, TON_WITHDRAW_FEE
 - 031_referral_earnings_unique_fix
 - 032_community_posts
 - 033_bad_beat_missions
+- 034_weekly_race
 
 ## New Services
 
@@ -155,7 +169,12 @@ TON_MIN_WITHDRAW, TON_WITHDRAW_FEE
 - `referral-routes.ts` — 11 referral endpoints
 - `my-money-routes.ts` — user financial transparency
 - `books-routes.ts` — public books
-- `community-cron.ts` — auto-post scheduler
+- `community-cron.ts` — auto-post scheduler (B1/B2/B3)
+- `bad-beat-service.ts` — jackpot pool, trigger detection, ledger payouts
+- `mission-service.ts` — daily missions: progress, claims, UTC reset
+- `weekly-race-service.ts` — weekly brackets, accrual, settlement
+- `test-e2e.ts` — 56-check end-to-end money-path suite
+- `test-autopost.ts` — B2/B3 auto-post verification
 
 ## Design Tokens
 

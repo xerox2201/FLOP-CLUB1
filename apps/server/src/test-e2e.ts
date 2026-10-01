@@ -12,6 +12,8 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { LedgerService } from './ledger.js';
+import { LoyaltyService } from './loyalty/service.js';
+import { ReferralService } from './referral-service.js';
 import { MissionService, utcDay } from './mission-service.js';
 import { BadBeatService } from './bad-beat-service.js';
 import {
@@ -31,10 +33,12 @@ const db = new Pool({
 
 const ledger = new LedgerService(db);
 
-// Fresh synthetic id per run, so the test never reuses - or deletes - a
-// pre-existing user row.
+// Fresh synthetic ids per run, so the test never reuses - or deletes - a
+// pre-existing user row. A = referrer, B = referee.
 const TEST_TG = Number(`999${String(Date.now()).slice(-9)}`);
 const TEST_NAME = 'E2E Test User';
+const TEST_TG_B = TEST_TG + 1;
+const TEST_NAME_B = 'E2E Referee';
 
 let passed = 0;
 let failed = 0;
@@ -50,25 +54,37 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-async function getUserId(): Promise<number> {
-  const r = await db.query('SELECT id FROM users WHERE telegram_id = $1', [TEST_TG]);
+// A hand row owned by this test, so every FK and ledger idempotency key the
+// test creates is test-only and can be removed afterwards. Without this, keys
+// like `bad_beat_hand_{id}` survive the run and make the next run a duplicate.
+async function createSyntheticHand(): Promise<number> {
+  const r = await db.query(
+    `INSERT INTO hands (server_seed_hash, variant, mode, finished, ended_at, pot, rake)
+     VALUES ('e2e-synthetic-seed', 'holdem', 'real', TRUE, NOW(), 0, 0)
+     RETURNING id`,
+  );
+  return Number(r.rows[0].id);
+}
+
+async function getUserId(tg: number = TEST_TG): Promise<number> {
+  const r = await db.query('SELECT id FROM users WHERE telegram_id = $1', [tg]);
   if (r.rows.length === 0) return 0;
   return Number(r.rows[0].id);
 }
 
-async function ensureTestUser(): Promise<number> {
-  const existing = await getUserId();
+async function ensureTestUser(tg: number = TEST_TG, name: string = TEST_NAME): Promise<number> {
+  const existing = await getUserId(tg);
   if (existing) {
     const u = await db.query('SELECT display_name FROM users WHERE id = $1', [existing]);
-    if (u.rows[0]?.display_name === TEST_NAME) return existing;
-    throw new Error(`telegram_id ${TEST_TG} belongs to another user; refusing to reuse it`);
+    if (u.rows[0]?.display_name === name) return existing;
+    throw new Error(`telegram_id ${tg} belongs to another user; refusing to reuse it`);
   }
 
   const ins = await db.query(
     `INSERT INTO users (telegram_id, display_name, avatar_id, referral_code)
      VALUES ($1, $2, 'spade', $3)
      RETURNING id`,
-    [TEST_TG, TEST_NAME, `ref_e2e_${Date.now().toString(36)}`],
+    [tg, name, `ref_e2e_${Math.random().toString(36).slice(2, 10)}`],
   );
   const id = Number(ins.rows[0].id);
   await ledger.ensureUserAccount(id);
@@ -275,13 +291,8 @@ async function testBadBeat(userId: number, tableUserId: number): Promise<void> {
   const foldHand = { winners: [2], showdownPlayers: [] };
   check('fold-out hand does not trigger', (await badBeat.checkTrigger(foldHand, seatMap)) === null);
 
-  // 3. Payout against a real hand row (FK target), then clean up.
-  const handRow = await db.query('SELECT id FROM hands ORDER BY id DESC LIMIT 1');
-  const handId = Number(handRow.rows[0]?.id ?? 0);
-  if (!handId) {
-    check('bad beat payout (skipped: no hand rows)', false, 'no hands in DB');
-    return;
-  }
+  // 3. Payout against a synthetic hand row this test owns, then clean up.
+  const handId = await createSyntheticHand();
 
   const poolBeforePayout = await badBeat.getPoolAmount();
   const payout = await badBeat.payoutBadBeat({
@@ -301,7 +312,7 @@ async function testBadBeat(userId: number, tableUserId: number): Promise<void> {
   check(
     'quad_plus pays 75% loser / 12.5% winner',
     payout.ok === true && loserShare === expectedLoser && winnerShare === expectedWinner,
-    `loser=${loserShare} (exp ${expectedLoser}) winner=${winnerShare} (exp ${expectedWinner})`,
+    `pool=${poolBeforePayout} result=${JSON.stringify(payout)}`,
   );
 
   const poolAfterPayout = await badBeat.getPoolAmount();
@@ -374,6 +385,11 @@ async function testBadBeat(userId: number, tableUserId: number): Promise<void> {
     );
   }
   await db.query('DELETE FROM bad_beat_payouts WHERE hand_id = $1', [handId]);
+  await db.query('DELETE FROM idempotency_keys WHERE key IN ($1, $2)', [
+    `bad_beat_hand_${handId}`,
+    `bad_beat_pool_hand_${handId}`,
+  ]);
+  await db.query('DELETE FROM hands WHERE id = $1', [handId]);
   check('cleanup: payout rows removed', true, `handId=${handId}`);
 }
 
@@ -492,31 +508,178 @@ async function testWeeklyRace(userId: number, otherUserId: number): Promise<void
   }
   await db.query('DELETE FROM weekly_race_entries WHERE week_start = $1::date', [pastWeek]);
   await db.query('DELETE FROM weekly_race_entries WHERE user_id = $1', [userId]);
+  await db.query('DELETE FROM idempotency_keys WHERE key = $1', [`weekly_race_${pastWeek}_bronze`]);
   check('cleanup: synthetic race rows removed', true, pastWeek);
+}
+
+// ============================================================
+// Section 4 - Rakeback, XP, referral earnings and milestone claim
+// ============================================================
+async function testReferralAndMilestone(referrerId: number, refereeId: number): Promise<void> {
+  console.log('\n--- Rakeback, XP, referral + milestone ---');
+  const loyalty = new LoyaltyService(db);
+  const referral = new ReferralService(db);
+
+  const handId = await createSyntheticHand();
+
+  // 1. Attribution
+  const codeRow = await db.query('SELECT referral_code FROM users WHERE id = $1', [referrerId]);
+  const refCode = String(codeRow.rows[0]?.referral_code ?? '');
+  check('referrer has a referral code', refCode.startsWith('ref_'), refCode);
+
+  const attr = await referral.attributeReferral(refereeId, refCode);
+  check(
+    'attributeReferral links referrer -> referee',
+    attr.ok === true && attr.referrerId === referrerId,
+    JSON.stringify(attr),
+  );
+
+  const edge = await db.query(
+    'SELECT level FROM referral_edges WHERE referrer_id = $1 AND referee_id = $2',
+    [referrerId, refereeId],
+  );
+  check(
+    'referral_edges holds a level-1 edge',
+    edge.rows.length === 1 && Number(edge.rows[0].level) === 1,
+    `rows=${edge.rows.length}`,
+  );
+
+  // 2. Per-hand rakeback (25%) + XP (100 per $1 rake)
+  const pot = 100;
+  const totalRake = 10;
+  const contributions = [{ userId: refereeId, contribution: pot }];
+  await loyalty.payHand({ handId, pot, totalRake, contributions });
+
+  const rb = await db.query('SELECT amount FROM rakeback_log WHERE hand_id = $1 AND user_id = $2', [
+    handId,
+    refereeId,
+  ]);
+  const rakeback = Number(rb.rows[0]?.amount ?? 0);
+  check('rakeback is 25% of the $10 rake share', rakeback === 2.5, `$${rakeback}`);
+
+  const xpRow = await db.query('SELECT lifetime_xp FROM user_xp WHERE user_id = $1', [refereeId]);
+  const xp = Number(xpRow.rows[0]?.lifetime_xp ?? 0);
+  check('XP is 100 per $1 rake (1000 XP)', xp === 1000, `${xp} XP`);
+
+  // 3. Direct referral commission: 12% of the $10 rake share = $1.20
+  await referral.payForHand({ handId, totalRake, contributions });
+  const earn = await db.query(
+    'SELECT amount, level FROM referral_earnings WHERE referrer_id = $1 AND hand_id = $2',
+    [referrerId, handId],
+  );
+  const referralAmount = round2(earn.rows.reduce((s: number, r: any) => s + Number(r.amount), 0));
+  check('direct referral pays 12% ($1.20)', referralAmount === 1.2, `$${referralAmount}`);
+
+  // 4. Idempotency
+  await referral.payForHand({ handId, totalRake, contributions });
+  const again = await db.query(
+    `SELECT COUNT(*)::int AS c, COALESCE(SUM(amount),0)::numeric AS total
+     FROM referral_earnings WHERE referrer_id = $1 AND hand_id = $2`,
+    [referrerId, handId],
+  );
+  check(
+    'referral payment is idempotent',
+    Number(again.rows[0].c) === 1 && round2(Number(again.rows[0].total)) === 1.2,
+    JSON.stringify(again.rows[0]),
+  );
+
+  // 5. Milestone: one active direct referral unlocks first_ref
+  const msRaw = await referral.getMilestones(referrerId);
+  const msList = Array.isArray(msRaw) ? msRaw : ((msRaw as any)?.milestones ?? []);
+  const firstRef = msList.find((m: any) => m.code === 'first_ref');
+  check(
+    'first_ref shows as claimable after one active referral',
+    !!firstRef && firstRef.claimable === true,
+    JSON.stringify(firstRef),
+  );
+
+  const chipsBefore = Number(
+    (await db.query('SELECT chips FROM free_chips WHERE user_id = $1', [referrerId])).rows[0]
+      ?.chips ?? 0,
+  );
+  const claim = await referral.claimMilestone(referrerId, 'first_ref');
+  check('claimMilestone first_ref succeeds', claim.ok === true, JSON.stringify(claim));
+
+  const chipsAfter = Number(
+    (await db.query('SELECT chips FROM free_chips WHERE user_id = $1', [referrerId])).rows[0]
+      ?.chips ?? 0,
+  );
+  check(
+    'milestone granted 5000 chips',
+    chipsAfter - chipsBefore === 5000,
+    `${chipsBefore} -> ${chipsAfter}`,
+  );
+
+  const claim2 = await referral.claimMilestone(referrerId, 'first_ref');
+  check(
+    'milestone double claim rejected',
+    claim2.ok === false && claim2.error === 'already_claimed',
+    claim2.error ?? '',
+  );
+
+  // 6. Cleanup: reverse the ledger movements, drop the log rows.
+  const rakeAcc = await ledger.getAccountId('HOUSE_RAKE');
+  const accA = await ledger.ensureUserAccount(referrerId);
+  const accB = await ledger.ensureUserAccount(refereeId);
+  if (rakeAcc && accA && accB) {
+    const entries: { accountId: number; amount: number }[] = [];
+    if (rakeback > 0) entries.push({ accountId: accB, amount: -rakeback });
+    if (referralAmount > 0) entries.push({ accountId: accA, amount: -referralAmount });
+    if (entries.length > 0) {
+      await ledger.record({
+        kind: 'REVERSAL',
+        ref: `e2e_referral_reversal_${handId}`,
+        entries: [{ accountId: rakeAcc, amount: round2(rakeback + referralAmount) }, ...entries],
+      });
+    }
+  }
+  await db.query('DELETE FROM rakeback_log WHERE hand_id = $1 AND user_id = $2', [
+    handId,
+    refereeId,
+  ]);
+  await db.query('DELETE FROM referral_earnings WHERE hand_id = $1', [handId]);
+  await db.query(
+    `DELETE FROM referral_edges
+     WHERE referrer_id IN ($1, $2) OR referee_id IN ($1, $2)`,
+    [referrerId, refereeId],
+  );
+  await db.query('DELETE FROM referral_milestone_claims WHERE user_id IN ($1, $2)', [
+    referrerId,
+    refereeId,
+  ]);
+  await db.query('DELETE FROM idempotency_keys WHERE key IN ($1, $2)', [
+    `rakeback_hand_${handId}_user_${refereeId}`,
+    `referral_hand_${handId}_referrer_${referrerId}_lvl_1`,
+  ]);
+  await db.query('DELETE FROM hands WHERE id = $1', [handId]);
+  check('cleanup: referral rows removed', true, `handId=${handId}`);
 }
 
 // ============================================================
 // Cleanup
 // ============================================================
-async function cleanup(userId: number): Promise<void> {
-  if (!userId) return;
+async function cleanup(userIds: number[]): Promise<void> {
+  for (const userId of userIds) {
+    if (!userId) continue;
 
-  // Safety net: only ever delete a row this test created.
-  const u = await db.query('SELECT display_name FROM users WHERE id = $1', [userId]);
-  if (u.rows[0]?.display_name !== TEST_NAME) {
-    console.log(`[cleanup] refusing to delete user ${userId}: not a test user`);
-    return;
+    // Safety net: only ever delete a row this test created.
+    const u = await db.query('SELECT display_name FROM users WHERE id = $1', [userId]);
+    const name = u.rows[0]?.display_name;
+    if (name !== TEST_NAME && name !== TEST_NAME_B) {
+      console.log(`[cleanup] refusing to delete user ${userId}: not a test user`);
+      continue;
+    }
+
+    await db.query('DELETE FROM idempotency_keys WHERE user_id = $1', [userId]);
+    await db.query(
+      `DELETE FROM entries WHERE account_id IN
+         (SELECT id FROM accounts WHERE owner_user_id = $1)`,
+      [userId],
+    );
+    await db.query('DELETE FROM transactions WHERE user_id = $1', [userId]);
+    await db.query('DELETE FROM accounts WHERE owner_user_id = $1', [userId]);
+    await db.query('DELETE FROM users WHERE id = $1', [userId]);
   }
-
-  await db.query('DELETE FROM idempotency_keys WHERE user_id = $1', [userId]);
-  await db.query(
-    `DELETE FROM entries WHERE account_id IN
-       (SELECT id FROM accounts WHERE owner_user_id = $1)`,
-    [userId],
-  );
-  await db.query('DELETE FROM transactions WHERE user_id = $1', [userId]);
-  await db.query('DELETE FROM accounts WHERE owner_user_id = $1', [userId]);
-  await db.query('DELETE FROM users WHERE id = $1', [userId]);
 }
 
 async function main(): Promise<void> {
@@ -530,7 +693,8 @@ async function main(): Promise<void> {
   const poolAtStart = Number(baseline.rows[0]?.pool ?? 0);
 
   const userId = await ensureTestUser();
-  console.log(`test user id=${userId} telegram_id=${TEST_TG}`);
+  const userB = await ensureTestUser(TEST_TG_B, TEST_NAME_B);
+  console.log(`test user A id=${userId} (referrer), B id=${userB} (referee)`);
 
   // A second user id for winner/table shares (no account needed until payout).
   const other = await db.query('SELECT id FROM users WHERE id <> $1 ORDER BY id LIMIT 1', [userId]);
@@ -539,12 +703,13 @@ async function main(): Promise<void> {
   await testMissions(userId);
   await testBadBeat(userId, tableUserId);
   await testWeeklyRace(userId, tableUserId);
+  await testReferralAndMilestone(userId, userB);
 
   // Restore the pool to its exact starting value.
   if (poolAtStart !== (await new BadBeatService(db).getPoolAmount())) {
     console.log(`[cleanup] restoring pool to ${poolAtStart}`);
   }
-  await cleanup(userId);
+  await cleanup([userId, userB]);
 
   const finalPool = await new BadBeatService(db).getPoolAmount();
   check(
@@ -553,8 +718,9 @@ async function main(): Promise<void> {
     `${finalPool} vs ${poolAtStart}`,
   );
 
-  const leftover = await getUserId();
-  check('test user removed', leftover === 0);
+  const leftoverA = await getUserId(TEST_TG);
+  const leftoverB = await getUserId(TEST_TG_B);
+  check('test users removed', leftoverA === 0 && leftoverB === 0, `${leftoverA}, ${leftoverB}`);
 
   console.log('\n===================================');
   console.log(`RESULT: ${passed} passed, ${failed} failed`);

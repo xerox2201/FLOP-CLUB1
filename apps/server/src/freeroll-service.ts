@@ -136,20 +136,24 @@ export class FreerollService {
 
     // Determine effective min prize (launch grace vs normal)
     const now = new Date();
-    const graceUntil = cfg.launch_grace_until
-      ? new Date(cfg.launch_grace_until)
-      : new Date(0);
+    const graceUntil = cfg.launch_grace_until ? new Date(cfg.launch_grace_until) : new Date(0);
     const inGrace = now.getTime() < graceUntil.getTime();
 
-    const minPrize = inGrace
-      ? Number(cfg.grace_min_prize_usd)
-      : Number(cfg.min_prize_usd);
+    const minPrize = inGrace ? Number(cfg.grace_min_prize_usd) : Number(cfg.min_prize_usd);
 
-    // prize = max(minPrize, ceil(net))
-    const prize = Math.max(minPrize, Math.ceil(net));
+    // Cap: freeroll prize must not exceed 15% of daily net revenue,
+    // and never more than $300 hard ceiling. This protects platform
+    // margin while still being generous on good days.
+    const cap = Math.min(net * 0.15, 300);
+
+    // Computed prize: max(minPrize, net), then clamped to cap.
+    // minPrize is always preserved — even if cap < minPrize,
+    // the floor wins so freerolls never go to zero.
+    const computedPrize = Math.max(minPrize, Math.ceil(net));
+    const prize = Math.max(minPrize, Math.min(computedPrize, cap));
 
     console.log(
-      `[freeroll] net=$${net.toFixed(2)} grace=${inGrace} min=$${minPrize} -> prize=$${prize}`,
+      `[freeroll] net=$${net.toFixed(2)} grace=${inGrace} min=$${minPrize} cap=$${cap.toFixed(2)} -> prize=$${prize}`,
     );
 
     // Blind structure (Turbo MTT fallback)
@@ -177,12 +181,28 @@ export class FreerollService {
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
        RETURNING id`,
       [
-        name, cfg.variant, 'real', 'freeroll', cfg.speed,
-        0, 0, Number(cfg.starting_stack),
-        Number(cfg.min_players), Number(cfg.max_players),
-        prize, scheduledStart, 0, 0, blindId,
-        'registering', false, 1,
-        false, 1, false, 0,
+        name,
+        cfg.variant,
+        'real',
+        'freeroll',
+        cfg.speed,
+        0,
+        0,
+        Number(cfg.starting_stack),
+        Number(cfg.min_players),
+        Number(cfg.max_players),
+        prize,
+        scheduledStart,
+        0,
+        0,
+        blindId,
+        'registering',
+        false,
+        1,
+        false,
+        1,
+        false,
+        0,
       ],
     );
     const tid = Number(res.rows[0].id);

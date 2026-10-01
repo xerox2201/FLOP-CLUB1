@@ -203,13 +203,15 @@ export class LoyaltyService {
         );
 
         // 6. Auto-unlock vouchers
+        // NOTE: this was `SELECT ... RETURNING`, which is invalid SQL and made
+        // every payHand() transaction roll back - rakeback and XP were never
+        // paid. RETURNING only belongs on INSERT/UPDATE/DELETE.
         const unlocked = await client.query(
           `SELECT id, amount FROM vouchers
            WHERE user_id = $1
              AND used = FALSE
              AND expires_at > NOW()
-             AND current_rake >= min_rake
-           RETURNING id, amount`,
+             AND current_rake >= min_rake`,
           [c.userId],
         );
         for (const v of unlocked.rows) {
