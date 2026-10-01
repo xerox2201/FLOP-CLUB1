@@ -64,7 +64,7 @@
         : '/card-back-royal.webp';
 
   $: cssFilter = theme.filter && theme.filter !== 'none' ? theme.filter : 'none';
-  $: frontFilter = dim ? 'brightness(0.55) saturate(0.5)' : cssFilter;
+  $: frontFilter = dim ? 'brightness(0.65) saturate(0.7)' : cssFilter;
 
   // ---- Deal animation (once on mount) ----
   let playDeal = false;
@@ -130,13 +130,15 @@
         on:error={() => console.warn('[PlayingCard] 404:', cardSrc)}
       />
       <!-- BACK (card back) -->
-      <img
-        src={backSrc}
-        alt=""
-        class="card-face card-back"
-        style="border-radius: {radius}px;"
-        draggable="false"
-      />
+      <span class="card-back-wrap" style="border-radius: {radius}px;">
+        <img
+          src={backSrc}
+          alt=""
+          class="card-face card-back"
+          style="border-radius: {radius}px;"
+          draggable="false"
+        />
+      </span>
     </div>
   </div>
 </div>
@@ -144,8 +146,25 @@
 <style>
   .card-outer {
     position: relative;
-    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    transition:
+      transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 0.25s ease;
     will-change: transform;
+  }
+
+  /* Hover lift + gold glow.
+     `translate`/`scale` are used instead of `transform` because this element
+     carries an inline `transform: rotate(Ndeg)`; the independent properties
+     compose with it instead of being overridden by it. box-shadow/z-index are
+     not set inline, so they apply directly. */
+  .card-outer:hover {
+    translate: 0 -6px;
+    scale: 1.02;
+    box-shadow:
+      0 12px 28px rgba(212, 175, 55, 0.35),
+      0 0 20px rgba(212, 175, 55, 0.15);
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 10;
   }
 
   .card-anim {
@@ -184,6 +203,37 @@
 
   .card-back {
     transform: rotateY(180deg);
+  }
+
+  /* Gold/navy weave over the card back.
+     `<img>` cannot render pseudo-elements, so the back image is wrapped in
+     .card-back-wrap and the overlay lives on the wrapper.
+     `transform-style: preserve-3d` keeps the wrapper transparent to the
+     parent's 3D flip context; without it the back face would be flattened. */
+  .card-back-wrap {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    transform-style: preserve-3d;
+  }
+
+  .card-back-wrap::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background:
+      repeating-linear-gradient(
+        45deg,
+        transparent 0,
+        transparent 3px,
+        rgba(212, 175, 55, 0.18) 3px,
+        rgba(212, 175, 55, 0.18) 4px
+      ),
+      radial-gradient(circle at 50% 50%, rgba(212, 175, 55, 0.15) 0%, transparent 65%);
+    pointer-events: none;
+    mix-blend-mode: overlay;
   }
 
   /* ===== DEAL IN ===== */

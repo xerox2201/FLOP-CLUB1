@@ -100,8 +100,7 @@
   let lastEndedHandNo = -1;
 
   $: myUserId = $auth.user?.id;
-  $: mySeat =
-    gameState?.seats?.find((s: any) => Number(s.userId) === Number(myUserId)) ?? null;
+  $: mySeat = gameState?.seats?.find((s: any) => Number(s.userId) === Number(myUserId)) ?? null;
   $: isMyTurn = !!(
     gameState &&
     mySeat &&
@@ -122,10 +121,7 @@
 
   $: timeRemaining =
     gameState && gameState.turnStartedAt
-      ? Math.max(
-          0,
-          (gameState.turnBaseLimit ?? 30) - (nowTick - gameState.turnStartedAt) / 1000,
-        )
+      ? Math.max(0, (gameState.turnBaseLimit ?? 30) - (nowTick - gameState.turnStartedAt) / 1000)
       : 30;
 
   $: canUseBank =
@@ -139,7 +135,7 @@
   $: if (!isMyTurn) {
     raiseTouched = false;
   }
-  $: if (raiseAmount < minRaiseTo) raiseAmount = minRaiseTo;
+  $: if (!raiseTouched && raiseAmount < minRaiseTo) raiseAmount = minRaiseTo;
   $: if (raiseAmount > hardMax) raiseAmount = hardMax;
 
   $: if (!raiseInputFocused) raiseInput = raiseAmount.toFixed(2);
@@ -434,7 +430,7 @@
   function doRaise() {
     if (!canRaise) return;
     resetPreAction();
-    socket?.action('RAISE', Math.floor(raiseAmount * 100) / 100);
+    socket?.action('RAISE', Math.round(raiseAmount * 100) / 100);
 
     playSound('chip', 0.6);
     haptic.medium();

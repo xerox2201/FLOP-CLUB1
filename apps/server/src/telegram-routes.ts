@@ -80,9 +80,35 @@ export async function registerTelegramRoutes(app: FastifyInstance, db: Pool) {
        WHERE is_primary = TRUE AND is_active = TRUE`,
     );
 
+    // Verify all chats in parallel, each capped at 5s. Without the cap a single
+    // Telegram outage costs TG_MAX_ATTEMPTS x TG_TIMEOUT_MS per chat (3 x 25s),
+    // and the chats were awaited sequentially — that is what made this endpoint
+    // block for ~126s.
+    const TIMEOUT_MS = 5000;
+    const results = await Promise.all(
+      chats.rows.map(async (c: any) => {
+        try {
+          const v = await Promise.race([
+            bot.verifyMembership(Number(c.chat_id), tgId),
+            new Promise<{ status: string; isMember: boolean }>((resolve) =>
+              setTimeout(() => resolve({ status: 'timeout', isMember: false }), TIMEOUT_MS),
+            ),
+          ]);
+          return { chat: c, result: v };
+        } catch (e: any) {
+          return {
+            chat: c,
+            result: { status: 'error', isMember: false, error: e.message },
+          };
+        }
+      }),
+    );
+
     const memberships: Record<string, any> = {};
-    for (const c of chats.rows) {
-      const v = await bot.verifyMembership(Number(c.chat_id), tgId);
+    for (const { chat: c, result: v } of results) {
+      // Keyed by chat_type ('channel' | 'supergroup'): the mini-app looks up
+      // memberships['channel'] / memberships['supergroup']. Do not switch this
+      // to chat_id without updating Community.svelte and CommunityBanner.svelte.
       memberships[c.chat_type] = {
         title: c.title,
         isMember: v.isMember,

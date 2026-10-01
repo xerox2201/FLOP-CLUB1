@@ -67,7 +67,7 @@
       >
         {#each Array(Math.min(s.count, maxStack)) as _, i}
           <div
-            class="absolute"
+            class="absolute chip-disc"
             style="
               width: {size}px;
               height: {size}px;
@@ -77,7 +77,7 @@
               background-size: 400% 300%;
               background-position: {(s.col * 100) / 3}% {(s.row * 100) / 2}%;
               background-repeat: no-repeat;
-              filter: drop-shadow(0 {size * 0.06}px {size * 0.1}px rgba(0,0,0,0.7));
+              filter: drop-shadow(0 {size * 0.08}px {size * 0.13}px rgba(0,0,0,0.75));
               animation-delay: {i * 0.03}s;
             "
           ></div>
@@ -106,6 +106,26 @@
     display: flex;
     align-items: flex-end;
     will-change: transform, opacity, filter;
+  }
+
+  /* Chip disc — the component had no dedicated class for the discs (they only
+     carried the `absolute` utility), so `chip-disc` was added to that element
+     rather than styling the shared `absolute` class.
+     `position: relative` here is overridden by the `absolute` utility, which is
+     fine: the element is still a positioned ancestor for the ::after. */
+  .chip-disc {
+    position: relative;
+  }
+
+  .chip-disc::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    box-shadow:
+      inset 0 0 0 1px rgba(212, 175, 55, 0.35),
+      inset 0 -1px 2px rgba(0, 0, 0, 0.4);
+    pointer-events: none;
   }
 
   /* ===== POP IN ===== */

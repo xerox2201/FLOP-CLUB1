@@ -196,6 +196,8 @@
     position: relative;
     flex-shrink: 0;
     z-index: 2;
+    transform: scale(1.08);
+    transform-origin: center;
   }
 
   .timer-ring-abs {
@@ -346,6 +348,37 @@
   }
   .winner-glow {
     animation: winner-glow 1.4s ease-in-out infinite;
+  }
+
+  /* VIP frame: rotating gold conic ring behind the winner's avatar.
+     .avatar-ring is position:relative with z-index:2, so this negative-z
+     pseudo paints above the ring's background and below the avatar image,
+     leaving the 4px overflow visible as a halo. */
+  .winner-glow::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    background: conic-gradient(
+      from 45deg,
+      rgba(212, 175, 55, 0.9) 0deg,
+      rgba(232, 196, 90, 1) 90deg,
+      rgba(212, 175, 55, 0.9) 180deg,
+      rgba(232, 196, 90, 1) 270deg,
+      rgba(212, 175, 55, 0.9) 360deg
+    );
+    z-index: -1;
+    animation: vip-spin 4s linear infinite;
+    pointer-events: none;
+  }
+
+  @keyframes vip-spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   @keyframes allin-shake {
