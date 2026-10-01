@@ -274,8 +274,14 @@ export function setupSocketServer(io: SocketIOServer, db: Pool): void {
             return ack?.({ ok: false, code: ErrorCode.INVALID_ACTION });
           }
 
-          const result = await commandQueue.run(commandId, userId, 'table_action', () =>
-            gameManager.act(socket.id, action, amount, io),
+          // Scope is per-user to prevent cross-user commandId collisions.
+          // A malicious client could replay another user's commandId if
+          // the scope were shared.
+          const result = await commandQueue.run(
+            commandId,
+            userId,
+            `table_action_user_${userId}`,
+            () => gameManager.act(socket.id, action, amount, io),
           );
 
           ack?.(result);

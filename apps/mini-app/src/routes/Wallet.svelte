@@ -5,7 +5,9 @@
   import TopBar from '../components/TopBar.svelte';
   import Icon from '../components/Icon.svelte';
 
-  let activeTab: 'deposit' | 'withdraw' | 'history' = 'deposit';
+  type Tab = 'deposit' | 'withdraw' | 'history';
+  let activeTab: Tab = 'deposit';
+
   let balance = 0;
   let freeChips = 0;
   let tonStats = { deposited: 0, withdrawn: 0 };
@@ -16,16 +18,18 @@
   let loading = true;
   let error = '';
   let successMsg = '';
+
   let withdrawAmount = '';
   let withdrawAddress = '';
   let withdrawing = false;
   let walletConnected = false;
   let walletAddress: string | null = null;
-  // 🔴 Detect auto-unlock transition and show success toast
+
   $: if (withdrawStatus?.antiAbuse?.justUnlocked) {
-    successMsg = '✅ Withdrawals verified & unlocked';
+    successMsg = 'Withdrawals verified & unlocked';
     setTimeout(() => (successMsg = ''), 5000);
   }
+
   function fmt(n: any, decimals = 2): string {
     return Number(Number(n || 0).toFixed(decimals)).toFixed(decimals);
   }
@@ -86,7 +90,7 @@
     try {
       const res = await api.walletWithdraw(amt, withdrawAddress);
       if (res.ok) {
-        successMsg = `✅ Withdraw submitted: ${amt} TON`;
+        successMsg = `Withdraw submitted: ${amt} TON`;
         withdrawAmount = '';
         withdrawAddress = '';
         setTimeout(() => (successMsg = ''), 4000);
@@ -106,7 +110,7 @@
   function copyDepositAddress() {
     if (depositInfo?.depositAddress) {
       navigator.clipboard.writeText(depositInfo.depositAddress);
-      successMsg = '📋 Address copied';
+      successMsg = 'Address copied';
       setTimeout(() => (successMsg = ''), 2000);
     }
   }
@@ -114,7 +118,7 @@
   function copyMemo() {
     if (depositInfo?.memo) {
       navigator.clipboard.writeText(depositInfo.memo);
-      successMsg = '📋 Memo copied';
+      successMsg = 'Memo copied';
       setTimeout(() => (successMsg = ''), 2000);
     }
   }
@@ -128,6 +132,23 @@
     const max = withdrawStatus.availableBalance;
     const maxTon = Math.floor((max / withdrawStatus.tonPriceUsd) * 1000) / 1000;
     withdrawAmount = String(maxTon);
+  }
+
+  function fmtDate(iso: string): string {
+    try {
+      const d = new Date(iso);
+      const diff = Date.now() - d.getTime();
+      const min = Math.floor(diff / 60000);
+      if (min < 1) return 'Just now';
+      if (min < 60) return `${min}m ago`;
+      const h = Math.floor(min / 60);
+      if (h < 24) return `${h}h ago`;
+      const days = Math.floor(h / 24);
+      if (days < 7) return `${days}d ago`;
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    } catch {
+      return iso;
+    }
   }
 
   let withdrawPollTimer: any = null;
@@ -151,15 +172,13 @@
       }
     }
 
-    // 🔴 Poll withdraw-status every 30s while on withdraw tab.
-    //    This lets the server auto-unlock the moment the last condition passes.
     withdrawPollTimer = setInterval(async () => {
       if (activeTab !== 'withdraw') return;
       try {
         const stat = await api.request<any>('/api/wallet/withdraw-status');
         if (stat.ok && stat.data) withdrawStatus = stat.data;
       } catch {
-        // silent poll — retry on next tick
+        // silent — keep the last known withdraw status
       }
     }, 30_000);
   });
@@ -169,754 +188,722 @@
   });
 
   $: tonNet = tonStats.deposited - tonStats.withdrawn;
-
   $: estReceive = (() => {
     const amt = parseFloat(withdrawAmount);
     if (isNaN(amt) || !withdrawStatus) return 0;
     return Math.max(0, amt - withdrawStatus.feeTon);
   })();
+
+  const TABS: { key: Tab; label: string; icon: string }[] = [
+    { key: 'deposit', label: 'Deposit', icon: 'plus' },
+    { key: 'withdraw', label: 'Withdraw', icon: 'dollar' },
+    { key: 'history', label: 'History', icon: 'receipt' },
+  ];
 </script>
 
-<div class="pb-28">
+<div class="pb-28 lg:pb-8">
   <TopBar />
 
-  <div class="flex items-center justify-between mt-3 mb-4 px-4">
-    <div>
-      <h1 class="text-2xl font-extrabold text-white flex items-center gap-2">
-        <Icon name="wallet" size={24} />
-        <span>Wallet</span>
-      </h1>
-      <p class="text-[11px] text-white/50 mt-0.5">Instant · Automatic</p>
-    </div>
+  <!-- HEADER -->
+  <div class="px-4 mt-2 mb-3">
+    <h1 class="text-2xl font-extrabold text-white leading-none">Wallet</h1>
+    <p class="text-[11px] text-white/45 mt-1">Instant · Automatic · Provably fair</p>
   </div>
 
   {#if loading}
-    <div
-      class="mx-4 rounded-3xl h-[180px]"
-      style="background: linear-gradient(180deg, rgba(15,31,58,0.6), rgba(11,19,36,0.8));"
-    ></div>
+    <div class="px-4">
+      <div
+        class="rounded-3xl h-[180px]"
+        style="background: linear-gradient(180deg, rgba(15,31,58,0.6), rgba(11,19,36,0.8));"
+      ></div>
+    </div>
   {:else}
     <!-- BALANCE CARD -->
-    <div
-      class="mx-4 rounded-3xl p-5 mb-4 relative overflow-hidden"
-      style="
-        background:
-          radial-gradient(ellipse at 100% 0%, rgba(212,175,55,0.25) 0%, transparent 60%),
-          linear-gradient(135deg, #142d52 0%, #0a1a33 60%, #05080f 100%);
-        border: 1.5px solid rgba(212,175,55,0.45);
-        box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 0 40px rgba(212,175,55,0.2);
-      "
-    >
+    <div class="px-4 mb-4">
       <div
-        class="absolute -top-12 -right-12 w-40 h-40 rounded-full opacity-25 pointer-events-none"
-        style="background: radial-gradient(circle, #d4af37, transparent 70%);"
-      ></div>
-
-      <div class="relative">
-        <p class="text-[10px] uppercase tracking-widest text-gold/80 font-bold mb-1">
-          Real Money Balance
-        </p>
-
-        <div class="flex items-baseline gap-2 mb-2">
-          <span
-            class="text-5xl font-extrabold tabular-nums leading-none"
-            style="
-              background: linear-gradient(180deg, #f4e5a8, #d4af37 50%, #a87a15);
-              -webkit-background-clip: text;
-              background-clip: text;
-              -webkit-text-fill-color: transparent;
-              letter-spacing: -0.03em;
-            "
-          >
-            ${fmt(balance)}
-          </span>
-        </div>
-
-        {#if withdrawStatus && withdrawStatus.bonusLocked > 0}
-          <div
-            class="rounded-xl p-2 mb-3"
-            style="background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4);"
-          >
-            <p class="text-[10px] text-amber-300 font-bold">
-              🔒 ${fmt(withdrawStatus.bonusLocked)} locked by bonus conditions
-            </p>
-          </div>
-        {/if}
-
-        <div
-          class="grid grid-cols-2 gap-3 pt-4"
-          style="border-top: 1px solid rgba(212,175,55,0.25);"
-        >
-          <div class="flex items-center gap-2.5">
-            <div
-              class="w-9 h-9 rounded-xl flex items-center justify-center"
-              style="background: rgba(16,185,129,0.2); border: 1px solid rgba(16,185,129,0.4);"
-            >
-              <Icon name="gift" size={18} />
-            </div>
-            <div>
-              <p class="text-[9px] text-white/40 uppercase tracking-wider font-bold">Free Chips</p>
-              <p class="text-[14px] font-extrabold text-emerald-400 tabular-nums">
-                {fmt(freeChips, 0)}
-              </p>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-2.5">
-            <div
-              class="w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden"
-              style="background: rgba(34,211,238,0.15); border: 1px solid rgba(34,211,238,0.4);"
-            >
-              <img src="/ton-logo.png" alt="TON" class="w-7 h-7 object-contain" />
-            </div>
-            <div>
-              <p class="text-[9px] text-white/40 uppercase tracking-wider font-bold">TON Net</p>
-              <p class="text-[14px] font-extrabold text-cyan tabular-nums">{fmt(tonNet, 4)}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  {/if}
-
-  <!-- TON CONNECT -->
-  <button
-    on:click={connectWallet}
-    class="mx-4 w-[calc(100%-2rem)] rounded-2xl p-3.5 mb-4 active:scale-[0.98] transition-all flex items-center justify-between relative overflow-hidden"
-    style="
-      background: {walletConnected
-      ? 'linear-gradient(135deg, rgba(16,185,129,0.2), rgba(5,150,105,0.1))'
-      : 'linear-gradient(135deg, rgba(34,211,238,0.15), rgba(14,116,144,0.08))'};
-      border: 1.5px solid {walletConnected ? 'rgba(16,185,129,0.45)' : 'rgba(34,211,238,0.4)'};
-    "
-  >
-    <div class="flex items-center gap-3 relative">
-      <div
-        class="w-11 h-11 rounded-xl flex items-center justify-center overflow-hidden"
-        style="background: {walletConnected
-          ? 'rgba(16,185,129,0.2)'
-          : 'rgba(34,211,238,0.2)'}; border: 1px solid {walletConnected
-          ? 'rgba(16,185,129,0.4)'
-          : 'rgba(34,211,238,0.4)'};"
-      >
-        <img src="/ton-logo.png" alt="TON" class="w-8 h-8 object-contain" />
-      </div>
-      <div class="text-left">
-        <p class="text-sm font-extrabold text-white">
-          {walletConnected ? 'Wallet Connected' : 'Connect TON Wallet'}
-        </p>
-        {#if walletAddress}
-          <p class="text-[10px] text-white/50 font-mono mt-0.5">
-            {walletAddress.slice(0, 6)}…{walletAddress.slice(-4)}
-          </p>
-        {:else}
-          <p class="text-[10px] text-white/50 mt-0.5">Tap to connect</p>
-        {/if}
-      </div>
-    </div>
-    <div
-      class="w-8 h-8 rounded-full flex items-center justify-center relative"
-      style="background: {walletConnected ? 'rgba(16,185,129,0.2)' : 'rgba(34,211,238,0.2)'};"
-    >
-      <svg
-        width="14"
-        height="14"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke={walletConnected ? '#6ee7b7' : '#67e8f9'}
-        stroke-width="3"
-        stroke-linecap="round"><path d="M9 6l6 6-6 6" /></svg
-      >
-    </div>
-  </button>
-
-  <!-- TABS -->
-  <div
-    class="mx-4 rounded-2xl p-1 grid grid-cols-3 gap-1 mb-4"
-    style="background: linear-gradient(180deg, rgba(15,31,58,0.7), rgba(11,19,36,0.9)); border: 1px solid rgba(212,175,55,0.15);"
-  >
-    {#each ['deposit', 'withdraw', 'history'] as tab}
-      <button
-        on:click={() => (activeTab = tab as any)}
-        class="py-2.5 rounded-xl text-xs font-extrabold transition-all uppercase tracking-wider"
+        class="rounded-3xl p-5 relative overflow-hidden"
         style="
-          background: {activeTab === tab
-          ? 'linear-gradient(180deg, #f4e5a8 0%, #d4af37 45%, #a87a15 100%)'
-          : 'transparent'};
-          color: {activeTab === tab ? '#0a0800' : 'rgba(255,255,255,0.6)'};
+          background:
+            radial-gradient(ellipse at 100% 0%, rgba(212,175,55,0.28) 0%, transparent 60%),
+            radial-gradient(ellipse at 0% 100%, rgba(30,58,138,0.3) 0%, transparent 60%),
+            linear-gradient(135deg, #142d52 0%, #0a1a33 60%, #05080f 100%);
+          border: 1.5px solid rgba(212,175,55,0.45);
+          box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 0 40px rgba(212,175,55,0.18);
         "
       >
-        {tab}
-      </button>
-    {/each}
-  </div>
+        <!-- Decorative glow -->
+        <div
+          class="absolute -top-16 -right-16 w-48 h-48 rounded-full opacity-25 pointer-events-none"
+          style="background: radial-gradient(circle, #d4af37, transparent 70%);"
+        ></div>
 
-  <!-- DEPOSIT -->
-  {#if activeTab === 'deposit'}
-    {#if !depositInfo}
-      <div
-        class="rounded-2xl p-6 text-center mx-4"
-        style="background: linear-gradient(180deg, rgba(15,31,58,0.7), rgba(11,19,36,0.9)); border: 1px solid rgba(212,175,55,0.15);"
-      >
-        <p class="text-3xl mb-2">🔒</p>
-        <p class="text-white/50 text-sm">Deposits are currently disabled</p>
-      </div>
-    {:else}
-      <div
-        class="mx-4 rounded-2xl p-4 space-y-4"
-        style="background: linear-gradient(180deg, rgba(15,31,58,0.7), rgba(11,19,36,0.9)); border: 1px solid rgba(212,175,55,0.15);"
-      >
-        <div>
-          <p class="text-[10px] uppercase tracking-widest text-white/40 font-bold mb-2">Network</p>
+        <div class="relative">
+          <!-- Label row -->
+          <div class="flex items-center justify-between mb-1">
+            <p class="text-[10px] uppercase tracking-widest text-gold/80 font-bold">Real Balance</p>
+            {#if walletConnected}
+              <div class="flex items-center gap-1">
+                <span
+                  class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"
+                  style="box-shadow: 0 0 6px #34d399;"
+                ></span>
+                <span class="text-[9px] font-bold text-emerald-300 uppercase tracking-wider">
+                  Connected
+                </span>
+              </div>
+            {/if}
+          </div>
+
+          <!-- Balance amount -->
+          <div class="flex items-baseline gap-2 mb-4">
+            <span
+              class="text-5xl font-extrabold tabular-nums leading-none"
+              style="
+                background: linear-gradient(180deg, #f4e5a8, #d4af37 50%, #a87a15);
+                -webkit-background-clip: text;
+                background-clip: text;
+                -webkit-text-fill-color: transparent;
+                letter-spacing: -0.03em;
+              "
+            >
+              ${fmt(balance)}
+            </span>
+          </div>
+
+          {#if withdrawStatus && withdrawStatus.bonusLocked > 0}
+            <div
+              class="rounded-xl p-2.5 mb-3 flex items-center gap-2"
+              style="background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4);"
+            >
+              <Icon name="lock" size={12} color="#fcd34d" />
+              <p class="text-[10px] text-amber-300 font-bold">
+                ${fmt(withdrawStatus.bonusLocked)} locked by bonus
+              </p>
+            </div>
+          {/if}
+
+          <!-- Stats grid -->
           <div
-            class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
-            style="background: rgba(34,211,238,0.12); border: 1px solid rgba(34,211,238,0.35);"
+            class="grid grid-cols-2 gap-3 pt-3"
+            style="border-top: 1px solid rgba(212,175,55,0.22);"
           >
-            <span class="w-1.5 h-1.5 rounded-full bg-cyan animate-pulse"></span>
-            <span class="text-[11px] font-extrabold text-cyan uppercase tracking-wider"
-              >{depositInfo.network}</span
-            >
-          </div>
-        </div>
-
-        <div>
-          <p class="text-[10px] uppercase tracking-widest text-white/40 font-bold mb-2">
-            Deposit Address
-          </p>
-          <div class="flex gap-2">
-            <div
-              class="flex-1 rounded-xl p-2.5 font-mono text-[10px] text-white/80 break-all leading-relaxed"
-              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.06);"
-            >
-              {depositInfo.depositAddress || '—'}
+            <div class="flex items-center gap-2.5">
+              <div
+                class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                style="background: rgba(16,185,129,0.2); border: 1px solid rgba(16,185,129,0.4);"
+              >
+                <Icon name="gift" size={16} color="#6ee7b7" />
+              </div>
+              <div class="min-w-0">
+                <p class="text-[9px] text-white/45 uppercase tracking-wider font-bold">
+                  Free Chips
+                </p>
+                <p class="text-[15px] font-extrabold text-emerald-400 tabular-nums leading-tight">
+                  {freeChips.toLocaleString()}
+                </p>
+              </div>
             </div>
-            <button
-              on:click={copyDepositAddress}
-              aria-label="Copy"
-              class="w-11 rounded-xl text-white/70 active:scale-95 flex items-center justify-center text-lg"
-              style="background: linear-gradient(180deg, rgba(30,58,138,0.4), rgba(15,31,58,0.6)); border: 1px solid rgba(96,165,250,0.3);"
-              ><Icon name="close" size={16} /></button
-            >
-          </div>
-        </div>
 
-        <div>
-          <p class="text-[10px] uppercase tracking-widest text-white/40 font-bold mb-2">
-            Memo (important!)
-          </p>
-          <div class="flex gap-2">
-            <div
-              class="flex-1 rounded-xl p-2.5 font-mono text-[12px] font-extrabold text-gold break-all"
-              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(212,175,55,0.3);"
-            >
-              {depositInfo.memo}
+            <div class="flex items-center gap-2.5">
+              <div
+                class="w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden shrink-0"
+                style="background: rgba(34,211,238,0.15); border: 1px solid rgba(34,211,238,0.4);"
+              >
+                <img src="/ton-logo.png" alt="TON" class="w-6 h-6 object-contain" />
+              </div>
+              <div class="min-w-0">
+                <p class="text-[9px] text-white/45 uppercase tracking-wider font-bold">
+                  TON Balance
+                </p>
+                <p class="text-[15px] font-extrabold text-cyan-300 tabular-nums leading-tight">
+                  {fmt(tonNet, 4)}
+                </p>
+              </div>
             </div>
-            <button
-              on:click={copyMemo}
-              aria-label="Copy"
-              class="w-11 rounded-xl text-gold active:scale-95 flex items-center justify-center text-lg"
-              style="background: linear-gradient(180deg, rgba(212,175,55,0.2), rgba(168,122,21,0.1)); border: 1px solid rgba(212,175,55,0.4);"
-              ><Icon name="close" size={16} /></button
-            >
           </div>
-        </div>
-
-        <div
-          class="rounded-xl p-3 flex gap-2.5"
-          style="background: linear-gradient(135deg, rgba(212,175,55,0.12), rgba(168,122,21,0.06)); border: 1px solid rgba(212,175,55,0.3);"
-        >
-          <span class="shrink-0"><Icon name="zap" size={16} /></span>
-          <p class="text-[10px] text-gold leading-relaxed">
-            Deposits are credited <strong class="text-white">automatically</strong> after network confirmation
-            (~15 seconds).
-          </p>
-        </div>
-
-        <div
-          class="flex items-center justify-between pt-2"
-          style="border-top: 1px solid rgba(212,175,55,0.1);"
-        >
-          <span class="text-[10px] text-white/40 uppercase tracking-wider font-bold"
-            >Minimum deposit</span
-          >
-          <span class="text-[13px] font-extrabold text-gold tabular-nums"
-            >{depositInfo.minDeposit} TON</span
-          >
         </div>
       </div>
-    {/if}
-  {/if}
+    </div>
 
-  <!-- WITHDRAW -->
-  {#if activeTab === 'withdraw'}
-    <div class="mx-4 space-y-3">
-      {#if !withdrawStatus}
-        <p class="text-center text-white/40 py-8">Loading withdraw status…</p>
-      {:else}
-        <!-- Available -->
-        <div
-          class="rounded-2xl p-4"
-          style="background: linear-gradient(180deg, rgba(15,31,58,0.7), rgba(11,19,36,0.9)); border: 1.5px solid rgba(212,175,55,0.25);"
-        >
-          <div class="flex justify-between items-center">
-            <div>
-              <p class="text-[9px] text-white/40 uppercase font-bold tracking-wider mb-0.5">
-                Available
-              </p>
-              <p class="text-[18px] font-extrabold text-emerald-400 tabular-nums">
-                ${fmt(withdrawStatus.availableBalance)}
-              </p>
+    <!-- TABS -->
+    <div class="px-4 mb-4">
+      <div
+        class="rounded-2xl p-1 grid grid-cols-3 gap-1"
+        style="
+          background: linear-gradient(180deg, rgba(15,31,58,0.7), rgba(11,19,36,0.9));
+          border: 1px solid rgba(212,175,55,0.15);
+        "
+      >
+        {#each TABS as tab}
+          <button
+            on:click={() => (activeTab = tab.key)}
+            class="py-2.5 rounded-xl text-[11px] font-extrabold transition-all uppercase tracking-wider flex items-center justify-center gap-1.5"
+            style="
+              background: {activeTab === tab.key
+              ? 'linear-gradient(180deg, #f4e5a8 0%, #d4af37 45%, #a87a15 100%)'
+              : 'transparent'};
+              color: {activeTab === tab.key ? '#0a0800' : 'rgba(255,255,255,0.6)'};
+              {activeTab === tab.key
+              ? 'box-shadow: 0 2px 0 #7a560a, 0 4px 12px rgba(212,175,55,0.3);'
+              : ''}
+            "
+          >
+            <Icon
+              name={tab.icon}
+              size={12}
+              color={activeTab === tab.key ? '#0a0800' : 'rgba(255,255,255,0.6)'}
+            />
+            <span>{tab.label}</span>
+          </button>
+        {/each}
+      </div>
+    </div>
+
+    <!-- ═══════════ DEPOSIT ═══════════ -->
+    {#if activeTab === 'deposit'}
+      {#if !depositInfo}
+        <div class="px-4">
+          <div
+            class="rounded-2xl p-6 text-center"
+            style="
+              background: linear-gradient(180deg, rgba(15,31,58,0.7), rgba(11,19,36,0.9));
+              border: 1px solid rgba(212,175,55,0.15);
+            "
+          >
+            <div class="flex justify-center mb-2">
+              <Icon name="lock" size={32} color="#d4af37" />
             </div>
-            <div class="text-right">
-              <p class="text-[9px] text-white/40 uppercase font-bold tracking-wider mb-0.5">
-                Fee · Min
+            <p class="text-white/60 text-sm font-bold">Deposits are currently disabled</p>
+          </div>
+        </div>
+      {:else}
+        <div class="px-4 space-y-3">
+          <!-- Network badge -->
+          <div class="flex items-center justify-between">
+            <div
+              class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
+              style="background: rgba(34,211,238,0.12); border: 1px solid rgba(34,211,238,0.35);"
+            >
+              <span
+                class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"
+                style="box-shadow: 0 0 6px #22d3ee;"
+              ></span>
+              <span class="text-[10px] font-extrabold text-cyan-300 uppercase tracking-wider">
+                {depositInfo.network}
+              </span>
+            </div>
+            <span class="text-[10px] text-white/40 font-bold">
+              Min {depositInfo.minDeposit} TON
+            </span>
+          </div>
+
+          <!-- Address card -->
+          <div
+            class="rounded-2xl p-4 space-y-4"
+            style="
+              background:
+                radial-gradient(ellipse at 100% 0%, rgba(34,211,238,0.1) 0%, transparent 60%),
+                linear-gradient(180deg, rgba(15,31,58,0.7), rgba(11,19,36,0.9));
+              border: 1px solid rgba(34,211,238,0.25);
+            "
+          >
+            <div>
+              <p class="text-[10px] uppercase tracking-widest text-white/40 font-bold mb-2">
+                Deposit Address
               </p>
-              <p class="text-[11px] font-extrabold text-white/80 tabular-nums">
-                {withdrawStatus.feeTon} TON · {withdrawStatus.minWithdrawTon} TON
+              <div class="flex gap-2">
+                <div
+                  class="flex-1 rounded-xl p-2.5 font-mono text-[10px] text-white/85 break-all leading-relaxed"
+                  style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.06);"
+                >
+                  {depositInfo.depositAddress || '—'}
+                </div>
+                <button
+                  on:click={copyDepositAddress}
+                  aria-label="Copy address"
+                  class="w-11 rounded-xl text-white/80 active:scale-95 flex items-center justify-center shrink-0"
+                  style="
+                    background: linear-gradient(180deg, rgba(34,211,238,0.2), rgba(14,116,144,0.1));
+                    border: 1px solid rgba(34,211,238,0.4);
+                  "
+                >
+                  <Icon name="copy" size={16} color="#67e8f9" />
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <p
+                class="text-[10px] uppercase tracking-widest text-gold/70 font-bold mb-2 flex items-center gap-1.5"
+              >
+                <Icon name="warning" size={11} color="#f4c95d" />
+                <span>Memo · Required</span>
+              </p>
+              <div class="flex gap-2">
+                <div
+                  class="flex-1 rounded-xl p-2.5 font-mono text-[13px] font-extrabold text-gold break-all"
+                  style="
+                    background: rgba(0,0,0,0.5);
+                    border: 1px solid rgba(212,175,55,0.4);
+                    text-shadow: 0 0 8px rgba(212,175,55,0.4);
+                  "
+                >
+                  {depositInfo.memo}
+                </div>
+                <button
+                  on:click={copyMemo}
+                  aria-label="Copy memo"
+                  class="w-11 rounded-xl text-gold active:scale-95 flex items-center justify-center shrink-0"
+                  style="
+                    background: linear-gradient(180deg, rgba(212,175,55,0.2), rgba(168,122,21,0.1));
+                    border: 1px solid rgba(212,175,55,0.45);
+                  "
+                >
+                  <Icon name="copy" size={16} color="#f4c95d" />
+                </button>
+              </div>
+            </div>
+
+            <div
+              class="rounded-xl p-3 flex gap-2.5 items-start"
+              style="
+                background: linear-gradient(135deg, rgba(212,175,55,0.1), rgba(168,122,21,0.04));
+                border: 1px solid rgba(212,175,55,0.28);
+              "
+            >
+              <Icon name="zap" size={14} color="#f4c95d" />
+              <p class="text-[10px] text-gold/90 leading-relaxed">
+                Deposits are credited <strong class="text-white">automatically</strong> after network
+                confirmation (~15 seconds).
               </p>
             </div>
           </div>
         </div>
+      {/if}
+    {/if}
 
-        <!-- Anti-abuse checklist (first withdrawal) -->
-        {#if !withdrawStatus.antiAbuse?.alreadyUnlocked}
-          {@const a = withdrawStatus.antiAbuse}
-          {@const c = a.current}
-          {@const r = a.required}
+    <!-- ═══════════ WITHDRAW ═══════════ -->
+    {#if activeTab === 'withdraw'}
+      {#if !withdrawStatus}
+        <div class="px-4 text-center text-white/40 py-8 text-sm">Loading withdraw status…</div>
+      {:else}
+        <div class="px-4 space-y-3">
+          <!-- Available card -->
           <div
             class="rounded-2xl p-4"
-            style="background: linear-gradient(180deg, rgba(139,92,246,0.08), rgba(7,14,27,0.95)); border: 1.5px solid rgba(139,92,246,0.4);"
+            style="
+              background:
+                radial-gradient(ellipse at 0% 0%, rgba(16,185,129,0.15) 0%, transparent 60%),
+                linear-gradient(180deg, rgba(15,31,58,0.7), rgba(11,19,36,0.9));
+              border: 1.5px solid rgba(16,185,129,0.35);
+            "
           >
-            <div class="flex items-center gap-2 mb-3">
-              <span class="text-base">🔓</span>
-              <p
-                class="text-[11px] font-extrabold uppercase tracking-wider flex-1"
-                style="color: #a78bfa;"
-              >
-                First Withdrawal Unlock
-              </p>
-            </div>
-
-            <div class="space-y-2">
-              <div class="flex items-center gap-2.5">
-                {#if a.checks.depositOk}
-                  <span
-                    class="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
-                    style="background: rgba(16,185,129,0.25); border: 1px solid #10b981;"
-                  >
-                    <svg
-                      width="11"
-                      height="11"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#6ee7b7"
-                      stroke-width="3.5"
-                      stroke-linecap="round"><path d="M20 6L9 17l-5-5" /></svg
-                    >
-                  </span>
-                {:else}
-                  <span
-                    class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px]"
-                    style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.4);"
-                    >○</span
-                  >
-                {/if}
-                <div class="flex-1 min-w-0">
-                  <p
-                    class="text-[11px] font-bold"
-                    style="color: {a.checks.depositOk ? '#6ee7b7' : 'rgba(255,255,255,0.75)'};"
-                  >
-                    Deposit $5+ (total)
-                  </p>
-                  <p class="text-[9px] tabular-nums" style="color: rgba(255,255,255,0.4);">
-                    ${fmt(c.lifetimeDepositUsd)} / ${r.minDeposit}
-                  </p>
-                </div>
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <p class="text-[10px] text-white/45 uppercase font-bold tracking-wider mb-0.5">
+                  Available
+                </p>
+                <p class="text-[22px] font-extrabold text-emerald-400 tabular-nums leading-none">
+                  ${fmt(withdrawStatus.availableBalance)}
+                </p>
               </div>
-
-              <div class="flex items-center gap-2.5">
-                {#if a.checks.rakeOk}
-                  <span
-                    class="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
-                    style="background: rgba(16,185,129,0.25); border: 1px solid #10b981;"
-                  >
-                    <svg
-                      width="11"
-                      height="11"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#6ee7b7"
-                      stroke-width="3.5"
-                      stroke-linecap="round"><path d="M20 6L9 17l-5-5" /></svg
-                    >
-                  </span>
-                {:else}
-                  <span
-                    class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px]"
-                    style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.4);"
-                    >○</span
-                  >
-                {/if}
-                <div class="flex-1 min-w-0">
-                  <p
-                    class="text-[11px] font-bold"
-                    style="color: {a.checks.rakeOk ? '#6ee7b7' : 'rgba(255,255,255,0.75)'};"
-                  >
-                    Play $0.50+ rake
-                  </p>
-                  <p class="text-[9px] tabular-nums" style="color: rgba(255,255,255,0.4);">
-                    ${fmt(c.lifetimeRakeUsd)} / ${r.minRake}
-                  </p>
-                </div>
-              </div>
-
-              <div class="flex items-center gap-2.5">
-                {#if a.checks.handsOk}
-                  <span
-                    class="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
-                    style="background: rgba(16,185,129,0.25); border: 1px solid #10b981;"
-                  >
-                    <svg
-                      width="11"
-                      height="11"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#6ee7b7"
-                      stroke-width="3.5"
-                      stroke-linecap="round"><path d="M20 6L9 17l-5-5" /></svg
-                    >
-                  </span>
-                {:else}
-                  <span
-                    class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px]"
-                    style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.4);"
-                    >○</span
-                  >
-                {/if}
-                <div class="flex-1 min-w-0">
-                  <p
-                    class="text-[11px] font-bold"
-                    style="color: {a.checks.handsOk ? '#6ee7b7' : 'rgba(255,255,255,0.75)'};"
-                  >
-                    Play 20+ real hands
-                  </p>
-                  <p class="text-[9px] tabular-nums" style="color: rgba(255,255,255,0.4);">
-                    {c.realHandsPlayed} / {r.minHands}
-                  </p>
-                </div>
-              </div>
-
-              <div class="flex items-center gap-2.5">
-                {#if a.checks.accountAgeOk}
-                  <span
-                    class="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
-                    style="background: rgba(16,185,129,0.25); border: 1px solid #10b981;"
-                  >
-                    <svg
-                      width="11"
-                      height="11"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#6ee7b7"
-                      stroke-width="3.5"
-                      stroke-linecap="round"><path d="M20 6L9 17l-5-5" /></svg
-                    >
-                  </span>
-                {:else}
-                  <span
-                    class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px]"
-                    style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.4);"
-                    >○</span
-                  >
-                {/if}
-                <div class="flex-1 min-w-0">
-                  <p
-                    class="text-[11px] font-bold"
-                    style="color: {a.checks.accountAgeOk ? '#6ee7b7' : 'rgba(255,255,255,0.75)'};"
-                  >
-                    Account age 24h+
-                  </p>
-                  <p class="text-[9px] tabular-nums" style="color: rgba(255,255,255,0.4);">
-                    {c.accountAgeHours}h / {r.minAccountAgeH}h
-                  </p>
-                </div>
-              </div>
-
-              <div class="flex items-center gap-2.5">
-                {#if a.checks.depositAgeOk}
-                  <span
-                    class="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
-                    style="background: rgba(16,185,129,0.25); border: 1px solid #10b981;"
-                  >
-                    <svg
-                      width="11"
-                      height="11"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#6ee7b7"
-                      stroke-width="3.5"
-                      stroke-linecap="round"><path d="M20 6L9 17l-5-5" /></svg
-                    >
-                  </span>
-                {:else}
-                  <span
-                    class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px]"
-                    style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.4);"
-                    >○</span
-                  >
-                {/if}
-                <div class="flex-1 min-w-0">
-                  <p
-                    class="text-[11px] font-bold"
-                    style="color: {a.checks.depositAgeOk ? '#6ee7b7' : 'rgba(255,255,255,0.75)'};"
-                  >
-                    Deposit age 6h+
-                  </p>
-                  <p class="text-[9px] tabular-nums" style="color: rgba(255,255,255,0.4);">
-                    {c.depositAgeHours}h / {r.minDepositAgeH}h
-                  </p>
-                </div>
+              <div class="text-right">
+                <p class="text-[9px] text-white/45 uppercase font-bold tracking-wider mb-1">
+                  Fee · Min
+                </p>
+                <p class="text-[11px] font-extrabold text-white/85 tabular-nums">
+                  {withdrawStatus.feeTon} · {withdrawStatus.minWithdrawTon} TON
+                </p>
               </div>
             </div>
-
-            <p
-              class="text-[10px] text-white/50 leading-relaxed mt-3 pt-3"
-              style="border-top: 1px solid rgba(139,92,246,0.2);"
-            >
-              ℹ️ These conditions prevent abuse. Once met, withdrawals are unlocked forever.
-            </p>
-          </div>
-        {/if}
-
-        <!-- Bonus conditions (باقیمونده) -->
-        {#if !withdrawStatus.bonusConditionsMet}
-          <div
-            class="rounded-2xl p-3.5"
-            style="background: rgba(245,158,11,0.12); border: 1.5px solid rgba(245,158,11,0.4);"
-          >
-            <p class="text-[11px] font-extrabold text-amber-300 mb-2">🔒 Bonus conditions</p>
-            <div class="space-y-1 text-[10px] text-amber-200/90">
-              {#if withdrawStatus.conditions.playthroughRemaining > 0}
-                <p>• Playthrough: ${fmt(withdrawStatus.conditions.playthroughRemaining)}</p>
-              {/if}
-              {#if withdrawStatus.conditions.rakeRemaining > 0}
-                <p>• Rake: ${fmt(withdrawStatus.conditions.rakeRemaining)}</p>
-              {/if}
-              {#if withdrawStatus.conditions.handsRemaining > 0}
-                <p>• Hands: {withdrawStatus.conditions.handsRemaining}</p>
-              {/if}
-              {#if withdrawStatus.conditions.waitDaysRemaining > 0}
-                <p>• Wait: {withdrawStatus.conditions.waitDaysRemaining} days</p>
-              {/if}
-            </div>
-          </div>
-        {/if}
-
-        {#if !withdrawStatus.hotWalletReady}
-          <div
-            class="rounded-xl p-3 text-center"
-            style="background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.35);"
-          >
-            <p class="text-[11px] text-red-300 font-bold flex items-center gap-1 justify-center">
-              <Icon name="warning" size={12} />
-              <span>Withdrawals temporarily disabled</span>
-            </p>
-          </div>
-        {/if}
-
-        <!-- Withdraw form (disabled until conditions met) -->
-        <div
-          class="rounded-2xl p-4 space-y-4"
-          style="background: linear-gradient(180deg, rgba(15,31,58,0.7), rgba(11,19,36,0.9)); border: 1px solid rgba(212,175,55,0.15);"
-        >
-          <div>
-            <p class="text-[10px] uppercase tracking-widest text-white/40 font-bold mb-2">
-              To Address
-            </p>
-            <div class="flex gap-2">
-              <input
-                type="text"
-                bind:value={withdrawAddress}
-                placeholder="EQ..."
-                disabled={!withdrawStatus.canWithdraw}
-                class="flex-1 rounded-xl p-3 text-sm text-white border outline-none font-mono disabled:opacity-50"
-                style="background: rgba(0,0,0,0.4); border-color: rgba(212,175,55,0.2);"
-              />
-              {#if walletAddress}
-                <button
-                  on:click={useConnectedAddress}
-                  disabled={!withdrawStatus.canWithdraw}
-                  class="px-3 rounded-xl text-[10px] font-extrabold text-gold active:scale-95 disabled:opacity-50"
-                  style="background: linear-gradient(180deg, rgba(212,175,55,0.2), rgba(168,122,21,0.1)); border: 1px solid rgba(212,175,55,0.4);"
-                  >USE</button
-                >
-              {/if}
-            </div>
           </div>
 
-          <div>
-            <div class="flex items-center justify-between mb-2">
-              <p class="text-[10px] uppercase tracking-widest text-white/40 font-bold">
-                Amount (TON)
-              </p>
-              <button
-                on:click={setMaxWithdraw}
-                disabled={!withdrawStatus.canWithdraw}
-                class="text-[10px] font-extrabold text-gold active:opacity-70 disabled:opacity-40"
-                >MAX</button
-              >
-            </div>
-            <input
-              type="text"
-              inputmode="decimal"
-              bind:value={withdrawAmount}
-              placeholder="0.0"
-              disabled={!withdrawStatus.canWithdraw}
-              class="w-full rounded-xl p-3 text-2xl font-extrabold border outline-none tabular-nums disabled:opacity-50"
-              style="background: rgba(0,0,0,0.4); border-color: rgba(212,175,55,0.3); color: #f4e5a8; text-shadow: 0 0 8px rgba(212,175,55,0.4);"
-            />
-          </div>
-
-          <div class="grid grid-cols-4 gap-1.5">
-            {#each [0.1, 0.5, 1, 5] as v}
-              <button
-                on:click={() => (withdrawAmount = String(v))}
-                disabled={!withdrawStatus.canWithdraw}
-                class="py-2 rounded-lg text-[11px] font-extrabold text-white/85 active:scale-95 disabled:opacity-40"
-                style="background: linear-gradient(180deg, rgba(30,58,138,0.4), rgba(15,31,58,0.6)); border: 1px solid rgba(96,165,250,0.3);"
-                >{v}</button
-              >
-            {/each}
-          </div>
-
-          {#if withdrawAmount && parseFloat(withdrawAmount) > 0}
-            {@const amt = parseFloat(withdrawAmount)}
-            {@const usd = amt * withdrawStatus.tonPriceUsd}
+          <!-- First withdrawal checklist -->
+          {#if !withdrawStatus.antiAbuse?.alreadyUnlocked}
+            {@const a = withdrawStatus.antiAbuse}
+            {@const c = a.current}
+            {@const r = a.required}
             <div
-              class="rounded-xl p-3 space-y-2"
-              style="background: rgba(0,0,0,0.35); border: 1px solid rgba(212,175,55,0.15);"
+              class="rounded-2xl p-4"
+              style="
+                background:
+                  radial-gradient(ellipse at 100% 0%, rgba(139,92,246,0.12) 0%, transparent 60%),
+                  linear-gradient(180deg, rgba(139,92,246,0.08), rgba(7,14,27,0.95));
+                border: 1.5px solid rgba(139,92,246,0.4);
+              "
             >
-              <div class="flex justify-between text-[11px]">
-                <span class="text-white/50">Requested</span><span
-                  class="text-white/85 font-bold tabular-nums">{amt} TON · ${fmt(usd)}</span
+              <div class="flex items-center gap-2 mb-3">
+                <div
+                  class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                  style="
+                    background: rgba(139,92,246,0.2);
+                    border: 1px solid rgba(139,92,246,0.5);
+                  "
                 >
+                  <Icon name="unlock" size={16} color="#c4b5fd" />
+                </div>
+                <div class="flex-1">
+                  <p class="text-[11px] font-extrabold uppercase tracking-wider text-violet-300">
+                    Unlock Withdrawals
+                  </p>
+                  <p class="text-[9px] text-white/45 font-bold">Complete all conditions once</p>
+                </div>
               </div>
-              <div class="flex justify-between text-[11px]">
-                <span class="text-white/50">Fee</span><span class="text-red-300 tabular-nums"
-                  >{withdrawStatus.feeTon} TON</span
-                >
-              </div>
-              <div style="height: 1px; background: rgba(212,175,55,0.15);"></div>
-              <div class="flex justify-between text-[13px]">
-                <span class="text-white/70 font-bold">You receive</span>
-                <span class="text-emerald-400 font-extrabold tabular-nums"
-                  >~{estReceive.toFixed(4)} TON</span
-                >
+
+              <div class="space-y-2.5">
+                {#each [{ ok: a.checks.depositOk, label: 'Lifetime deposit $5+', current: `$${fmt(c.lifetimeDepositUsd)}`, target: `$${r.minDeposit}` }, { ok: a.checks.rakeOk, label: 'Rake contributed $0.50+', current: `$${fmt(c.lifetimeRakeUsd)}`, target: `$${r.minRake}` }, { ok: a.checks.handsOk, label: 'Play 20+ real hands', current: c.realHandsPlayed, target: r.minHands }, { ok: a.checks.accountAgeOk, label: 'Account age 24h+', current: `${c.accountAgeHours}h`, target: `${r.minAccountAgeH}h` }, { ok: a.checks.depositAgeOk, label: 'Deposit age 6h+', current: `${c.depositAgeHours}h`, target: `${r.minDepositAgeH}h` }] as chk}
+                  <div class="flex items-center gap-2.5">
+                    {#if chk.ok}
+                      <span
+                        class="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                        style="
+                          background: rgba(16,185,129,0.25);
+                          border: 1px solid #10b981;
+                          box-shadow: 0 0 8px rgba(16,185,129,0.4);
+                        "
+                      >
+                        <Icon name="check" size={10} color="#6ee7b7" />
+                      </span>
+                    {:else}
+                      <span
+                        class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px]"
+                        style="
+                          background: rgba(0,0,0,0.4);
+                          border: 1px solid rgba(255,255,255,0.15);
+                          color: rgba(255,255,255,0.4);
+                        "
+                      >
+                        ○
+                      </span>
+                    {/if}
+                    <div class="flex-1 min-w-0">
+                      <p
+                        class="text-[11px] font-bold leading-tight"
+                        style="color: {chk.ok ? '#6ee7b7' : 'rgba(255,255,255,0.75)'};"
+                      >
+                        {chk.label}
+                      </p>
+                      <p
+                        class="text-[9px] tabular-nums text-white/40 font-mono leading-tight mt-0.5"
+                      >
+                        {chk.current} / {chk.target}
+                      </p>
+                    </div>
+                  </div>
+                {/each}
               </div>
             </div>
           {/if}
 
-          <button
-            on:click={doWithdraw}
-            disabled={withdrawing ||
-              !withdrawStatus.canWithdraw ||
-              !withdrawAmount ||
-              !withdrawAddress}
-            class="btn-gold w-full disabled:opacity-40"
-            style="padding: 14px; font-size: 14px;"
-          >
-            {withdrawing
-              ? 'Sending…'
-              : withdrawStatus.canWithdraw
-                ? 'Withdraw Instantly'
-                : 'Locked'}
-          </button>
-
-          <p class="text-[10px] text-white/40 text-center font-mono">
-            Automated · Instant · Flat {withdrawStatus.feeTon} TON fee
-          </p>
-        </div>
-      {/if}
-    </div>
-  {/if}
-
-  <!-- HISTORY -->
-  {#if activeTab === 'history'}
-    {#if history.tonTransactions.length === 0}
-      <div
-        class="rounded-2xl p-6 text-center mx-4"
-        style="background: linear-gradient(180deg, rgba(15,31,58,0.7), rgba(11,19,36,0.9)); border: 1px solid rgba(212,175,55,0.15);"
-      >
-        <div
-          class="w-16 h-16 rounded-2xl mx-auto mb-3 flex items-center justify-center text-3xl"
-          style="background: linear-gradient(180deg, rgba(212,175,55,0.15), rgba(168,122,21,0.08)); border: 1px solid rgba(212,175,55,0.3);"
-        >
-          📜
-        </div>
-        <p class="text-white/60 text-sm font-bold">No transactions yet</p>
-        <p class="text-white/40 text-[11px] mt-1">Your history will appear here</p>
-      </div>
-    {:else}
-      <div class="space-y-2 px-4">
-        {#each history.tonTransactions as tx}
-          {@const isDep = tx.direction === 'deposit'}
-          {@const sc =
-            tx.status === 'confirmed'
-              ? '#10b981'
-              : tx.status === 'pending' || tx.status === 'processing'
-                ? '#f59e0b'
-                : '#ef4444'}
-          <div
-            class="rounded-2xl p-3.5 flex items-center justify-between"
-            style="background: linear-gradient(180deg, rgba(15,31,58,0.7), rgba(11,19,36,0.9)); border: 1px solid rgba(212,175,55,0.12);"
-          >
-            <div class="flex items-center gap-3">
-              <div
-                class="w-11 h-11 rounded-xl flex items-center justify-center"
-                style="background: {isDep
-                  ? 'linear-gradient(180deg, rgba(16,185,129,0.25), rgba(5,150,105,0.15))'
-                  : 'linear-gradient(180deg, rgba(212,175,55,0.25), rgba(168,122,21,0.15))'}; border: 1px solid {isDep
-                  ? 'rgba(16,185,129,0.4)'
-                  : 'rgba(212,175,55,0.4)'};"
-              >
-                <Icon name="arrow-right" size={20} color={isDep ? '#6ee7b7' : '#d4af37'} />
+          <!-- Bonus conditions -->
+          {#if !withdrawStatus.bonusConditionsMet}
+            <div
+              class="rounded-2xl p-3.5"
+              style="
+                background: rgba(245,158,11,0.1);
+                border: 1.5px solid rgba(245,158,11,0.4);
+              "
+            >
+              <div class="flex items-center gap-2 mb-2">
+                <Icon name="lock" size={14} color="#fcd34d" />
+                <p class="text-[11px] font-extrabold text-amber-300">Bonus Conditions</p>
               </div>
-              <div>
-                <p
-                  class="text-sm font-extrabold tabular-nums"
-                  style="color: {isDep ? '#6ee7b7' : '#d4af37'};"
-                >
-                  {isDep ? '+' : '-'}{fmt(tx.amountTon, 4)} TON
-                </p>
-                <p class="text-[10px] text-white/40 mt-0.5">
-                  {new Date(tx.createdAt).toLocaleString()}
-                </p>
+              <div class="space-y-1 text-[10px] text-amber-200/90 font-mono">
+                {#if withdrawStatus.conditions.playthroughRemaining > 0}
+                  <p>· Playthrough: ${fmt(withdrawStatus.conditions.playthroughRemaining)}</p>
+                {/if}
+                {#if withdrawStatus.conditions.rakeRemaining > 0}
+                  <p>· Rake: ${fmt(withdrawStatus.conditions.rakeRemaining)}</p>
+                {/if}
+                {#if withdrawStatus.conditions.handsRemaining > 0}
+                  <p>· Hands: {withdrawStatus.conditions.handsRemaining}</p>
+                {/if}
+                {#if withdrawStatus.conditions.waitDaysRemaining > 0}
+                  <p>· Wait: {withdrawStatus.conditions.waitDaysRemaining} days</p>
+                {/if}
               </div>
             </div>
-            <span
-              class="text-[9px] px-2 py-1 rounded-full font-extrabold uppercase tracking-wider"
-              style="background: {sc}25; color: {sc}; border: 1px solid {sc}60;">{tx.status}</span
+          {/if}
+
+          {#if !withdrawStatus.hotWalletReady}
+            <div
+              class="rounded-xl p-3 flex items-center gap-2"
+              style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.35);"
             >
+              <Icon name="warning" size={14} color="#fca5a5" />
+              <p class="text-[11px] text-red-300 font-bold">Withdrawals temporarily disabled</p>
+            </div>
+          {/if}
+
+          <!-- Form -->
+          <div
+            class="rounded-2xl p-4 space-y-4"
+            style="
+              background: linear-gradient(180deg, rgba(15,31,58,0.7), rgba(11,19,36,0.9));
+              border: 1px solid rgba(212,175,55,0.15);
+            "
+          >
+            <div>
+              <p class="text-[10px] uppercase tracking-widest text-white/40 font-bold mb-2">
+                To Address
+              </p>
+              <div class="flex gap-2">
+                <input
+                  type="text"
+                  bind:value={withdrawAddress}
+                  placeholder="EQ..."
+                  disabled={!withdrawStatus.canWithdraw}
+                  class="flex-1 rounded-xl p-3 text-sm text-white border outline-none font-mono disabled:opacity-50"
+                  style="background: rgba(0,0,0,0.4); border-color: rgba(212,175,55,0.2);"
+                />
+                {#if walletAddress}
+                  <button
+                    on:click={useConnectedAddress}
+                    disabled={!withdrawStatus.canWithdraw}
+                    class="px-3 rounded-xl text-[10px] font-extrabold text-gold active:scale-95 disabled:opacity-50"
+                    style="
+                      background: linear-gradient(180deg, rgba(212,175,55,0.2), rgba(168,122,21,0.1));
+                      border: 1px solid rgba(212,175,55,0.4);
+                    "
+                  >
+                    USE
+                  </button>
+                {/if}
+              </div>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <p class="text-[10px] uppercase tracking-widest text-white/40 font-bold">
+                  Amount (TON)
+                </p>
+                <button
+                  on:click={setMaxWithdraw}
+                  disabled={!withdrawStatus.canWithdraw}
+                  class="text-[10px] font-extrabold text-gold active:opacity-70 disabled:opacity-40"
+                >
+                  MAX
+                </button>
+              </div>
+              <input
+                type="text"
+                inputmode="decimal"
+                bind:value={withdrawAmount}
+                placeholder="0.0"
+                disabled={!withdrawStatus.canWithdraw}
+                class="w-full rounded-xl p-3 text-2xl font-extrabold border outline-none tabular-nums disabled:opacity-50"
+                style="
+                  background: rgba(0,0,0,0.4);
+                  border-color: rgba(212,175,55,0.3);
+                  color: #f4e5a8;
+                  text-shadow: 0 0 8px rgba(212,175,55,0.4);
+                "
+              />
+            </div>
+
+            <div class="grid grid-cols-4 gap-1.5">
+              {#each [0.1, 0.5, 1, 5] as v}
+                <button
+                  on:click={() => (withdrawAmount = String(v))}
+                  disabled={!withdrawStatus.canWithdraw}
+                  class="py-2 rounded-lg text-[11px] font-extrabold text-white/85 active:scale-95 disabled:opacity-40"
+                  style="
+                    background: linear-gradient(180deg, rgba(30,58,138,0.4), rgba(15,31,58,0.6));
+                    border: 1px solid rgba(96,165,250,0.3);
+                  "
+                >
+                  {v}
+                </button>
+              {/each}
+            </div>
+
+            {#if withdrawAmount && parseFloat(withdrawAmount) > 0}
+              {@const amt = parseFloat(withdrawAmount)}
+              {@const usd = amt * withdrawStatus.tonPriceUsd}
+              <div
+                class="rounded-xl p-3 space-y-2"
+                style="background: rgba(0,0,0,0.35); border: 1px solid rgba(212,175,55,0.15);"
+              >
+                <div class="flex justify-between text-[11px]">
+                  <span class="text-white/50">Requested</span>
+                  <span class="text-white/85 font-bold tabular-nums">
+                    {amt} TON · ${fmt(usd)}
+                  </span>
+                </div>
+                <div class="flex justify-between text-[11px]">
+                  <span class="text-white/50">Network Fee</span>
+                  <span class="text-red-300 font-bold tabular-nums">
+                    −{withdrawStatus.feeTon} TON
+                  </span>
+                </div>
+                <div style="height: 1px; background: rgba(212,175,55,0.15);"></div>
+                <div class="flex justify-between text-[13px]">
+                  <span class="text-white/70 font-bold">You receive</span>
+                  <span class="text-emerald-400 font-extrabold tabular-nums">
+                    ~{estReceive.toFixed(4)} TON
+                  </span>
+                </div>
+              </div>
+            {/if}
+
+            <button
+              on:click={doWithdraw}
+              disabled={withdrawing ||
+                !withdrawStatus.canWithdraw ||
+                !withdrawAmount ||
+                !withdrawAddress}
+              class="w-full rounded-xl py-3.5 text-[13px] font-extrabold active:scale-[0.98] disabled:opacity-40 flex items-center justify-center gap-2"
+              style="
+                background: linear-gradient(180deg, #f4e5a8 0%, #d4af37 45%, #a87a15 100%);
+                color: #0a0800;
+                box-shadow: 0 4px 0 #7a560a, 0 8px 20px rgba(212,175,55,0.35), inset 0 1px 0 rgba(255,255,255,0.5);
+              "
+            >
+              {#if withdrawing}
+                <span>Sending…</span>
+              {:else if withdrawStatus.canWithdraw}
+                <Icon name="arrow-right" size={14} color="#0a0800" />
+                <span>Withdraw Instantly</span>
+              {:else}
+                <Icon name="lock" size={14} color="#0a0800" />
+                <span>Locked</span>
+              {/if}
+            </button>
+
+            <p class="text-[10px] text-white/40 text-center font-mono">
+              Automated · Flat {withdrawStatus.feeTon} TON fee
+            </p>
           </div>
-        {/each}
-      </div>
+        </div>
+      {/if}
+    {/if}
+
+    <!-- ═══════════ HISTORY ═══════════ -->
+    {#if activeTab === 'history'}
+      {#if history.tonTransactions.length === 0}
+        <div class="px-4">
+          <div
+            class="rounded-2xl p-8 text-center"
+            style="
+              background:
+                radial-gradient(ellipse at 50% 0%, rgba(212,175,55,0.08) 0%, transparent 60%),
+                linear-gradient(180deg, rgba(15,31,58,0.6), rgba(11,19,36,0.85));
+              border: 1px dashed rgba(212,175,55,0.3);
+            "
+          >
+            <div class="flex justify-center mb-3">
+              <div
+                class="w-14 h-14 rounded-2xl flex items-center justify-center"
+                style="background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.3);"
+              >
+                <Icon name="receipt" size={24} color="#d4af37" />
+              </div>
+            </div>
+            <p class="text-sm font-bold text-white/75">No transactions yet</p>
+            <p class="text-[11px] text-white/45 mt-1">
+              Your deposits and withdrawals will appear here
+            </p>
+          </div>
+        </div>
+      {:else}
+        <div class="px-4 space-y-2">
+          {#each history.tonTransactions as tx}
+            {@const isDep = tx.direction === 'deposit'}
+            {@const sc =
+              tx.status === 'confirmed'
+                ? '#10b981'
+                : tx.status === 'pending' || tx.status === 'processing'
+                  ? '#f59e0b'
+                  : '#ef4444'}
+            <div
+              class="rounded-2xl p-3.5 flex items-center gap-3"
+              style="
+                background:
+                  radial-gradient(ellipse at 100% 50%, {isDep
+                ? 'rgba(16,185,129,0.08)'
+                : 'rgba(212,175,55,0.08)'} 0%, transparent 60%),
+                  linear-gradient(180deg, rgba(15,31,58,0.7), rgba(11,19,36,0.9));
+                border: 1px solid rgba(212,175,55,0.12);
+              "
+            >
+              <!-- Direction icon -->
+              <div
+                class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                style="
+                  background: {isDep
+                  ? 'linear-gradient(180deg, rgba(16,185,129,0.25), rgba(5,150,105,0.1))'
+                  : 'linear-gradient(180deg, rgba(212,175,55,0.25), rgba(168,122,21,0.1))'};
+                  border: 1px solid {isDep ? 'rgba(16,185,129,0.45)' : 'rgba(212,175,55,0.45)'};
+                "
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke={isDep ? '#6ee7b7' : '#f4c95d'}
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="transform: rotate({isDep ? 0 : 180}deg);"
+                >
+                  <path d="M12 5v14M5 12l7 7 7-7" />
+                </svg>
+              </div>
+
+              <!-- Info -->
+              <div class="flex-1 min-w-0">
+                <p
+                  class="text-sm font-extrabold tabular-nums leading-tight"
+                  style="color: {isDep ? '#6ee7b7' : '#f4c95d'};"
+                >
+                  {isDep ? '+' : '−'}{fmt(tx.amountTon, 4)} TON
+                </p>
+                <p class="text-[10px] text-white/45 mt-0.5 truncate font-bold">
+                  {isDep ? 'Deposit' : 'Withdrawal'} · {fmtDate(tx.createdAt)}
+                </p>
+              </div>
+
+              <!-- Status badge -->
+              <span
+                class="text-[9px] px-2 py-1 rounded-full font-extrabold uppercase tracking-wider shrink-0"
+                style="background: {sc}25; color: {sc}; border: 1px solid {sc}60;"
+              >
+                {tx.status}
+              </span>
+            </div>
+          {/each}
+        </div>
+      {/if}
     {/if}
   {/if}
 
+  <!-- Toast: success -->
   {#if successMsg}
     <div
-      class="fixed top-20 left-1/2 -translate-x-1/2 z-40 rounded-2xl px-4 py-2.5 max-w-[90%]"
-      style="background: linear-gradient(180deg, rgba(6,78,59,0.95), rgba(5,150,105,0.9)); border: 1px solid rgba(16,185,129,0.6);"
+      class="fixed top-20 left-1/2 -translate-x-1/2 z-40 rounded-2xl px-4 py-2.5 max-w-[90%] flex items-center gap-2"
+      style="
+        background: linear-gradient(180deg, rgba(6,78,59,0.95), rgba(5,150,105,0.9));
+        border: 1px solid rgba(16,185,129,0.6);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+      "
     >
+      <Icon name="check" size={14} color="#a7f3d0" />
       <p class="text-xs font-extrabold text-emerald-100">{successMsg}</p>
     </div>
   {/if}
 
+  <!-- Toast: error -->
   {#if error}
     <div
-      class="fixed top-20 left-1/2 -translate-x-1/2 z-40 rounded-2xl px-4 py-2.5 max-w-[90%]"
-      style="background: linear-gradient(180deg, rgba(153,27,27,0.95), rgba(127,29,29,0.9)); border: 1px solid rgba(239,68,68,0.6);"
+      class="fixed top-20 left-1/2 -translate-x-1/2 z-40 rounded-2xl px-4 py-2.5 max-w-[90%] flex items-center gap-2"
+      style="
+        background: linear-gradient(180deg, rgba(153,27,27,0.95), rgba(127,29,29,0.9));
+        border: 1px solid rgba(239,68,68,0.6);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+      "
     >
+      <Icon name="warning" size={14} color="#fca5a5" />
       <p class="text-xs font-extrabold text-red-100">{error}</p>
     </div>
   {/if}

@@ -54,6 +54,12 @@ export function verifyTelegramInitData(initData: string, botToken: string): Pars
 }
 
 export function signToken(payload: object, secret: string, expiresInSec = 604800): string {
+  // Safety net: JWT must contain uid for auth middleware to work.
+  // A missing uid causes silent "notoken" errors downstream.
+  if (!(payload as any)?.uid) {
+    throw new Error('signToken: payload.uid is required');
+  }
+
   const header = { alg: 'HS256', typ: 'JWT' };
   const now = Math.floor(Date.now() / 1000);
   const body = { ...payload, iat: now, exp: now + expiresInSec };

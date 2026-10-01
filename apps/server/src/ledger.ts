@@ -97,6 +97,9 @@ export class LedgerService {
         );
       }
 
+      // Set session flag so the wallet-sync trigger knows this update
+      // is coming from ledger (not a rogue direct write).
+      await client.query(`SET LOCAL app.ledger_sync = 'on'`);
       for (const entry of input.entries) {
         const accRes = await client.query('SELECT owner_user_id FROM accounts WHERE id = $1', [
           entry.accountId,

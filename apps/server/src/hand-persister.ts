@@ -153,7 +153,7 @@ export class HandPersister {
     }
   }
 
-    private async persistFreeChips(
+  private async persistFreeChips(
     stacks: Array<{ seat: number; userId: number; stack: number }>,
   ): Promise<void> {
     for (const s of stacks) {
@@ -197,24 +197,20 @@ export class HandPersister {
           );
         }
       } catch (e: any) {
-        console.error(
-          `[hand-persister] persistFreeChips user ${s.userId} failed:`,
-          e.message,
-        );
+        console.error(`[hand-persister] persistFreeChips user ${s.userId} failed:`, e.message);
       }
     }
   }
 
-    private async persistRealMoney(
+  private async persistRealMoney(
     stacks: Array<{ seat: number; userId: number; stack: number }>,
   ): Promise<void> {
+    // Wallet balance is maintained exclusively by LedgerService.
+    // Here we only decrement bonus pending counters — the actual
+    // buy-in / cash-out / rake / payout movements happen in the
+    // ledger via buy-in charges and payHand rakeback.
     for (const s of stacks) {
       try {
-        await this.db.query(
-          `UPDATE wallets SET balance_usd = $1, updated_at = NOW() WHERE user_id = $2`,
-          [s.stack, s.userId],
-        );
-        // Decrement bonus pending counters
         await this.db.query(
           `UPDATE users
            SET bonus_real_hands_pending = GREATEST(0, bonus_real_hands_pending - 1)

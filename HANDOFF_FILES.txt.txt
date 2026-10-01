@@ -1,0 +1,2321 @@
+
+========== FILE: apps/mini-app/src/routes/Leaderboard.svelte ==========
+<script lang="ts">
+  import { onMount, onDestroy } from 'svelte';
+  import TopBar from '../components/TopBar.svelte';
+  import { api } from '../lib/api';
+  import Icon from '../components/Icon.svelte';
+
+  let loading = true;
+  let period: any = null;
+  let entries: any[] = [];
+  let myEntry: any = null;
+  let myRank: number | null = null;
+  let displayPrizePool = 0;
+  let refreshTimer: any = null;
+  let now = Date.now();
+  let clockTimer: any = null;
+
+  function fmt(n: any): string {
+    return Number(Number(n || 0).toFixed(2)).toFixed(2);
+  }
+  function handsLabel(n: number): string {
+    return n === 1 ? 'hand' : 'hands';
+  }
+  function normalize(e: any, idx: number) {
+    return {
+      user_id: e.user_id ?? e.userId ?? e.id,
+      rank: e.rank ?? idx + 1,
+      avatar_id: e.avatar_id ?? e.avatarId ?? 'spade',
+      display_name: e.display_name ?? e.name ?? 'Player',
+      hands_played: e.hands_played ?? 0,
+      total_won_usd: e.total_won_usd ?? 0,
+      prize_usd: e.prize_usd ?? 0,
+    };
+  }
+
+  async function loadAll() {
+    try {
+      const [cur, me] = await Promise.all([
+        api.request<any>('/api/leaderboard/current'),
+        api.request<any>('/api/leaderboard/me'),
+      ]);
+      if (cur.ok && cur.data) {
+        period = cur.data.period ?? null;
+        const raw = cur.data.entries ?? cur.data.leaderboard ?? [];
+        entries = raw.map((e: any, i: number) => normalize(e, i));
+        displayPrizePool = cur.data.livePrizePool ?? cur.data.prizePool ?? 0;
+      }
+      if (me.ok && me.data) {
+        myEntry = me.data.entry ? normalize(me.data.entry, 0) : null;
+        myRank = me.data.liveRank ?? me.data.rank ?? null;
+      }
+    } catch (e) {
+      console.error('[Leaderboard] load failed', e);
+    } finally {
+      loading = false;
+    }
+  }
+
+  async function refresh() {
+    try {
+      const res = await api.request<any>('/api/leaderboard/current');
+      if (res.ok && res.data) {
+        const raw = res.data.entries ?? res.data.leaderboard ?? [];
+        entries = raw.map((e: any, i: number) => normalize(e, i));
+        period = res.data.period ?? null;
+        displayPrizePool = res.data.livePrizePool ?? res.data.prizePool ?? 0;
+      }
+    } catch {}
+  }
+
+  onMount(async () => {
+    await loadAll();
+    refreshTimer = setInterval(refresh, 5000);
+    clockTimer = setInterval(() => {
+      now = Date.now();
+    }, 1000);
+  });
+
+  onDestroy(() => {
+    if (refreshTimer) clearInterval(refreshTimer);
+    if (clockTimer) clearInterval(clockTimer);
+  });
+
+  // Countdown to period end
+  $: endAt = period?.period_end ? new Date(period.period_end).getTime() : 0;
+  $: remainingMs = Math.max(0, endAt - now);
+  $: countdown = (() => {
+    if (remainingMs <= 0) return 'Ended';
+    const s = Math.floor(remainingMs / 1000);
+    const d = Math.floor(s / 86400);
+    const h = Math.floor((s % 86400) / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    if (d > 0) return `${d}d ${h}h ${m}m`;
+    if (h > 0) return `${h}h ${m}m ${sec}s`;
+    if (m > 0) return `${m}m ${sec}s`;
+    return `${sec}s`;
+  })();
+
+  // ─── Prize distribution ───
+  const PRIZE_DISTRIBUTION = [
+    { from: 1, to: 1, pct: 0.21, label: '1st' },
+    { from: 2, to: 2, pct: 0.12, label: '2nd' },
+    { from: 3, to: 3, pct: 0.08, label: '3rd' },
+    { from: 4, to: 4, pct: 0.06, label: '4th' },
+    { from: 5, to: 5, pct: 0.05, label: '5th' },
+    { from: 6, to: 10, pct: 0.04, label: '6-10' },
+    { from: 11, to: 15, pct: 0.025, label: '11-15' },
+    { from: 16, to: 20, pct: 0.015, label: '16-20' },
+    { from: 21, to: 25, pct: 0.01, label: '21-25' },
+    { from: 26, to: 30, pct: 0.006, label: '26-30' },
+  ];
+
+  function pctForRank(rank: number): number {
+    const tier = PRIZE_DISTRIBUTION.find((t) => rank >= t.from && rank <= t.to);
+    return tier ? tier.pct : 0;
+  }
+
+  function prizeForRank(rank: number, pool: number): number {
+    const pct = pctForRank(rank);
+    if (pct === 0) return 0;
+    return Math.round(pool * pct * 100) / 100;
+  }
+
+  // Season name
+  $: seasonName = (() => {
+    if (!period?.period_start) return 'Season';
+    try {
+      const d = new Date(period.period_start);
+      return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    } catch {
+      return 'Season';
+    }
+  })();
+
+  $: first = entries[0] ?? null;
+  $: second = entries[1] ?? null;
+  $: third = entries[2] ?? null;
+  $: rest = entries.slice(3);
+</script>
+
+<div class="pb-28">
+  <TopBar />
+
+  <!-- HEADER -->
+  <div class="px-4 mt-2 mb-4">
+    <div class="flex items-center gap-3">
+      <!-- Trophy icon -->
+      <div
+        class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 relative"
+        style="
+          background:
+            radial-gradient(circle at 30% 30%, rgba(244,201,93,0.4), rgba(168,121,34,0.15));
+          border: 1.5px solid rgba(244,201,93,0.55);
+          box-shadow: 0 4px 16px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.15), 0 0 20px rgba(244,201,93,0.2);
+        "
+      >
+        <Icon name="trophy" size={24} color="#f4c95d" />
+      </div>
+
+      <div class="flex-1 min-w-0">
+        <h1
+          class="text-[26px] font-extrabold leading-none tracking-tight"
+          style="
+            background: linear-gradient(180deg, #ffffff 0%, #f4e5a8 50%, #d4af37 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 8px rgba(244,201,93,0.4));
+          "
+        >
+          Leaderboard
+        </h1>
+        {#if period?.period_start}
+          <p class="text-[10px] text-gold/70 mt-1 uppercase tracking-[0.2em] font-extrabold">
+            {seasonName}
+          </p>
+        {:else}
+          <p class="text-[10px] text-white/40 mt-1 font-bold">
+            Top players this month
+          </p>
+        {/if}
+      </div>
+
+      {#if period && remainingMs > 0}
+        <div
+          class="rounded-2xl px-3 py-2 flex flex-col items-end shrink-0 relative overflow-hidden"
+          style="
+            background:
+              radial-gradient(ellipse at 100% 0%, rgba(239,68,68,0.15) 0%, transparent 70%),
+              linear-gradient(180deg, rgba(15,31,58,0.9), rgba(7,14,27,0.95));
+            border: 1px solid rgba(239,68,68,0.4);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+          "
+        >
+          <div class="flex items-center gap-1 mb-1">
+            <span
+              class="w-1 h-1 rounded-full bg-red-500 animate-pulse"
+              style="box-shadow: 0 0 4px #ef4444;"
+            ></span>
+            <span class="text-[8px] font-extrabold text-red-400 uppercase tracking-wider leading-none">
+              Ends in
+            </span>
+          </div>
+          <span class="text-[12px] font-extrabold text-white tabular-nums leading-none">
+            {countdown}
+          </span>
+        </div>
+      {/if}
+    </div>
+  </div>
+
+  <!-- PRIZE POOL HERO -->
+  <div class="px-4 mb-4">
+    <div
+      class="rounded-3xl p-4 relative overflow-hidden"
+      style="
+        background:
+          radial-gradient(ellipse at 100% 0%, rgba(244,201,93,0.28) 0%, transparent 60%),
+          radial-gradient(ellipse at 0% 100%, rgba(139,92,246,0.15) 0%, transparent 60%),
+          linear-gradient(135deg, #142d52 0%, #1a1240 60%, #05080f 100%);
+        border: 1.5px solid rgba(244,201,93,0.45);
+        box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 0 40px rgba(244,201,93,0.15);
+      "
+    >
+      <!-- Decorative glow -->
+      <div
+        class="absolute -top-16 -right-16 w-48 h-48 rounded-full opacity-25 pointer-events-none"
+        style="background: radial-gradient(circle, #f4c95d, transparent 70%);"
+      ></div>
+
+      <div class="relative">
+        <div class="flex items-center gap-2 mb-1.5">
+          <Icon name="trophy" size={14} color="#f4c95d" />
+          <p class="text-[10px] uppercase tracking-widest text-gold/80 font-extrabold">
+            Prize Pool
+          </p>
+          <span
+            class="ml-auto flex items-center gap-1 px-1.5 py-0.5 rounded-full"
+            style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.4);"
+          >
+            <span
+              class="w-1 h-1 rounded-full bg-emerald-400 animate-pulse"
+              style="box-shadow: 0 0 4px #34d399;"
+            ></span>
+            <span class="text-[8px] font-extrabold text-emerald-300 tracking-wider">LIVE</span>
+          </span>
+        </div>
+
+        <div class="flex items-baseline gap-2 mb-3">
+          <span
+            class="text-5xl font-extrabold tabular-nums leading-none"
+            style="
+              background: linear-gradient(180deg, #f4e5a8, #f4c95d 45%, #a87a15);
+              -webkit-background-clip: text;
+              background-clip: text;
+              -webkit-text-fill-color: transparent;
+              letter-spacing: -0.03em;
+              filter: drop-shadow(0 0 20px rgba(244,201,93,0.3));
+            "
+          >
+            ${fmt(displayPrizePool)}
+          </span>
+        </div>
+
+        <div
+          class="flex items-center justify-between pt-3"
+          style="border-top: 1px solid rgba(244,201,93,0.2);"
+        >
+          <div class="flex items-center gap-1.5">
+            <Icon name="users" size={11} color="rgba(255,255,255,0.5)" />
+            <span class="text-[10px] text-white/60 font-bold">
+              Top 30 paid out
+            </span>
+          </div>
+          {#if period}
+            <span class="text-[9px] font-mono text-white/40">
+              {period.period_start?.slice(5, 10)} → {period.period_end?.slice(5, 10)}
+            </span>
+          {/if}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  {#if loading}
+    <div class="px-4 space-y-3">
+      {#each Array(4) as _}
+        <div
+          class="rounded-2xl h-[72px]"
+          style="background: linear-gradient(180deg, rgba(15,31,58,0.6), rgba(11,19,36,0.8));"
+        ></div>
+      {/each}
+    </div>
+  {:else if entries.length === 0}
+    <div class="px-4">
+      <div
+        class="rounded-2xl p-6 text-center relative overflow-hidden"
+        style="
+          background:
+            radial-gradient(ellipse at 50% 0%, rgba(212,175,55,0.12) 0%, transparent 60%),
+            linear-gradient(180deg, rgba(15,31,58,0.6), rgba(11,19,36,0.85));
+          border: 1px dashed rgba(212,175,55,0.3);
+        "
+      >
+        <div class="flex justify-center mb-3">
+          <img
+            src="/leaderboard-empty.png"
+            alt=""
+            class="w-32 h-32 object-contain"
+            style="filter: drop-shadow(0 8px 24px rgba(244,201,93,0.4));"
+            draggable="false"
+          />
+        </div>
+        <p class="text-sm font-extrabold text-white">Season hasn't started</p>
+        <p class="text-[11px] text-white/55 mt-1 font-bold">
+          Play real-money hands to appear on the board
+        </p>
+      </div>
+    </div>
+  {:else}
+    <!-- PODIUM -->
+    {#if first}
+      <div class="px-4 mb-4">
+        <div class="grid grid-cols-3 gap-2 items-end">
+          <!-- 2nd -->
+          <div class="flex flex-col items-center" style="order: 1;">
+            {#if second}
+              <div class="flex flex-col items-center">
+                <!-- Silver medal — above avatar -->
+                <img
+                  src="/medal-silver.png"
+                  alt="2nd"
+                  class="w-11 h-11 object-contain relative z-30"
+                  style="filter: drop-shadow(0 6px 14px rgba(148,163,184,0.8));"
+                  draggable="false"
+                />
+
+                <div
+                  class="rounded-full p-[3px] relative z-20 mt-1.5"
+                  style="
+                    background: linear-gradient(180deg, #e5e7eb, #94a3b8 50%, #475569);
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.7), 0 0 16px rgba(148,163,184,0.4);
+                  "
+                >
+                  <div
+                    class="w-16 h-16 rounded-full overflow-hidden"
+                    style="background: radial-gradient(circle, #1a3a5c, #05080f);"
+                  >
+                    <img
+                      src="/avatars/avatar-{second.avatar_id}.png"
+                      alt={second.display_name}
+                      class="w-full h-full object-cover"
+                      style="transform: scale(1.18);"
+                      draggable="false"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div
+                class="w-full rounded-2xl pt-3 pb-2.5 px-2 text-center relative overflow-hidden mt-2"
+                style="
+                  min-height: 106px;
+                  background:
+                    radial-gradient(ellipse at 50% 0%, rgba(148,163,184,0.15) 0%, transparent 60%),
+                    linear-gradient(180deg, rgba(15,31,58,0.9), rgba(7,14,27,0.95));
+                  border: 1px solid rgba(148,163,184,0.35);
+                  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+                "
+              >
+                <p class="text-[11px] font-extrabold text-white truncate leading-tight">
+                  {second.display_name}
+                </p>
+                <p class="text-[12px] font-extrabold text-emerald-400 tabular-nums mt-1 leading-none">
+                  +${fmt(second.total_won_usd)}
+                </p>
+                <div
+                  class="mt-1.5 pt-1.5 flex items-center justify-center gap-1"
+                  style="border-top: 1px solid rgba(148,163,184,0.2);"
+                >
+                  <Icon name="trophy" size={9} color="#cbd5e1" />
+                  <span class="text-[10px] font-extrabold text-slate-200 tabular-nums leading-none">
+                    ${fmt(prizeForRank(2, displayPrizePool))}
+                  </span>
+                  <span class="text-[8px] text-white/40 font-bold leading-none">
+                    prize
+                  </span>
+                </div>
+                <p class="text-[8px] text-white/35 mt-0.5">
+                  {second.hands_played} hands
+                </p>
+              </div>
+            {:else}
+              <div class="w-full rounded-2xl h-[130px]" style="border: 1px dashed rgba(255,255,255,0.08);"></div>
+            {/if}
+          </div>
+
+          <!-- 1st -->
+          <div class="flex flex-col items-center" style="order: 2;">
+            {#if first}
+              <div class="flex flex-col items-center">
+                <!-- Crown ABOVE everything -->
+                <img
+                  src="/crown.webp"
+                  alt=""
+                  class="w-7 h-7 object-contain relative z-40"
+                  style="filter: drop-shadow(0 4px 10px rgba(244,201,93,0.9));"
+                  draggable="false"
+                />
+
+                <!-- Gold medal — above avatar, no overlap -->
+                <img
+                  src="/medal-gold.png"
+                  alt="1st"
+                  class="w-12 h-12 object-contain relative z-30 mt-0.5"
+                  style="filter: drop-shadow(0 8px 20px rgba(244,201,93,0.9));"
+                  draggable="false"
+                />
+
+                <!-- Avatar circle below medal -->
+                <div
+                  class="rounded-full p-[3px] relative z-20 mt-1.5"
+                  style="
+                    background: linear-gradient(180deg, #f4e5a8, #d4af37 50%, #a87a15);
+                    box-shadow: 0 6px 18px rgba(0,0,0,0.8), 0 0 24px rgba(244,201,93,0.7);
+                  "
+                >
+                  <div
+                    class="w-16 h-16 rounded-full overflow-hidden"
+                    style="background: radial-gradient(circle, #1a3a5c, #05080f);"
+                  >
+                    <img
+                      src="/avatars/avatar-{first.avatar_id}.png"
+                      alt={first.display_name}
+                      class="w-full h-full object-cover"
+                      style="transform: scale(1.18);"
+                      draggable="false"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div
+                class="w-full rounded-2xl pt-3 pb-2.5 px-2 text-center relative overflow-hidden mt-2"
+                style="
+                  min-height: 118px;
+                  background:
+                    radial-gradient(ellipse at 50% 0%, rgba(244,201,93,0.25) 0%, transparent 60%),
+                    linear-gradient(180deg, rgba(20,45,82,0.9), rgba(7,14,27,0.95));
+                  border: 1.5px solid rgba(244,201,93,0.55);
+                  box-shadow: 0 8px 24px rgba(0,0,0,0.5), 0 0 24px rgba(244,201,93,0.25);
+                "
+              >
+                <p
+                  class="text-[12px] font-extrabold leading-tight truncate"
+                  style="
+                    background: linear-gradient(180deg, #ffffff, #f4e5a8);
+                    -webkit-background-clip: text;
+                    background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                  "
+                >
+                  {first.display_name}
+                </p>
+                <p class="text-[13px] font-extrabold text-emerald-400 tabular-nums mt-1 leading-none">
+                  +${fmt(first.total_won_usd)}
+                </p>
+                <div
+                  class="mt-1.5 pt-1.5 flex items-center justify-center gap-1"
+                  style="border-top: 1px solid rgba(244,201,93,0.2);"
+                >
+                  <Icon name="trophy" size={9} color="#f4c95d" />
+                  <span class="text-[10px] font-extrabold text-gold tabular-nums leading-none">
+                    ${fmt(prizeForRank(1, displayPrizePool))}
+                  </span>
+                  <span class="text-[8px] text-white/40 font-bold leading-none">
+                    prize
+                  </span>
+                </div>
+                <p class="text-[8px] text-white/35 mt-0.5">
+                  {first.hands_played} hands
+                </p>
+              </div>
+            {:else}
+              <div class="w-full rounded-2xl h-[160px]" style="border: 1px dashed rgba(255,255,255,0.08);"></div>
+            {/if}
+          </div>
+
+          <!-- 3rd -->
+          <div class="flex flex-col items-center" style="order: 3;">
+            {#if third}
+              <div class="flex flex-col items-center">
+                <!-- Bronze medal — above avatar -->
+                <img
+                  src="/medal-bronze.png"
+                  alt="3rd"
+                  class="w-11 h-11 object-contain relative z-30"
+                  style="filter: drop-shadow(0 6px 14px rgba(217,119,6,0.8));"
+                  draggable="false"
+                />
+
+                <div
+                  class="rounded-full p-[3px] relative z-20 mt-1.5"
+                  style="
+                    background: linear-gradient(180deg, #d97706, #92400e 50%, #451a03);
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.7), 0 0 16px rgba(217,119,6,0.4);
+                  "
+                >
+                  <div
+                    class="w-16 h-16 rounded-full overflow-hidden"
+                    style="background: radial-gradient(circle, #1a3a5c, #05080f);"
+                  >
+                    <img
+                      src="/avatars/avatar-{third.avatar_id}.png"
+                      alt={third.display_name}
+                      class="w-full h-full object-cover"
+                      style="transform: scale(1.18);"
+                      draggable="false"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div
+                class="w-full rounded-2xl pt-3 pb-2.5 px-2 text-center relative overflow-hidden mt-2"
+                style="
+                  min-height: 96px;
+                  background:
+                    radial-gradient(ellipse at 50% 0%, rgba(217,119,6,0.15) 0%, transparent 60%),
+                    linear-gradient(180deg, rgba(15,31,58,0.9), rgba(7,14,27,0.95));
+                  border: 1px solid rgba(217,119,6,0.35);
+                  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+                "
+              >
+                <p class="text-[11px] font-extrabold text-white truncate leading-tight">
+                  {third.display_name}
+                </p>
+                <p class="text-[12px] font-extrabold text-emerald-400 tabular-nums mt-1 leading-none">
+                  +${fmt(third.total_won_usd)}
+                </p>
+                <div
+                  class="mt-1.5 pt-1.5 flex items-center justify-center gap-1"
+                  style="border-top: 1px solid rgba(217,119,6,0.2);"
+                >
+                  <Icon name="trophy" size={9} color="#d97706" />
+                  <span class="text-[10px] font-extrabold tabular-nums leading-none" style="color: #f59e0b;">
+                    ${fmt(prizeForRank(3, displayPrizePool))}
+                  </span>
+                  <span class="text-[8px] text-white/40 font-bold leading-none">
+                    prize
+                  </span>
+                </div>
+                <p class="text-[8px] text-white/35 mt-0.5">
+                  {third.hands_played} hands
+                </p>
+              </div>
+            {:else}
+              <div class="w-full rounded-2xl h-[120px]" style="border: 1px dashed rgba(255,255,255,0.08);"></div>
+            {/if}
+          </div>
+        </div>
+      </div>
+    {/if}
+
+    <!-- REST -->
+    {#if rest.length === 0 && entries.length < 10}
+      <div class="px-4 mb-4">
+        <div
+          class="rounded-2xl p-4 flex items-center gap-3"
+          style="
+            background:
+              radial-gradient(ellipse at 0% 50%, rgba(212,175,55,0.12) 0%, transparent 60%),
+              linear-gradient(135deg, rgba(15,31,58,0.9), rgba(7,14,27,0.95));
+            border: 1px dashed rgba(212,175,55,0.35);
+          "
+        >
+          <div
+            class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+            style="
+              background: linear-gradient(180deg, rgba(244,201,93,0.2), rgba(168,121,34,0.08));
+              border: 1px solid rgba(244,201,93,0.4);
+            "
+          >
+            <Icon name="target" size={20} color="#f4c95d" />
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-[13px] font-extrabold text-white mb-1">
+              Climb the ranks
+            </p>
+            <p class="text-[10px] text-white/55 font-bold">
+              Play real-money hands to appear on this board
+            </p>
+          </div>
+          <Icon name="arrow-right" size={16} color="#f4c95d" />
+        </div>
+      </div>
+    {/if}
+
+    {#if rest.length > 0}
+      <div class="px-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="w-1.5 h-1.5 rounded-full bg-gold" style="box-shadow: 0 0 6px #d4af37;"></span>
+          <p class="text-[10px] font-extrabold text-white/60 uppercase tracking-widest">
+            Rank 4 — {entries.length}
+          </p>
+        </div>
+
+        <div class="space-y-1.5">
+          {#each rest as e (e.user_id)}
+            {@const isMe = e.user_id === myEntry?.user_id}
+            {@const rankPrize = prizeForRank(e.rank, displayPrizePool)}
+            <div
+              class="rounded-xl px-3 py-2.5 flex items-center gap-3 relative overflow-hidden"
+              style="
+                background:
+                  {isMe
+                    ? 'linear-gradient(90deg, rgba(212,175,55,0.15), rgba(212,175,55,0.03))'
+                    : 'linear-gradient(180deg, rgba(15,31,58,0.7), rgba(7,14,27,0.9))'};
+                border: 1px solid {isMe ? 'rgba(212,175,55,0.5)' : 'rgba(255,255,255,0.06)'};
+                {isMe ? 'box-shadow: 0 0 16px rgba(212,175,55,0.2);' : ''}
+              "
+            >
+              <!-- Rank -->
+              <div
+                class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-[11px] font-extrabold tabular-nums"
+                style="
+                  background: {isMe ? 'rgba(212,175,55,0.2)' : 'rgba(0,0,0,0.4)'};
+                  color: {isMe ? '#f4e5a8' : 'rgba(255,255,255,0.55)'};
+                  border: 1px solid {isMe
+                    ? 'rgba(212,175,55,0.5)'
+                    : 'rgba(255,255,255,0.08)'};
+                "
+              >
+                #{e.rank}
+              </div>
+
+              <!-- Avatar -->
+              <div
+                class="w-9 h-9 rounded-full overflow-hidden shrink-0"
+                style="background: radial-gradient(circle, #1a3a5c, #05080f);"
+              >
+                <img
+                  src="/avatars/avatar-{e.avatar_id}.png"
+                  alt={e.display_name}
+                  class="w-full h-full object-cover"
+                  style="transform: scale(1.15);"
+                  draggable="false"
+                />
+              </div>
+
+              <!-- Name -->
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-1.5">
+                  <p
+                    class="text-[12px] font-extrabold truncate leading-tight"
+                    style="color: {isMe ? '#f4e5a8' : '#ffffff'};"
+                  >
+                    {e.display_name}
+                  </p>
+                  {#if isMe}
+                    <span
+                      class="text-[8px] font-extrabold px-1.5 py-0.5 rounded-full tracking-wider"
+                      style="
+                        background: linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15);
+                        color: #0a0800;
+                      "
+                    >
+                      YOU
+                    </span>
+                  {/if}
+                </div>
+                <p class="text-[9px] text-white/40 mt-0.5 font-bold">
+                  {e.hands_played} {handsLabel(e.hands_played)}
+                </p>
+              </div>
+
+              <!-- Amount -->
+              <div class="text-right shrink-0">
+                <p class="text-[13px] font-extrabold text-emerald-400 tabular-nums leading-none">
+                  +${fmt(e.total_won_usd)}
+                </p>
+                {#if rankPrize > 0}
+                  <div class="flex items-center gap-1 justify-end mt-1 leading-none">
+                    <Icon name="trophy" size={9} color="#d4af37" />
+                    <span class="text-[9px] font-bold text-gold tabular-nums">
+                      ${fmt(rankPrize)}
+                    </span>
+                  </div>
+                {/if}
+              </div>
+            </div>
+          {/each}
+        </div>
+      </div>
+    {/if}
+  {/if}
+</div>
+
+<!-- STICKY: MY RANK -->
+{#if myRank && (myEntry || myRank > 30)}
+  <div
+    class="fixed bottom-20 left-4 right-4 max-w-[480px] mx-auto rounded-2xl p-3 flex items-center gap-3 z-30"
+    style="
+      background:
+        radial-gradient(ellipse at 0% 0%, rgba(244,201,93,0.15) 0%, transparent 60%),
+        linear-gradient(180deg, rgba(8,13,36,0.98), rgba(5,8,15,0.98));
+      border: 1.5px solid rgba(244,201,93,0.5);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.7), 0 0 24px rgba(244,201,93,0.2);
+    "
+  >
+    <div
+      class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+      style="
+        background: linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15);
+        box-shadow: 0 2px 0 #7a560a, 0 4px 12px rgba(212,175,55,0.4);
+      "
+    >
+      <span class="text-[12px] font-extrabold text-black leading-none">
+        {myRank <= 3 ? '★' : `#${myRank}`}
+      </span>
+    </div>
+    <div class="flex-1 min-w-0">
+      <p class="text-[11px] font-extrabold text-white leading-none">
+        Your Rank
+      </p>
+      <p class="text-[9px] text-white/50 mt-1 leading-none">
+        {myEntry?.hands_played || 0} hands · +${fmt(myEntry?.total_won_usd || 0)}
+      </p>
+    </div>
+    {#if myEntry?.prize_usd > 0}
+      <div class="text-right shrink-0">
+        <p class="text-[9px] text-gold/70 font-bold uppercase tracking-wider leading-none mb-1">
+          Prize
+        </p>
+        <p class="text-[13px] font-extrabold text-gold tabular-nums leading-none">
+          ${fmt(myEntry.prize_usd)}
+        </p>
+      </div>
+    {/if}
+  </div>
+{/if}
+
+========== FILE: apps/mini-app/src/routes/Home.svelte ==========
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import { auth } from '../stores/auth';
+  import { api } from '../lib/api';
+  import TopBar from '../components/TopBar.svelte';
+  import PlayingCard from '../components/PlayingCard.svelte';
+  import QuickSeatSheet from '../components/QuickSeatSheet.svelte';
+  import FreerollBanner from '../components/FreerollBanner.svelte';
+  import QuickActions from '../components/QuickActions.svelte';
+  import LiveNowGrid from '../components/LiveNowGrid.svelte';
+  import RewardsRow from '../components/RewardsRow.svelte';
+  import TopWinnersToday from '../components/TopWinnersToday.svelte';
+  import UserProgress from '../components/UserProgress.svelte';
+  import Icon from '../components/Icon.svelte';
+
+  export let onNavigate: (page: any) => void = () => {};
+  export let onQuickSeat: (variant: string, mode: 'free' | 'real') => void = () => {};
+
+  let sheetOpen = false;
+
+  // Home data from /api/home
+  let livePlayers = 0;
+  let activeTables = 0;
+  let activeTournaments = 0;
+  let topWinners: any[] = [];
+  let userProgress: any = null;
+
+  $: chips = Number($auth.freeChips?.chips || 0);
+
+  const games = [
+    {
+      id: 'holdem',
+      title: "Texas Hold'em",
+      sub: 'No-Limit',
+      cards: [
+        { rank: 'A', suit: '♠' as const, rot: -12 },
+        { rank: 'K', suit: '♥' as const, rot: 8 },
+      ],
+    },
+    {
+      id: 'omaha4',
+      title: 'Omaha 4',
+      sub: 'Four Hole Cards',
+      cards: [
+        { rank: 'A', suit: '♦' as const, rot: -14 },
+        { rank: 'K', suit: '♠' as const, rot: 6 },
+      ],
+    },
+    {
+      id: 'omaha5',
+      title: 'Omaha 5',
+      sub: 'Five Hole Cards',
+      cards: [
+        { rank: 'A', suit: '♣' as const, rot: -10 },
+        { rank: 'K', suit: '♥' as const, rot: 10 },
+      ],
+    },
+    {
+      id: 'tourney',
+      title: 'Tournaments',
+      sub: 'Big Prize Pools',
+      cards: [
+        { rank: 'A', suit: '♥' as const, rot: -8 },
+        { rank: 'K', suit: '♦' as const, rot: 12 },
+      ],
+    },
+  ];
+
+  async function loadData() {
+    try {
+      const res = await api.request<{
+        onlineUsers: number;
+        activeTables: number;
+        activeTournaments: number;
+        topWinnersToday: any[];
+        userProgress: any;
+      }>('/api/home');
+      if (res.ok && res.data) {
+        livePlayers = Number(res.data.onlineUsers) || 0;
+        activeTables = Number(res.data.activeTables) || 0;
+        activeTournaments = Number(res.data.activeTournaments) || 0;
+        topWinners = res.data.topWinnersToday || [];
+        userProgress = res.data.userProgress || null;
+      }
+    } catch {
+      // silent — Home still works without live data
+    }
+  }
+
+  let refreshTimer: any = null;
+
+  onMount(() => {
+    loadData();
+    refreshTimer = setInterval(loadData, 10_000);
+    return () => {
+      if (refreshTimer) clearInterval(refreshTimer);
+    };
+  });
+
+  function openGame(g: (typeof games)[0]) {
+    if (g.id === 'tourney') {
+      onNavigate('tournaments');
+      return;
+    }
+    onQuickSeat(g.id, 'free');
+  }
+
+  function handleConfirm(data: { variant: string; mode: 'free' | 'real' }) {
+    sheetOpen = false;
+    onQuickSeat(data.variant, data.mode);
+  }
+</script>
+
+<div class="pb-28 lg:pb-8">
+  <!-- TOP BAR -->
+  <TopBar onOpenSettings={() => onNavigate('profile')} onOpenWallet={() => onNavigate('wallet')} />
+
+  <!-- ============ FREEROLL BANNER (if active) ============ -->
+  <FreerollBanner onOpen={() => onNavigate('tournaments')} />
+
+  <!-- ============ HERO ============ -->
+  <div
+    class="relative mt-2 mb-3 mx-4 rounded-2xl overflow-hidden"
+    style="
+      border: 1px solid rgba(212,175,55,0.35);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6), 0 0 20px rgba(212,175,55,0.12);
+      height: 220px;
+    "
+  >
+    <img
+      src="/hero-scene.jpg"
+      alt="Flop Club"
+      class="absolute inset-0 w-full h-full object-cover"
+      draggable="false"
+    />
+    <!-- Left-to-right gradient: darkens LEFT for text readability -->
+    <div
+      class="absolute inset-0"
+      style="background: linear-gradient(90deg, rgba(5,8,15,0.92) 0%, rgba(5,8,15,0.75) 30%, rgba(5,8,15,0.2) 55%, transparent 75%);"
+    ></div>
+    <!-- Top-to-bottom soft vignette -->
+    <div
+      class="absolute inset-0"
+      style="background: linear-gradient(180deg, rgba(5,8,15,0.5) 0%, transparent 25%, transparent 70%, rgba(5,8,15,0.6) 100%);"
+    ></div>
+
+    <!-- Live stats pill — top right -->
+    <div
+      class="absolute top-3 right-3 flex items-center gap-2 px-2.5 py-1 rounded-full z-10"
+      style="
+        background: rgba(5,8,15,0.75);
+        border: 1px solid rgba(16,185,129,0.4);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      "
+    >
+      <span
+        class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"
+        style="box-shadow: 0 0 6px #34d399;"
+      ></span>
+      <span class="text-[11px] font-extrabold text-emerald-300 tabular-nums leading-none">
+        {livePlayers}
+      </span>
+      <span class="text-[8px] text-white/60 font-bold uppercase tracking-wider leading-none"
+        >online</span
+      >
+      <span class="w-px h-3" style="background: rgba(255,255,255,0.2);"></span>
+      <span class="text-[11px] font-extrabold text-gold tabular-nums leading-none">
+        {activeTables}
+      </span>
+      <span class="text-[8px] text-white/60 font-bold uppercase tracking-wider leading-none"
+        >tables</span
+      >
+    </div>
+
+    <!-- Content — left-aligned, vertically centered -->
+    <div class="relative h-full flex flex-col justify-center p-4 pl-5">
+      <p
+        class="text-[9px] font-extrabold tracking-[0.3em] uppercase mb-2"
+        style="color: #e8c45a; text-shadow: 0 2px 8px rgba(0,0,0,0.8);"
+      >
+        Welcome Back
+      </p>
+      <h2
+        class="text-[22px] font-extrabold leading-tight mb-1.5"
+        style="
+          background: linear-gradient(180deg, #ffffff 0%, #f4e5a8 60%, #d4af37 100%);
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          filter: drop-shadow(0 4px 16px rgba(0,0,0,0.85)) drop-shadow(0 2px 8px rgba(0,0,0,0.6));
+        "
+      >
+        Play Poker<br />Win Big
+      </h2>
+      <p
+        class="text-[10px] text-white/85 mb-3 max-w-[170px] leading-relaxed"
+        style="text-shadow: 0 2px 8px rgba(0,0,0,0.9);"
+      >
+        Real players. Real action.
+      </p>
+
+      <div class="flex items-end justify-between gap-3">
+        <button
+          on:click={() => (sheetOpen = true)}
+          class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl font-extrabold text-[12px] active:scale-95 transition-all shrink-0"
+          style="
+            background: linear-gradient(180deg, #f4e5a8 0%, #d4af37 45%, #a87a15 100%);
+            color: #0a0800;
+            box-shadow: 0 4px 0 #7a560a, 0 8px 24px rgba(212,175,55,0.5), inset 0 1px 0 rgba(255,255,255,0.5);
+          "
+        >
+          <span>Play Now</span>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="3"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M5 12h14M13 5l7 7-7 7" />
+          </svg>
+        </button>
+
+        <!-- Verified badge — bottom right -->
+        <div class="flex items-center gap-2 shrink-0">
+          <Icon name="shield" size={14} color="#6ee7b7" />
+          <div class="text-right">
+            <p
+              class="text-[10px] font-extrabold text-emerald-300 leading-none"
+              style="text-shadow: 0 2px 6px rgba(0,0,0,0.9);"
+            >
+              Verified
+            </p>
+            <p
+              class="text-[7px] text-white/55 uppercase tracking-wider font-bold mt-0.5"
+              style="text-shadow: 0 1px 4px rgba(0,0,0,0.9);"
+            >
+              Provably Fair
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ QUICK ACTIONS ============ -->
+  <QuickActions
+    onDeposit={() => onNavigate('wallet')}
+    onShop={() => onNavigate('shop')}
+    onLeaderboard={() => onNavigate('leaderboard')}
+  />
+
+  <!-- ============ POPULAR GAMES ============ -->
+  <div class="flex items-center justify-between mb-3 px-4">
+    <h2 class="text-base font-extrabold text-white">Popular Games</h2>
+    <button
+      on:click={() => onNavigate('tables')}
+      class="text-[10px] font-bold text-gold active:opacity-70 flex items-center gap-1"
+    >
+      <span>See All</span>
+      <Icon name="arrow-right" size={10} />
+    </button>
+  </div>
+
+  <div class="flex gap-2.5 overflow-x-auto no-scrollbar px-4 pb-4 mb-4 snap-x snap-mandatory">
+    {#each games as g}
+      <button
+        on:click={() => openGame(g)}
+        class="shrink-0 rounded-2xl relative overflow-hidden active:scale-[0.97] transition-all text-left snap-start"
+        style="
+          width: 118px;
+          background: linear-gradient(180deg, rgba(15,31,58,0.9), rgba(5,8,15,0.95));
+          border: 1.5px solid rgba(212,175,55,0.3);
+          box-shadow: 0 6px 18px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05);
+        "
+      >
+        <div
+          class="relative w-full h-[74px] flex items-center justify-center overflow-hidden"
+          style="
+            background: radial-gradient(ellipse at 50% 40%, #142d52 0%, #0a1a33 55%, #05080f 100%);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+          "
+        >
+          <div
+            class="absolute inset-0 opacity-20"
+            style="background-image: url('/bg-table-pattern.webp'); background-size: 180px; background-position: center;"
+          ></div>
+          <div
+            class="absolute inset-1.5 rounded-[50%]"
+            style="border: 1px solid rgba(212,175,55,0.3);"
+          ></div>
+
+          <div class="flex justify-center -space-x-2.5 relative z-10">
+            {#each g.cards as c}
+              <div
+                style="transform: rotate({c.rot}deg); filter: drop-shadow(0 2px 5px rgba(0,0,0,0.7));"
+              >
+                <PlayingCard rank={c.rank} suit={c.suit} size="xs" />
+              </div>
+            {/each}
+          </div>
+        </div>
+
+        <div class="px-2 py-1.5">
+          <p class="text-[10px] font-extrabold text-white truncate leading-tight">{g.title}</p>
+          <p class="text-[8px] text-white/45 mt-0.5 truncate leading-tight">{g.sub}</p>
+        </div>
+      </button>
+    {/each}
+  </div>
+
+  <!-- ============ LIVE NOW (cash tables + tournaments) ============ -->
+  <LiveNowGrid
+    {activeTables}
+    {activeTournaments}
+    onTables={() => onNavigate('tables')}
+    onTournaments={() => onNavigate('tournaments')}
+  />
+
+  <!-- ============ REWARDS ROW (Free Chips + Daily Bonus) ============ -->
+  <RewardsRow onPlayFree={() => onQuickSeat('holdem', 'free')} />
+
+  <!-- ============ TOP WINNERS TODAY ============ -->
+  <TopWinnersToday winners={topWinners} onSeeAll={() => onNavigate('leaderboard')} />
+
+  <!-- ============ USER PROGRESS (Level + Tier) ============ -->
+  <UserProgress progress={userProgress} onOpen={() => onNavigate('loyalty')} />
+</div>
+
+<QuickSeatSheet
+  bind:open={sheetOpen}
+  freeChips={chips}
+  onClose={() => (sheetOpen = false)}
+  onConfirm={handleConfirm}
+/>
+
+
+========== FILE: apps/server/src/home-routes.ts ==========
+import type { FastifyInstance } from 'fastify';
+import { Pool } from 'pg';
+import { gameManager } from './game-manager.js';
+import { getOnlineUserCount } from './socket-server.js';
+import { verifyToken } from './auth.js';
+
+const JWT_SECRET = process.env.JWT_SECRET ?? 'dev_secret_change_me';
+
+function authUser(req: any): number | null {
+  const auth = req.headers.authorization;
+  if (!auth?.startsWith('Bearer ')) return null;
+  const payload = verifyToken(auth.slice(7), JWT_SECRET);
+  return payload?.uid ?? null;
+}
+
+export async function registerHomeRoutes(app: FastifyInstance, db: Pool) {
+  app.get('/api/home', async (req) => {
+    const userId = authUser(req);
+
+    // ─── 1. Live stats from in-memory gameManager ───
+    const rooms = gameManager.getRooms();
+    const cashRooms = rooms.filter((r: any) => !r.tournamentId && r.players.size > 0);
+    const tourneyRooms = rooms.filter((r: any) => r.tournamentId && r.players.size > 0);
+
+    // ─── 2. Live cash tables list (from DB meta + memory players) ───
+    let liveTables: any[] = [];
+    if (cashRooms.length > 0) {
+      const ids = cashRooms.map((r: any) => r.tableId);
+      const meta = await db.query(
+        `SELECT id, name, variant, mode, blinds, seats FROM poker_tables WHERE id = ANY($1::bigint[])`,
+        [ids],
+      );
+      const metaMap = new Map(meta.rows.map((r: any) => [Number(r.id), r]));
+      liveTables = cashRooms
+        .map((r: any) => {
+          const m: any = metaMap.get(r.tableId);
+          if (!m) return null;
+          return {
+            id: r.tableId,
+            name: m.name,
+            variant: m.variant,
+            mode: m.mode,
+            blinds: {
+              sb: Number(m.blinds?.sb ?? 0),
+              bb: Number(m.blinds?.bb ?? 0),
+            },
+            seats: Number(m.seats ?? 6),
+            players: r.players.size,
+            phase: r.game?.state?.phase ?? 'waiting',
+          };
+        })
+        .filter(Boolean)
+        .slice(0, 4);
+    }
+
+    // ─── 3. Live tournaments with prize > 0 ───
+    const tourRes = await db.query(
+      `SELECT t.id, t.name, t.variant, t.speed, t.total_prize_pool, t.current_level,
+              (SELECT COUNT(*)::int FROM tournament_entries
+               WHERE tournament_id = t.id AND status IN ('registered','playing')) AS players
+       FROM tournaments t
+       WHERE t.status IN ('running','final_table')
+         AND t.total_prize_pool > 0
+       ORDER BY t.total_prize_pool DESC
+       LIMIT 4`,
+    );
+    const liveTournaments = tourRes.rows.map((r: any) => ({
+      id: Number(r.id),
+      name: r.name,
+      variant: r.variant,
+      speed: r.speed,
+      totalPrizePool: Number(r.total_prize_pool),
+      players: Number(r.players),
+      currentLevel: Number(r.current_level),
+    }));
+
+    // ─── 4. Top winners today (real money) ───
+    const topWinnersToday = await getTopWinnersToday(db);
+
+    // ─── 5. User progress (only if authed) ───
+    let userProgress: any = null;
+    if (userId) {
+      try {
+        const { LoyaltyService } = await import('./loyalty/service.js');
+        const svc = new LoyaltyService(db);
+        const loyalty = await svc.getSummary(userId);
+        userProgress = {
+          level: loyalty.level,
+          xpIntoLevel: loyalty.xpIntoLevel,
+          xpForNextLevel: loyalty.xpForNextLevel,
+          tier: loyalty.tier,
+          tierLabel: loyalty.tierLabel,
+          tierIcon: loyalty.tierIcon,
+          tierColor: loyalty.tierColor,
+          rakebackPct: loyalty.rakebackPct,
+          progressToNextTier: loyalty.progressToNextTier,
+        };
+      } catch (e: any) {
+        console.error('[home] userProgress failed:', e.message);
+      }
+    }
+
+    return {
+      onlineUsers: getOnlineUserCount(),
+      activeTables: cashRooms.length,
+      activeTournaments: tourneyRooms.length,
+      tables: liveTables,
+      tournaments: liveTournaments,
+      topWinnersToday,
+      userProgress,
+    };
+  });
+}
+
+// ============================================================
+// Aggregate top 3 winners from the last 24h of real-money hands
+// ============================================================
+async function getTopWinnersToday(db: Pool): Promise<any[]> {
+  try {
+    const res = await db.query(
+      `SELECT h.result, hs.state
+       FROM hands h
+       JOIN hand_snapshots hs ON hs.hand_id = h.id AND hs.sequence = 0
+       WHERE h.mode = 'real'
+         AND h.finished = TRUE
+         AND h.ended_at > NOW() - INTERVAL '24 hours'
+       ORDER BY h.id DESC
+       LIMIT 500`,
+    );
+
+    const winnersMap = new Map<
+      number,
+      { userId: number; displayName: string; totalWon: number; wins: number }
+    >();
+
+    for (const row of res.rows) {
+      const state = row.state || {};
+      const players = state.players || [];
+      const showdown = row.result?.showdownPlayers || [];
+
+      for (const sp of showdown) {
+        if (!sp.isWinner) continue;
+        const payout = Number(sp.payout) || 0;
+        if (payout <= 0) continue;
+
+        const player = players.find((p: any) => Number(p.seat) === Number(sp.seat));
+        if (!player) continue;
+
+        const uid = Number(player.userId);
+        if (!uid) continue;
+
+        if (!winnersMap.has(uid)) {
+          winnersMap.set(uid, {
+            userId: uid,
+            displayName: player.displayName || 'Player',
+            totalWon: 0,
+            wins: 0,
+          });
+        }
+        const entry = winnersMap.get(uid)!;
+        entry.totalWon += payout;
+        entry.wins += 1;
+      }
+    }
+
+    const sorted = [...winnersMap.values()].sort((a, b) => b.totalWon - a.totalWon).slice(0, 3);
+
+    if (sorted.length > 0) {
+      const ids = sorted.map((s) => s.userId);
+      const avatarRes = await db.query(
+        `SELECT id, avatar_id FROM users WHERE id = ANY($1::bigint[])`,
+        [ids],
+      );
+      const avatarMap = new Map(avatarRes.rows.map((r: any) => [Number(r.id), r.avatar_id]));
+      for (const s of sorted) {
+        (s as any).avatarId = avatarMap.get(s.userId) || 'king';
+      }
+    }
+
+    return sorted;
+  } catch (e: any) {
+    console.error('[home] topWinnersToday failed:', e.message);
+    return [];
+  }
+}
+
+
+========== FILE: apps/server/src/seed-bots.ts ==========
+import { Pool } from 'pg';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+
+const db = new Pool({
+  connectionString:
+    process.env.DATABASE_URL || 'postgres://poker:pokerpass@localhost:5432/poker',
+});
+
+const FIRST_NAMES = [
+  'Alex', 'Sara', 'Mike', 'Nina', 'Leo', 'Emma', 'Dan', 'Lily', 'Max', 'Zoe',
+  'Tom', 'Amy', 'Joe', 'Mia', 'Sam', 'Ava', 'Ben', 'Ella', 'Oscar', 'Ruby',
+  'Jack', 'Aria', 'Liam', 'Chloe', 'Noah', 'Grace', 'Ryan', 'Ivy', 'Adam', 'Sky',
+  'Owen', 'Nora', 'Finn', 'Iris', 'Luca', 'Wren', 'Kai', 'Juno', 'Reid', 'Vera',
+];
+
+const LAST_NAMES = [
+  'King', 'Shark', 'Ace', 'Queen', 'Wolf', 'Fox', 'Tiger', 'Lion', 'Eagle', 'Dragon',
+  'Falcon', 'Panther', 'Cobra', 'Viper', 'Phoenix', 'Raven', 'Storm', 'Blade', 'Knight', 'Sage',
+];
+
+const AVATAR_IDS = [
+  'king', 'queen', 'shark', 'fox', 'wolf', 'lion', 'dragon', 'eagle',
+  'cat', 'ghost', 'pirate', 'wizard', 'samurai', 'sphinx', 'vampire', 'angel',
+];
+
+const BOT_ID_START = 900000000;
+const BOT_COUNT = 100;
+
+function rand(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+function randFloat(min: number, max: number, decimals = 2): number {
+  return Number((Math.random() * (max - min) + min).toFixed(decimals));
+}
+function pick<T>(arr: T[]): T {
+  return arr[rand(0, arr.length - 1)];
+}
+
+async function main() {
+  console.log('🤖 Seeding 100 test bots...\n');
+
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+
+    // ─── 1. Ensure leaderboard period ───
+    let periodRes = await client.query(
+      `SELECT id FROM leaderboard_periods
+       WHERE status = 'open' AND NOW() BETWEEN period_start AND period_end
+       ORDER BY period_start DESC LIMIT 1`,
+    );
+    let periodId: number;
+    if (periodRes.rows.length === 0) {
+      const ins = await client.query(
+        `INSERT INTO leaderboard_periods (period_start, period_end, prize_pool_usd, status)
+         VALUES (
+           date_trunc('month', NOW())::date,
+           (date_trunc('month', NOW()) + INTERVAL '1 month - 1 day')::date,
+           0, 'open'
+         ) RETURNING id`,
+      );
+      periodId = Number(ins.rows[0].id);
+    } else {
+      periodId = Number(periodRes.rows[0].id);
+    }
+    console.log(`📅 Leaderboard period: #${periodId}`);
+
+    // ─── 2. Find existing bot IDs to clean ───
+    const oldBots = await client.query(
+      `SELECT id FROM users WHERE telegram_id >= $1 AND telegram_id < $2`,
+      [BOT_ID_START, BOT_ID_START + BOT_COUNT],
+    );
+    const oldIds = oldBots.rows.map((r: any) => Number(r.id));
+
+    if (oldIds.length > 0) {
+      // Delete FK-dependent rows (in correct order)
+      await client.query(`DELETE FROM leaderboard_entries WHERE user_id = ANY($1::bigint[])`, [oldIds]);
+      await client.query(`DELETE FROM ton_transactions WHERE user_id = ANY($1::bigint[])`, [oldIds]);
+      await client.query(`DELETE FROM tournament_entries WHERE user_id = ANY($1::bigint[])`, [oldIds]);
+      await client.query(`DELETE FROM tournament_players WHERE user_id = ANY($1::bigint[])`, [oldIds]);
+      await client.query(`DELETE FROM accounts WHERE owner_user_id = ANY($1::bigint[])`, [oldIds]);
+      await client.query(`DELETE FROM users WHERE id = ANY($1::bigint[])`, [oldIds]);
+      console.log(`🗑️  Cleaned ${oldIds.length} old bots\n`);
+    }
+
+    // ─── 3. Insert 100 bots ───
+    for (let i = 0; i < BOT_COUNT; i++) {
+      const telegramId = BOT_ID_START + i;
+      const firstName = pick(FIRST_NAMES);
+      const lastName = pick(LAST_NAMES);
+      const displayName = `${firstName} ${lastName}`;
+      const username = `${firstName.toLowerCase()}_${rand(1000, 9999)}`;
+      const avatarId = pick(AVATAR_IDS);
+
+      const userRes = await client.query(
+        `INSERT INTO users (telegram_id, username, display_name, avatar_id, language)
+         VALUES ($1, $2, $3, $4, 'en')
+         RETURNING id`,
+        [telegramId, username, displayName, avatarId],
+      );
+      const userId = Number(userRes.rows[0].id);
+
+      // Balance: 5-5000 USD
+      const balance = randFloat(5, 5000);
+
+      // Rake → tier
+      const lifetimeRake = randFloat(0, 15000);
+      let tier = 'welcome';
+      if (lifetimeRake >= 10000) tier = 'diamond';
+      else if (lifetimeRake >= 2500) tier = 'platinum';
+      else if (lifetimeRake >= 500) tier = 'gold';
+      else if (lifetimeRake >= 100) tier = 'silver';
+      else if (lifetimeRake >= 25) tier = 'bronze';
+
+      await client.query(
+        `INSERT INTO user_tier (user_id, tier, lifetime_rake)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (user_id) DO UPDATE SET tier = $2, lifetime_rake = $3`,
+        [userId, tier, lifetimeRake],
+      );
+
+      // XP roughly proportional to rake
+      const lifetimeXp = Math.round(lifetimeRake * randFloat(50, 200));
+      await client.query(
+        `INSERT INTO user_xp (user_id, lifetime_xp, claimed_xp)
+         VALUES ($1, $2, 0)
+         ON CONFLICT (user_id) DO UPDATE SET lifetime_xp = $2`,
+        [userId, lifetimeXp],
+      );
+
+      // Free chips
+      const freeChips = rand(1000, 50000);
+      const freeHands = rand(50, 5000);
+      const freeWins = Math.round(freeHands * randFloat(0.2, 0.6));
+      const freeWon = Math.round(freeChips * randFloat(0.1, 1.5));
+      await client.query(
+        `INSERT INTO free_chips (user_id, chips, total_hands, free_won, free_hands_won)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (user_id) DO UPDATE SET
+           chips = $2, total_hands = $3, free_won = $4, free_hands_won = $5`,
+        [userId, freeChips, freeHands, freeWon, freeWins],
+      );
+
+      // Leaderboard: hands_played + total_won_usd (power curve for nice distribution)
+      const t = Math.random();
+      const handsPlayed = 20 + Math.floor(Math.pow(t, 1.5) * 800);
+      const totalWon = 20 + Math.pow(t, 2.5) * 8000;
+
+      await client.query(
+        `INSERT INTO leaderboard_entries (period_id, user_id, hands_played, total_won_usd)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (period_id, user_id) DO UPDATE SET
+           hands_played = $3, total_won_usd = $4`,
+        [periodId, userId, handsPlayed, Number(totalWon.toFixed(2))],
+      );
+
+      // Wallet
+      await client.query(
+        `INSERT INTO wallets (user_id, balance_usd)
+         VALUES ($1, $2)
+         ON CONFLICT (user_id) DO UPDATE SET balance_usd = $2`,
+        [userId, balance],
+      );
+
+      // Ledger account
+      await client.query(
+        `INSERT INTO accounts (code, type, owner_user_id)
+         VALUES ($1, 'user', $2)
+         ON CONFLICT (code) DO NOTHING`,
+        [`USER_${userId}`, userId],
+      );
+
+      // TON deposit history (70% chance)
+      if (Math.random() > 0.3) {
+        const depositTon = randFloat(1, 50, 2);
+        const tonRate = 5.5;
+        const depositUsd = Number((depositTon * tonRate).toFixed(2));
+        const txHash = `seed_bot_${i}_${Date.now()}_${rand(1000, 9999)}`;
+        const daysAgo = rand(1, 30);
+
+        await client.query(
+          `INSERT INTO ton_transactions
+            (user_id, direction, amount_ton, amount_usd, tx_hash, from_address, to_address, memo, status, confirmations, confirmed_at)
+           VALUES ($1, 'deposit', $2, $3, $4, 'seed_deposit_addr', 'deposit_addr', $5, 'confirmed', 1, NOW() - INTERVAL '${daysAgo} days')`,
+          [userId, depositTon, depositUsd, txHash, String(userId)],
+        );
+      }
+    }
+
+    // ─── 4. Recalc ranks ───
+    await client.query(
+      `WITH ranked AS (
+         SELECT id, ROW_NUMBER() OVER (ORDER BY total_won_usd DESC, hands_played DESC) as new_rank
+         FROM leaderboard_entries WHERE period_id = $1
+       )
+       UPDATE leaderboard_entries le SET rank = ranked.new_rank FROM ranked WHERE le.id = ranked.id`,
+      [periodId],
+    );
+
+    await client.query('COMMIT');
+
+    // ─── 5. Summary ───
+    const count = await client.query(
+      `SELECT COUNT(*)::int AS n FROM users WHERE telegram_id >= $1 AND telegram_id < $2`,
+      [BOT_ID_START, BOT_ID_START + BOT_COUNT],
+    );
+    const leaderboardCount = await client.query(
+      `SELECT COUNT(*)::int AS n FROM leaderboard_entries WHERE period_id = $1`,
+      [periodId],
+    );
+
+    console.log(`✅ Seeded successfully!`);
+    console.log(`📊 Bots created: ${count.rows[0].n}`);
+    console.log(`🏆 Leaderboard entries: ${leaderboardCount.rows[0].n}`);
+    console.log(`\n🎯 Now open Leaderboard to see them.\n`);
+  } catch (e: any) {
+    await client.query('ROLLBACK');
+    console.error('❌ Error:', e.message);
+    throw e;
+  } finally {
+    client.release();
+    await db.end();
+  }
+}
+
+main().catch((e) => {
+  console.error('FATAL:', e);
+  process.exit(1);
+});
+
+========== FILE: apps/server/src/loyalty/definitions.ts ==========
+// ============================================================
+// Loyalty definitions: tiers, rakeback rates, XP curve, seeds, packs
+// Pure data + pure functions. No DB.
+// ============================================================
+
+export type TierName =
+  | 'welcome'
+  | 'bronze'
+  | 'silver'
+  | 'gold'
+  | 'platinum'
+  | 'diamond';
+
+export interface TierDef {
+  name: TierName;
+  label: string;
+  minRake: number;
+  maxRake: number;
+  rakebackPct: number;
+  color: string;
+  icon: string;
+}
+
+export const TIERS: TierDef[] = [
+  { name: 'welcome',  label: 'Welcome',  minRake: 0,     maxRake: 25,       rakebackPct: 0.60, color: '#6ee7b7', icon: '🌱' },
+  { name: 'bronze',   label: 'Bronze',   minRake: 25,    maxRake: 100,      rakebackPct: 0.50, color: '#c98a3e', icon: '🥉' },
+  { name: 'silver',   label: 'Silver',   minRake: 100,   maxRake: 500,      rakebackPct: 0.45, color: '#cbd5e1', icon: '🥈' },
+  { name: 'gold',     label: 'Gold',     minRake: 500,   maxRake: 2500,     rakebackPct: 0.40, color: '#f4c95d', icon: '🥇' },
+  { name: 'platinum', label: 'Platinum', minRake: 2500,  maxRake: 10000,    rakebackPct: 0.35, color: '#a5b4fc', icon: '💎' },
+  { name: 'diamond',  label: 'Diamond',  minRake: 10000, maxRake: Infinity, rakebackPct: 0.30, color: '#67e8f9', icon: '💠' },
+];
+
+export function tierForRake(lifetimeRake: number): TierDef {
+  const r = Math.max(0, Number(lifetimeRake) || 0);
+  for (const t of TIERS) {
+    if (r >= t.minRake && r < t.maxRake) return t;
+  }
+  return TIERS[TIERS.length - 1];
+}
+
+export function nextTier(current: TierName): TierDef | null {
+  const idx = TIERS.findIndex((t) => t.name === current);
+  if (idx < 0 || idx >= TIERS.length - 1) return null;
+  return TIERS[idx + 1];
+}
+
+export function tierDef(name: TierName): TierDef {
+  return TIERS.find((t) => t.name === name) ?? TIERS[0];
+}
+
+// ============================================================
+// XP constants
+// ============================================================
+export const XP_PER_USD_RAKE_SHARE = 250;
+export const XP_POOL_PCT = 0.25;
+export const XP_PER_DOLLAR = 1000;
+
+// XP cashout rules
+export const XP_CASHOUT_MIN = 5000;
+export const XP_CASHOUT_STEP = 1000;
+export const XP_CASHOUT_MIN_LEVEL = 5;
+export const XP_CASHOUT_MONTHLY_CAP = 50000;
+export const XP_CASHOUT_COOLDOWN_HOURS = 24;
+
+// ============================================================
+// XP CURVE — stepped, exact table
+// ============================================================
+// XP_TABLE[L] = XP needed to go from level L to L+1
+// Covers L1..L49. For L50+ computed separately.
+const XP_TABLE: number[] = [
+  0,          // index 0 unused
+  // Tier I — Starter (L1-L5 entry points: 4 transitions)
+  100, 250, 500, 1000,
+  // Tier II — Bronze (L5→L15, 10 transitions)
+  1500, 2200, 3000, 4000, 5500, 7000, 9000, 12000, 16000, 20000,
+  // Tier III — Silver (L15→L30, 15 transitions)
+  30000, 40000, 50000, 60000, 75000, 100000, 130000, 165000, 210000, 260000,
+  320000, 400000, 500000, 620000, 770000,
+  // Tier IV — Gold (L30→L50, 20 transitions)
+  1000000, 1200000, 1450000, 1750000, 2100000, 2500000, 3000000, 3600000, 4300000, 5200000,
+  6200000, 7500000, 9000000, 10800000, 13000000, 15600000, 18700000, 22500000, 27000000, 32500000,
+];
+
+export function xpForNextLevel(level: number): number {
+  if (level < 1) return 100;
+
+  // Tier I-III + IV (L1-L49): exact table
+  if (level <= 49) {
+    return XP_TABLE[level] ?? 32_500_000;
+  }
+
+  // Tier V — Platinum (L50-L79): anchor-based linear interpolation
+  //   L50→L51 = 40M, L60→L61 = 150M, L70→L71 = 350M, L79→L80 = 500M
+  if (level <= 59) return Math.round(40_000_000 + (level - 50) * 11_000_000);
+  if (level <= 69) return Math.round(150_000_000 + (level - 60) * 20_000_000);
+  if (level <= 79) return Math.round(350_000_000 + (level - 70) * (150_000_000 / 9));
+
+  // Tier VI — Diamond (L80+): 500M + 50M per level, cap at 1B
+  const xp = 500_000_000 + (level - 80) * 50_000_000;
+  return Math.min(1_000_000_000, xp);
+}
+
+export interface LevelInfo {
+  level: number;
+  xpIntoLevel: number;
+  xpForNextLevel: number;
+  xpAtLevelStart: number;
+}
+
+export function levelFromLifetimeXP(lifetimeXp: number): LevelInfo {
+  let remaining = Math.max(0, Number(lifetimeXp) || 0);
+  let level = 1;
+  let consumed = 0;
+
+  for (let safety = 0; safety < 5000; safety++) {
+    const need = xpForNextLevel(level);
+    if (remaining < need) {
+      return { level, xpIntoLevel: remaining, xpForNextLevel: need, xpAtLevelStart: consumed };
+    }
+    remaining -= need;
+    consumed += need;
+    level++;
+  }
+  return { level, xpIntoLevel: 0, xpForNextLevel: xpForNextLevel(level), xpAtLevelStart: consumed };
+}
+
+// ============================================================
+// Level-based discounts (shop)
+// ============================================================
+export function levelDiscount(level: number): number {
+  if (level >= 80) return 0.30;
+  if (level >= 50) return 0.20;
+  if (level >= 25) return 0.10;
+  if (level >= 10) return 0.05;
+  return 0;
+}
+
+// ============================================================
+// Shop packs — 6 packs, level-based discount applied at purchase
+// ============================================================
+export interface ShopPack {
+  id: string;
+  name: string;
+  priceUsd: number;
+  priceTon: number;
+  chips: number;
+  voucher: number;
+  xp: number;
+}
+
+export const SHOP_PACKS: ShopPack[] = [
+  { id: 'starter', name: 'Starter', priceUsd: 1,   priceTon: 0.25,  chips: 10_000,    voucher: 0,    xp: 200   },
+  { id: 'value',   name: 'Value',   priceUsd: 3,   priceTon: 0.75,  chips: 40_000,    voucher: 0.5,  xp: 500   },
+  { id: 'premium', name: 'Premium', priceUsd: 8,   priceTon: 2.00,  chips: 120_000,   voucher: 1.5,  xp: 1200  },
+  { id: 'mega',    name: 'Mega',    priceUsd: 20,  priceTon: 5.00,  chips: 350_000,   voucher: 4,    xp: 3000  },
+  { id: 'ultra',   name: 'Ultra',   priceUsd: 50,  priceTon: 12.50, chips: 1_000_000, voucher: 10,   xp: 8000  },
+  { id: 'whale',   name: 'Whale',   priceUsd: 100, priceTon: 25.00, chips: 2_500_000, voucher: 20,   xp: 18000 },
+];
+
+export function packById(id: string): ShopPack | null {
+  return SHOP_PACKS.find((p) => p.id === id) ?? null;
+}
+
+// ============================================================
+// Seeds — hardcoded definitions (claim log lives in DB)
+// ============================================================
+export type SeedType = 'bronze' | 'silver' | 'gold' | 'platinum';
+
+export interface SeedDef {
+  type: SeedType;
+  label: string;
+  icon: string;
+  minFreeHands: number;
+  minFreeWins: number;
+  amount: number;
+  playthroughMultiplier: number;
+  minRakeAfter: number;
+  minRealHandsAfter: number;
+  waitDays: number;
+}
+
+export const SEED_DEFS: SeedDef[] = [
+  { type: 'bronze',   label: 'Bronze Seed',   icon: '🥉', minFreeHands: 50,   minFreeWins: 10,  amount: 0.50, playthroughMultiplier: 10, minRakeAfter: 15, minRealHandsAfter: 150, waitDays: 14 },
+  { type: 'silver',   label: 'Silver Seed',   icon: '🥈', minFreeHands: 200,  minFreeWins: 50,  amount: 1.00, playthroughMultiplier: 10, minRakeAfter: 15, minRealHandsAfter: 150, waitDays: 14 },
+  { type: 'gold',     label: 'Gold Seed',     icon: '🥇', minFreeHands: 500,  minFreeWins: 150, amount: 2.50, playthroughMultiplier: 10, minRakeAfter: 15, minRealHandsAfter: 150, waitDays: 14 },
+  { type: 'platinum', label: 'Platinum Seed', icon: '💎', minFreeHands: 2000, minFreeWins: 500, amount: 5.00, playthroughMultiplier: 10, minRakeAfter: 15, minRealHandsAfter: 150, waitDays: 14 },
+];
+
+export function seedDef(type: SeedType): SeedDef {
+  const d = SEED_DEFS.find((s) => s.type === type);
+  if (!d) throw new Error(`Unknown seed type: ${type}`);
+  return d;
+}
+
+// ============================================================
+// Daily chip refill (by tier)
+// ============================================================
+export function dailyRefillForTier(tier: TierName): number {
+  return ({
+    welcome: 500,
+    bronze: 1500,
+    silver: 5000,
+    gold: 15000,
+    platinum: 50000,
+    diamond: 200000,
+  } as Record<TierName, number>)[tier];
+}
+
+========== FILE: apps/server/src/loyalty/service.ts ==========
+// ============================================================
+// LoyaltyService — pays rakeback + XP per hand,
+//                   updates tiers + voucher progress,
+//                   exposes read APIs for /api/me + routes.
+// ============================================================
+
+import { Pool } from 'pg';
+import { LedgerService } from '../ledger.js';
+import {
+  TierName,
+  tierForRake,
+  nextTier,
+  XP_POOL_PCT,
+  XP_PER_DOLLAR,
+  SEED_DEFS,
+  SeedType,
+  seedDef,
+  levelFromLifetimeXP,
+} from './definitions.js';
+
+export interface PlayerContribution {
+  userId: number;
+  contribution: number;
+}
+
+export interface PayHandResult {
+  handId: number;
+  totalRake: number;
+  pot: number;
+  perPlayer: Array<{
+    userId: number;
+    rakeShare: number;
+    rakeback: number;
+    xp: number;
+    newTier: TierName;
+    skipped: boolean;
+    reason?: string;
+  }>;
+}
+
+export class LoyaltyService {
+  private ledger: LedgerService;
+
+  constructor(private db: Pool) {
+    this.ledger = new LedgerService(db);
+  }
+
+  // ============================================================
+  // payHand — pay rakeback + XP for a single hand (idempotent)
+  // ============================================================
+  async payHand(params: {
+    handId: number;
+    pot: number;
+    totalRake: number;
+    contributions: PlayerContribution[];
+  }): Promise<PayHandResult> {
+    const { handId, pot, totalRake, contributions } = params;
+    const result: PayHandResult = { handId, totalRake, pot, perPlayer: [] };
+
+    if (totalRake <= 0 || pot <= 0) return result;
+
+    for (const c of contributions) {
+      if (c.contribution <= 0) {
+        result.perPlayer.push({
+          userId: c.userId,
+          rakeShare: 0,
+          rakeback: 0,
+          xp: 0,
+          newTier: 'welcome',
+          skipped: true,
+          reason: 'no_contribution',
+        });
+        continue;
+      }
+
+      const share = c.contribution / pot;
+      const rakeShare = Math.round(totalRake * share * 100) / 100;
+      if (rakeShare <= 0) {
+        result.perPlayer.push({
+          userId: c.userId,
+          rakeShare: 0,
+          rakeback: 0,
+          xp: 0,
+          newTier: 'welcome',
+          skipped: true,
+          reason: 'rake_share_zero',
+        });
+        continue;
+      }
+
+      // Idempotency
+      const existing = await this.db.query(
+        'SELECT id FROM rakeback_log WHERE hand_id = $1 AND user_id = $2',
+        [handId, c.userId],
+      );
+      if (existing.rows.length > 0) {
+        const tierRow = await this.db.query(
+          'SELECT tier FROM user_tier WHERE user_id = $1',
+          [c.userId],
+        );
+        result.perPlayer.push({
+          userId: c.userId,
+          rakeShare,
+          rakeback: 0,
+          xp: 0,
+          newTier: (tierRow.rows[0]?.tier as TierName) ?? 'welcome',
+          skipped: true,
+          reason: 'already_paid',
+        });
+        continue;
+      }
+
+      // Current tier
+      const tierRow = await this.db.query(
+        'SELECT tier, lifetime_rake FROM user_tier WHERE user_id = $1',
+        [c.userId],
+      );
+      const currentTier: TierName =
+        (tierRow.rows[0]?.tier as TierName) ?? 'welcome';
+      const lifetimeRakeBefore = Number(tierRow.rows[0]?.lifetime_rake ?? 0);
+
+      const tierDef = tierForRake(lifetimeRakeBefore);
+      const rakeback = Math.round(rakeShare * tierDef.rakebackPct * 100) / 100;
+      const xp = Math.round(rakeShare * XP_POOL_PCT * XP_PER_DOLLAR);
+
+      const client = await this.db.connect();
+      try {
+        await client.query('BEGIN');
+
+        // 1. Credit rakeback via ledger
+        if (rakeback > 0) {
+          const userAcc = await this.ledger.getUserAccountId(c.userId);
+          const houseAcc = await this.ledger.getAccountId('HOUSE_RAKE');
+          if (userAcc && houseAcc) {
+            await this.ledger.record({
+              kind: 'BONUS',
+              userId: c.userId,
+              ref: `rakeback_hand_${handId}`,
+              meta: { handId, rakeShare, rakebackPct: tierDef.rakebackPct },
+              entries: [
+                { accountId: houseAcc, amount: -rakeback },
+                { accountId: userAcc, amount: rakeback },
+              ],
+              idempotencyKey: `rakeback_hand_${handId}_user_${c.userId}`,
+            });
+          }
+        }
+
+        // 2. Log rakeback
+        await client.query(
+          `INSERT INTO rakeback_log (hand_id, user_id, amount)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (hand_id, user_id) DO NOTHING`,
+          [handId, c.userId, rakeback],
+        );
+
+        // 3. Credit XP
+        if (xp > 0) {
+          await client.query(
+            `INSERT INTO user_xp (user_id, lifetime_xp, claimed_xp, updated_at)
+             VALUES ($1, $2, 0, NOW())
+             ON CONFLICT (user_id) DO UPDATE
+               SET lifetime_xp = user_xp.lifetime_xp + EXCLUDED.lifetime_xp,
+                   updated_at = NOW()`,
+            [c.userId, xp],
+          );
+          await client.query(
+            `INSERT INTO xp_transactions (user_id, amount, source, ref_id, meta)
+             VALUES ($1, $2, 'hand_rakeback', $3, $4)`,
+            [c.userId, xp, handId, JSON.stringify({ rakeShare })],
+          );
+        }
+
+        // 4. Update lifetime_rake + tier
+        const newLifetimeRake =
+          Math.round((lifetimeRakeBefore + rakeShare) * 100) / 100;
+        const newTierDef = tierForRake(newLifetimeRake);
+        await client.query(
+          `INSERT INTO user_tier (user_id, tier, lifetime_rake, updated_at)
+           VALUES ($1, $2, $3, NOW())
+           ON CONFLICT (user_id) DO UPDATE
+             SET tier = EXCLUDED.tier,
+                 lifetime_rake = EXCLUDED.lifetime_rake,
+                 updated_at = NOW()`,
+          [c.userId, newTierDef.name, newLifetimeRake],
+        );
+
+        // 4b. Decrement bonus pending counters
+        await client.query(
+          `UPDATE users
+           SET bonus_playthrough_pending = GREATEST(0, bonus_playthrough_pending - $1),
+               bonus_rake_pending = GREATEST(0, bonus_rake_pending - $2)
+           WHERE id = $3`,
+          [c.contribution, rakeShare, c.userId],
+        );
+
+        // 5. Voucher progress
+        await client.query(
+          `UPDATE vouchers
+           SET current_rake = current_rake + $1
+           WHERE user_id = $2
+             AND used = FALSE
+             AND expires_at > NOW()
+             AND current_rake < min_rake`,
+          [rakeShare, c.userId],
+        );
+
+        // 6. Auto-unlock vouchers
+        const unlocked = await client.query(
+          `SELECT id, amount FROM vouchers
+           WHERE user_id = $1
+             AND used = FALSE
+             AND expires_at > NOW()
+             AND current_rake >= min_rake
+           RETURNING id, amount`,
+          [c.userId],
+        );
+        for (const v of unlocked.rows) {
+          const userAcc = await this.ledger.getUserAccountId(c.userId);
+          const bonusAcc = await this.ledger.getAccountId('HOUSE_BONUS');
+          const amt = Number(v.amount);
+          if (userAcc && bonusAcc) {
+            const ok = await this.ledger.record({
+              kind: 'BONUS',
+              userId: c.userId,
+              ref: `voucher_unlock_${v.id}`,
+              meta: { voucherId: v.id },
+              entries: [
+                { accountId: bonusAcc, amount: -amt },
+                { accountId: userAcc, amount: amt },
+              ],
+              idempotencyKey: `voucher_unlock_${v.id}`,
+            });
+            if (ok.ok) {
+              await client.query(
+                `UPDATE vouchers SET used = TRUE, used_at = NOW() WHERE id = $1`,
+                [v.id],
+              );
+              await client.query(
+                `UPDATE users
+                 SET bonus_playthrough_pending = bonus_playthrough_pending + $1,
+                     bonus_rake_pending = bonus_rake_pending + 15,
+                     bonus_real_hands_pending = bonus_real_hands_pending + 150,
+                     bonus_received_at = NOW()
+                 WHERE id = $2`,
+                [amt * 10, c.userId],
+              );
+            }
+          }
+        }
+
+        await client.query('COMMIT');
+
+        result.perPlayer.push({
+          userId: c.userId,
+          rakeShare,
+          rakeback,
+          xp,
+          newTier: newTierDef.name,
+          skipped: false,
+        });
+      } catch (e: any) {
+        await client.query('ROLLBACK');
+        console.error(
+          `[loyalty] payHand user=${c.userId} hand=${handId} failed:`,
+          e.message,
+        );
+        result.perPlayer.push({
+          userId: c.userId,
+          rakeShare,
+          rakeback: 0,
+          xp: 0,
+          newTier: currentTier,
+          skipped: true,
+          reason: 'error:' + e.message,
+        });
+      } finally {
+        client.release();
+      }
+    }
+
+    return result;
+  }
+
+  // ============================================================
+  // getSummary — everything for /api/me loyalty block
+  // ============================================================
+  async getSummary(userId: number) {
+    const xpRow = await this.db.query(
+      'SELECT lifetime_xp, claimed_xp FROM user_xp WHERE user_id = $1',
+      [userId],
+    );
+    const lifetimeXp = Number(xpRow.rows[0]?.lifetime_xp ?? 0);
+    const claimedXp = Number(xpRow.rows[0]?.claimed_xp ?? 0);
+    const availableXp = Math.max(0, lifetimeXp - claimedXp);
+    const levelInfo = levelFromLifetimeXP(lifetimeXp);
+
+    const tierRow = await this.db.query(
+      'SELECT tier, lifetime_rake FROM user_tier WHERE user_id = $1',
+      [userId],
+    );
+    const lifetimeRake = Number(tierRow.rows[0]?.lifetime_rake ?? 0);
+    const tierDef = tierForRake(lifetimeRake);
+    const nt = nextTier(tierDef.name);
+
+    let progressToNextTier = 1;
+    if (nt) {
+      const span = nt.minRake - tierDef.minRake;
+      progressToNextTier =
+        span > 0
+          ? Math.min(1, Math.max(0, (lifetimeRake - tierDef.minRake) / span))
+          : 0;
+    }
+
+    const rbRow = await this.db.query(
+      'SELECT COALESCE(SUM(amount), 0)::numeric AS total FROM rakeback_log WHERE user_id = $1',
+      [userId],
+    );
+    const rakebackEarned = Number(rbRow.rows[0]?.total ?? 0);
+
+    const vRows = await this.db.query(
+      `SELECT id, amount, min_rake, current_rake, used, expires_at
+       FROM vouchers
+       WHERE user_id = $1
+       ORDER BY created_at DESC
+       LIMIT 20`,
+      [userId],
+    );
+    const vouchers = vRows.rows.map((r: any) => {
+      const minRake = Number(r.min_rake);
+      const current = Number(r.current_rake);
+      return {
+        id: Number(r.id),
+        amount: Number(r.amount),
+        minRake,
+        currentRake: current,
+        used: !!r.used,
+        expiresAt: r.expires_at,
+        progressPct:
+          minRake > 0
+            ? Math.min(100, Math.round((current / minRake) * 100))
+            : 0,
+      };
+    });
+
+    const fc = await this.db.query(
+      'SELECT total_hands, free_hands_won FROM free_chips WHERE user_id = $1',
+      [userId],
+    );
+    const freeHands = Number(fc.rows[0]?.total_hands ?? 0);
+    const freeWins = Number(fc.rows[0]?.free_hands_won ?? 0);
+
+    const sRows = await this.db.query(
+      'SELECT seed_type, claimed, claimed_at FROM seeds WHERE user_id = $1',
+      [userId],
+    );
+    const claimedMap = new Map<
+      string,
+      { claimed: boolean; at: string | null }
+    >();
+    for (const r of sRows.rows) {
+      claimedMap.set(r.seed_type, { claimed: !!r.claimed, at: r.claimed_at });
+    }
+
+    const seeds = SEED_DEFS.map((def) => {
+      const claimed = claimedMap.get(def.type);
+      const eligible =
+        !claimed?.claimed &&
+        freeHands >= def.minFreeHands &&
+        freeWins >= def.minFreeWins;
+      return {
+        type: def.type,
+        label: def.label,
+        icon: def.icon,
+        amount: def.amount,
+        claimed: !!claimed?.claimed,
+        claimedAt: claimed?.at ?? null,
+        eligible,
+        progress: {
+          freeHands,
+          freeWins,
+          minFreeHands: def.minFreeHands,
+          minFreeWins: def.minFreeWins,
+        },
+      };
+    });
+
+    return {
+      lifetimeXp,
+      claimedXp,
+      availableXp,
+      level: levelInfo.level,
+      xpIntoLevel: levelInfo.xpIntoLevel,
+      xpForNextLevel: levelInfo.xpForNextLevel,
+      tier: tierDef.name,
+      tierLabel: tierDef.label,
+      tierIcon: tierDef.icon,
+      tierColor: tierDef.color,
+      lifetimeRake,
+      rakebackPct: tierDef.rakebackPct,
+      nextTier: nt
+        ? { name: nt.name, label: nt.label, minRake: nt.minRake }
+        : null,
+      progressToNextTier,
+      rakePaidLifetime: lifetimeRake,
+      rakebackEarned,
+      vouchers,
+      seeds,
+    };
+  }
+
+  // ============================================================
+  // claimSeed
+  // ============================================================
+  async claimSeed(
+    userId: number,
+    type: SeedType,
+  ): Promise<{ ok: boolean; error?: string; amount?: number }> {
+    const def = seedDef(type);
+
+    const existing = await this.db.query(
+      'SELECT claimed FROM seeds WHERE user_id = $1 AND seed_type = $2',
+      [userId, type],
+    );
+    if (existing.rows[0]?.claimed)
+      return { ok: false, error: 'already_claimed' };
+
+    const fc = await this.db.query(
+      'SELECT total_hands, free_hands_won FROM free_chips WHERE user_id = $1',
+      [userId],
+    );
+    const freeHands = Number(fc.rows[0]?.total_hands ?? 0);
+    const freeWins = Number(fc.rows[0]?.free_hands_won ?? 0);
+
+    if (freeHands < def.minFreeHands)
+      return { ok: false, error: `need_${def.minFreeHands}_free_hands` };
+    if (freeWins < def.minFreeWins)
+      return { ok: false, error: `need_${def.minFreeWins}_free_wins` };
+
+    const userAcc = await this.ledger.getUserAccountId(userId);
+    const bonusAcc = await this.ledger.getAccountId('HOUSE_BONUS');
+    if (!userAcc || !bonusAcc) return { ok: false, error: 'account_missing' };
+
+    const ok = await this.ledger.record({
+      kind: 'BONUS',
+      userId,
+      ref: `seed_${type}`,
+      meta: { seedType: type, amount: def.amount },
+      entries: [
+        { accountId: bonusAcc, amount: -def.amount },
+        { accountId: userAcc, amount: def.amount },
+      ],
+      idempotencyKey: `seed_${type}_user_${userId}`,
+    });
+
+    if (!ok.ok) return { ok: false, error: ok.error ?? 'ledger_failed' };
+
+    await this.db.query(
+      `INSERT INTO seeds (user_id, seed_type, amount, claimed, claimed_at)
+       VALUES ($1, $2, $3, TRUE, NOW())
+       ON CONFLICT (user_id, seed_type) DO UPDATE
+         SET claimed = TRUE, claimed_at = NOW()`,
+      [userId, type, def.amount],
+    );
+
+    await this.db.query(
+      `UPDATE users
+       SET bonus_playthrough_pending = bonus_playthrough_pending + $1,
+           bonus_rake_pending = bonus_rake_pending + $2,
+           bonus_real_hands_pending = bonus_real_hands_pending + $3,
+           bonus_received_at = NOW()
+       WHERE id = $4`,
+      [
+        def.amount * def.playthroughMultiplier,
+        def.minRakeAfter,
+        def.minRealHandsAfter,
+        userId,
+      ],
+    );
+
+    return { ok: true, amount: def.amount };
+  }
+
+  // ============================================================
+  // cashOutXp — with level gate + 24h cooldown + monthly cap
+  // ============================================================
+  async cashOutXp(
+    userId: number,
+    xpAmount: number,
+  ): Promise<{
+    ok: boolean;
+    error?: string;
+    usd?: number;
+    newClaimedXp?: number;
+  }> {
+    const xp = Math.floor(xpAmount);
+    if (xp < 5000) return { ok: false, error: 'min_5000_xp' };
+    if (xp % 1000 !== 0)
+      return { ok: false, error: 'must_be_multiple_of_1000' };
+
+    const xpRow = await this.db.query(
+      'SELECT lifetime_xp, claimed_xp FROM user_xp WHERE user_id = $1',
+      [userId],
+    );
+    const lifetimeXp = Number(xpRow.rows[0]?.lifetime_xp ?? 0);
+    const claimedXp = Number(xpRow.rows[0]?.claimed_xp ?? 0);
+    const available = Math.max(0, lifetimeXp - claimedXp);
+
+    const lvl = levelFromLifetimeXP(lifetimeXp).level;
+    if (lvl < 5) return { ok: false, error: 'level_5_required' };
+
+    if (available < xp) return { ok: false, error: 'insufficient_xp' };
+
+    const recent = await this.db.query(
+      `SELECT created_at FROM xp_transactions
+       WHERE user_id = $1 AND source = 'claim'
+       ORDER BY created_at DESC LIMIT 1`,
+      [userId],
+    );
+    if (recent.rows[0]) {
+      const last = new Date(recent.rows[0].created_at).getTime();
+      const elapsedHours = (Date.now() - last) / 3_600_000;
+      if (elapsedHours < 24) {
+        const waitH = Math.ceil(24 - elapsedHours);
+        return { ok: false, error: `cooldown_${waitH}h` };
+      }
+    }
+
+    const monthly = await this.db.query(
+      `SELECT COALESCE(SUM(ABS(amount)), 0)::bigint AS total
+       FROM xp_transactions
+       WHERE user_id = $1 AND source = 'claim'
+         AND created_at > NOW() - INTERVAL '30 days'`,
+      [userId],
+    );
+    const monthTotal = Number(monthly.rows[0]?.total ?? 0);
+    if (monthTotal + xp > 50000) {
+      return {
+        ok: false,
+        error: `monthly_cap_50000_xp (used ${monthTotal})`,
+      };
+    }
+
+    const usd = xp / 1000;
+    const userAcc = await this.ledger.getUserAccountId(userId);
+    const bonusAcc = await this.ledger.getAccountId('HOUSE_BONUS');
+    if (!userAcc || !bonusAcc) return { ok: false, error: 'account_missing' };
+
+    const client = await this.db.connect();
+    try {
+      await client.query('BEGIN');
+
+      const ok = await this.ledger.record({
+        kind: 'BONUS',
+        userId,
+        ref: `xp_cashout_${xp}`,
+        meta: { xp, usd },
+        entries: [
+          { accountId: bonusAcc, amount: -usd },
+          { accountId: userAcc, amount: usd },
+        ],
+        idempotencyKey: `xp_cashout_${userId}_${Date.now()}`,
+      });
+
+      if (!ok.ok) {
+        await client.query('ROLLBACK');
+        return { ok: false, error: ok.error ?? 'ledger_failed' };
+      }
+
+      const upd = await client.query(
+        `UPDATE user_xp
+         SET claimed_xp = claimed_xp + $1, updated_at = NOW()
+         WHERE user_id = $2
+         RETURNING claimed_xp`,
+        [xp, userId],
+      );
+
+      await client.query(
+        `INSERT INTO xp_transactions (user_id, amount, source, meta)
+         VALUES ($1, $2, 'claim', $3)`,
+        [userId, -xp, JSON.stringify({ usd, level: lvl })],
+      );
+
+      await client.query('COMMIT');
+      return {
+        ok: true,
+        usd,
+        newClaimedXp: Number(upd.rows[0]?.claimed_xp ?? claimedXp + xp),
+      };
+    } catch (e: any) {
+      await client.query('ROLLBACK');
+      return { ok: false, error: e.message };
+    } finally {
+      client.release();
+    }
+  }
+}
+

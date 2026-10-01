@@ -11,7 +11,9 @@ export class TournamentCleanupJob {
   constructor(private db: Pool) {}
 
   start(intervalMs = 10 * 60 * 1000): void {
-    console.log(`[cleanup] 🧹 stale tournament cleanup running (every ${Math.round(intervalMs / 60000)}m)`);
+    console.log(
+      `[cleanup] 🧹 stale tournament cleanup running (every ${Math.round(intervalMs / 60000)}m)`,
+    );
     this.tick().catch((e) => console.error('[cleanup] tick error:', e.message));
     this.timer = setInterval(() => {
       this.tick().catch((e) => console.error('[cleanup] tick error:', e.message));
@@ -41,8 +43,7 @@ export class TournamentCleanupJob {
                (SELECT COUNT(*) FROM tournament_players tp
                 WHERE tp.tournament_id = t.id AND tp.status = 'active') = 0
              )
-           )
-         RETURNING id, name`,
+           )`,
       );
 
       if (stale.rows.length === 0) return;

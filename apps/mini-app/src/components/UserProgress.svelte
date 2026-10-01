@@ -1,8 +1,29 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+  import { api } from '../lib/api';
   import Icon from './Icon.svelte';
 
   export let progress: any = null;
   export let onOpen: () => void = () => {};
+  export let onOpenMoney: () => void = () => {};
+
+  let money: any = null;
+
+  function fmt(n: any, digits = 2): string {
+    return Number(Number(n || 0).toFixed(digits)).toFixed(digits);
+  }
+  function fmtPct(x: any): string {
+    return `${(Number(x || 0) * 100).toFixed(0)}%`;
+  }
+
+  onMount(async () => {
+    try {
+      const res = await api.request<any>('/api/my/money?period=30d');
+      if (res.ok && res.data) money = res.data;
+    } catch {
+      // silent
+    }
+  });
 
   $: level = progress?.level ?? 1;
   $: xpInto = progress?.xpIntoLevel ?? 0;
@@ -120,5 +141,48 @@
         <Icon name="arrow-right" size={10} color={tierColor} />
       </div>
     </button>
+
+    <!-- My Money strip -->
+    {#if money && money.rakePaid > 0}
+      <button
+        type="button"
+        on:click={onOpenMoney}
+        class="w-full mt-2 rounded-2xl p-3 relative overflow-hidden active:scale-[0.98] transition-all text-left"
+        style="
+          background:
+            radial-gradient(ellipse at 100% 0%, rgba(16,185,129,0.15) 0%, transparent 60%),
+            linear-gradient(135deg, rgba(15,31,58,0.9), rgba(7,14,27,0.95));
+          border: 1px solid rgba(16,185,129,0.3);
+        "
+      >
+        <div class="flex items-center gap-3">
+          <div
+            class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+            style="background: rgba(16,185,129,0.2); border: 1px solid rgba(16,185,129,0.45);"
+          >
+            <Icon name="dollar" size={15} color="#6ee7b7" />
+          </div>
+          <div class="flex-1 min-w-0">
+            <p
+              class="text-[9px] uppercase tracking-widest font-extrabold text-emerald-300/80 mb-0.5"
+            >
+              Your Money · 30d
+            </p>
+            <p class="text-[11px] font-extrabold text-white/90 tabular-nums leading-tight">
+              Rake ${fmt(money.rakePaid, 2)} →
+              <span class="text-emerald-400">Back ${fmt(money.totalReturned, 2)}</span>
+            </p>
+          </div>
+          <div class="text-right shrink-0">
+            <p class="text-[14px] font-extrabold text-emerald-400 tabular-nums leading-none">
+              {fmtPct(money.returnPct)}
+            </p>
+            <p class="text-[8px] text-white/40 font-bold uppercase tracking-wider mt-0.5">
+              returned
+            </p>
+          </div>
+        </div>
+      </button>
+    {/if}
   </div>
 {/if}
