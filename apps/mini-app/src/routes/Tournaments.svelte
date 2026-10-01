@@ -3,6 +3,7 @@
   import { api } from '../lib/api';
   import { getRealtime, realtimeConnected, TOURNAMENT_EVENT_RE } from '../lib/realtime';
   import TopBar from '../components/TopBar.svelte';
+  import WorldClock from '../components/WorldClock.svelte';
   import Icon from '../components/Icon.svelte';
 
   export let onOpenTournament: (id: number) => void = () => {};
@@ -112,28 +113,226 @@
       .sort((a, b) => Number(b.totalPrizePool) - Number(a.totalPrizePool))[0] || null;
 
   $: others = featured ? tournaments.filter((t) => t.id !== featured.id) : tournaments;
+
+  // ─── Summary (derived from the loaded list only) ───
+  $: liveCount = tournaments.filter(
+    (t) => t.status === 'running' || t.status === 'final_table',
+  ).length;
+  $: openCount = tournaments.filter((t) => t.status === 'registering').length;
+  $: upcomingCount = tournaments.filter((t) => t.status === 'scheduled').length;
+  $: playersTotal = tournaments.reduce(
+    (sum: number, t: any) =>
+      sum + Number(Number(t.activeCount) > 0 ? t.activeCount : t.registeredCount || 0),
+    0,
+  );
+  $: prizeTotal = tournaments.reduce(
+    (sum: number, t: any) => sum + Number(t.totalPrizePool || 0),
+    0,
+  );
+  $: freeCount = tournaments.filter((t) => t.mode === 'free' || Number(t.buyIn) === 0).length;
 </script>
 
 <div class="pb-44 lg:pb-8">
   <TopBar />
 
-  <!-- HEADER -->
-  <div class="flex items-center justify-between mt-3 mb-4 px-4">
-    <div>
-      <h1 class="text-2xl font-extrabold text-white flex items-center gap-2">Tournaments</h1>
-      <p class="text-[11px] text-white/50 mt-0.5">
-        {tournaments.length}
-        {tournaments.length === 1 ? 'event' : 'events'}
+  <!-- HERO -->
+  <div class="px-4 mt-2 mb-4">
+    <div
+      class="rounded-3xl p-4 relative overflow-hidden"
+      style="
+        background:
+          radial-gradient(ellipse at 100% 0%, rgba(244,201,93,0.2) 0%, transparent 60%),
+          radial-gradient(ellipse at 0% 100%, rgba(139,92,246,0.14) 0%, transparent 60%),
+          linear-gradient(135deg, rgba(20,45,82,0.9) 0%, rgba(15,31,58,0.9) 55%, rgba(7,14,27,0.98) 100%);
+        border: 1.5px solid rgba(244,201,93,0.4);
+        box-shadow: 0 10px 32px rgba(0,0,0,0.6), 0 0 28px rgba(244,201,93,0.12);
+      "
+    >
+      <div
+        class="absolute -top-14 -right-14 w-44 h-44 rounded-full opacity-20 pointer-events-none"
+        style="background: radial-gradient(circle, #f4c95d, transparent 70%);"
+      ></div>
+
+      <div class="relative flex items-center gap-3">
+        <div
+          class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+          style="
+            background: radial-gradient(circle at 30% 30%, rgba(244,201,93,0.4), rgba(168,121,34,0.15));
+            border: 1.5px solid rgba(244,201,93,0.55);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.15), 0 0 20px rgba(244,201,93,0.2);
+          "
+        >
+          <Icon name="trophy" size={24} color="#f4c95d" />
+        </div>
+
+        <div class="flex-1 min-w-0">
+          <h1
+            class="text-[26px] font-extrabold leading-none tracking-tight"
+            style="
+              background: linear-gradient(180deg, #ffffff 0%, #f4e5a8 50%, #d4af37 100%);
+              -webkit-background-clip: text;
+              background-clip: text;
+              -webkit-text-fill-color: transparent;
+              filter: drop-shadow(0 2px 8px rgba(244,201,93,0.4));
+            "
+          >
+            Tournaments
+          </h1>
+          <p class="text-[11px] text-white/50 mt-1 font-bold truncate">
+            {loading
+              ? 'Loading schedule…'
+              : `${tournaments.length} ${tournaments.length === 1 ? 'event' : 'events'} · buy-in, GTD and live levels`}
+          </p>
+        </div>
+
+        <button
+          on:click={load}
+          aria-label="Refresh"
+          class="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 active:scale-95 transition-all"
+          style="
+            background: linear-gradient(180deg, rgba(15,31,58,0.9), rgba(11,19,36,0.95));
+            border: 1px solid rgba(212,175,55,0.3);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+          "
+        >
+          <Icon name="refresh" size={18} color="#f4c95d" />
+        </button>
+      </div>
+
+      {#if featured}
+        <div
+          class="relative flex items-center gap-2 mt-3 pt-3"
+          style="border-top: 1px solid rgba(244,201,93,0.2);"
+        >
+          <span
+            class="w-1.5 h-1.5 rounded-full animate-pulse"
+            style="background: #34d399; box-shadow: 0 0 6px #34d399;"
+          ></span>
+          <span class="text-[10px] text-white/60 font-bold uppercase tracking-wider">Live now</span>
+          <span class="text-[11px] font-extrabold text-white truncate flex-1">{featured.name}</span>
+          <span class="text-[11px] font-extrabold text-gold tabular-nums shrink-0">
+            ${fmt(featured.totalPrizePool)}
+          </span>
+        </div>
+      {/if}
+    </div>
+  </div>
+
+  <!-- SUMMARY GRID -->
+  <div class="grid grid-cols-2 gap-2 px-4 mb-4">
+    <div
+      class="rounded-2xl p-3 relative overflow-hidden"
+      style="
+        background:
+          radial-gradient(ellipse at 100% 0%, rgba(16,185,129,0.15) 0%, transparent 60%),
+          linear-gradient(180deg, rgba(15,31,58,0.85), rgba(7,14,27,0.95));
+        border: 1px solid rgba(16,185,129,0.3);
+      "
+    >
+      <div class="flex items-center gap-1.5 mb-2">
+        <div
+          class="w-6 h-6 rounded-lg flex items-center justify-center"
+          style="background: rgba(16,185,129,0.2); border: 1px solid rgba(16,185,129,0.4);"
+        >
+          <Icon name="play" size={12} color="#6ee7b7" />
+        </div>
+        <span class="text-[9px] font-extrabold text-emerald-300 uppercase tracking-wider">Live</span
+        >
+      </div>
+      <p class="text-[17px] font-extrabold text-white tabular-nums leading-none">
+        {loading ? '—' : liveCount}
+      </p>
+      <p class="text-[9px] text-white/45 mt-1 font-bold">running or final table</p>
+    </div>
+
+    <div
+      class="rounded-2xl p-3 relative overflow-hidden"
+      style="
+        background:
+          radial-gradient(ellipse at 100% 0%, rgba(34,211,238,0.15) 0%, transparent 60%),
+          linear-gradient(180deg, rgba(15,31,58,0.85), rgba(7,14,27,0.95));
+        border: 1px solid rgba(34,211,238,0.3);
+      "
+    >
+      <div class="flex items-center gap-1.5 mb-2">
+        <div
+          class="w-6 h-6 rounded-lg flex items-center justify-center"
+          style="background: rgba(34,211,238,0.2); border: 1px solid rgba(34,211,238,0.4);"
+        >
+          <Icon name="ticket" size={12} color="#22d3ee" />
+        </div>
+        <span class="text-[9px] font-extrabold text-cyan-300 uppercase tracking-wider">
+          Registering
+        </span>
+      </div>
+      <p class="text-[17px] font-extrabold text-white tabular-nums leading-none">
+        {loading ? '—' : openCount}
+      </p>
+      <p class="text-[9px] text-white/45 mt-1 font-bold">open for late entry</p>
+    </div>
+
+    <div
+      class="rounded-2xl p-3 relative overflow-hidden"
+      style="
+        background:
+          radial-gradient(ellipse at 100% 0%, rgba(139,92,246,0.15) 0%, transparent 60%),
+          linear-gradient(180deg, rgba(15,31,58,0.85), rgba(7,14,27,0.95));
+        border: 1px solid rgba(139,92,246,0.3);
+      "
+    >
+      <div class="flex items-center gap-1.5 mb-2">
+        <div
+          class="w-6 h-6 rounded-lg flex items-center justify-center"
+          style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4);"
+        >
+          <Icon name="clock" size={12} color="#c4b5fd" />
+        </div>
+        <span class="text-[9px] font-extrabold text-violet-300 uppercase tracking-wider">
+          Upcoming
+        </span>
+      </div>
+      <p class="text-[17px] font-extrabold text-white tabular-nums leading-none">
+        {loading ? '—' : upcomingCount}
+      </p>
+      <p class="text-[9px] text-white/45 mt-1 font-bold">scheduled to start</p>
+    </div>
+
+    <div
+      class="rounded-2xl p-3 relative overflow-hidden"
+      style="
+        background:
+          radial-gradient(ellipse at 100% 0%, rgba(244,201,93,0.15) 0%, transparent 60%),
+          linear-gradient(180deg, rgba(15,31,58,0.85), rgba(7,14,27,0.95));
+        border: 1px solid rgba(244,201,93,0.35);
+      "
+    >
+      <div class="flex items-center gap-1.5 mb-2">
+        <div
+          class="w-6 h-6 rounded-lg flex items-center justify-center"
+          style="background: rgba(244,201,93,0.2); border: 1px solid rgba(244,201,93,0.4);"
+        >
+          <Icon name="dollar" size={12} color="#f4c95d" />
+        </div>
+        <span class="text-[9px] font-extrabold text-gold uppercase tracking-wider">Prize Pool</span>
+      </div>
+      <p class="text-[17px] font-extrabold text-gold tabular-nums leading-none">
+        ${loading ? '—' : fmt(prizeTotal)}
+      </p>
+      <p class="text-[9px] text-white/45 mt-1 font-bold">
+        {loading ? '' : `${playersTotal} players · ${freeCount} free`}
       </p>
     </div>
-    <button
-      on:click={load}
-      aria-label="Refresh"
-      class="w-10 h-10 rounded-2xl flex items-center justify-center active:scale-95 transition-all"
-      style="background: linear-gradient(180deg, rgba(15,31,58,0.7), rgba(11,19,36,0.9)); border: 1px solid rgba(212,175,55,0.25);"
-    >
-      <Icon name="refresh" size={18} />
-    </button>
+  </div>
+
+  <!-- WORLD CLOCK -->
+  <WorldClock />
+
+  <!-- FILTERS -->
+  <div class="flex items-center gap-1.5 mb-2.5 px-4">
+    <span class="w-1.5 h-1.5 rounded-full bg-gold" style="box-shadow: 0 0 6px #d4af37;"></span>
+    <p class="text-[10px] font-extrabold text-white/60 uppercase tracking-widest">
+      Filter schedule
+    </p>
   </div>
 
   <!-- FILTERS -->
@@ -212,10 +411,14 @@
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-1.5 mb-2">
               <span
-                class="text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider"
+                class="inline-flex items-center gap-1 text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider"
                 style="background: {sc}30; color: {sc}; border: 1px solid {sc}60;"
               >
-                ● {statusLabel(featured.status)}
+                <span
+                  class="w-1 h-1 rounded-full"
+                  style="background: {sc}; box-shadow: 0 0 4px {sc};"
+                ></span>
+                {statusLabel(featured.status)}
               </span>
             </div>
             <p class="text-[11px] text-gold/80 font-bold uppercase tracking-widest mb-1">
@@ -258,6 +461,20 @@
     </div>
   {/if}
 
+  <!-- LIST HEADER -->
+  {#if !loading && !error && (featured || others.length > 0)}
+    <div class="flex items-center gap-2 mb-2 px-4">
+      <span class="w-1.5 h-1.5 rounded-full bg-gold" style="box-shadow: 0 0 6px #d4af37;"></span>
+      <p class="text-[10px] font-extrabold text-white/60 uppercase tracking-widest">
+        {featured ? 'More events' : 'All events'}
+      </p>
+      <span class="ml-auto text-[10px] font-mono text-white/40 tabular-nums">
+        {others.length}
+        {others.length === 1 ? 'event' : 'events'}
+      </span>
+    </div>
+  {/if}
+
   <!-- LOADING -->
   {#if loading}
     <div class="space-y-3 px-4">
@@ -270,23 +487,42 @@
     </div>
   {:else if error}
     <div
-      class="rounded-2xl p-4 text-center mx-4"
+      class="rounded-2xl p-4 mx-4 flex flex-col items-center gap-2 text-center"
       style="background: rgba(153,27,27,0.15); border: 1px solid rgba(239,68,68,0.3);"
     >
+      <Icon name="warning" size={20} color="#ef4444" />
       <p class="text-red-300 text-sm font-bold">{error}</p>
+      <p class="text-[10px] text-white/40 font-bold">Use the refresh button to retry</p>
     </div>
   {:else if others.length === 0 && !featured}
-    <div
-      class="rounded-3xl p-8 text-center mx-4"
-      style="background: linear-gradient(180deg, rgba(15,31,58,0.6), rgba(11,19,36,0.85)); border: 1px solid rgba(212,175,55,0.15);"
-    >
-      <div class="w-16 h-16 rounded-2xl mx-auto mb-3 flex items-center justify-center">
-        <img src="/trophy.webp" alt="" class="w-full h-full object-contain opacity-40" />
+    <div class="px-4">
+      <div
+        class="rounded-3xl p-8 text-center relative overflow-hidden"
+        style="
+          background:
+            radial-gradient(ellipse at 50% 0%, rgba(212,175,55,0.12) 0%, transparent 60%),
+            linear-gradient(180deg, rgba(15,31,58,0.7), rgba(11,19,36,0.9));
+          border: 1px dashed rgba(212,175,55,0.3);
+        "
+      >
+        <div class="flex justify-center mb-3">
+          <div
+            class="w-16 h-16 rounded-2xl flex items-center justify-center"
+            style="
+              background: linear-gradient(180deg, rgba(244,201,93,0.18), rgba(168,121,34,0.06));
+              border: 1px solid rgba(244,201,93,0.35);
+            "
+          >
+            <Icon name="trophy" size={30} color="rgba(244,201,93,0.65)" />
+          </div>
+        </div>
+        <p class="text-sm font-extrabold text-white">
+          No tournaments {filter === 'all' ? 'yet' : `in "${filter}"`}
+        </p>
+        <p class="text-[11px] text-white/55 mt-1 font-bold">
+          New events are added every day — check back soon
+        </p>
       </div>
-      <p class="text-white/60 text-sm font-bold">
-        No tournaments {filter === 'all' ? 'yet' : `in "${filter}"`}
-      </p>
-      <p class="text-white/40 text-[11px] mt-1">Check back soon</p>
     </div>
   {:else}
     <div class="space-y-3 px-4">
