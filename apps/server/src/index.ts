@@ -35,6 +35,7 @@ import { registerFreerollRoutes } from './freeroll-routes.js';
 import { registerHomeRoutes } from './home-routes.js';
 import { registerMissionRoutes } from './mission-routes.js';
 import { registerBadBeatRoutes } from './bad-beat-routes.js';
+import { registerWeeklyRaceRoutes } from './weekly-race-routes.js';
 
 const PORT = Number(process.env.PORT ?? 4000);
 const DATABASE_URL = process.env.DATABASE_URL ?? 'postgres://poker:pokerpass@localhost:5432/poker';
@@ -433,6 +434,7 @@ async function main() {
   await registerHomeRoutes(app, db);
   await registerMissionRoutes(app, db);
   await registerBadBeatRoutes(app, db);
+  await registerWeeklyRaceRoutes(app, db);
 
   // 🔴 Referral + transparency
   const { registerReferralRoutes } = await import('./referral-routes.js');
@@ -566,6 +568,27 @@ async function main() {
   const missionResetTimer = setInterval(runMissionReset, 60 * 60 * 1000);
   if (missionResetTimer.unref) missionResetTimer.unref();
 
+  // Weekly Rake Race — settle last week's brackets on Monday 00:00 UTC.
+  // closeWeek() is idempotent per (week, bracket), so repeat runs are safe.
+  const runWeeklyRaceClose = async () => {
+    try {
+      const now = new Date();
+      if (now.getUTCDay() !== 1 || now.getUTCHours() !== 0) return;
+      const { WeeklyRaceService } = await import('./weekly-race-service.js');
+      const svc = new WeeklyRaceService(db);
+      const results = await svc.closeWeek();
+      for (const r of results) {
+        console.log(
+          `[weekly-race] ${r.bracket}: ${r.players} players, ${r.paidPlaces} paid places, $${r.paidUsd} paid`,
+        );
+      }
+    } catch (e: any) {
+      console.error('[weekly-race] close cron error:', e.message);
+    }
+  };
+  const weeklyRaceTimer = setInterval(runWeeklyRaceClose, 60 * 60 * 1000);
+  if (weeklyRaceTimer.unref) weeklyRaceTimer.unref();
+
   process.on('SIGINT', () => {
     console.log('\n[shutdown] stopping services...');
     stopPolling();
@@ -575,6 +598,7 @@ async function main() {
     depositWatcher.stop();
     clearInterval(duoBonusTimer);
     clearInterval(missionResetTimer);
+    clearInterval(weeklyRaceTimer);
     setTimeout(() => process.exit(0), 500);
   });
 }

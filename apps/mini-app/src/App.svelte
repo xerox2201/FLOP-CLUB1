@@ -34,6 +34,7 @@
   import Books from './routes/Books.svelte';
   import Community from './routes/Community.svelte';
   import Missions from './routes/Missions.svelte';
+  import WeeklyRace from './routes/WeeklyRace.svelte';
   import SideNav from './components/SideNav.svelte';
   import BottomNav from './components/BottomNav.svelte';
   import ToastStack from './components/ToastStack.svelte';
@@ -72,7 +73,8 @@
     | 'referral-affiliate-detail'
     | 'books'
     | 'community'
-    | 'missions';
+    | 'missions'
+    | 'weekly-race';
 
   let currentPage: Page = 'home';
   let activeTableId = 1;
@@ -258,9 +260,11 @@
             </div>
           </div>
         {:else if currentPage === 'leaderboard'}
-          <Leaderboard />
+          <Leaderboard onNavigate={navigate} />
         {:else if currentPage === 'missions'}
           <Missions onBack={() => navigate('home')} />
+        {:else if currentPage === 'weekly-race'}
+          <WeeklyRace onBack={() => navigate('leaderboard')} />
         {:else if currentPage === 'events'}
           <Events />
         {:else if currentPage === 'tournaments'}

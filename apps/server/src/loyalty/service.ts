@@ -10,8 +10,7 @@ import {
   TierName,
   tierForRake,
   nextTier,
-  XP_POOL_PCT,
-  XP_PER_DOLLAR,
+  XP_PER_RAKE_USD,
   SEED_DEFS,
   SeedType,
   seedDef,
@@ -94,10 +93,9 @@ export class LoyaltyService {
         [handId, c.userId],
       );
       if (existing.rows.length > 0) {
-        const tierRow = await this.db.query(
-          'SELECT tier FROM user_tier WHERE user_id = $1',
-          [c.userId],
-        );
+        const tierRow = await this.db.query('SELECT tier FROM user_tier WHERE user_id = $1', [
+          c.userId,
+        ]);
         result.perPlayer.push({
           userId: c.userId,
           rakeShare,
@@ -115,13 +113,12 @@ export class LoyaltyService {
         'SELECT tier, lifetime_rake FROM user_tier WHERE user_id = $1',
         [c.userId],
       );
-      const currentTier: TierName =
-        (tierRow.rows[0]?.tier as TierName) ?? 'welcome';
+      const currentTier: TierName = (tierRow.rows[0]?.tier as TierName) ?? 'welcome';
       const lifetimeRakeBefore = Number(tierRow.rows[0]?.lifetime_rake ?? 0);
 
       const tierDef = tierForRake(lifetimeRakeBefore);
       const rakeback = Math.round(rakeShare * tierDef.rakebackPct * 100) / 100;
-      const xp = Math.round(rakeShare * XP_POOL_PCT * XP_PER_DOLLAR);
+      const xp = Math.round(rakeShare * XP_PER_RAKE_USD);
 
       const client = await this.db.connect();
       try {
@@ -146,12 +143,13 @@ export class LoyaltyService {
           }
         }
 
-        // 2. Log rakeback
+        // 2. Log rakeback (with exact rake_share for accurate accounting
+        //    and referral commission calculation)
         await client.query(
-          `INSERT INTO rakeback_log (hand_id, user_id, amount)
-           VALUES ($1, $2, $3)
+          `INSERT INTO rakeback_log (hand_id, user_id, amount, rake_share)
+           VALUES ($1, $2, $3, $4)
            ON CONFLICT (hand_id, user_id) DO NOTHING`,
-          [handId, c.userId, rakeback],
+          [handId, c.userId, rakeback, rakeShare],
         );
 
         // 3. Credit XP
@@ -172,8 +170,7 @@ export class LoyaltyService {
         }
 
         // 4. Update lifetime_rake + tier
-        const newLifetimeRake =
-          Math.round((lifetimeRakeBefore + rakeShare) * 100) / 100;
+        const newLifetimeRake = Math.round((lifetimeRakeBefore + rakeShare) * 100) / 100;
         const newTierDef = tierForRake(newLifetimeRake);
         await client.query(
           `INSERT INTO user_tier (user_id, tier, lifetime_rake, updated_at)
@@ -232,10 +229,9 @@ export class LoyaltyService {
               idempotencyKey: `voucher_unlock_${v.id}`,
             });
             if (ok.ok) {
-              await client.query(
-                `UPDATE vouchers SET used = TRUE, used_at = NOW() WHERE id = $1`,
-                [v.id],
-              );
+              await client.query(`UPDATE vouchers SET used = TRUE, used_at = NOW() WHERE id = $1`, [
+                v.id,
+              ]);
               await client.query(
                 `UPDATE users
                  SET bonus_playthrough_pending = bonus_playthrough_pending + $1,
@@ -251,6 +247,15 @@ export class LoyaltyService {
 
         await client.query('COMMIT');
 
+        // Weekly rake race: this hand's rake share counts toward the week.
+        try {
+          const { WeeklyRaceService } = await import('../weekly-race-service.js');
+          const race = new WeeklyRaceService(this.db);
+          await race.recordRake(c.userId, rakeShare);
+        } catch (e: any) {
+          console.error('[weekly-race] recordRake failed:', e.message);
+        }
+
         result.perPlayer.push({
           userId: c.userId,
           rakeShare,
@@ -261,10 +266,7 @@ export class LoyaltyService {
         });
       } catch (e: any) {
         await client.query('ROLLBACK');
-        console.error(
-          `[loyalty] payHand user=${c.userId} hand=${handId} failed:`,
-          e.message,
-        );
+        console.error(`[loyalty] payHand user=${c.userId} hand=${handId} failed:`, e.message);
         result.perPlayer.push({
           userId: c.userId,
           rakeShare,
@@ -307,9 +309,7 @@ export class LoyaltyService {
     if (nt) {
       const span = nt.minRake - tierDef.minRake;
       progressToNextTier =
-        span > 0
-          ? Math.min(1, Math.max(0, (lifetimeRake - tierDef.minRake) / span))
-          : 0;
+        span > 0 ? Math.min(1, Math.max(0, (lifetimeRake - tierDef.minRake) / span)) : 0;
     }
 
     const rbRow = await this.db.query(
@@ -336,10 +336,7 @@ export class LoyaltyService {
         currentRake: current,
         used: !!r.used,
         expiresAt: r.expires_at,
-        progressPct:
-          minRake > 0
-            ? Math.min(100, Math.round((current / minRake) * 100))
-            : 0,
+        progressPct: minRake > 0 ? Math.min(100, Math.round((current / minRake) * 100)) : 0,
       };
     });
 
@@ -354,10 +351,7 @@ export class LoyaltyService {
       'SELECT seed_type, claimed, claimed_at FROM seeds WHERE user_id = $1',
       [userId],
     );
-    const claimedMap = new Map<
-      string,
-      { claimed: boolean; at: string | null }
-    >();
+    const claimedMap = new Map<string, { claimed: boolean; at: string | null }>();
     for (const r of sRows.rows) {
       claimedMap.set(r.seed_type, { claimed: !!r.claimed, at: r.claimed_at });
     }
@@ -365,9 +359,7 @@ export class LoyaltyService {
     const seeds = SEED_DEFS.map((def) => {
       const claimed = claimedMap.get(def.type);
       const eligible =
-        !claimed?.claimed &&
-        freeHands >= def.minFreeHands &&
-        freeWins >= def.minFreeWins;
+        !claimed?.claimed && freeHands >= def.minFreeHands && freeWins >= def.minFreeWins;
       return {
         type: def.type,
         label: def.label,
@@ -398,9 +390,7 @@ export class LoyaltyService {
       tierColor: tierDef.color,
       lifetimeRake,
       rakebackPct: tierDef.rakebackPct,
-      nextTier: nt
-        ? { name: nt.name, label: nt.label, minRake: nt.minRake }
-        : null,
+      nextTier: nt ? { name: nt.name, label: nt.label, minRake: nt.minRake } : null,
       progressToNextTier,
       rakePaidLifetime: lifetimeRake,
       rakebackEarned,
@@ -422,8 +412,7 @@ export class LoyaltyService {
       'SELECT claimed FROM seeds WHERE user_id = $1 AND seed_type = $2',
       [userId, type],
     );
-    if (existing.rows[0]?.claimed)
-      return { ok: false, error: 'already_claimed' };
+    if (existing.rows[0]?.claimed) return { ok: false, error: 'already_claimed' };
 
     const fc = await this.db.query(
       'SELECT total_hands, free_hands_won FROM free_chips WHERE user_id = $1',
@@ -470,12 +459,7 @@ export class LoyaltyService {
            bonus_real_hands_pending = bonus_real_hands_pending + $3,
            bonus_received_at = NOW()
        WHERE id = $4`,
-      [
-        def.amount * def.playthroughMultiplier,
-        def.minRakeAfter,
-        def.minRealHandsAfter,
-        userId,
-      ],
+      [def.amount * def.playthroughMultiplier, def.minRakeAfter, def.minRealHandsAfter, userId],
     );
 
     return { ok: true, amount: def.amount };
@@ -495,8 +479,7 @@ export class LoyaltyService {
   }> {
     const xp = Math.floor(xpAmount);
     if (xp < 5000) return { ok: false, error: 'min_5000_xp' };
-    if (xp % 1000 !== 0)
-      return { ok: false, error: 'must_be_multiple_of_1000' };
+    if (xp % 1000 !== 0) return { ok: false, error: 'must_be_multiple_of_1000' };
 
     const xpRow = await this.db.query(
       'SELECT lifetime_xp, claimed_xp FROM user_xp WHERE user_id = $1',

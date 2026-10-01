@@ -14,6 +14,12 @@ import { fileURLToPath } from 'url';
 import { LedgerService } from './ledger.js';
 import { MissionService, utcDay } from './mission-service.js';
 import { BadBeatService } from './bad-beat-service.js';
+import {
+  WeeklyRaceService,
+  weekStartUtc,
+  bracketForRake,
+  computePrizes,
+} from './weekly-race-service.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -372,6 +378,124 @@ async function testBadBeat(userId: number, tableUserId: number): Promise<void> {
 }
 
 // ============================================================
+// Section 3 - Weekly rake race
+// ============================================================
+async function testWeeklyRace(userId: number, otherUserId: number): Promise<void> {
+  console.log('\n--- Weekly rake race ---');
+  const race = new WeeklyRaceService(db);
+
+  // 1. Week key must be a Monday (1 Oct 2026 is a Thursday).
+  const wk = weekStartUtc(new Date('2026-10-01T12:00:00Z'));
+  check('weekStartUtc lands on a Monday', new Date(`${wk}T00:00:00Z`).getUTCDay() === 1, wk);
+
+  // 2. Brackets
+  check('bracketForRake $10 -> bronze', bracketForRake(10) === 'bronze', bracketForRake(10));
+  check('bracketForRake $100 -> silver', bracketForRake(100) === 'silver', bracketForRake(100));
+  check('bracketForRake $1000 -> gold', bracketForRake(1000) === 'gold', bracketForRake(1000));
+
+  // 3. Prize curve
+  const prizes = computePrizes(100, 20);
+  const prizeSum = round2(prizes.reduce((a, b) => a + b, 0));
+  check('computePrizes(100, 20) sums to exactly the pool', prizeSum === 100, `sum=${prizeSum}`);
+  check(
+    'computePrizes is non-increasing',
+    prizes.every((p, i) => i === 0 || p <= prizes[i - 1]),
+    prizes.slice(0, 4).join(','),
+  );
+
+  // 4. Live accrual + bracket promotion
+  const before = await race.getMyEntry(userId);
+  await race.recordRake(userId, 60);
+  const after = await race.getMyEntry(userId);
+  check(
+    'recordRake adds to the current week',
+    round2(after.totalRake - before.totalRake) === 60,
+    `${before.totalRake} -> ${after.totalRake}`,
+  );
+  check('$60 of weekly rake sits in silver', after.bracket === 'silver', after.bracket);
+  check('my rank is assigned while the week is live', after.rank === 1, `rank=${after.rank}`);
+
+  // 5. Settle a synthetic past week (2020-01-06 is a Monday).
+  const pastWeek = '2020-01-06';
+  await db.query('DELETE FROM weekly_race_entries WHERE week_start = $1::date', [pastWeek]);
+  await db.query(
+    `INSERT INTO weekly_race_entries (user_id, week_start, bracket, total_rake)
+     VALUES ($1, $2::date, 'bronze', 40), ($3, $2::date, 'bronze', 20)`,
+    [userId, pastWeek, otherUserId],
+  );
+
+  const closed = await race.closeWeek(pastWeek);
+  const bronze = closed.find((r) => r.bracket === 'bronze');
+  check(
+    'closeWeek sees both bronze players',
+    !!bronze && bronze.players === 2,
+    JSON.stringify(bronze),
+  );
+  check(
+    'closeWeek paid a positive amount',
+    !!bronze && bronze.paidUsd > 0,
+    `paid=$${bronze?.paidUsd}`,
+  );
+
+  const settled = await db.query(
+    `SELECT user_id, rank, prize_usd, paid FROM weekly_race_entries
+     WHERE week_start = $1::date ORDER BY rank`,
+    [pastWeek],
+  );
+  check(
+    'ranks assigned by rake (1 then 2)',
+    Number(settled.rows[0]?.rank) === 1 && Number(settled.rows[1]?.rank) === 2,
+    settled.rows.map((r: any) => r.rank).join(','),
+  );
+  check(
+    'every row marked settled',
+    settled.rows.every((r: any) => r.paid === true),
+    settled.rows.map((r: any) => r.paid).join(','),
+  );
+  check(
+    'rank 1 prize beats rank 2',
+    Number(settled.rows[0]?.prize_usd) > Number(settled.rows[1]?.prize_usd),
+    `${settled.rows[0]?.prize_usd} vs ${settled.rows[1]?.prize_usd}`,
+  );
+  const paidSum = round2(settled.rows.reduce((s: number, r: any) => s + Number(r.prize_usd), 0));
+  check('bronze prizes sum to the $100 pool', paidSum === 100, `sum=${paidSum}`);
+
+  // 6. Idempotency
+  const again = await race.closeWeek(pastWeek);
+  const bronzeAgain = again.find((r) => r.bracket === 'bronze');
+  check(
+    'closeWeek is idempotent (ledger duplicate)',
+    bronzeAgain?.duplicate === true,
+    JSON.stringify(bronzeAgain),
+  );
+
+  // 7. Cleanup: reverse the ledger payments, then drop the synthetic rows.
+  const rakeAcc = await ledger.getAccountId('HOUSE_RAKE');
+  if (rakeAcc) {
+    const entries: { accountId: number; amount: number }[] = [];
+    let total = 0;
+    for (const r of settled.rows) {
+      const amount = Number(r.prize_usd);
+      if (amount <= 0) continue;
+      const acc = await ledger.ensureUserAccount(Number(r.user_id));
+      if (!acc) continue;
+      entries.push({ accountId: acc, amount: -amount });
+      total = round2(total + amount);
+    }
+    if (entries.length > 0) {
+      await ledger.record({
+        kind: 'REVERSAL',
+        ref: `e2e_weekly_race_reversal_${pastWeek}`,
+        entries: [{ accountId: rakeAcc, amount: total }, ...entries],
+      });
+    }
+  }
+  await db.query('DELETE FROM weekly_race_entries WHERE week_start = $1::date', [pastWeek]);
+  await db.query('DELETE FROM weekly_race_entries WHERE user_id = $1', [userId]);
+  check('cleanup: synthetic race rows removed', true, pastWeek);
+}
+
+// ============================================================
 // Cleanup
 // ============================================================
 async function cleanup(userId: number): Promise<void> {
@@ -414,6 +538,7 @@ async function main(): Promise<void> {
 
   await testMissions(userId);
   await testBadBeat(userId, tableUserId);
+  await testWeeklyRace(userId, tableUserId);
 
   // Restore the pool to its exact starting value.
   if (poolAtStart !== (await new BadBeatService(db).getPoolAmount())) {
