@@ -655,7 +655,11 @@ export class TournamentManager {
 
     const totalBuyIn = entries.rows.length * t.config.buyIn;
     const totalFee = entries.rows.length * t.config.fee;
-    const prizePool = Math.max(totalBuyIn, t.config.guaranteed);
+
+    // Overlay cap: guaranteed prize cannot exceed 5× total buy-in.
+    // Protects platform from runaway overlays on low-turnout tournaments.
+    const effectiveGuaranteed = Math.min(t.config.guaranteed, totalBuyIn * 5);
+    const prizePool = Math.max(totalBuyIn, effectiveGuaranteed);
 
     await this.db.query(
       `UPDATE tournaments
@@ -1999,6 +2003,18 @@ export class TournamentManager {
       `[tournament] 🏁 finishing #${tournamentId} (mode=${t.config.mode}${isSatellite ? ', SATELLITE' : ''})`,
     );
 
+    // Daily mission: finishing a tournament counts as "played" for everyone in it.
+    try {
+      const { MissionService } = await import('./mission-service.js');
+      const missions = new MissionService(this.db);
+      for (const p of t.players.values()) {
+        if (!p.userId) continue;
+        await missions.trackProgress(Number(p.userId), 'tournaments_played', 1);
+      }
+    } catch (e: any) {
+      console.error('[missions] tournament track failed:', e.message);
+    }
+
     const payoutsRes = await this.db.query(
       `SELECT position, percentage FROM tournament_payouts
        WHERE tournament_id = $1 ORDER BY position ASC`,
@@ -2172,6 +2188,15 @@ export class TournamentManager {
     }
 
     console.log(`[tournament] ✅ #${tournamentId} finished, winner=${winner?.userId}`);
+
+    // 🔴 Notify community (channel post)
+    try {
+      const { CommunityCron } = await import('./community-cron.js');
+      const cron = new CommunityCron(this.db);
+      await cron.onTournamentFinished(tournamentId);
+    } catch (e: any) {
+      console.error('[tournament] community announcement failed:', e.message);
+    }
 
     try {
       const ach = getAchievementsService();

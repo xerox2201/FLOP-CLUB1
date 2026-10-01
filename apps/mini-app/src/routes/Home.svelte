@@ -11,6 +11,10 @@
   import RewardsRow from '../components/RewardsRow.svelte';
   import TopWinnersToday from '../components/TopWinnersToday.svelte';
   import UserProgress from '../components/UserProgress.svelte';
+  import CommunityBanner from '../components/CommunityBanner.svelte';
+  import ReferralTile from '../components/ReferralTile.svelte';
+  import BadBeatPool from '../components/BadBeatPool.svelte';
+  import Missions from '../components/Missions.svelte';
   import Icon from '../components/Icon.svelte';
 
   export let onNavigate: (page: any) => void = () => {};
@@ -247,12 +251,18 @@
     </div>
   </div>
 
+  <!-- ============ COMMUNITY BANNER ============ -->
+  <CommunityBanner />
+
   <!-- ============ QUICK ACTIONS ============ -->
   <QuickActions
     onDeposit={() => onNavigate('wallet')}
     onShop={() => onNavigate('shop')}
     onLeaderboard={() => onNavigate('leaderboard')}
   />
+
+  <!-- ============ REFERRAL TILE ============ -->
+  <ReferralTile onOpen={() => onNavigate('referral')} />
 
   <!-- ============ POPULAR GAMES ============ -->
   <div class="flex items-center justify-between mb-3 px-4">
@@ -327,8 +337,18 @@
   <!-- ============ TOP WINNERS TODAY ============ -->
   <TopWinnersToday winners={topWinners} onSeeAll={() => onNavigate('leaderboard')} />
 
-  <!-- ============ USER PROGRESS (Level + Tier) ============ -->
-  <UserProgress progress={userProgress} onOpen={() => onNavigate('loyalty')} />
+  <!-- ============ BAD BEAT JACKPOT ============ -->
+  <BadBeatPool />
+
+  <!-- ============ DAILY MISSIONS ============ -->
+  <Missions onSeeAll={() => onNavigate('missions')} />
+
+  <!-- ============ USER PROGRESS (Level + Tier + Money) ============ -->
+  <UserProgress
+    progress={userProgress}
+    onOpen={() => onNavigate('loyalty')}
+    onOpenMoney={() => onNavigate('my-money')}
+  />
 </div>
 
 <QuickSeatSheet

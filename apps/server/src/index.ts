@@ -1,4 +1,5 @@
 import './env.js';
+import crypto from 'crypto';
 import { registerBroadcastRoutes } from './broadcast-routes.js';
 import { registerUsersRoutes } from './users-routes.js';
 import Fastify from 'fastify';
@@ -32,6 +33,8 @@ import { FreerollService } from './freeroll-service.js';
 import { FreerollScheduler } from './freeroll-scheduler.js';
 import { registerFreerollRoutes } from './freeroll-routes.js';
 import { registerHomeRoutes } from './home-routes.js';
+import { registerMissionRoutes } from './mission-routes.js';
+import { registerBadBeatRoutes } from './bad-beat-routes.js';
 
 const PORT = Number(process.env.PORT ?? 4000);
 const DATABASE_URL = process.env.DATABASE_URL ?? 'postgres://poker:pokerpass@localhost:5432/poker';
@@ -135,16 +138,67 @@ async function main() {
         const u = JSON.parse(userStr);
         const userId = Number(u.id);
         const displayName = u.first_name || u.username || `User${userId}`;
-        const dbUser = await upsertUser(userId, displayName);
+        const { dbUser, isNewUser } = await upsertUser(userId, displayName);
+
+        // Safety: block silently issuing JWT without uid
+        if (!dbUser?.id) {
+          console.error('[auth] dev fallback: upsertUser returned invalid shape', { dbUser });
+          return reply.code(500).send({ error: 'user_creation_failed' });
+        }
+
+        // 🔴 Referral attribution on FIRST login only (dev path)
+        if (isNewUser) {
+          try {
+            const pending = await db.query(
+              `SELECT code FROM pending_referrals
+               WHERE telegram_user_id = $1 AND expires_at > NOW()`,
+              [userId],
+            );
+            if (pending.rows.length > 0) {
+              const code = pending.rows[0].code;
+              const { attributeReferral } = await import('./referral-service.js');
+              await attributeReferral(db, dbUser.id, code);
+              await db.query(`DELETE FROM pending_referrals WHERE telegram_user_id = $1`, [userId]);
+              console.log(`[referral] 🎁 attributed user ${dbUser.id} to code ${code}`);
+            }
+          } catch (e: any) {
+            console.error('[referral] attribution failed (dev):', e.message);
+          }
+        }
+
         const token = signToken({ uid: dbUser.id, tg: userId }, JWT_SECRET);
         return { token, user: dbUser };
-      } catch {
+      } catch (e: any) {
+        console.error('[auth] dev fallback failed:', e.message);
         return reply.code(401).send({ error: 'invalid user json' });
       }
     }
 
     const displayName = parsed.user.first_name || parsed.user.username || `User${parsed.user.id}`;
-    const dbUser = await upsertUser(parsed.user.id, displayName);
+    const { dbUser, isNewUser } = await upsertUser(parsed.user.id, displayName);
+
+    // 🔴 Referral attribution on FIRST login only
+    if (isNewUser) {
+      try {
+        const pending = await db.query(
+          `SELECT code FROM pending_referrals
+           WHERE telegram_user_id = $1 AND expires_at > NOW()`,
+          [parsed.user.id],
+        );
+        if (pending.rows.length > 0) {
+          const code = pending.rows[0].code;
+          const { attributeReferral } = await import('./referral-service.js');
+          await attributeReferral(db, dbUser.id, code);
+          await db.query(`DELETE FROM pending_referrals WHERE telegram_user_id = $1`, [
+            parsed.user.id,
+          ]);
+          console.log(`[referral] 🎁 attributed user ${dbUser.id} to code ${code}`);
+        }
+      } catch (e: any) {
+        console.error('[referral] attribution failed:', e.message);
+      }
+    }
+
     const token = signToken({ uid: dbUser.id, tg: parsed.user.id }, JWT_SECRET);
     return { token, user: dbUser };
   });
@@ -377,11 +431,59 @@ async function main() {
   await registerDailyRefillRoutes(app, db);
   await registerTimeRoutes(app);
   await registerHomeRoutes(app, db);
+  await registerMissionRoutes(app, db);
+  await registerBadBeatRoutes(app, db);
+
+  // 🔴 Referral + transparency
+  const { registerReferralRoutes } = await import('./referral-routes.js');
+  const { registerMyMoneyRoutes } = await import('./my-money-routes.js');
+  const { registerBooksRoutes } = await import('./books-routes.js');
+  await registerReferralRoutes(app, db);
+  await registerMyMoneyRoutes(app, db);
+  await registerBooksRoutes(app, db);
 
   const freerollSvc = new FreerollService(db);
   const freerollScheduler = new FreerollScheduler(db, freerollSvc);
   await registerFreerollRoutes(app, db, freerollScheduler);
 
+  // 🔴 Telegram community (channel + group + bot)
+  const { registerTelegramRoutes } = await import('./telegram-routes.js');
+  const { getTelegramBot, startPolling, stopPolling } = await import('./telegram-bot.js');
+  await registerTelegramRoutes(app, db);
+
+  // Long polling — works in restricted regions (Iran), no public HTTPS needed.
+  // deleteWebhook is non-blocking: if Cloudflare proxy is slow, the server
+  // still starts. Polling retries automatically via getUpdates.
+  if (process.env.TELEGRAM_BOT_TOKEN) {
+    getTelegramBot(db)
+      .deleteWebhook()
+      .then(() => {
+        startPolling(db, 1000).catch((e) => console.error('[tg-bot] polling crashed:', e.message));
+      })
+      .catch((e: any) => {
+        console.error('[tg-bot] setup failed:', e.message);
+        // Still try polling — getUpdates will surface a clearer error
+        startPolling(db, 1000).catch(() => {});
+      });
+  } else {
+    console.warn('[tg-bot] TELEGRAM_BOT_TOKEN not set — bot disabled');
+  }
+
+  // 🔴 Community auto-posts (B1 + B3)
+  const { CommunityCron } = await import('./community-cron.js');
+  const communityCron = new CommunityCron(db);
+  communityCron.start();
+  // Debug endpoints (dev only)
+  if (!IS_PROD) {
+    app.post('/api/debug/cron/starting', async () => {
+      await communityCron.debugTickStarting();
+      return { ok: true };
+    });
+    app.post('/api/debug/cron/daily', async () => {
+      await communityCron.debugTickDaily();
+      return { ok: true };
+    });
+  }
   // 🔴 Tournament Manager
   const tournamentManager = new TournamentManager(db);
   const scheduler = new TournamentScheduler(db, tournamentManager);
@@ -430,33 +532,86 @@ async function main() {
 
   freerollScheduler.start(5 * 60 * 1000);
 
+  // 🔴 Referral duo bonus — runs daily at 02:00 UTC
+  const runDuoBonus = async () => {
+    try {
+      const now = new Date();
+      // Only run on 1st of month, 02:00-02:59 UTC
+      if (now.getUTCDate() !== 1 || now.getUTCHours() !== 2) return;
+      const { ReferralService } = await import('./referral-service.js');
+      const svc = new ReferralService(db);
+      await svc.payMonthlyDuoBonuses();
+    } catch (e: any) {
+      console.error('[referral] duo bonus cron error:', e.message);
+    }
+  };
+  const duoBonusTimer = setInterval(runDuoBonus, 60 * 60 * 1000); // hourly check
+  if (duoBonusTimer.unref) duoBonusTimer.unref();
+
+  // Daily missions — clear old progress at 00:00 UTC (checked hourly).
+  // resetDaily() only deletes days before today, so repeat runs are safe.
+  const runMissionReset = async () => {
+    try {
+      if (new Date().getUTCHours() !== 0) return;
+      const { MissionService } = await import('./mission-service.js');
+      const svc = new MissionService(db);
+      const removed = await svc.resetDaily();
+      if (removed > 0) {
+        console.log(`[missions] daily reset removed ${removed} old progress rows`);
+      }
+    } catch (e: any) {
+      console.error('[missions] reset cron error:', e.message);
+    }
+  };
+  const missionResetTimer = setInterval(runMissionReset, 60 * 60 * 1000);
+  if (missionResetTimer.unref) missionResetTimer.unref();
+
   process.on('SIGINT', () => {
+    console.log('\n[shutdown] stopping services...');
+    stopPolling();
+    communityCron.stop();
     freerollScheduler.stop();
     cleanupJob.stop();
     depositWatcher.stop();
-    process.exit(0);
+    clearInterval(duoBonusTimer);
+    clearInterval(missionResetTimer);
+    setTimeout(() => process.exit(0), 500);
   });
 }
 
 // ============================================================
 // User upsert helper
 // ============================================================
-async function upsertUser(telegramId: number, displayName: string): Promise<any> {
+async function upsertUser(
+  telegramId: number,
+  displayName: string,
+): Promise<{ dbUser: any; isNewUser: boolean }> {
   const existing = await db.query('SELECT * FROM users WHERE telegram_id = $1', [telegramId]);
   if (existing.rows.length > 0) {
-    return existing.rows[0];
+    return { dbUser: existing.rows[0], isNewUser: false };
   }
 
+  // Generate a unique referral code (retry on collision)
+  let refCode = '';
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const candidate = 'ref_' + crypto.randomBytes(4).toString('hex');
+    const check = await db.query('SELECT 1 FROM users WHERE referral_code = $1', [candidate]);
+    if (check.rows.length === 0) {
+      refCode = candidate;
+      break;
+    }
+  }
+  if (!refCode) refCode = 'ref_' + Date.now().toString(36);
+
   const res = await db.query(
-    `INSERT INTO users (telegram_id, display_name, avatar_id)
-     VALUES ($1, $2, 'spade')
-     RETURNING id, telegram_id, display_name, avatar_id, created_at`,
-    [telegramId, displayName],
+    `INSERT INTO users (telegram_id, display_name, avatar_id, referral_code)
+     VALUES ($1, $2, 'spade', $3)
+     RETURNING id, telegram_id, display_name, avatar_id, created_at, referral_code`,
+    [telegramId, displayName, refCode],
   );
 
   const newUser = res.rows[0];
 
-  // Create ledger account for new user
   try {
     const { LedgerService } = await import('./ledger.js');
     const ledger = new LedgerService(db);
@@ -465,7 +620,6 @@ async function upsertUser(telegramId: number, displayName: string): Promise<any>
     console.error('[user] ledger account creation failed:', e.message);
   }
 
-  // Give free chips
   try {
     await db.query(
       `INSERT INTO free_chips (user_id, chips) VALUES ($1, 1000)
@@ -476,7 +630,7 @@ async function upsertUser(telegramId: number, displayName: string): Promise<any>
     console.error('[user] free chips creation failed:', e.message);
   }
 
-  return newUser;
+  return { dbUser: newUser, isNewUser: true };
 }
 
 main().catch((e) => {

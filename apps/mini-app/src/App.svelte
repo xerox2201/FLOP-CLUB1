@@ -23,6 +23,17 @@
   import MyTournaments from './routes/MyTournaments.svelte';
   import Loyalty from './routes/Loyalty.svelte';
   import RewardsHistory from './routes/RewardsHistory.svelte';
+  import Referral from './routes/Referral.svelte';
+  import MyMoney from './routes/MyMoney.svelte';
+  import ReferralTeam from './routes/ReferralTeam.svelte';
+  import ReferralMilestones from './routes/ReferralMilestones.svelte';
+  import ReferralLeaderboard from './routes/ReferralLeaderboard.svelte';
+  import ReferralHistory from './routes/ReferralHistory.svelte';
+  import ReferralAffiliate from './routes/ReferralAffiliate.svelte';
+  import ReferralAffiliateDetail from './routes/ReferralAffiliateDetail.svelte';
+  import Books from './routes/Books.svelte';
+  import Community from './routes/Community.svelte';
+  import Missions from './routes/Missions.svelte';
   import SideNav from './components/SideNav.svelte';
   import BottomNav from './components/BottomNav.svelte';
   import ToastStack from './components/ToastStack.svelte';
@@ -50,11 +61,23 @@
     | 'help'
     | 'admin'
     | 'loyalty'
-    | 'rewards-history';
+    | 'rewards-history'
+    | 'referral'
+    | 'my-money'
+    | 'referral-team'
+    | 'referral-milestones'
+    | 'referral-leaderboard'
+    | 'referral-history'
+    | 'referral-affiliate'
+    | 'referral-affiliate-detail'
+    | 'books'
+    | 'community'
+    | 'missions';
 
   let currentPage: Page = 'home';
   let activeTableId = 1;
   let activeTournamentId: number | null = null;
+  let activeAffiliateId: number | null = null;
   let tableSource: 'cash' | 'tournament' = 'cash';
   let tablesVariant: string = 'all';
   let tablesMode: 'all' | 'free' | 'real' = 'all';
@@ -70,7 +93,17 @@
     currentPage === 'help' ||
     currentPage === 'admin' ||
     currentPage === 'loyalty' ||
-    currentPage === 'rewards-history';
+    currentPage === 'rewards-history' ||
+    currentPage === 'referral' ||
+    currentPage === 'my-money' ||
+    currentPage === 'referral-team' ||
+    currentPage === 'referral-milestones' ||
+    currentPage === 'referral-leaderboard' ||
+    currentPage === 'referral-history' ||
+    currentPage === 'referral-affiliate' ||
+    currentPage === 'referral-affiliate-detail' ||
+    currentPage === 'books' ||
+    currentPage === 'community';
 
   let splashElapsed = false;
   $: forceSplash = $auth.loading || !splashElapsed;
@@ -96,8 +129,19 @@
     });
   });
 
-  function navigate(page: Page) {
-    currentPage = page;
+  function navigate(page: Page | string) {
+    // Support parameterized routes: 'referral-affiliate-detail:42'
+    const str = String(page);
+    if (str.includes(':')) {
+      const [route, param] = str.split(':');
+      if (route === 'referral-affiliate-detail') {
+        activeAffiliateId = Number(param) || null;
+        currentPage = 'referral-affiliate-detail';
+        window.scrollTo({ top: 0 });
+        return;
+      }
+    }
+    currentPage = page as Page;
     window.scrollTo({ top: 0 });
   }
 
@@ -215,6 +259,8 @@
           </div>
         {:else if currentPage === 'leaderboard'}
           <Leaderboard />
+        {:else if currentPage === 'missions'}
+          <Missions onBack={() => navigate('home')} />
         {:else if currentPage === 'events'}
           <Events />
         {:else if currentPage === 'tournaments'}
@@ -229,6 +275,29 @@
           <Loyalty onBack={() => navigate('profile')} />
         {:else if currentPage === 'rewards-history'}
           <RewardsHistory onBack={() => navigate('profile')} />
+        {:else if currentPage === 'referral'}
+          <Referral onNavigate={navigate} onBack={() => navigate('profile')} />
+        {:else if currentPage === 'my-money'}
+          <MyMoney onNavigate={navigate} onBack={() => navigate('profile')} />
+        {:else if currentPage === 'referral-team'}
+          <ReferralTeam onNavigate={navigate} onBack={() => navigate('referral')} />
+        {:else if currentPage === 'referral-milestones'}
+          <ReferralMilestones onBack={() => navigate('referral')} />
+        {:else if currentPage === 'referral-leaderboard'}
+          <ReferralLeaderboard onBack={() => navigate('referral')} />
+        {:else if currentPage === 'referral-history'}
+          <ReferralHistory onBack={() => navigate('referral')} />
+        {:else if currentPage === 'referral-affiliate'}
+          <ReferralAffiliate onNavigate={navigate} onBack={() => navigate('referral')} />
+        {:else if currentPage === 'referral-affiliate-detail' && activeAffiliateId !== null}
+          <ReferralAffiliateDetail
+            affiliateId={activeAffiliateId}
+            onBack={() => navigate('referral-affiliate')}
+          />
+        {:else if currentPage === 'books'}
+          <Books onBack={() => navigate('my-money')} />
+        {:else if currentPage === 'community'}
+          <Community onBack={() => navigate('profile')} />
         {:else if currentPage === 'achievements'}
           <Achievements onBack={() => navigate('profile')} />
         {:else if currentPage === 'my-tournaments'}

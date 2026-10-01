@@ -333,12 +333,100 @@ class GameManager {
               totalRake: Number(handResult.rake),
               contributions,
             });
+
+            // Referral commissions (direct 12% / indirect 3% / group 8%)
+            const { ReferralService } = await import('./referral-service.js');
+            const referral = new ReferralService((globalThis as any).__dbPool);
+            await referral.payForHand({
+              handId: room.currentHandId ?? 0,
+              totalRake: Number(handResult.rake),
+              contributions,
+            });
           }
         }
       } catch (e: any) {
-        console.error('[loyalty] payHand error:', e.message);
+        console.error('[loyalty/referral] payHand error:', e.message);
       }
       // ============ END LOYALTY ============
+      // ============ BAD BEAT JACKPOT ============
+      // Runs after loyalty.payHand so rake is booked before the pool moves.
+      // Funding is 2% of rake; payouts only ever spend the pool.
+      try {
+        if (room.mode === 'real' && !room.tournamentId) {
+          const { BadBeatService } = await import('./bad-beat-service.js');
+          const badBeat = new BadBeatService((globalThis as any).__dbPool);
+
+          const seatToUserId: Record<number, number> = {};
+          for (const s of room.game.state.seats) {
+            if (s.userId) seatToUserId[Number(s.seat)] = Number(s.userId);
+          }
+
+          if (handResult.rake > 0 && room.currentHandId) {
+            await badBeat.recordPotContribution(
+              Number(handResult.rake),
+              Number(room.currentHandId),
+            );
+          }
+
+          const trigger = await badBeat.checkTrigger(handResult as any, seatToUserId);
+          if (trigger && trigger.amount > 0 && room.currentHandId) {
+            const tableUserIds = room.game.state.seats
+              .filter((s: any) => s.userId && !s.folded)
+              .map((s: any) => Number(s.userId));
+
+            const payout = await badBeat.payoutBadBeat({
+              handId: Number(room.currentHandId),
+              tier: trigger.tier,
+              loserUserId: trigger.loserUserId,
+              winnerUserId: trigger.winnerUserId,
+              tableUserIds,
+              pool: trigger.amount,
+            });
+
+            if (payout.ok && !payout.duplicate) {
+              console.log(
+                `[bad-beat] handId=${room.currentHandId} tier=${trigger.tier} name=${trigger.handName} paid=$${payout.paid}`,
+              );
+            } else if (!payout.ok) {
+              console.error('[bad-beat] payout skipped:', payout.error);
+            }
+          }
+        }
+      } catch (e: any) {
+        console.error('[bad-beat] error:', e.message);
+      }
+      // ============ END BAD BEAT ============
+      // ============ DAILY MISSIONS ============
+      // Every hand completion passes through handleShowdown, including
+      // fold-outs (engine sets phase='showdown'), so counters stay accurate.
+      try {
+        const { MissionService } = await import('./mission-service.js');
+        const missions = new MissionService((globalThis as any).__dbPool);
+        const variant = String(room.game.state.variant ?? '');
+        const isOmaha = variant.startsWith('omaha');
+
+        for (const s of room.game.state.seats) {
+          if (!s.userId) continue;
+          const uid = Number(s.userId);
+          await missions.trackProgress(uid, 'hands_played', 1);
+          if (isOmaha) {
+            await missions.trackProgress(uid, 'omaha_hands_played', 1);
+          }
+        }
+
+        for (const winnerSeat of handResult.winners || []) {
+          const info = room.game.state.seats.find((s: any) => s.seat === winnerSeat);
+          if (!info?.userId) continue;
+          const uid = Number(info.userId);
+          await missions.trackProgress(uid, 'hands_won', 1);
+          if (handResult.showdown === true) {
+            await missions.trackProgress(uid, 'showdowns_won', 1);
+          }
+        }
+      } catch (e: any) {
+        console.error('[missions] track failed:', e.message);
+      }
+      // ============ END DAILY MISSIONS ============
       const playerStacks = room.game.state.seats.map((s: any) => ({
         seat: s.seat,
         userId: s.userId,
