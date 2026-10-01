@@ -519,8 +519,9 @@
           >
             <span class="text-[7px] uppercase tracking-widest font-extrabold text-gold/70">POT</span
             >
-            <span class="font-black text-gold tabular-nums" style="font-size: {S.potFont}px;"
-              >${fmt(totalPot)}</span
+            <span
+              class="font-black text-gold tabular-nums pot-display"
+              style="font-size: {S.potFont}px;">${fmt(totalPot)}</span
             >
           </div>
         </div>

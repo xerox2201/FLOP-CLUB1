@@ -317,7 +317,7 @@
           <div
             class="rounded-full {compact
               ? 'pl-1 pr-3 py-0.5'
-              : 'pl-1.5 pr-3.5 py-0.5'} flex items-center gap-2"
+              : 'pl-1.5 pr-3.5 py-0.5'} flex items-center gap-2 pot-display"
             style="background: rgba(0,0,0,0.92); border: 1.5px solid #f4c95d; box-shadow: 0 4px 16px rgba(0,0,0,0.9), 0 0 16px rgba(244,201,93,0.25);"
           >
             <PokerChip amount={totalPot} size={SZ.potChipSize} />
@@ -328,7 +328,7 @@
             >
               POT
             </span>
-            <span class="text-[{SZ.potFont}px] font-extrabold text-gold tabular-nums">
+            <span class="text-[{SZ.potFont}px] font-extrabold text-gold tabular-nums pot-display">
               ${fmt(totalPot)}
             </span>
           </div>
@@ -388,7 +388,7 @@
         role="button"
         tabindex="0"
       >
-        <div class="relative">
+        <div class="relative {isTurn ? 'seat-active-gold' : ''}">
           {#if oppHole.length > 0}
             <div
               class="absolute left-1/2 -translate-x-1/2 flex justify-center pointer-events-none"
@@ -407,7 +407,7 @@
           {/if}
 
           {#if isTurn}
-            <div class="absolute -inset-[6px] pointer-events-none z-[2]">
+            <div class="absolute -inset-[6px] pointer-events-none z-[2] seat-active-gold">
               <TimerRing
                 size={SZ.timerSize}
                 strokeWidth={compact ? 3 : 4}
@@ -590,9 +590,9 @@
         role="button"
         tabindex="0"
       >
-        <div class="relative">
+        <div class="relative {isMyTurn ? 'seat-active-gold' : ''}">
           {#if isMyTurn}
-            <div class="absolute -inset-[6px] pointer-events-none z-[2]">
+            <div class="absolute -inset-[6px] pointer-events-none z-[2] seat-active-gold">
               <TimerRing
                 size={SZ.timerHeroSize}
                 strokeWidth={compact ? 3 : 4}

@@ -63,16 +63,11 @@
 
 {#if active && (remaining > 0 || paused)}
   <div
-    class="timer-ring"
+    class="timer-ring timer-ring-gradient-soft"
     class:pulsing={isPulsing}
     style="width: {size}px; height: {size}px;"
   >
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 {size} {size}"
-      style="transform: rotate(-90deg);"
-    >
+    <svg width={size} height={size} viewBox="0 0 {size} {size}" style="transform: rotate(-90deg);">
       <circle
         cx={size / 2}
         cy={size / 2}
@@ -135,13 +130,14 @@
   }
 
   @keyframes timer-pulse {
-    0%, 100% {
+    0%,
+    100% {
       transform: scale(1);
-      filter: drop-shadow(0 0 4px rgba(239,68,68,0.4));
+      filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.4));
     }
     50% {
       transform: scale(1.06);
-      filter: drop-shadow(0 0 16px rgba(239,68,68,0.9));
+      filter: drop-shadow(0 0 16px rgba(239, 68, 68, 0.9));
     }
   }
 </style>

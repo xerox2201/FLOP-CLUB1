@@ -1,4 +1,4 @@
- <script lang="ts">
+<script lang="ts">
   import Avatar from '../Avatar.svelte';
   import PlayingCard from '../PlayingCard.svelte';
   import TimerRing from '../TimerRing.svelte';
@@ -58,13 +58,7 @@
     <div class="cards-abs cards-above">
       {#each displayCards as c, i}
         <div style="margin-left: {i > 0 ? -6 : 0}px; z-index: {i};">
-          <PlayingCard
-            rank={c.r}
-            suit={suitChar(c.s)}
-            size="xs"
-            faceDown={faceDown}
-            dim={player.folded}
-          />
+          <PlayingCard rank={c.r} suit={suitChar(c.s)} size="xs" {faceDown} dim={player.folded} />
         </div>
       {/each}
     </div>
@@ -75,7 +69,7 @@
     <!-- Avatar -->
     <div class="avatar-wrap" style="width: {Z.avatar}px; height: {Z.avatar}px;">
       {#if isTurn}
-        <div class="timer-ring-abs">
+        <div class="timer-ring-abs seat-active-gold">
           <TimerRing
             size={Z.avatar + Z.timerExtra}
             strokeWidth={2.5}
@@ -96,14 +90,13 @@
             {isWinner ? '#d4af37' : isTurn ? '#0891b2' : '#0f1f3a'} 50%,
             {isWinner ? '#a87a15' : isTurn ? '#083344' : '#05080f'} 100%);
           {player.folded ? 'opacity: 0.4; filter: grayscale(0.75);' : ''}
-          {player.allIn && !player.folded ? 'animation: allin-shake 0.6s ease-in-out infinite;' : ''}
+          {player.allIn && !player.folded
+          ? 'animation: allin-shake 0.6s ease-in-out infinite;'
+          : ''}
         "
       >
         <div class="avatar-inner" style="width: {Z.avatar - 4}px; height: {Z.avatar - 4}px;">
-          <Avatar
-            avatarId={isHero ? heroAvatarId : (player.avatarId || 'king')}
-            size="sm"
-          />
+          <Avatar avatarId={isHero ? heroAvatarId : player.avatarId || 'king'} size="sm" />
         </div>
       </div>
 
@@ -127,12 +120,20 @@
       style="
         min-width: {Z.panelW}px;
         max-width: {Z.panelW + 20}px;
-        border-color: {isShowdownWin ? '#10b981' : isShowdownLose ? '#6b7280' : isWinner ? '#d4af37' : 'rgba(255,255,255,0.25)'};
-        {isShowdownWin ? 'box-shadow: 0 0 8px rgba(16,185,129,0.5), 0 2px 8px rgba(0,0,0,0.8);' : ''}
+        border-color: {isShowdownWin
+        ? '#10b981'
+        : isShowdownLose
+          ? '#6b7280'
+          : isWinner
+            ? '#d4af37'
+            : 'rgba(255,255,255,0.25)'};
+        {isShowdownWin
+        ? 'box-shadow: 0 0 8px rgba(16,185,129,0.5), 0 2px 8px rgba(0,0,0,0.8);'
+        : ''}
       "
     >
       <p class="name" style="font-size: {Z.nameFont}px;">
-        {isHero ? 'You' : (player.displayName || 'Player')}
+        {isHero ? 'You' : player.displayName || 'Player'}
       </p>
       <p class="stack" style="font-size: {Z.stackFont}px;">
         ${fmt(player.stack)}
@@ -145,13 +146,7 @@
     <div class="cards-abs cards-below">
       {#each displayCards as c, i}
         <div style="margin-left: {i > 0 ? -6 : 0}px; z-index: {i};">
-          <PlayingCard
-            rank={c.r}
-            suit={suitChar(c.s)}
-            size="xs"
-            faceDown={faceDown}
-            dim={player.folded}
-          />
+          <PlayingCard rank={c.r} suit={suitChar(c.s)} size="xs" {faceDown} dim={player.folded} />
         </div>
       {/each}
     </div>
@@ -220,7 +215,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.7),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
     position: relative;
     z-index: 2;
   }
@@ -259,7 +256,9 @@
     border-radius: 6px;
     background: linear-gradient(180deg, rgba(8, 20, 40, 0.96), rgba(5, 12, 25, 0.98));
     border: 1px solid rgba(255, 255, 255, 0.25);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.8),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
     z-index: 1;
   }
   .avatar-panel-row.flip .panel {
@@ -337,18 +336,37 @@
   }
 
   @keyframes winner-glow {
-    0%, 100% { filter: drop-shadow(0 0 6px rgba(244, 201, 93, 0.8)); }
-    50% { filter: drop-shadow(0 0 16px rgba(244, 201, 93, 1)); }
+    0%,
+    100% {
+      filter: drop-shadow(0 0 6px rgba(244, 201, 93, 0.8));
+    }
+    50% {
+      filter: drop-shadow(0 0 16px rgba(244, 201, 93, 1));
+    }
   }
-  .winner-glow { animation: winner-glow 1.4s ease-in-out infinite; }
+  .winner-glow {
+    animation: winner-glow 1.4s ease-in-out infinite;
+  }
 
   @keyframes allin-shake {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-1.5px); }
-    75% { transform: translateX(1.5px); }
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    25% {
+      transform: translateX(-1.5px);
+    }
+    75% {
+      transform: translateX(1.5px);
+    }
   }
   @keyframes allin-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.6;
+    }
   }
 </style>
