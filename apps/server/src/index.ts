@@ -36,6 +36,7 @@ import { registerHomeRoutes } from './home-routes.js';
 import { registerMissionRoutes } from './mission-routes.js';
 import { registerBadBeatRoutes } from './bad-beat-routes.js';
 import { registerWeeklyRaceRoutes } from './weekly-race-routes.js';
+import { registerFairRoutes } from './fair-routes.js';
 
 const PORT = Number(process.env.PORT ?? 4000);
 const DATABASE_URL = process.env.DATABASE_URL ?? 'postgres://poker:pokerpass@localhost:5432/poker';
@@ -435,6 +436,9 @@ async function main() {
   await registerMissionRoutes(app, db);
   await registerBadBeatRoutes(app, db);
   await registerWeeklyRaceRoutes(app, db);
+
+  // Provably Fair (commit/reveal + server-side verification)
+  await registerFairRoutes(app, db);
 
   // 🔴 Referral + transparency
   const { registerReferralRoutes } = await import('./referral-routes.js');

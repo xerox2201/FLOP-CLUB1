@@ -3,6 +3,7 @@ import type { Card, PlayerInit } from '../../../packages/poker-engine/src/types.
 import { evaluateSeatForDisplay } from './hand-eval-helper.js';
 import { describeHand } from '../../../packages/shared/src/hand-names.js';
 import { HandPersister } from './hand-persister.js';
+import { FairSeedService } from './fair-seed-service.js';
 import { ErrorCode, type CommandResult } from './errors.js';
 import { getAchievementsService } from './achievement-service.js';
 import { LoyaltyService } from './loyalty/service.js';
@@ -63,6 +64,7 @@ function ts(): string {
 class GameManager {
   private rooms: Map<number, TableRoom> = new Map();
   private persister: HandPersister | null = null;
+  private fairSeeds: FairSeedService | null = null;
   private tournamentHandEndCallback:
     ((tournamentId: number, room: TableRoom, handResult?: any) => void | Promise<void>) | null =
     null;
@@ -75,6 +77,58 @@ class GameManager {
       console.log('[game-manager] HandPersister initialized');
     }
     return this.persister;
+  }
+
+  private getFairSeeds(): FairSeedService {
+    if (!this.fairSeeds) {
+      const pool = (globalThis as any).__dbPool;
+      if (!pool) throw new Error('DB pool not initialized');
+      this.fairSeeds = new FairSeedService(pool);
+    }
+    return this.fairSeeds;
+  }
+
+  /**
+   * Provably Fair — publish the commitment for a freshly persisted hand.
+   * Fire-and-forget: a failure must never block or break the hand.
+   */
+  private commitFairSeed(room: TableRoom, handId: number): void {
+    try {
+      const hash = room.game.state.serverSeedHash;
+      const clientSeed = room.game.state.clientSeed;
+      if (!hash || !clientSeed) return;
+      this.getFairSeeds()
+        .commit({
+          handId,
+          tableId: room.tableId,
+          handNo: room.handCounter,
+          serverSeedHash: hash,
+          clientSeed,
+        })
+        .catch((e: any) => console.error('[fair] commit failed:', e.message));
+    } catch (e: any) {
+      console.error('[fair] commit hook failed:', e.message);
+    }
+  }
+
+  /**
+   * Provably Fair — reveal the seed once the hand ended.
+   * Fire-and-forget: a failure must never block or break the hand.
+   */
+  private revealFairSeed(room: TableRoom, handId: number, serverSeed: string): void {
+    try {
+      if (!serverSeed) return;
+      this.getFairSeeds()
+        .reveal({
+          handId,
+          serverSeed,
+          serverSeedHash: room.game.state.serverSeedHash ?? null,
+          clientSeed: room.game.state.clientSeed ?? null,
+        })
+        .catch((e: any) => console.error('[fair] reveal failed:', e.message));
+    } catch (e: any) {
+      console.error('[fair] reveal hook failed:', e.message);
+    }
   }
 
   setTournamentHandEndCallback(
@@ -457,6 +511,12 @@ class GameManager {
           );
         } catch (e: any) {
           console.error('[game-manager] persister.finishHand error:', e.message);
+        }
+
+        // Provably Fair — reveal the server seed for this hand.
+        // Tournament hands are skipped (they are never persisted).
+        if (handResult.revealSeed) {
+          this.revealFairSeed(room, room.currentHandId, handResult.revealSeed);
         }
       }
 
@@ -901,6 +961,7 @@ class GameManager {
             players: handPlayers,
           });
           room.currentHandId = handId;
+          if (handId) this.commitFairSeed(room, handId);
         } catch (e: any) {
           console.error('[game-manager] persister.startHand error:', e.message);
           room.currentHandId = null;

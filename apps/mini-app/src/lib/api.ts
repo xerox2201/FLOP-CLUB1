@@ -64,12 +64,10 @@ class ApiClient {
     });
   }
 
-
   async me(): Promise<ApiResponse<{ user: any; wallet: any; free_chips: any }>> {
     return this.request('/api/me');
   }
 
-  
   async updateAvatar(avatarId: string): Promise<ApiResponse<{ ok: boolean; avatar_id: string }>> {
     return this.request('/api/me/avatar', {
       method: 'POST',
@@ -134,6 +132,20 @@ class ApiClient {
     handId: number,
   ): Promise<ApiResponse<{ hand: any; initialSnapshot: any; events: any[] }>> {
     return this.request(`/api/hands/${handId}/replay`);
+  }
+
+  // ============================================================
+  // Provably Fair (server-side verification)
+  // ============================================================
+  async verifyFairHand(
+    commitment: string,
+  ): Promise<
+    ApiResponse<{ verified: boolean; pending: boolean; found: boolean; reason?: string }>
+  > {
+    return this.request('/api/fair/verify', {
+      method: 'POST',
+      body: JSON.stringify({ commitment }),
+    });
   }
 
   // ============================================================
