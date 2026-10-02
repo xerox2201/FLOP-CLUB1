@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from './Icon.svelte';
   import { t } from '../i18n';
 
   export let open: boolean = false;
@@ -13,21 +14,21 @@
     {
       id: 'holdem',
       labelKey: 'games.holdem',
-      emoji: '♠️',
+      emoji: '♠',
       gradient: 'linear-gradient(135deg, #1e3a8a 0%, #0c1a3a 100%)',
       activeBorder: '#3b82f6',
     },
     {
       id: 'omaha4',
       labelKey: 'games.omaha4',
-      emoji: '♦️',
+      emoji: '♦',
       gradient: 'linear-gradient(135deg, #7f1d1d 0%, #3b0a0a 100%)',
       activeBorder: '#ef4444',
     },
     {
       id: 'omaha5',
       labelKey: 'games.omaha5',
-      emoji: '♣️',
+      emoji: '♣',
       gradient: 'linear-gradient(135deg, #14532d 0%, #062a14 100%)',
       activeBorder: '#10b981',
     },
@@ -48,7 +49,7 @@
   <div class="fixed bottom-0 left-0 right-0 z-50 max-w-[480px] mx-auto px-3 pb-3">
     <div
       class="rounded-3xl p-5"
-      style="background: linear-gradient(180deg, rgba(16,26,58,0.98), rgba(8,13,36,0.98)); border: 1px solid rgba(139,92,246,0.35); box-shadow: 0 -8px 40px rgba(0,0,0,0.7); backdrop-filter: blur(20px);"
+      style="background: linear-gradient(180deg, rgba(16,26,58,0.98), rgba(8,13,36,0.98)); border: 1px solid rgba(37,99,235,0.35); box-shadow: 0 -8px 40px rgba(0,0,0,0.7); backdrop-filter: blur(20px);"
     >
       <div class="w-12 h-1 bg-white/20 rounded-full mx-auto mb-4"></div>
 
@@ -60,7 +61,7 @@
           on:click={onClose}
           aria-label="Close"
           class="w-8 h-8 rounded-full flex items-center justify-center text-white/60"
-          style="background: rgba(139,92,246,0.15);"
+          style="background: rgba(37,99,235,0.15);"
         >
           ✕
         </button>
@@ -91,7 +92,7 @@
       </p>
       <div
         class="rounded-2xl p-1 flex gap-1 mb-5"
-        style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.2);"
+        style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.2);"
       >
         <button
           on:click={() => (selectedMode = 'free')}
@@ -99,7 +100,8 @@
             ? 'bg-gradient-to-b from-emerald-400 to-emerald-700 text-white'
             : 'text-white/60'}"
         >
-          🎁 {$t('quickSeat.free')}
+          <Icon name="gift" size={16} color="#f4c95d" />
+          {$t('quickSeat.free')}
         </button>
         <button
           on:click={() => (selectedMode = 'real')}
@@ -107,7 +109,8 @@
             ? 'bg-gradient-to-b from-gold-light to-gold text-near-black'
             : 'text-white/60'}"
         >
-          💎 {$t('quickSeat.real')}
+          <Icon name="gem" size={16} color="#67e8f9" />
+          {$t('quickSeat.real')}
         </button>
       </div>
 

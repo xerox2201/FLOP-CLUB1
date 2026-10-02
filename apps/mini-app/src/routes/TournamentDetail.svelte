@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fmtAmount } from '../lib/table-geometry';
   import { onMount, onDestroy } from 'svelte';
   import { api } from '../lib/api';
   import { auth } from '../stores/auth';
@@ -67,7 +68,8 @@
   $: displayPlayerCount = isLive || isFinished ? (t?.totalPlayers ?? 0) : (t?.registeredCount ?? 0);
 
   function fmt(n: any, d = 2): string {
-    return Number(Number(n || 0).toFixed(d)).toFixed(d);
+    const v = Number(n || 0);
+    return d === 2 ? fmtAmount(v) : v.toFixed(d);
   }
   function fmtInt(n: any): string {
     return Math.round(Number(n || 0)).toLocaleString();
@@ -95,7 +97,7 @@
     if (s === 'running') return '#10b981';
     if (s === 'final_table') return '#d4af37';
     if (s === 'registering') return '#22d3ee';
-    if (s === 'scheduled') return '#8b5cf6';
+    if (s === 'scheduled') return '#3b82f6';
     if (s === 'finished') return '#6b7280';
     if (s === 'paused') return '#f59e0b';
     if (s === 'cancelled') return '#ef4444';
@@ -105,9 +107,9 @@
     return String(s).replace('_', ' ').toUpperCase();
   }
   function rankIcon(idx: number): string {
-    if (idx === 0) return '🥇';
-    if (idx === 1) return '🥈';
-    if (idx === 2) return '🥉';
+    if (idx === 0) return '';
+    if (idx === 1) return '';
+    if (idx === 2) return '';
     return '';
   }
   function flash(msg: string) {
@@ -117,7 +119,7 @@
   function copyId() {
     try {
       navigator.clipboard.writeText(String(tournamentId));
-      flash('📋 ID copied');
+      flash(' ID copied');
     } catch {
       // clipboard not available
     }
@@ -146,7 +148,7 @@
     try {
       const res = await api.registerTournament(tournamentId);
       if (res.ok) {
-        flash('✅ Registered!');
+        flash(' Registered!');
         await load();
       } else flash('❌ ' + (res.error || 'failed'));
     } catch (e: any) {
@@ -162,7 +164,7 @@
     try {
       const res = await api.unregisterTournament(tournamentId);
       if (res.ok) {
-        flash('↩️ Unregistered');
+        flash('↩ Unregistered');
         await load();
       } else flash('❌ ' + (res.error || 'failed'));
     } catch (e: any) {
@@ -181,7 +183,7 @@
         body: '{}',
       });
       if (res.ok) {
-        flash('🔄 Rebuy successful');
+        flash(' Rebuy successful');
         showRebuyConfirm = false;
         await load();
       } else {
@@ -203,7 +205,7 @@
         body: '{}',
       });
       if (res.ok) {
-        flash('🎁 Addon purchased');
+        flash(' Addon purchased');
         showAddonConfirm = false;
         await load();
       } else {
@@ -233,28 +235,28 @@
       });
     } else if (type === 'elimination') {
       pushNotif({
-        icon: '💀',
+        icon: '',
         title: `${data.displayName ?? 'Player'} eliminated`,
         message: `Position #${data.finalPosition ?? '?'}`,
         color: '#ef4444',
       });
     } else if (type === 'final_table') {
-      pushNotif({ icon: '🏆', title: 'FINAL TABLE', color: '#f4c95d' });
+      pushNotif({ icon: '', title: 'FINAL TABLE', color: '#f4c95d' });
     } else if (type === 'finished') {
-      pushNotif({ icon: '🏁', title: 'Tournament finished', color: '#10b981' });
+      pushNotif({ icon: '', title: 'Tournament finished', color: '#10b981' });
     } else if (type === 'rebuy') {
       pushNotif({
-        icon: '🔄',
+        icon: '',
         title: 'Player rebought',
         message: `New stack: ${data.newStack ?? '?'}`,
         color: '#3b82f6',
       });
     } else if (type === 'addon') {
       pushNotif({
-        icon: '🎁',
+        icon: '',
         title: 'Player added on',
         message: `New stack: ${data.newStack ?? '?'}`,
-        color: '#8b5cf6',
+        color: '#3b82f6',
       });
     }
     load();
@@ -556,7 +558,7 @@
           <span><Icon name={ye.isRegistered ? 'success' : 'target'} size={18} /></span>
           <p
             class="text-[10px] uppercase tracking-widest font-extrabold flex-1"
-            style="color: {ye.isRegistered ? '#6ee7b7' : '#a78bfa'};"
+            style="color: {ye.isRegistered ? '#6ee7b7' : '#60a5fa'};"
           >
             Your Status
           </p>
@@ -629,7 +631,7 @@
                 <button
                   on:click={() => (showAddonConfirm = true)}
                   class="flex-1 rounded-xl py-3 text-[12px] font-extrabold active:scale-95"
-                  style="background: linear-gradient(180deg, #8b5cf6, #6d28d9); color: white; box-shadow: 0 3px 0 #4c1d95;"
+                  style="background: linear-gradient(180deg, #3b82f6, #6d28d9); color: white; box-shadow: 0 3px 0 #4c1d95;"
                 >
                   Addon {t.addonAmount > 0 ? `· $${fmt(t.addonAmount)}` : ''}
                 </button>
@@ -657,7 +659,9 @@
               {#if ye.hasAddon}
                 <div class="text-center">
                   <p class="text-[9px] text-white/40 uppercase font-bold mb-1">Addon</p>
-                  <p class="text-base font-extrabold text-emerald-400">✓</p>
+                  <p class="text-base font-extrabold text-emerald-400">
+                    <Icon name="check" size={12} color="#34d399" />
+                  </p>
                 </div>
               {/if}
             </div>
@@ -1142,7 +1146,7 @@
     ></button>
     <div
       class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] rounded-3xl p-5 w-[90%] max-w-[380px]"
-      style="background: linear-gradient(180deg, #101a3a, #080d24); border: 1.5px solid rgba(139,92,246,0.5); box-shadow: 0 20px 60px rgba(0,0,0,0.9);"
+      style="background: linear-gradient(180deg, #101a3a, #080d24); border: 1.5px solid rgba(37,99,235,0.5); box-shadow: 0 20px 60px rgba(0,0,0,0.9);"
     >
       <div class="text-center mb-4">
         <div class="flex justify-center mb-2">
@@ -1155,7 +1159,7 @@
       </div>
       <div
         class="rounded-2xl p-3 mb-4 space-y-1.5"
-        style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.3);"
+        style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.3);"
       >
         <div class="flex justify-between text-[11px]">
           <span class="text-white/50">Current Stack</span>
@@ -1190,7 +1194,7 @@
           on:click={doAddon}
           disabled={addonBusy}
           class="flex-1 rounded-xl py-3 text-[12px] font-extrabold disabled:opacity-40"
-          style="background: linear-gradient(180deg, #8b5cf6, #6d28d9); color: white; box-shadow: 0 3px 0 #4c1d95;"
+          style="background: linear-gradient(180deg, #3b82f6, #6d28d9); color: white; box-shadow: 0 3px 0 #4c1d95;"
         >
           {addonBusy ? 'Processing…' : 'Confirm Addon'}
         </button>

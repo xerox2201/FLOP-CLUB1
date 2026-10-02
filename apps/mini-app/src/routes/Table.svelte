@@ -8,6 +8,7 @@
   import HandReplayModal from '../components/HandReplayModal.svelte';
   import PlayerInfoModal from '../components/PlayerInfoModal.svelte';
   import ChatModal from '../components/ChatModal.svelte';
+  import Icon from '../components/Icon.svelte';
   import { auth } from '../stores/auth';
   import { t } from '../i18n';
   import { playSound } from '../lib/sounds';
@@ -199,7 +200,7 @@
     lastErrorAt = entry.lastError.at;
     const msg = entry.lastError.message;
 
-    // 🔴 Stale tournament room → auto-cleanup + navigate back
+    // Stale tournament room → auto-cleanup + navigate back
     if (msg === 'STALE_TOURNAMENT' || msg.includes('STALE')) {
       errorMsg = 'Table no longer exists — returning to tournaments';
       setTimeout(() => {
@@ -221,7 +222,7 @@
       errorMsg = 'Reconnecting…';
     }
     if (!reconnecting && wasReconnecting) {
-      autoActionMsg = '✅ Reconnected';
+      autoActionMsg = 'Reconnected';
       setTimeout(() => {
         autoActionMsg = '';
       }, 2000);
@@ -250,7 +251,7 @@
     {
       key: 'call_any',
       label: 'Call Any',
-      color: '#8b5cf6',
+      color: '#3b82f6',
       paths: [
         'M3 5.5C3 4.1 4.1 3 5.5 3h2.3c.5 0 .9.3 1 .8l.7 3.2c.1.4 0 .8-.4 1L7.5 9.5c1 2 2.5 3.5 4.5 4.5l1.5-1.6c.2-.3.6-.4 1-.3l3.2.7c.5.1.8.5.8 1v2.3c0 1.4-1.1 2.5-2.5 2.5C8.6 19.1 3 13.4 3 5.5z',
       ],
@@ -344,15 +345,15 @@
 
     if (action === 'fold') {
       socket.action('FOLD', 0);
-      autoActionMsg = '✗ Fold (pre-action)';
+      autoActionMsg = 'Fold (pre-action)';
       sent = true;
     } else if (action === 'check') {
       if (canCheck) {
         socket.action('CHECK', 0);
-        autoActionMsg = '✓ Check (pre-action)';
+        autoActionMsg = 'Check (pre-action)';
         sent = true;
       } else {
-        autoActionMsg = '⚠️ Cannot check';
+        autoActionMsg = 'Cannot check';
         setTimeout(() => {
           autoActionMsg = '';
         }, 1500);
@@ -360,25 +361,25 @@
     } else if (action === 'check_fold') {
       if (canCheck) {
         socket.action('CHECK', 0);
-        autoActionMsg = '✓ Check (pre-action)';
+        autoActionMsg = 'Check (pre-action)';
         sent = true;
       } else {
         socket.action('FOLD', 0);
-        autoActionMsg = '✗ Fold (pre-action)';
+        autoActionMsg = 'Fold (pre-action)';
         sent = true;
       }
     } else if (action === 'call_any') {
       if (canCheck) {
         socket.action('CHECK', 0);
-        autoActionMsg = '✓ Check (pre-action)';
+        autoActionMsg = 'Check (pre-action)';
         sent = true;
       } else if (myStack > 0) {
         socket.action('CALL', 0);
-        autoActionMsg = '📞 Call (pre-action)';
+        autoActionMsg = 'Call (pre-action)';
         sent = true;
       } else {
         socket.action('FOLD', 0);
-        autoActionMsg = '✗ Fold (no chips)';
+        autoActionMsg = 'Fold (no chips)';
         sent = true;
       }
     }
@@ -403,7 +404,7 @@
     } else {
       preAction = pa;
       lastFireKey = null;
-      autoActionMsg = `🎯 ${pa.replace('_', '/')} armed`;
+      autoActionMsg = `${pa.replace('_', '/')} armed`;
       setTimeout(() => {
         autoActionMsg = '';
       }, 1500);
@@ -486,7 +487,7 @@
     sittingOut = true;
     showMenu = false;
     resetPreAction();
-    autoActionMsg = '💤 Sitting out';
+    autoActionMsg = 'Sitting out';
     setTimeout(() => {
       autoActionMsg = '';
     }, 2500);
@@ -519,7 +520,7 @@
   }
 
   function mutePlayer(userId: number) {
-    autoActionMsg = '🔇 Player muted';
+    autoActionMsg = 'Player muted';
     setTimeout(() => {
       autoActionMsg = '';
     }, 1500);
@@ -554,7 +555,7 @@
     <div class="flex-1 flex flex-col items-center pt-1">
       <p class="text-[13px] font-extrabold text-white tracking-wide">
         {tableTitle}
-        {#if seatCount}({seatCount} Max){/if}
+        {#if seatCount}({seatCount} players){/if}
       </p>
       <p class="text-[10px] text-cyan/80 font-semibold mt-0.5">
         {variantLabel} · {blindsLabel}
@@ -606,10 +607,12 @@
     ></button>
     <div
       class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[80] rounded-2xl p-4 w-[90%] max-w-[380px]"
-      style="background: rgba(15,23,42,0.98); border: 1px solid rgba(139,92,246,0.25);"
+      style="background: rgba(15,23,42,0.98); border: 1px solid rgba(37,99,235,0.25);"
     >
       <div class="flex items-center justify-between mb-3">
-        <h3 class="text-sm font-extrabold text-white">🔒 Provably Fair</h3>
+        <h3 class="text-sm font-extrabold text-white">
+          <Icon name="lock" size={12} color="#f4c95d" /> Provably Fair
+        </h3>
         <button on:click={() => (showSeedModal = false)} class="text-white/60 text-xl leading-none">
           ×
         </button>
@@ -629,12 +632,16 @@
         </div>
         {#if gameState.revealSeed}
           <div>
-            <p class="text-gold/80 mb-1">Revealed Server Seed ✓</p>
+            <p class="text-gold/80 mb-1">Revealed Server Seed</p>
             <p class="text-gold break-all">{gameState.revealSeed}</p>
           </div>
-          <p class="text-emerald-400 text-[10px] mt-2">✅ Verified</p>
+          <p class="text-emerald-400 text-[10px] mt-2">
+            <Icon name="success" size={11} color="#34d399" /> Verified
+          </p>
         {:else}
-          <p class="text-white/40 text-[10px] mt-2">🔒 Seed after hand ends revealed</p>
+          <p class="text-white/40 text-[10px] mt-2">
+            <Icon name="lock" size={10} color="rgba(255,255,255,0.4)" /> Seed after hand ends revealed
+          </p>
         {/if}
       </div>
     </div>
@@ -650,7 +657,7 @@
     ></button>
     <div
       class="absolute z-50 rounded-2xl p-2 shadow-2xl"
-      style="top: max(64px, calc(env(safe-area-inset-top) + 56px)); right: 12px; width: 220px; background: rgba(8,13,36,0.98); border: 1px solid rgba(139,92,246,0.25); backdrop-filter: blur(16px);"
+      style="top: max(64px, calc(env(safe-area-inset-top) + 56px)); right: 12px; width: 220px; background: rgba(8,13,36,0.98); border: 1px solid rgba(37,99,235,0.25); backdrop-filter: blur(16px);"
     >
       <button
         on:click={() => {
@@ -658,9 +665,9 @@
           showHandHistory = true;
         }}
         class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left active:scale-[0.98] transition"
-        style="background: rgba(139,92,246,0.12);"
+        style="background: rgba(37,99,235,0.12);"
       >
-        <span class="text-lg">📜</span>
+        <span class="text-lg"><Icon name="receipt" size={18} color="#f4c95d" /></span>
         <div class="flex-1">
           <p class="text-sm font-bold text-white">Hand History</p>
           <p class="text-[10px] text-white/50">View past hands</p>
@@ -675,7 +682,7 @@
         class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left active:scale-[0.98] transition"
         style="background: rgba(34,211,238,0.12);"
       >
-        <span class="text-lg">💬</span>
+        <span class="text-lg"><Icon name="chat" size={18} color="#67e8f9" /></span>
         <div class="flex-1">
           <p class="text-sm font-bold text-white">Chat</p>
           <p class="text-[10px] text-white/50">Talk to players</p>
@@ -690,14 +697,14 @@
         class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left active:scale-[0.98] transition"
         style="background: rgba(34,211,238,0.1);"
       >
-        <span class="text-lg">🔒</span>
+        <span class="text-lg"><Icon name="shield" size={18} color="#6ee7b7" /></span>
         <div class="flex-1">
           <p class="text-sm font-bold text-white">Provably Fair</p>
           <p class="text-[10px] text-white/50">View seed</p>
         </div>
       </button>
 
-      <div class="my-1 mx-2" style="height: 1px; background: rgba(139,92,246,0.15);"></div>
+      <div class="my-1 mx-2" style="height: 1px; background: rgba(37,99,235,0.15);"></div>
 
       {#if sittingOut}
         <button
@@ -725,14 +732,14 @@
         </button>
       {/if}
 
-      <div class="my-1 mx-2" style="height: 1px; background: rgba(139,92,246,0.15);"></div>
+      <div class="my-1 mx-2" style="height: 1px; background: rgba(37,99,235,0.15);"></div>
 
       <button
         on:click={leaveTable}
         class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left active:scale-[0.98] transition"
         style="background: rgba(220,38,38,0.15);"
       >
-        <span class="text-lg">🚪</span>
+        <span class="text-lg"><Icon name="logout" size={18} color="#fca5a5" /></span>
         <div class="flex-1">
           <p class="text-sm font-bold text-red-300">Leave Table</p>
           <p class="text-[10px] text-white/50">Return chips</p>
@@ -812,7 +819,7 @@
   {#if !gameState || startingHand}
     <div
       class="absolute top-[78%] left-1/2 -translate-x-1/2 z-20 rounded-2xl px-5 py-3 text-center"
-      style="background: rgba(0,0,0,0.88); border: 1px solid rgba(139,92,246,0.25);"
+      style="background: rgba(0,0,0,0.88); border: 1px solid rgba(37,99,235,0.25);"
     >
       <p class="text-sm text-white/70">{$t('table.waitingPlayers')}</p>
       <p class="text-xs text-gold mt-1 font-bold">
@@ -844,11 +851,11 @@
   {#if showPreActions}
     <div
       class="absolute bottom-0 left-0 right-0 z-30"
-      style="padding: 10px 12px calc(14px + env(safe-area-inset-bottom)) 12px; max-width: 480px; margin: 0 auto;"
+      style="padding: 10px 12px calc(14px + env(safe-area-inset-bottom)) 12px; max-width: min(720px, 92vw); margin: 0 auto;"
     >
       <div
         class="rounded-2xl p-2"
-        style="background: rgba(0,0,0,0.9); border: 1px solid rgba(139,92,246,0.2); backdrop-filter: blur(12px);"
+        style="background: rgba(0,0,0,0.9); border: 1px solid rgba(37,99,235,0.2); backdrop-filter: blur(12px);"
       >
         <div class="flex items-center justify-between px-2 mb-1.5">
           <span class="text-[9px] uppercase tracking-widest font-extrabold text-white/40">
@@ -921,7 +928,7 @@
     >
       <div
         class="rounded-xl p-1.5 flex gap-1 pointer-events-auto"
-        style="background: rgba(8,13,36,0.98); border: 1.5px solid rgba(139,92,246,0.5); box-shadow: 0 -8px 32px rgba(0,0,0,0.85), 0 0 24px rgba(139,92,246,0.2);"
+        style="background: rgba(8,13,36,0.98); border: 1.5px solid rgba(37,99,235,0.5); box-shadow: 0 -8px 32px rgba(0,0,0,0.85), 0 0 24px rgba(37,99,235,0.2);"
       >
         <div
           class="flex flex-col justify-between gap-0.5 flex-1 min-w-0"
@@ -933,11 +940,11 @@
               class="rounded-md py-1 active:scale-95 transition-all px-1 overflow-hidden"
               style="
                 background: {Math.abs(raiseAmount - p.value) < 0.01
-                ? 'linear-gradient(180deg, rgba(139,92,246,0.7), rgba(139,92,246,0.4))'
-                : 'linear-gradient(180deg, rgba(139,92,246,0.35), rgba(139,92,246,0.12))'};
+                ? 'linear-gradient(180deg, rgba(37,99,235,0.7), rgba(37,99,235,0.4))'
+                : 'linear-gradient(180deg, rgba(37,99,235,0.35), rgba(37,99,235,0.12))'};
                 border: 1px solid {Math.abs(raiseAmount - p.value) < 0.01
                 ? 'rgba(167,139,250,0.9)'
-                : 'rgba(139,92,246,0.4)'};
+                : 'rgba(37,99,235,0.4)'};
               "
             >
               <div class="text-[7px] font-extrabold text-white/60 uppercase leading-none">
@@ -1110,7 +1117,7 @@
     >
       <div
         class="rounded-xl p-2 pointer-events-auto"
-        style="background: rgba(8,13,36,0.98); border: 1.5px solid rgba(139,92,246,0.5); box-shadow: 0 -8px 32px rgba(0,0,0,0.85), 0 0 24px rgba(139,92,246,0.2);"
+        style="background: rgba(8,13,36,0.98); border: 1.5px solid rgba(37,99,235,0.5); box-shadow: 0 -8px 32px rgba(0,0,0,0.85), 0 0 24px rgba(37,99,235,0.2);"
       >
         <div class="grid grid-cols-2 gap-1 mb-1.5">
           {#each presets as p}
@@ -1119,11 +1126,11 @@
               class="rounded-md py-1.5 active:scale-95 transition-all px-1 overflow-hidden"
               style="
                 background: {Math.abs(raiseAmount - p.value) < 0.01
-                ? 'linear-gradient(180deg, rgba(139,92,246,0.7), rgba(139,92,246,0.4))'
-                : 'linear-gradient(180deg, rgba(139,92,246,0.35), rgba(139,92,246,0.12))'};
+                ? 'linear-gradient(180deg, rgba(37,99,235,0.7), rgba(37,99,235,0.4))'
+                : 'linear-gradient(180deg, rgba(37,99,235,0.35), rgba(37,99,235,0.12))'};
                 border: 1px solid {Math.abs(raiseAmount - p.value) < 0.01
                 ? 'rgba(167,139,250,0.9)'
-                : 'rgba(139,92,246,0.4)'};
+                : 'rgba(37,99,235,0.4)'};
               "
             >
               <div class="text-[7px] font-extrabold text-white/60 uppercase leading-none">
@@ -1208,7 +1215,7 @@
   {#if gameState && !startingHand && !handResult && isMyTurn}
     <div
       class="absolute bottom-0 left-0 right-0 z-30"
-      style="padding: 10px 12px calc(14px + env(safe-area-inset-bottom)) 12px; max-width: 480px; margin: 0 auto;"
+      style="padding: 10px 12px calc(14px + env(safe-area-inset-bottom)) 12px; max-width: min(720px, 92vw); margin: 0 auto;"
     >
       {#if !sittingOut}
         {#if canUseBank}
@@ -1217,7 +1224,7 @@
               on:click={useTimeBank}
               class="rounded-full px-4 py-1.5 text-[11px] font-bold text-gold active:scale-95"
               style="background: rgba(0,0,0,0.85); border: 1px solid rgba(244,201,93,0.5); backdrop-filter: blur(10px);"
-              >⏱️ Use Time Bank</button
+              ><Icon name="clock" size={12} color="#f4c95d" /> Use Time Bank</button
             >
           </div>
         {/if}
@@ -1323,7 +1330,9 @@
           class="rounded-2xl p-3 text-center"
           style="background: rgba(244,201,93,0.15); border: 1px solid rgba(244,201,93,0.4); backdrop-filter: blur(10px);"
         >
-          <p class="text-xs font-bold text-gold">💤 Sitting Out — Auto-folding</p>
+          <p class="text-xs font-bold text-gold">
+            <Icon name="pause" size={11} color="#f4c95d" /> Sitting Out — Auto-folding
+          </p>
           <button on:click={doSitIn} class="mt-2 text-[11px] text-white underline"
             >Resume playing</button
           >

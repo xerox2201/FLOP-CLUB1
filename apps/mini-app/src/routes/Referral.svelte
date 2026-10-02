@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fmtAmount } from '../lib/table-geometry';
   import { onMount } from 'svelte';
   import { api } from '../lib/api';
   import TopBar from '../components/TopBar.svelte';
@@ -14,7 +15,7 @@
 
   const RATE_CARD = [
     { key: 'direct', label: 'Direct', color: '#f4c95d' },
-    { key: 'indirect', label: 'Indirect', color: '#a78bfa' },
+    { key: 'indirect', label: 'Indirect', color: '#60a5fa' },
     { key: 'group', label: 'Group', color: '#22d3ee' },
   ];
 
@@ -38,7 +39,7 @@
       label: 'Milestones',
       sub: 'Unlock rewards',
       icon: 'target',
-      color: '#a78bfa',
+      color: '#60a5fa',
     },
     {
       id: 'referral-affiliate',
@@ -57,7 +58,8 @@
   ];
 
   function fmt(n: any, digits = 2): string {
-    return Number(Number(n || 0).toFixed(digits)).toFixed(digits);
+    const v = Number(n || 0);
+    return digits === 2 ? fmtAmount(v) : v.toFixed(digits);
   }
 
   function fmtDate(iso: string): string {
@@ -127,9 +129,17 @@
     >
       <Icon name="arrow-left" size={18} color="#ffffff" />
     </button>
-    <h1 class="text-xl font-extrabold text-white flex-1 flex items-center gap-2">
+    <h1 class="text-[22px] font-extrabold flex-1 flex items-center gap-2">
       <Icon name="users" size={22} color="#f4c95d" />
-      <span>Referral</span>
+      <span
+        style="
+          background: linear-gradient(180deg, #ffffff 0%, #f4e5a8 50%, #d4af37 100%);
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          filter: drop-shadow(0 2px 8px rgba(244,201,93,0.35));
+        ">Referral</span
+      >
     </h1>
   </div>
 
@@ -158,7 +168,7 @@
         style="
           background:
             radial-gradient(ellipse at 100% 0%, rgba(244,201,93,0.28) 0%, transparent 60%),
-            radial-gradient(ellipse at 0% 100%, rgba(139,92,246,0.15) 0%, transparent 60%),
+            radial-gradient(ellipse at 0% 100%, rgba(37,99,235,0.15) 0%, transparent 60%),
             linear-gradient(135deg, #142d52 0%, #0a1a33 60%, #05080f 100%);
           border: 1.5px solid rgba(244,201,93,0.45);
           box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 0 40px rgba(244,201,93,0.15);
@@ -240,9 +250,9 @@
           <button
             on:click={copyLink}
             class="flex-1 rounded-xl py-2.5 text-[11px] font-extrabold active:scale-95 flex items-center justify-center gap-1.5"
-            style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.4); color: #c4b5fd;"
+            style="background: rgba(37,99,235,0.15); border: 1px solid rgba(37,99,235,0.4); color: #93c5fd;"
           >
-            <Icon name="copy" size={13} color="#c4b5fd" />
+            <Icon name="copy" size={13} color="#93c5fd" />
             <span>{copied ? 'Copied' : 'Copy'}</span>
           </button>
           <button
@@ -301,14 +311,14 @@
     <div class="px-4 mb-3">
       <div
         class="rounded-2xl p-3.5"
-        style="background: linear-gradient(180deg, rgba(15,31,58,0.85), rgba(7,14,27,0.95)); border: 1px solid rgba(139,92,246,0.35);"
+        style="background: linear-gradient(180deg, rgba(15,31,58,0.85), rgba(7,14,27,0.95)); border: 1px solid rgba(37,99,235,0.35);"
       >
         <div class="flex items-center gap-2 mb-2">
-          <Icon name="star" size={14} color="#a78bfa" />
-          <p class="text-[10px] uppercase tracking-widest font-extrabold text-violet-300 flex-1">
+          <Icon name="star" size={14} color="#60a5fa" />
+          <p class="text-[10px] uppercase tracking-widest font-extrabold text-blue-300 flex-1">
             Ambassador Progress
           </p>
-          <span class="text-[11px] font-extrabold text-violet-300 tabular-nums">
+          <span class="text-[11px] font-extrabold text-blue-300 tabular-nums">
             {dashboard.activeRefs} / {dashboard.ambassadorTarget}
           </span>
         </div>
@@ -320,8 +330,8 @@
             class="h-full rounded-full transition-all"
             style="
               width: {dashboard.ambassadorProgress}%;
-              background: linear-gradient(90deg, #c4b5fd, #8b5cf6);
-              box-shadow: 0 0 10px rgba(139,92,246,0.6);
+              background: linear-gradient(90deg, #93c5fd, #3b82f6);
+              box-shadow: 0 0 10px rgba(37,99,235,0.6);
             "
           ></div>
         </div>

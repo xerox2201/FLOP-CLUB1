@@ -40,7 +40,7 @@ function join(meta: ActiveTableMeta, token: string, myUserId: number | null): Ac
   const cur = get(store);
   const existing = cur.get(meta.tableId);
 
-  // 🔴 If the same table exists but belongs to a different user, reset it
+  // If the same table exists but belongs to a different user, reset it
   if (existing) {
     if (existing.myUserId !== null && existing.myUserId !== myUserId) {
       console.log(
@@ -50,7 +50,7 @@ function join(meta: ActiveTableMeta, token: string, myUserId: number | null): Ac
       cur.delete(meta.tableId);
       store.set(new globalThis.Map(cur));
     } else if (existing.socket.isClosed?.()) {
-      // 🔴 Socket was killed (e.g. STALE_TOURNAMENT). Reset entry.
+      // Socket was killed (e.g. STALE_TOURNAMENT). Reset entry.
       console.log(`[activeTables] table ${meta.tableId} has closed socket, resetting`);
       cur.delete(meta.tableId);
       store.set(new globalThis.Map(cur));

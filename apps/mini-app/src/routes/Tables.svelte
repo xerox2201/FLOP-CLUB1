@@ -126,50 +126,49 @@
   <TopBar />
 
   <!-- HEADER -->
-  <div class="px-4 mt-2 mb-3">
-    <div class="flex items-start justify-between mb-2">
+  <div class="px-4 mt-2 mb-4">
+    <div class="flex items-start justify-between mb-3">
       <div>
-        <h1 class="text-2xl font-extrabold text-white leading-none">Tables</h1>
-        <p class="text-[11px] text-white/45 mt-1">Pick a table and join the action</p>
+        <h1 class="text-[26px] font-extrabold text-white leading-none tracking-[-0.02em]">
+          Tables
+        </h1>
+        <p class="text-[11px] text-white/45 mt-1.5">Pick a table and join the action</p>
       </div>
       <button
         on:click={() => loadTables(true)}
         aria-label="Refresh"
-        class="w-10 h-10 rounded-2xl flex items-center justify-center active:scale-95 transition-all shrink-0"
+        class="w-11 h-11 rounded-2xl flex items-center justify-center active:scale-95 transition-all shrink-0"
         style="
-          background: linear-gradient(180deg, rgba(212,175,55,0.2), rgba(168,122,21,0.08));
-          border: 1px solid rgba(212,175,55,0.45);
-          box-shadow: 0 0 12px rgba(212,175,55,0.15), inset 0 1px 0 rgba(255,255,255,0.06);
+          background: linear-gradient(180deg, rgba(212,175,55,0.22), rgba(168,122,21,0.08));
+          border: 1px solid rgba(212,175,55,0.5);
+          box-shadow: 0 0 16px rgba(212,175,55,0.18), inset 0 1px 0 rgba(255,255,255,0.07);
         "
       >
         <div class={refreshing ? 'animate-spin' : ''}>
-          <Icon name="refresh" size={16} color="#f4c95d" />
+          <Icon name="refresh" size={17} color="#f4c95d" />
         </div>
       </button>
     </div>
 
     <!-- Live stats bar -->
-    <div
-      class="flex items-center gap-3 px-3 py-2 rounded-xl"
-      style="background: rgba(15,31,58,0.55); border: 1px solid rgba(255,255,255,0.06);"
-    >
-      <div class="flex items-center gap-1.5">
+    <div class="stats-bar">
+      <div class="stats-item">
         <span
           class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"
           style="box-shadow: 0 0 6px #34d399;"
         ></span>
-        <span class="text-[12px] font-extrabold text-emerald-300 tabular-nums">{totalPlayers}</span>
-        <span class="text-[10px] text-white/45 font-bold uppercase tracking-wider">playing</span>
+        <span class="stats-num text-emerald-300">{totalPlayers}</span>
+        <span class="stats-label">playing</span>
       </div>
-      <span class="w-px h-3" style="background: rgba(255,255,255,0.12);"></span>
-      <div class="flex items-center gap-1.5">
-        <span class="text-[12px] font-extrabold text-gold tabular-nums">{totalActive}</span>
-        <span class="text-[10px] text-white/45 font-bold uppercase tracking-wider">active</span>
+      <span class="w-px h-3.5" style="background: rgba(255,255,255,0.12);"></span>
+      <div class="stats-item">
+        <span class="stats-num text-gold">{totalActive}</span>
+        <span class="stats-label">active</span>
       </div>
-      <span class="w-px h-3" style="background: rgba(255,255,255,0.12);"></span>
-      <div class="flex items-center gap-1.5">
-        <span class="text-[12px] font-extrabold text-cyan-300 tabular-nums">{totalSeatsOpen}</span>
-        <span class="text-[10px] text-white/45 font-bold uppercase tracking-wider">open</span>
+      <span class="w-px h-3.5" style="background: rgba(255,255,255,0.12);"></span>
+      <div class="stats-item">
+        <span class="stats-num text-cyan-300">{totalSeatsOpen}</span>
+        <span class="stats-label">open</span>
       </div>
     </div>
   </div>
@@ -179,13 +178,14 @@
     {#each [{ k: 'all', l: 'All Games', icon: 'target', color: '#d4af37' }, { k: 'free', l: 'Free Play', icon: 'gift', color: '#10b981' }, { k: 'real', l: 'Real Money', icon: 'dollar', color: '#f4c95d' }] as f}
       <button
         on:click={() => (filterMode = f.k as any)}
-        class="shrink-0 px-3 py-2 rounded-xl text-[11px] font-extrabold transition-all flex items-center gap-1.5 active:scale-95"
+        class="shrink-0 px-3.5 py-2 rounded-full text-[11px] font-extrabold transition-all flex items-center gap-1.5 active:scale-95"
         style="
           background: {filterMode === f.k
           ? `linear-gradient(180deg, ${f.color}, ${f.color}cc)`
           : 'linear-gradient(180deg, rgba(15,31,58,0.7), rgba(11,19,36,0.9))'};
           color: {filterMode === f.k ? '#0a0800' : 'rgba(255,255,255,0.65)'};
           border: 1px solid {filterMode === f.k ? f.color : 'rgba(212,175,55,0.15)'};
+          box-shadow: {filterMode === f.k ? `0 4px 16px ${f.color}55` : 'none'};
         "
       >
         <Icon name={f.icon} size={12} color={filterMode === f.k ? '#0a0800' : f.color} />
@@ -217,17 +217,17 @@
     <button
       on:click={cycleSort}
       class="shrink-0 rounded-lg px-2.5 py-1.5 flex items-center gap-1 active:scale-95 transition-all"
-      style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.35);"
+      style="background: rgba(37,99,235,0.15); border: 1px solid rgba(37,99,235,0.35);"
       aria-label="Change sort"
     >
-      <Icon name={currentSort.icon} size={11} color="#c4b5fd" />
-      <span class="text-[10px] font-extrabold text-violet-300">{currentSort.label}</span>
+      <Icon name={currentSort.icon} size={11} color="#93c5fd" />
+      <span class="text-[10px] font-extrabold text-blue-300">{currentSort.label}</span>
     </button>
   </div>
 
   <!-- LIST -->
   {#if loading}
-    <div class="px-4 space-y-2.5">
+    <div class="px-4 grid gap-2.5 grid-cols-1 lg:grid-cols-2">
       {#each Array(4) as _}
         <div
           class="rounded-2xl h-[110px]"
@@ -285,7 +285,7 @@
       </div>
     </div>
   {:else}
-    <div class="px-4 space-y-2.5">
+    <div class="px-4 grid gap-2.5 grid-cols-1 lg:grid-cols-2">
       {#each filtered as table (table.id)}
         {@const accent = variantColor(table.variant)}
         {@const isFree = table.mode === 'free'}
@@ -313,9 +313,9 @@
             style="background: linear-gradient(180deg, {accent}, {accent}66);"
           ></div>
 
-          <div class="pl-4 pr-3 py-3">
+          <div class="pl-4 pr-3.5 py-3.5">
             <!-- Top: badges row -->
-            <div class="flex items-center gap-1.5 mb-2">
+            <div class="flex items-center gap-1.5 mb-2.5">
               <span
                 class="text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider"
                 style="background: {accent}20; color: {accent}; border: 1px solid {accent}50;"
@@ -336,8 +336,10 @@
             </div>
 
             <!-- Middle: name + status -->
-            <div class="flex items-center gap-2 mb-2">
-              <p class="text-[14px] font-extrabold text-white truncate flex-1 leading-tight">
+            <div class="flex items-center gap-2 mb-2.5">
+              <p
+                class="text-[15px] font-extrabold text-white truncate flex-1 leading-tight tracking-[-0.01em]"
+              >
                 {table.name}
               </p>
               <div class="shrink-0 flex items-center gap-2">
@@ -361,7 +363,7 @@
                   Blinds
                 </span>
                 <span
-                  class="text-[12px] font-extrabold text-cyan-300 tabular-nums whitespace-nowrap"
+                  class="text-[14px] font-extrabold text-cyan-300 tabular-nums whitespace-nowrap"
                 >
                   ${fmtBlind(sb)}<span class="text-white/40 mx-0.5">/</span>${fmtBlind(bb)}
                 </span>
@@ -374,16 +376,16 @@
                 <div class="flex gap-0.5">
                   {#each Array(m) as _, i}
                     <span
-                      class="w-[3px] h-3.5 rounded-sm transition-all"
+                      class="w-1 h-4 rounded-sm transition-all"
                       style="
                         background: {i < l ? status.color : 'rgba(255,255,255,0.10)'};
-                        box-shadow: {i < l ? `0 0 4px ${status.color}80` : 'none'};
+                        box-shadow: {i < l ? `0 0 5px ${status.color}80` : 'none'};
                       "
                     ></span>
                   {/each}
                 </div>
                 <span
-                  class="text-[11px] font-extrabold tabular-nums"
+                  class="text-[12px] font-extrabold tabular-nums"
                   style="color: {status.color};"
                 >
                   {l}<span class="text-white/55 font-bold">/{m}</span>

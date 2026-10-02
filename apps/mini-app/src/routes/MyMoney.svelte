@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fmtAmount } from '../lib/table-geometry';
   import { onMount } from 'svelte';
   import { api } from '../lib/api';
   import TopBar from '../components/TopBar.svelte';
@@ -19,7 +20,8 @@
   ];
 
   function fmt(n: any, digits = 2): string {
-    return Number(Number(n || 0).toFixed(digits)).toFixed(digits);
+    const v = Number(n || 0);
+    return digits === 2 ? fmtAmount(v) : v.toFixed(digits);
   }
   function pct(x: any, digits = 1): string {
     return `${(Number(x || 0) * 100).toFixed(digits)}%`;
@@ -59,9 +61,17 @@
     >
       <Icon name="arrow-left" size={18} color="#ffffff" />
     </button>
-    <h1 class="text-xl font-extrabold text-white flex-1 flex items-center gap-2">
+    <h1 class="text-[22px] font-extrabold flex-1 flex items-center gap-2">
       <Icon name="dollar" size={22} color="#6ee7b7" />
-      <span>My Money</span>
+      <span
+        style="
+          background: linear-gradient(180deg, #ffffff 0%, #f4e5a8 50%, #d4af37 100%);
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          filter: drop-shadow(0 2px 8px rgba(244,201,93,0.35));
+        ">My Money</span
+      >
     </h1>
   </div>
 

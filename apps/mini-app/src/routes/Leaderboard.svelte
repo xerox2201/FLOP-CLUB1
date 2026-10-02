@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fmtAmount } from '../lib/table-geometry';
   import { onMount, onDestroy } from 'svelte';
   import TopBar from '../components/TopBar.svelte';
   import { api } from '../lib/api';
@@ -17,7 +18,7 @@
   let clockTimer: any = null;
 
   function fmt(n: any): string {
-    return Number(Number(n || 0).toFixed(2)).toFixed(2);
+    return fmtAmount(Number(n || 0));
   }
   function handsLabel(n: number): string {
     return n === 1 ? 'hand' : 'hands';
@@ -349,7 +350,7 @@
         style="
         background:
           radial-gradient(ellipse at 100% 0%, rgba(244,201,93,0.28) 0%, transparent 60%),
-          radial-gradient(ellipse at 0% 100%, rgba(139,92,246,0.15) 0%, transparent 60%),
+          radial-gradient(ellipse at 0% 100%, rgba(37,99,235,0.15) 0%, transparent 60%),
           linear-gradient(135deg, #142d52 0%, #1a1240 60%, #05080f 100%);
         border: 1.5px solid rgba(244,201,93,0.45);
         box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 0 40px rgba(244,201,93,0.15);

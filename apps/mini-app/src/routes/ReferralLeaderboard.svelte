@@ -99,7 +99,7 @@
       style="
         background:
           radial-gradient(ellipse at 100% 0%, rgba(244,201,93,0.28) 0%, transparent 60%),
-          radial-gradient(ellipse at 0% 100%, rgba(139,92,246,0.15) 0%, transparent 60%),
+          radial-gradient(ellipse at 0% 100%, rgba(37,99,235,0.15) 0%, transparent 60%),
           linear-gradient(135deg, #142d52 0%, #1a1240 60%, #05080f 100%);
         border: 1.5px solid rgba(244,201,93,0.45);
         box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 0 40px rgba(244,201,93,0.15);
@@ -206,7 +206,8 @@
               >
                 <span
                   class="text-[10px] font-extrabold px-2 py-0.5 rounded-full inline-block mb-1"
-                  style="background: rgba(148,163,184,0.25); color: #cbd5e1;">🥈 2nd</span
+                  style="background: rgba(148,163,184,0.25); color: #cbd5e1;"
+                  ><Icon name="medal" size={18} color="#cbd5e1" /> 2nd</span
                 >
                 <p class="text-[10px] font-extrabold text-white truncate">{second.displayName}</p>
                 <p class="text-[11px] font-extrabold text-emerald-400 tabular-nums mt-0.5">
@@ -219,7 +220,7 @@
 
           <!-- 1st -->
           <div class="flex flex-col items-center" style="order: 2;">
-            <span class="text-base mb-1">👑</span>
+            <span class="text-base mb-1"><Icon name="crown" size={16} color="#f4c95d" /></span>
             <div
               class="w-16 h-16 rounded-full overflow-hidden mb-1"
               style="border: 2px solid #f4c95d; box-shadow: 0 0 20px rgba(244,201,93,0.7);"
@@ -239,7 +240,7 @@
               <span
                 class="text-[10px] font-extrabold px-2 py-0.5 rounded-full inline-block mb-1"
                 style="background: linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15); color: #0a0800;"
-                >🥇 1st</span
+                ><Icon name="medal" size={18} color="#f4c95d" /> 1st</span
               >
               <p class="text-[11px] font-extrabold text-white truncate">{first.displayName}</p>
               <p class="text-[12px] font-extrabold text-emerald-400 tabular-nums mt-0.5">
@@ -270,7 +271,8 @@
               >
                 <span
                   class="text-[10px] font-extrabold px-2 py-0.5 rounded-full inline-block mb-1"
-                  style="background: rgba(217,119,6,0.25); color: #fbbf24;">🥉 3rd</span
+                  style="background: rgba(217,119,6,0.25); color: #fbbf24;"
+                  ><Icon name="medal" size={18} color="#d97706" /> 3rd</span
                 >
                 <p class="text-[10px] font-extrabold text-white truncate">{third.displayName}</p>
                 <p class="text-[11px] font-extrabold text-emerald-400 tabular-nums mt-0.5">

@@ -1,8 +1,14 @@
 <script lang="ts">
+  import Icon from './Icon.svelte';
   import PlayingCard from './PlayingCard.svelte';
   import PokerChip from './PokerChip.svelte';
   import Avatar from './Avatar.svelte';
   import TimerRing from './TimerRing.svelte';
+  import ProvablyFairFooter from './ProvablyFairFooter.svelte';
+  import TableSurface from './poker/TableSurface.svelte';
+  import { fmtAmount, seatPositions } from '../lib/table-geometry';
+  import { tweened } from 'svelte/motion';
+  import { cubicOut } from 'svelte/easing';
 
   export let gameState: any = null;
   export let myUserId: number | null = null;
@@ -16,7 +22,7 @@
   export let compact: boolean = false;
 
   function fmt(n: any): string {
-    return Number(Number(n || 0).toFixed(2)).toFixed(2);
+    return fmtAmount(Number(n || 0));
   }
 
   function suitChar(s: string): '♠' | '♥' | '♦' | '♣' {
@@ -37,7 +43,6 @@
     boardCardSize: 'xs' | 'sm' | 'md';
     holeGap: number;
     holeTop: number;
-    heroTop: number;
     heroAvatarPx: number;
     timerSize: number;
     timerHeroSize: number;
@@ -53,68 +58,52 @@
       return {
         avatarPx: 38,
         avatarBorder: 2,
-        panelMinW: 54,
+        panelMinW: 60,
         panelPad: '1px 6px',
-        nameFont: 9,
-        stackFont: 9,
+        nameFont: 10,
+        stackFont: 10,
         holeCardSize: 'sm',
         boardCardSize: 'sm',
         holeGap: 1,
-        holeTop: 74,
-        heroTop: 92,
+        holeTop: 76,
         heroAvatarPx: 46,
         timerSize: 52,
         timerHeroSize: 58,
-        potFont: 11,
-        potChipSize: 13,
+        potFont: 20,
+        potChipSize: 16,
         seatMT: 4,
-        betFont: 9,
-        betChipSize: 10,
+        betFont: 10,
+        betChipSize: 12,
       };
     }
     return {
       avatarPx: 52,
       avatarBorder: 3,
-      panelMinW: 72,
+      panelMinW: 80,
       panelPad: '2px 10px',
-      nameFont: 10,
-      stackFont: 10,
+      nameFont: 11,
+      stackFont: 12,
       holeCardSize: 'lg',
       boardCardSize: 'md',
       holeGap: 2,
-      holeTop: 68,
-      heroTop: 92,
+      holeTop: 74,
       heroAvatarPx: 64,
       timerSize: 70,
       timerHeroSize: 78,
-      potFont: 14,
-      potChipSize: 16,
+      potFont: 28,
+      potChipSize: 20,
       seatMT: 8,
-      betFont: 11,
-      betChipSize: 12,
+      betFont: 13,
+      betChipSize: 14,
     };
   }
 
   $: SZ = getSizes(compact);
 
-  const BASE_ANGLES: Record<number, number[]> = {
-    2: [90, 270],
-    3: [90, 210, 330],
-    4: [90, 180, 270, 0],
-    5: [90, 162, 234, 306, 18],
-    6: [90, 150, 210, 270, 330, 30],
-  };
-
+  // Seat geometry comes from the shared module — one source of truth for both
+  // layouts. rotatedIdx 0 is always the hero, at the bottom centre.
   function seatPos(rotatedIdx: number, total: number): { x: number; y: number } {
-    const angles = BASE_ANGLES[total] || BASE_ANGLES[6];
-    const deg = angles[rotatedIdx] ?? 90;
-    const rad = (deg * Math.PI) / 180;
-    const rx = total === 2 ? 38 : 44;
-    const ry = total === 2 ? 34 : 34;
-    return {
-      x: 50 + Math.cos(rad) * rx,
-      y: 50 + Math.sin(rad) * ry,
-    };
+    return seatPositions(total, 0, 'desktop')[rotatedIdx] ?? { x: 50, y: 90 };
   }
 
   function towardCenter(px: number, py: number, dist: number): { x: number; y: number } {
@@ -127,9 +116,9 @@
 
   $: allSeats = gameState?.seats ?? [];
   $: totalSeats = allSeats.length;
-  $: heroIdx = allSeats.findIndex((s: any) => s.userId === myUserId);
+  $: heroIdx = allSeats.findIndex((s: any) => Number(s.userId) === Number(myUserId));
   $: mySeat = heroIdx >= 0 ? allSeats[heroIdx] : null;
-  $: opponents = allSeats.filter((s: any) => s.userId !== myUserId);
+  $: opponents = allSeats.filter((s: any) => Number(s.userId) !== Number(myUserId));
 
   $: isMyTurn = !!(
     gameState &&
@@ -141,6 +130,23 @@
   );
 
   $: totalPot = gameState?.pot ?? 0;
+
+  // Pot count-up: the number rolls to its new value over 300ms; the chips use
+  // the real total so they never flicker.
+  const potTween = tweened(0, { duration: 300, easing: cubicOut });
+  $: potTween.set(totalPot);
+  $: shownPot = $potTween;
+
+  // Cards that form the winning five — union across winners, keyed by rank+suit.
+  $: winningCardKeys = new Set(
+    ((handResult?.showdownPlayers ?? []) as any[])
+      .filter((p: any) => p.isWinner && p.best?.length)
+      .flatMap((p: any) => p.best)
+      .map((c: any) => `${c.r}${c.s}`),
+  );
+  function isWinningCard(c: any): boolean {
+    return !!c && winningCardKeys.has(`${c.r}${c.s}`);
+  }
   $: community = gameState?.community ?? [];
   $: serverTime = gameState?.serverTime ?? Date.now();
   $: turnStartedAt = gameState?.turnStartedAt ?? 0;
@@ -203,7 +209,7 @@
     const winnerSeat = winners[0];
     const winnerData = allSeats.find((s: any) => s.seat === winnerSeat);
 
-    if (winnerData && winnerData.userId !== myUserId) {
+    if (winnerData && Number(winnerData.userId) !== Number(myUserId)) {
       const pos = oppPos(winnerData.seat);
       chipVisible = true;
       chipLeft = 50;
@@ -231,18 +237,15 @@
 </script>
 
 <div
-  class="absolute left-1/2 -translate-x-1/2 w-full"
+  class="table-shell absolute left-1/2 -translate-x-1/2 {compact ? 'is-compact' : ''}"
   style="
     top: {compact ? '50%' : '45%'};
     transform: translate(-50%, -50%);
     padding: 0 {compact ? '6px' : '12px'};
-    max-width: min(
-      {compact ? '900px' : '1100px'},
-      calc((100dvh - {compact ? 130 : 300}px) * 1.6)
-    );
+    min-height: {compact ? 480 : 640}px;
   "
 >
-  <div class="relative w-full" style="aspect-ratio: 1 / 1.12;">
+  <div class="relative w-full" style="aspect-ratio: 1400 / 876;">
     {#if theme === 'tournament' && tournamentTitle}
       <div class="absolute -top-3 left-1/2 -translate-x-1/2 z-[60] pointer-events-none">
         <div
@@ -256,24 +259,7 @@
       </div>
     {/if}
 
-    <div
-      class="absolute -inset-2 rounded-[50%] {isFinalTable ? 'felt-rim-final' : 'felt-rim'}"
-    ></div>
-
-    <div
-      class="absolute inset-0 rounded-[50%] overflow-hidden {theme === 'tournament'
-        ? 'felt-tournament'
-        : 'felt-cash'}"
-    >
-      <div
-        class="absolute inset-0 rounded-[50%]"
-        style="box-shadow: inset 0 0 80px rgba(0,0,0,0.75), inset 0 4px 12px rgba(255,255,255,0.06);"
-      ></div>
-      <div
-        class="absolute inset-0 rounded-[50%] opacity-40"
-        style="background: radial-gradient(ellipse at 50% 25%, rgba(255,255,255,0.15), transparent 55%);"
-      ></div>
-    </div>
+    <TableSurface variant="desktop" isFinal={isFinalTable} tournament={theme === 'tournament'} />
 
     {#if gameState && totalPot > 0 && winners.length === 0}
       {#if sidePots.length > 1}
@@ -329,7 +315,7 @@
               POT
             </span>
             <span class="text-[{SZ.potFont}px] font-extrabold text-gold tabular-nums pot-display">
-              ${fmt(totalPot)}
+              ${fmt(shownPot)}
             </span>
           </div>
         </div>
@@ -338,17 +324,23 @@
 
     {#if gameState}
       <div
-        class="absolute top-[49%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex {compact
+        class="absolute top-[46%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex {compact
           ? 'gap-0.5'
-          : 'gap-1'} z-[8]"
+          : 'gap-1'} z-[60]"
       >
         {#each Array(5) as _, i}
           {#if community[i]}
-            <PlayingCard
-              rank={community[i].r}
-              suit={suitChar(community[i].s)}
-              size={SZ.boardCardSize}
-            />
+            <div class="relative">
+              <PlayingCard
+                rank={community[i].r}
+                suit={suitChar(community[i].s)}
+                size={SZ.boardCardSize}
+                variant="desktop"
+              />
+              {#if isWinningCard(community[i]) && winners.length > 0}
+                <div class="winning-card-glow"></div>
+              {/if}
+            </div>
           {:else}
             <div
               class="{compact
@@ -399,6 +391,7 @@
                   rank={c.r}
                   suit={suitChar(c.s)}
                   size={compact ? 'xs' : 'sm'}
+                  variant="desktop"
                   faceDown={!isShowdown}
                   dim={s.folded}
                 />
@@ -477,21 +470,23 @@
         </div>
 
         <div
-          class="bg-soft-white flex flex-col items-center relative z-[16] shadow-lg"
-          style="margin-top: {SZ.seatMT}px; padding: {SZ.panelPad}; border-radius: 6px; border: 2px solid {isShowdownWin
+          class="seat-panel flex flex-col items-center relative z-[16] {s.folded
+            ? 'opacity-40'
+            : ''}"
+          style="margin-top: {SZ.seatMT}px; padding: {SZ.panelPad}; min-width: {SZ.panelMinW}px; border-color: {isShowdownWin
             ? '#10b981'
             : isShowdownLose
               ? '#6b7280'
-              : 'rgba(0,0,0,0.35)'}; min-width: {SZ.panelMinW}px;"
+              : 'rgba(255,255,255,0.25)'};"
         >
           <p
-            class="font-extrabold text-black leading-none whitespace-nowrap overflow-hidden text-ellipsis"
+            class="font-extrabold text-white leading-none whitespace-nowrap overflow-hidden text-ellipsis"
             style="font-size: {SZ.nameFont}px; max-width: {compact ? 76 : 100}px;"
           >
             {s.displayName}
           </p>
           <p
-            class="font-extrabold text-amber-600 leading-tight tabular-nums"
+            class="font-extrabold text-gold leading-tight tabular-nums"
             style="font-size: {SZ.stackFont}px;"
           >
             ${fmt(s.stack)}
@@ -507,7 +502,9 @@
               ? 'linear-gradient(135deg, #10b981, #059669)'
               : 'linear-gradient(135deg, #ef4444, #991b1b)'}; color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.6);"
           >
-            {isShowdownWin ? '✓ WIN' : '✗ LOSE'}
+            {isShowdownWin
+              ? '<Icon name="check" size={12} color="#34d399" /> WIN'
+              : '<Icon name="close" size={12} color="#f87171" /> LOSE'}
           </div>
           {#if payoutForSeat(s.seat) > 0 && !gameState?.tournamentId}
             <div
@@ -565,12 +562,15 @@
 
     {#if gameState && mySeat && mySeat.hole && mySeat.hole.length > 0 && !isEliminated}
       <div
-        class="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 flex justify-center z-[30]"
+        class="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 flex justify-center z-[60]"
         style="top: {SZ.holeTop}%; gap: {SZ.holeGap * 4}px;"
       >
         {#each mySeat.hole as c}
-          <div class="drop-shadow-[0_8px_20px_rgba(0,0,0,0.95)]">
-            <PlayingCard rank={c.r} suit={suitChar(c.s)} size={SZ.holeCardSize} />
+          <div class="relative drop-shadow-[0_8px_20px_rgba(0,0,0,0.95)]">
+            <PlayingCard rank={c.r} suit={suitChar(c.s)} size={SZ.holeCardSize} variant="desktop" />
+            {#if isWinningCard(c) && winners.length > 0}
+              <div class="winning-card-glow"></div>
+            {/if}
           </div>
         {/each}
       </div>
@@ -583,8 +583,8 @@
       {@const isShowdownLose = showdownLose(mySeat.seat)}
 
       <div
-        class="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-[30] cursor-pointer"
-        style="top: {SZ.heroTop}%;"
+        class="absolute left-1/2 -translate-x-1/2 flex flex-col items-center z-[30] cursor-pointer"
+        style="bottom: 1%;"
         on:click={() => onPlayerClick(mySeat.userId)}
         on:keydown={(e) => e.key === 'Enter' && onPlayerClick(mySeat.userId)}
         role="button"
@@ -641,18 +641,24 @@
         </div>
 
         <div
-          class="bg-soft-white flex flex-col items-center relative z-[16] shadow-xl"
-          style="margin-top: {SZ.seatMT}px; padding: {SZ.panelPad}; border-radius: 6px; border: 2px solid {isShowdownWin
+          class="seat-panel flex flex-col items-center relative z-[16] {mySeat.folded
+            ? 'opacity-40'
+            : ''}"
+          style="margin-top: {SZ.seatMT}px; padding: {SZ.panelPad}; min-width: {SZ.panelMinW +
+            14}px; border-color: {isShowdownWin
             ? '#10b981'
             : isShowdownLose
               ? '#6b7280'
-              : 'rgba(0,0,0,0.35)'}; min-width: {SZ.panelMinW + 14}px;"
+              : 'rgba(255,255,255,0.25)'};"
         >
-          <p class="font-extrabold text-black leading-none" style="font-size: {SZ.nameFont + 1}px;">
+          <p class="font-extrabold text-white leading-none" style="font-size: {SZ.nameFont + 1}px;">
             You
           </p>
+          {#if mySeat.bestHandName && !mySeat.folded}
+            <div class="hero-hand-name">{mySeat.bestHandName}</div>
+          {/if}
           <p
-            class="font-extrabold text-amber-600 leading-tight tabular-nums"
+            class="font-extrabold text-gold leading-tight tabular-nums"
             style="font-size: {SZ.stackFont + 2}px;"
           >
             ${fmt(mySeat.stack)}
@@ -668,7 +674,9 @@
               ? 'linear-gradient(135deg, #10b981, #059669)'
               : 'linear-gradient(135deg, #ef4444, #991b1b)'}; color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.6);"
           >
-            {isShowdownWin ? '✓ WIN' : '✗ LOSE'}
+            {isShowdownWin
+              ? '<Icon name="check" size={12} color="#34d399" /> WIN'
+              : '<Icon name="close" size={12} color="#f87171" /> LOSE'}
           </div>
           {#if payoutForSeat(mySeat.seat) > 0 && !gameState?.tournamentId}
             <div
@@ -705,4 +713,70 @@
       </div>
     {/if}
   </div>
+
+  <ProvablyFairFooter {gameState} />
 </div>
+
+<style>
+  /* Winner's cards pulse gold (mirrors the mobile table). Box-shadow only, so
+     the card face is never covered. */
+  @keyframes winning-card-glow-kf {
+    0%,
+    100% {
+      box-shadow:
+        0 0 10px rgba(244, 201, 93, 0.7),
+        0 0 0 2px rgba(244, 201, 93, 0.9);
+    }
+    50% {
+      box-shadow:
+        0 0 28px rgba(244, 201, 93, 1),
+        0 0 0 3px rgba(244, 201, 93, 1);
+    }
+  }
+  .winning-card-glow {
+    position: absolute;
+    inset: -2px;
+    border-radius: 6px;
+    pointer-events: none;
+    animation: winning-card-glow-kf 1.4s ease-in-out infinite;
+  }
+  /* Desktop/mobile-landscape table shell.
+     Sized against BOTH viewport axes so the oval plus its gold rim is never
+     clipped: 92vw leaves room for the 12px padding and the -inset-2 rim ring,
+     and the height term keeps height (= width x 1.12) inside the viewport.
+     min() with three arguments is plain CSS, no inline-style interpolation. */
+  .table-shell {
+    width: min(1180px, 92vw, calc((100dvh - 300px) / 0.626));
+  }
+  .table-shell.is-compact {
+    width: min(980px, 92vw, calc((100dvh - 130px) / 0.626));
+  }
+
+  /* Dark translucent nameplate with a light hairline — the same look as the
+     shared PlayerSeat panel the mobile layout uses. Win/lose states override
+     only the border colour (set inline). */
+  .seat-panel {
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: linear-gradient(180deg, rgba(8, 20, 40, 0.96), rgba(5, 12, 25, 0.98));
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.8),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  /* Phase 8: hero hand strength — HERO ONLY (the server never sends
+     bestHandName for other seats). Gold, matching the mobile seat panel. */
+  .hero-hand-name {
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(212, 175, 55, 0.95);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    line-height: 1;
+    margin-top: 2px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+</style>

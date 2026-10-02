@@ -112,7 +112,7 @@
 
   const CATEGORY_ACCENT: Record<string, string> = {
     hand: '#f4c95d',
-    tournament: '#8b5cf6',
+    tournament: '#3b82f6',
     wallet: '#10b981',
     special: '#22d3ee',
   };
@@ -343,9 +343,9 @@
         class="rounded-2xl p-4 relative overflow-hidden"
         style="
           background:
-            radial-gradient(ellipse at 0% 0%, rgba(139,92,246,0.15) 0%, transparent 60%),
+            radial-gradient(ellipse at 0% 0%, rgba(37,99,235,0.15) 0%, transparent 60%),
             linear-gradient(180deg, rgba(15,31,58,0.85), rgba(7,14,27,0.95));
-          border: 1px solid rgba(139,92,246,0.3);
+          border: 1px solid rgba(37,99,235,0.3);
           box-shadow: 0 4px 12px rgba(0,0,0,0.35);
         "
       >
@@ -353,21 +353,21 @@
           <div
             class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
             style="
-              background: linear-gradient(180deg, rgba(139,92,246,0.3), rgba(109,40,217,0.12));
-              border: 1px solid rgba(139,92,246,0.5);
+              background: linear-gradient(180deg, rgba(37,99,235,0.3), rgba(109,40,217,0.12));
+              border: 1px solid rgba(37,99,235,0.5);
             "
           >
-            <Icon name="trending-up" size={15} color="#c4b5fd" />
+            <Icon name="trending-up" size={15} color="#93c5fd" />
           </div>
           <div class="flex-1 min-w-0">
-            <p class="text-[10px] uppercase tracking-widest font-extrabold text-violet-300">
+            <p class="text-[10px] uppercase tracking-widest font-extrabold text-blue-300">
               Collection Progress
             </p>
             <p class="text-[9px] text-white/45 font-bold">
               {unlockedCount} of {totalCount} badges unlocked
             </p>
           </div>
-          <span class="text-[13px] font-extrabold tabular-nums" style="color: #c4b5fd;">
+          <span class="text-[13px] font-extrabold tabular-nums" style="color: #93c5fd;">
             {completionPct}%
           </span>
         </div>

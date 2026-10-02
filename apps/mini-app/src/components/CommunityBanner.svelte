@@ -98,21 +98,21 @@
         box-shadow: 0 4px 16px rgba(0,0,0,0.5);
       "
     >
-      <!-- Dismiss -->
+      <!-- Dismiss: kept in the corner with a 28px tap target, clear of the chevron -->
       <button
         type="button"
         on:click={dismiss}
         aria-label="Dismiss"
-        class="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center z-10 active:scale-90"
-        style="background: rgba(0,0,0,0.4);"
+        class="absolute top-1.5 right-1.5 w-7 h-7 rounded-full flex items-center justify-center z-10 active:scale-90"
+        style="background: rgba(0,0,0,0.45);"
       >
-        <Icon name="close" size={10} color="rgba(255,255,255,0.6)" />
+        <Icon name="close" size={11} color="rgba(255,255,255,0.65)" />
       </button>
 
       <button
         type="button"
         on:click={() => (expanded = !expanded)}
-        class="w-full text-left p-3.5 pr-10 flex items-center gap-3"
+        class="w-full text-left p-3.5 pr-12 flex items-center gap-3"
       >
         <div
           class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
@@ -155,7 +155,7 @@
               type="button"
               on:click={() => openLink(groupUrl())}
               class="flex-1 rounded-xl py-2.5 text-[11px] font-extrabold active:scale-95 flex items-center justify-center gap-1.5"
-              style="background: linear-gradient(180deg, #a78bfa, #7c3aed); color: #ffffff; box-shadow: 0 2px 0 #5b21b6;"
+              style="background: linear-gradient(180deg, #34d399, #059669); color: #04220f; box-shadow: 0 2px 0 #065f46;"
             >
               <Icon name="chat" size={12} color="#ffffff" />
               <span>Join Chat</span>

@@ -34,7 +34,7 @@
   function statusColor(t: any): string {
     if (t.isWinner) return '#f4c95d';
     if (t.payout > 0) return '#10b981';
-    if (t.entryStatus === 'qualified') return '#a78bfa';
+    if (t.entryStatus === 'qualified') return '#60a5fa';
     return '#6b7280';
   }
 
@@ -117,11 +117,11 @@
       class="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
       style="
         background: radial-gradient(circle at 30% 30%, rgba(167,139,250,0.35), rgba(109,40,217,0.1));
-        border: 1.5px solid rgba(139,92,246,0.5);
-        box-shadow: 0 4px 14px rgba(0,0,0,0.45), 0 0 18px rgba(139,92,246,0.2);
+        border: 1.5px solid rgba(37,99,235,0.5);
+        box-shadow: 0 4px 14px rgba(0,0,0,0.45), 0 0 18px rgba(37,99,235,0.2);
       "
     >
-      <Icon name="ticket" size={20} color="#c4b5fd" />
+      <Icon name="ticket" size={20} color="#93c5fd" />
     </div>
   </div>
 
@@ -184,24 +184,24 @@
         class="rounded-2xl p-3 relative overflow-hidden"
         style="
           background:
-            radial-gradient(ellipse at 100% 0%, rgba(139,92,246,0.16) 0%, transparent 62%),
+            radial-gradient(ellipse at 100% 0%, rgba(37,99,235,0.16) 0%, transparent 62%),
             linear-gradient(180deg, rgba(15,31,58,0.88), rgba(7,14,27,0.95));
-          border: 1px solid rgba(139,92,246,0.3);
+          border: 1px solid rgba(37,99,235,0.3);
           box-shadow: 0 4px 14px rgba(0,0,0,0.4);
         "
       >
         <div class="flex items-center gap-1.5 mb-2">
           <div
             class="w-6 h-6 rounded-lg flex items-center justify-center"
-            style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.45);"
+            style="background: rgba(37,99,235,0.2); border: 1px solid rgba(37,99,235,0.45);"
           >
-            <Icon name="star" size={11} color="#a78bfa" />
+            <Icon name="star" size={11} color="#60a5fa" />
           </div>
-          <span class="text-[9px] font-extrabold text-violet-300 uppercase tracking-wider">
+          <span class="text-[9px] font-extrabold text-blue-300 uppercase tracking-wider">
             Points
           </span>
         </div>
-        <p class="text-[18px] font-extrabold tabular-nums leading-none" style="color: #a78bfa;">
+        <p class="text-[18px] font-extrabold tabular-nums leading-none" style="color: #60a5fa;">
           {stats.totalPoints}
         </p>
         <p class="text-[8px] text-white/40 font-bold mt-1 uppercase tracking-wider">earned</p>

@@ -179,9 +179,9 @@
           <button
             on:click={copyLink}
             class="flex-1 rounded-xl py-2 text-[10px] font-extrabold active:scale-95 flex items-center justify-center gap-1.5"
-            style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.4); color: #c4b5fd;"
+            style="background: rgba(37,99,235,0.15); border: 1px solid rgba(37,99,235,0.4); color: #93c5fd;"
           >
-            <Icon name="copy" size={12} color="#c4b5fd" />
+            <Icon name="copy" size={12} color="#93c5fd" />
             <span>Copy</span>
           </button>
           <button

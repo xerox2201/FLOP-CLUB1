@@ -21,7 +21,7 @@
   const FILTERS: { key: Filter; label: string; color: string }[] = [
     { key: 'all', label: 'All', color: '#d4af37' },
     { key: 'direct', label: 'Direct', color: '#f4c95d' },
-    { key: 'indirect', label: 'Indirect', color: '#a78bfa' },
+    { key: 'indirect', label: 'Indirect', color: '#60a5fa' },
     { key: 'group', label: 'Group', color: '#22d3ee' },
   ];
 
@@ -197,7 +197,7 @@
           e.source === 'direct'
             ? '#f4c95d'
             : e.source === 'indirect'
-              ? '#a78bfa'
+              ? '#60a5fa'
               : e.source === 'group'
                 ? '#22d3ee'
                 : '#6ee7b7'}
@@ -240,7 +240,7 @@
           on:click={loadMore}
           disabled={loadingMore}
           class="w-full mt-2 rounded-2xl py-3 text-[11px] font-extrabold active:scale-[0.98] disabled:opacity-50"
-          style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.4); color: #c4b5fd;"
+          style="background: rgba(37,99,235,0.15); border: 1px solid rgba(37,99,235,0.4); color: #93c5fd;"
         >
           {loadingMore ? 'Loading…' : `Load more (${total - entries.length} left)`}
         </button>

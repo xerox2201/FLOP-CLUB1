@@ -133,20 +133,20 @@
         class="rounded-2xl p-3 relative overflow-hidden"
         style="
           background:
-            radial-gradient(ellipse at 100% 0%, rgba(139,92,246,0.15) 0%, transparent 60%),
+            radial-gradient(ellipse at 100% 0%, rgba(37,99,235,0.15) 0%, transparent 60%),
             linear-gradient(180deg, rgba(15,31,58,0.85), rgba(7,14,27,0.95));
-          border: 1px solid rgba(139,92,246,0.3);
+          border: 1px solid rgba(37,99,235,0.3);
           box-shadow: 0 4px 12px rgba(0,0,0,0.35);
         "
       >
         <div class="flex items-center gap-1.5 mb-2">
           <div
             class="w-6 h-6 rounded-lg flex items-center justify-center"
-            style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4);"
+            style="background: rgba(37,99,235,0.2); border: 1px solid rgba(37,99,235,0.4);"
           >
-            <Icon name="zap" size={12} color="#c4b5fd" />
+            <Icon name="zap" size={12} color="#93c5fd" />
           </div>
-          <span class="text-[9px] font-extrabold uppercase tracking-wider" style="color: #c4b5fd;">
+          <span class="text-[9px] font-extrabold uppercase tracking-wider" style="color: #93c5fd;">
             Level
           </span>
         </div>
@@ -250,24 +250,24 @@
         class="rounded-2xl p-4 relative overflow-hidden"
         style="
           background:
-            radial-gradient(ellipse at 100% 0%, rgba(139,92,246,0.2) 0%, transparent 60%),
+            radial-gradient(ellipse at 100% 0%, rgba(37,99,235,0.2) 0%, transparent 60%),
             linear-gradient(180deg, rgba(15,31,58,0.85), rgba(7,14,27,0.95));
-          border: 1px solid rgba(139,92,246,0.4);
-          box-shadow: 0 8px 24px rgba(0,0,0,0.5), 0 0 24px rgba(139,92,246,0.12);
+          border: 1px solid rgba(37,99,235,0.4);
+          box-shadow: 0 8px 24px rgba(0,0,0,0.5), 0 0 24px rgba(37,99,235,0.12);
         "
       >
         <div class="flex items-center gap-2 mb-3">
           <div
             class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
             style="
-              background: linear-gradient(180deg, rgba(139,92,246,0.35), rgba(109,40,217,0.12));
-              border: 1px solid rgba(139,92,246,0.55);
+              background: linear-gradient(180deg, rgba(37,99,235,0.35), rgba(109,40,217,0.12));
+              border: 1px solid rgba(37,99,235,0.55);
             "
           >
-            <Icon name="zap" size={16} color="#c4b5fd" />
+            <Icon name="zap" size={16} color="#93c5fd" />
           </div>
           <div class="flex-1 min-w-0">
-            <p class="text-[10px] uppercase tracking-widest font-extrabold" style="color: #a78bfa;">
+            <p class="text-[10px] uppercase tracking-widest font-extrabold" style="color: #60a5fa;">
               XP Level
             </p>
             <p class="text-[9px] text-white/45 font-bold truncate">
@@ -275,10 +275,10 @@
             </p>
           </div>
           <div class="flex items-baseline gap-1 shrink-0">
-            <span class="text-[9px] font-extrabold uppercase tracking-wider text-violet-300">
+            <span class="text-[9px] font-extrabold uppercase tracking-wider text-blue-300">
               LVL
             </span>
-            <span class="text-2xl font-extrabold leading-none" style="color: #a78bfa;">{level}</span
+            <span class="text-2xl font-extrabold leading-none" style="color: #60a5fa;">{level}</span
             >
           </div>
         </div>
@@ -291,8 +291,8 @@
             class="h-full rounded-full transition-all"
             style="
               width: {xpPct}%;
-              background: linear-gradient(90deg, #c4b5fd, #8b5cf6, #6d28d9);
-              box-shadow: 0 0 12px rgba(139,92,246,0.7);
+              background: linear-gradient(90deg, #93c5fd, #3b82f6, #6d28d9);
+              box-shadow: 0 0 12px rgba(37,99,235,0.7);
             "
           ></div>
         </div>
@@ -329,9 +329,9 @@
           on:click={() => (showXpConvert = true)}
           class="w-full mt-3 rounded-xl py-3 text-[12px] font-extrabold active:scale-[0.98] transition-all"
           style="
-            background: linear-gradient(180deg, #a78bfa, #6d28d9);
+            background: linear-gradient(180deg, #60a5fa, #6d28d9);
             color: white;
-            box-shadow: 0 3px 0 #4c1d95, 0 8px 20px rgba(139,92,246,0.35);
+            box-shadow: 0 3px 0 #4c1d95, 0 8px 20px rgba(37,99,235,0.35);
           "
         >
           <span class="flex items-center justify-center gap-1.5">

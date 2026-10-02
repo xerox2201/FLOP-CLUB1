@@ -143,9 +143,9 @@ export default {
     finishedMsg: 'Tournament finished',
     fee: 'fee',
     confirmStart: 'Start this tournament now?',
-    toastRegistered: '✅ Registered!',
+    toastRegistered: 'Registered!',
     toastUnregistered: '↩️ Unregistered',
-    toastStarted: '🚀 Started!',
+    toastStarted: 'Started!',
     status: {
       scheduled: 'scheduled',
       registering: 'registering',

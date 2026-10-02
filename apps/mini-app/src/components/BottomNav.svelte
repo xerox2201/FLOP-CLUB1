@@ -26,7 +26,10 @@
   ];
 </script>
 
-<nav class="fixed bottom-0 left-0 right-0 z-40 lg:hidden">
+<nav
+  class="fixed bottom-0 left-0 right-0 z-40 lg:hidden"
+  style="background: linear-gradient(180deg, rgba(5,8,15,0) 0%, rgba(5,8,15,0.88) 42%, #05080f 100%); backdrop-filter: blur(6px);"
+>
   <div class="max-w-[480px] mx-auto px-3 pb-2 pt-2">
     <div
       class="rounded-3xl flex items-center justify-around py-1.5"

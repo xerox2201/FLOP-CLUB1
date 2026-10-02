@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fmtAmount } from '../lib/table-geometry';
   import { onMount } from 'svelte';
   import { api } from '../lib/api';
   import Icon from './Icon.svelte';
@@ -9,7 +10,8 @@
   let dashboard: any = null;
 
   function fmt(n: any, digits = 2): string {
-    return Number(Number(n || 0).toFixed(digits)).toFixed(digits);
+    const v = Number(n || 0);
+    return digits === 2 ? fmtAmount(v) : v.toFixed(digits);
   }
 
   async function load() {
@@ -35,7 +37,7 @@
       style="
         background:
           radial-gradient(ellipse at 100% 0%, rgba(244,201,93,0.22) 0%, transparent 60%),
-          radial-gradient(ellipse at 0% 100%, rgba(139,92,246,0.12) 0%, transparent 60%),
+          radial-gradient(ellipse at 0% 100%, rgba(37,99,235,0.12) 0%, transparent 60%),
           linear-gradient(135deg, rgba(15,31,58,0.95), rgba(7,14,27,0.98));
         border: 1.5px solid rgba(244,201,93,0.45);
         box-shadow: 0 4px 16px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);

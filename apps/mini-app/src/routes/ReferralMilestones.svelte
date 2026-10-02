@@ -78,7 +78,7 @@
       <Icon name="arrow-left" size={18} color="#ffffff" />
     </button>
     <h1 class="text-xl font-extrabold text-white flex-1 flex items-center gap-2">
-      <Icon name="target" size={22} color="#a78bfa" />
+      <Icon name="target" size={22} color="#60a5fa" />
       <span>Milestones</span>
     </h1>
     {#if claimableCount > 0}
@@ -110,17 +110,17 @@
     <div class="px-4 mb-3">
       <div
         class="rounded-2xl p-3.5"
-        style="background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(7,14,27,0.95)); border: 1px solid rgba(139,92,246,0.35);"
+        style="background: linear-gradient(135deg, rgba(37,99,235,0.15), rgba(7,14,27,0.95)); border: 1px solid rgba(37,99,235,0.35);"
       >
         <div class="flex items-center gap-3">
           <div
             class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-            style="background: radial-gradient(circle at 30% 30%, rgba(139,92,246,0.4), rgba(139,92,246,0.1)); border: 1px solid rgba(139,92,246,0.5);"
+            style="background: radial-gradient(circle at 30% 30%, rgba(37,99,235,0.4), rgba(37,99,235,0.1)); border: 1px solid rgba(37,99,235,0.5);"
           >
-            <Icon name="target" size={22} color="#a78bfa" />
+            <Icon name="target" size={22} color="#60a5fa" />
           </div>
           <div class="flex-1">
-            <p class="text-[10px] uppercase tracking-widest font-extrabold text-violet-300">
+            <p class="text-[10px] uppercase tracking-widest font-extrabold text-blue-300">
               Progress
             </p>
             <p class="text-2xl font-extrabold text-white tabular-nums leading-none mt-1">
@@ -129,7 +129,7 @@
           </div>
           <div class="text-right">
             <p class="text-[9px] text-white/45 uppercase font-bold">Claimed</p>
-            <p class="text-sm font-extrabold text-violet-300 tabular-nums">
+            <p class="text-sm font-extrabold text-blue-300 tabular-nums">
               {milestones.filter((m) => m.claimed).length}
             </p>
           </div>
@@ -286,7 +286,7 @@
                 {#if m.rewardXp > 0}
                   <span
                     class="text-[9px] font-bold px-2 py-0.5 rounded-full"
-                    style="background: rgba(139,92,246,0.15); color: #c4b5fd;"
+                    style="background: rgba(37,99,235,0.15); color: #93c5fd;"
                   >
                     +{m.rewardXp} XP
                   </span>

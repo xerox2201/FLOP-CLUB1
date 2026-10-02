@@ -3,10 +3,10 @@
   export let onClick: () => void = () => {};
 
   function variantEmoji(v: string): string {
-    if (v === 'holdem') return '♠️';
-    if (v === 'omaha4') return '♦️';
-    if (v === 'omaha5') return '♣️';
-    return '🎴';
+    if (v === 'holdem') return '♠';
+    if (v === 'omaha4') return '♦';
+    if (v === 'omaha5') return '♣';
+    return '♠'; // neutral card glyph fallback
   }
 
   function variantLabel(v: string): string {
@@ -25,9 +25,7 @@
   class="rounded-2xl active:scale-[0.97] transition-all text-left w-[160px] shrink-0 relative overflow-hidden"
   style="
     background: linear-gradient(180deg, rgba(15,31,58,0.85) 0%, rgba(7,14,27,0.95) 100%);
-    border: 1.5px solid {isFree
-      ? 'rgba(16,185,129,0.3)'
-      : 'rgba(212,175,55,0.35)'};
+    border: 1.5px solid {isFree ? 'rgba(16,185,129,0.3)' : 'rgba(212,175,55,0.35)'};
     box-shadow:
       0 6px 20px rgba(0,0,0,0.55),
       inset 0 1px 0 rgba(255,255,255,0.05);
@@ -70,12 +68,10 @@
       class="absolute top-2 right-2 text-[8px] font-extrabold px-1.5 py-0.5 rounded-full tracking-wider"
       style="
         background: {isFree
-          ? 'rgba(16,185,129,0.25)'
-          : 'linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15)'};
+        ? 'rgba(16,185,129,0.25)'
+        : 'linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15)'};
         color: {isFree ? '#6ee7b7' : '#0a0800'};
-        border: 1px solid {isFree
-          ? 'rgba(16,185,129,0.5)'
-          : 'rgba(255,235,170,0.5)'};
+        border: 1px solid {isFree ? 'rgba(16,185,129,0.5)' : 'rgba(255,235,170,0.5)'};
         box-shadow: {isFree ? 'none' : '0 1px 0 rgba(122,86,10,0.8)'};
       "
     >

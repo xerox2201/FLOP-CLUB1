@@ -16,7 +16,7 @@
     on:click={onOpenWallet}
     aria-label="Open Wallet"
     class="rounded-full pl-1.5 pr-3 py-1 flex items-center gap-2 active:scale-95 transition"
-    style="background: linear-gradient(180deg, rgba(139,92,246,0.2), rgba(109,40,217,0.1)); border: 1px solid rgba(139,92,246,0.35);"
+    style="background: linear-gradient(180deg, rgba(37,99,235,0.2), rgba(109,40,217,0.1)); border: 1px solid rgba(37,99,235,0.35);"
   >
     <div class="w-8 h-8 flex items-center justify-center">
       <img src="/wallet-badge.png" alt="" class="w-7 h-7 object-contain" draggable="false" />
@@ -51,7 +51,7 @@
     on:click={onOpenSettings}
     aria-label="Open Settings"
     class="w-10 h-10 rounded-full flex items-center justify-center text-white/80 active:scale-95 transition"
-    style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.25);"
+    style="background: rgba(37,99,235,0.15); border: 1px solid rgba(37,99,235,0.25);"
   >
     <Icon name="settings" size={18} />
   </button>

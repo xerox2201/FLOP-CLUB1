@@ -81,9 +81,19 @@
     >
       <Icon name="arrow-left" size={18} color="#ffffff" />
     </button>
-    <h1 class="text-xl font-extrabold text-white flex-1 flex items-center gap-2">
-      <Icon name="chat" size={22} color="#a78bfa" />
-      <span>Community</span>
+    <h1 class="text-[22px] font-extrabold flex-1 flex items-center gap-2">
+      <Icon name="chat" size={22} color="#60a5fa" />
+      <span
+        style="
+          background: linear-gradient(180deg, #ffffff 0%, #f4e5a8 50%, #d4af37 100%);
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          filter: drop-shadow(0 2px 8px rgba(244,201,93,0.35));
+        "
+      >
+        Community
+      </span>
     </h1>
   </div>
 
@@ -91,9 +101,9 @@
   <div class="px-4 mb-3">
     <div
       class="rounded-2xl p-4"
-      style="background: radial-gradient(ellipse at 100% 0%, rgba(139,92,246,0.15) 0%, transparent 60%), linear-gradient(180deg, rgba(15,31,58,0.85), rgba(7,14,27,0.95)); border: 1px solid rgba(139,92,246,0.35);"
+      style="background: radial-gradient(ellipse at 100% 0%, rgba(37,99,235,0.15) 0%, transparent 60%), linear-gradient(180deg, rgba(15,31,58,0.85), rgba(7,14,27,0.95)); border: 1px solid rgba(37,99,235,0.35);"
     >
-      <p class="text-[12px] font-extrabold text-violet-200 mb-1">Join the Flop Club</p>
+      <p class="text-[12px] font-extrabold text-blue-200 mb-1">Join the Flop Club</p>
       <p class="text-[10px] text-white/60 leading-relaxed">
         Get announcements, chat with players, and share hands. Our community is on Telegram.
       </p>
@@ -195,14 +205,14 @@
           'group',
         )
           ? 'rgba(16,185,129,0.4)'
-          : 'rgba(139,92,246,0.3)'};"
+          : 'rgba(37,99,235,0.3)'};"
       >
         <div class="flex items-start gap-3 mb-3">
           <div
             class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-            style="background: radial-gradient(circle at 30% 30%, rgba(139,92,246,0.3), rgba(139,92,246,0.08)); border: 1.5px solid rgba(139,92,246,0.5);"
+            style="background: radial-gradient(circle at 30% 30%, rgba(37,99,235,0.3), rgba(37,99,235,0.08)); border: 1.5px solid rgba(37,99,235,0.5);"
           >
-            <Icon name="chat" size={22} color="#a78bfa" />
+            <Icon name="chat" size={22} color="#60a5fa" />
           </div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-1.5">
@@ -221,7 +231,7 @@
             </div>
             <p class="text-[10px] text-white/50 mt-0.5">Player chat & community</p>
             {#if community.group?.member_count > 0}
-              <p class="text-[9px] text-violet-300 mt-1 font-bold">
+              <p class="text-[9px] text-blue-300 mt-1 font-bold">
                 {community.group.member_count.toLocaleString()} members
               </p>
             {/if}
@@ -234,24 +244,24 @@
             disabled={openingLink === 'group'}
             class="w-full rounded-xl py-3 text-[12px] font-extrabold active:scale-[0.98] disabled:opacity-60 flex items-center justify-center gap-2"
             style="background: {isMember('group')
-              ? 'rgba(139,92,246,0.15)'
-              : 'linear-gradient(180deg, #a78bfa, #7c3aed)'}; color: {isMember('group')
-              ? '#c4b5fd'
+              ? 'rgba(37,99,235,0.15)'
+              : 'linear-gradient(180deg, #60a5fa, #2563eb)'}; color: {isMember('group')
+              ? '#93c5fd'
               : '#ffffff'}; border: {isMember('group')
-              ? '1px solid rgba(139,92,246,0.4)'
+              ? '1px solid rgba(37,99,235,0.4)'
               : 'none'}; box-shadow: {isMember('group') ? 'none' : '0 3px 0 #5b21b6'};"
           >
             <Icon
               name={isMember('group') ? 'check' : 'plus'}
               size={14}
-              color={isMember('group') ? '#c4b5fd' : '#ffffff'}
+              color={isMember('group') ? '#93c5fd' : '#ffffff'}
             />
             <span>{isMember('group') ? 'Open Chat' : 'Join Chat'}</span>
           </button>
         {:else}
           <div
             class="rounded-xl py-3 text-center text-[11px] font-bold text-white/40"
-            style="background: rgba(0,0,0,0.3); border: 1px dashed rgba(139,92,246,0.25);"
+            style="background: rgba(0,0,0,0.3); border: 1px dashed rgba(37,99,235,0.25);"
           >
             Chat coming soon
           </div>

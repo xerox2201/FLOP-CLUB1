@@ -1,7 +1,13 @@
 <script lang="ts">
+  import Icon from '../Icon.svelte';
   import { onMount } from 'svelte';
   import PlayingCard from '../PlayingCard.svelte';
   import PokerChip from '../PokerChip.svelte';
+  import ProvablyFairFooter from '../ProvablyFairFooter.svelte';
+  import TableSurface from './TableSurface.svelte';
+  import { fitSurface, fmtAmount, seatPositions } from '../../lib/table-geometry';
+  import { tweened } from 'svelte/motion';
+  import { cubicOut } from 'svelte/easing';
   import PlayerSeat from './PlayerSeat.svelte';
 
   export let gameState: any = null;
@@ -14,79 +20,14 @@
   export let isFinalTable: boolean = false;
   export let onPlayerClick: (userId: number) => void = () => {};
 
-  // ============================================================
-  // SEAT LAYOUTS — percentages of TABLE container
-  // index 0 = hero (always bottom), indices 1..N-1 = opponents CCW
-  // ============================================================
-  const SEAT_LAYOUTS: Record<number, { x: number; y: number }[]> = {
-    2: [
-      { x: 50, y: 91 },
-      { x: 50, y: 9 },
-    ],
-    3: [
-      { x: 50, y: 91 },
-      { x: 16, y: 25 },
-      { x: 84, y: 25 },
-    ],
-    4: [
-      { x: 50, y: 91 },
-      { x: 12, y: 55 },
-      { x: 50, y: 8 },
-      { x: 88, y: 55 },
-    ],
-    5: [
-      { x: 50, y: 91 },
-      { x: 12, y: 67 },
-      { x: 20, y: 20 },
-      { x: 80, y: 20 },
-      { x: 88, y: 67 },
-    ],
-    6: [
-      { x: 50, y: 91 },
-      { x: 13, y: 68 },
-      { x: 14, y: 30 },
-      { x: 50, y: 8 },
-      { x: 86, y: 30 },
-      { x: 87, y: 68 },
-    ],
-    7: [
-      { x: 50, y: 91 },
-      { x: 12, y: 73 },
-      { x: 13, y: 42 },
-      { x: 25, y: 13 },
-      { x: 75, y: 13 },
-      { x: 87, y: 42 },
-      { x: 88, y: 73 },
-    ],
-    8: [
-      { x: 50, y: 91 },
-      { x: 11, y: 76 },
-      { x: 12, y: 52 },
-      { x: 15, y: 25 },
-      { x: 50, y: 8 },
-      { x: 85, y: 25 },
-      { x: 88, y: 52 },
-      { x: 89, y: 76 },
-    ],
-    9: [
-      { x: 50, y: 91 },
-      { x: 11, y: 78 },
-      { x: 12, y: 59 },
-      { x: 13, y: 38 },
-      { x: 22, y: 16 },
-      { x: 50, y: 7 },
-      { x: 78, y: 16 },
-      { x: 87, y: 38 },
-      { x: 88, y: 59 },
-    ],
-  };
-
   function getLayout(total: number): { x: number; y: number }[] {
-    return SEAT_LAYOUTS[total] || SEAT_LAYOUTS[6];
+    // Shared seat geometry (index 0 = hero at the bottom centre).
+    return seatPositions(total, 0, 'mobile');
   }
 
   // ============================================================
-  // FELT SIZE — JS-computed, portrait 9:16
+  // FELT SIZE — fitted to the wrapper using the shared geometry module
+  // (aspect ratio comes from the real surface art: 563x900)
   // ============================================================
   let wrapperEl: HTMLDivElement;
   let feltW = 0;
@@ -95,16 +36,13 @@
   function computeFelt() {
     if (!wrapperEl) return;
     const availW = wrapperEl.clientWidth;
-    const availH = wrapperEl.clientHeight;
+    // clamp to the viewport: the wrapper can grow with its own content,
+    // which would push the rail past the bottom edge
+    const availH = Math.min(wrapperEl.clientHeight, window.innerHeight - 300);
     if (availW <= 0 || availH <= 0) return;
-    const ratio = 9 / 16;
-    if (availW / ratio <= availH) {
-      feltW = availW;
-      feltH = Math.round(availW / ratio);
-    } else {
-      feltH = availH;
-      feltW = Math.round(availH * ratio);
-    }
+    const box = fitSurface(availW, availH, 'mobile');
+    feltW = box.w;
+    feltH = box.h;
   }
 
   onMount(() => {
@@ -115,9 +53,7 @@
   });
 
   function fmt(n: any): string {
-    const num = Number(n || 0);
-    if (num === Math.floor(num)) return String(Math.floor(num));
-    return num.toFixed(2);
+    return fmtAmount(Number(n || 0));
   }
 
   function suitChar(s: string): '♠' | '♥' | '♦' | '♣' {
@@ -128,110 +64,69 @@
   }
 
   type Sizes = {
-    avatar: number;
-    nameW: number;
-    nameFont: number;
-    stackFont: number;
-    betChip: number;
-    betFont: number;
     cardSize: 'xs' | 'sm' | 'md';
     potTop: number;
     potFont: number;
-    timerExtra: number;
   };
 
   function getSizes(total: number): Sizes {
+    // 6+ seats: a 44px board row would touch the rail, so step the community
+    // cards down one size to keep all five fully inside the ring.
+    if (total >= 6) {
+      return { cardSize: 'xs', potTop: 33, potFont: total === 6 ? 17 : 15 };
+    }
     if (total <= 2)
       return {
-        avatar: 60,
-        nameW: 84,
-        nameFont: 11,
-        stackFont: 11,
-        betChip: 14,
-        betFont: 10,
-        cardSize: 'sm',
-        potTop: 41,
-        potFont: 15,
-        timerExtra: 14,
+        cardSize: 'xs',
+        potTop: 33,
+        potFont: 22,
       };
     if (total === 3)
       return {
-        avatar: 52,
-        nameW: 78,
-        nameFont: 10,
-        stackFont: 10,
-        betChip: 12,
-        betFont: 9,
-        cardSize: 'sm',
-        potTop: 41,
-        potFont: 13,
-        timerExtra: 12,
+        cardSize: 'xs',
+        potTop: 33,
+        potFont: 19,
       };
     if (total === 4)
       return {
-        avatar: 46,
-        nameW: 70,
-        nameFont: 10,
-        stackFont: 10,
-        betChip: 11,
-        betFont: 9,
-        cardSize: 'sm',
-        potTop: 41,
-        potFont: 12,
-        timerExtra: 10,
+        cardSize: 'xs',
+        potTop: 33,
+        potFont: 18,
       };
     if (total === 5)
       return {
-        avatar: 40,
-        nameW: 64,
-        nameFont: 9,
-        stackFont: 9,
-        betChip: 10,
-        betFont: 8,
         cardSize: 'xs',
-        potTop: 41,
-        potFont: 11,
-        timerExtra: 8,
+        potTop: 33,
+        potFont: 17,
       };
     if (total === 6)
       return {
-        avatar: 36,
-        nameW: 60,
-        nameFont: 9,
-        stackFont: 9,
-        betChip: 10,
-        betFont: 8,
         cardSize: 'xs',
-        potTop: 41,
-        potFont: 11,
-        timerExtra: 8,
+        potTop: 33,
+        potFont: 17,
       };
     if (total === 7)
       return {
-        avatar: 34,
-        nameW: 56,
-        nameFont: 8,
-        stackFont: 8,
-        betChip: 9,
-        betFont: 7,
         cardSize: 'xs',
-        potTop: 41,
-        potFont: 10,
-        timerExtra: 6,
+        potTop: 33,
+        potFont: 15,
       };
     return {
-      avatar: 32,
-      nameW: 52,
-      nameFont: 8,
-      stackFont: 8,
-      betChip: 9,
-      betFont: 7,
       cardSize: 'xs',
-      potTop: 41,
-      potFont: 10,
-      timerExtra: 6,
+      potTop: 33,
+      potFont: 15,
     };
   }
+
+  // Hero cards render one step larger than the table cards (Phase 8, B.1).
+  const CARD_UP: Record<'xs' | 'sm' | 'md', 'sm' | 'md' | 'lg'> = {
+    xs: 'sm',
+    sm: 'md',
+    md: 'lg',
+  };
+  // hero cards are always one step up from the board so the rule is the
+  // same at every table size
+  $: heroCardSize = CARD_UP[S.cardSize] ?? S.cardSize;
 
   // ============================================================
   // BET POSITION — 42% along player→center vector
@@ -250,10 +145,16 @@
 
   // Static positions
   $: heroPos = { x: 50, y: 91 };
-  $: heroCardsY = 82;
-  $: potY = 41;
-  $: boardY = 49;
-  $: logoY = 62;
+  $: heroCardsY = 72;
+  $: potY = S.potTop;
+
+  // Pot count-up: the number rolls to its new value over 300ms, the chips
+  // themselves always use the real total so they never flicker.
+  const potTween = tweened(0, { duration: 300, easing: cubicOut });
+  $: potTween.set(totalPot);
+  $: shownPot = $potTween;
+  $: boardY = 46;
+  $: logoY = 57;
 
   $: heroIdx = allSeats.findIndex((s: any) => Number(s.userId) === Number(myUserId));
   $: heroArrayIdx = heroIdx >= 0 ? heroIdx : 0;
@@ -327,7 +228,7 @@
   }
 
   $: winnerPlayer = handResult?.showdownPlayers?.find((p: any) => p.isWinner);
-  $: winnerIsMe = winnerPlayer?.userId === myUserId;
+  $: winnerIsMe = Number(winnerPlayer?.userId) === Number(myUserId);
   $: winnerDisplayName = winnerIsMe
     ? 'You'
     : (() => {
@@ -335,9 +236,15 @@
         return s?.displayName || 'Winner';
       })();
 
-  $: winningCardKeys = new Set((winnerPlayer?.best ?? []).map((c: any) => `${c.r}${c.s}`));
+  // Cards of EVERY winner (split pots included) — same rule as the desktop.
+  $: winningCardKeys = new Set(
+    ((handResult?.showdownPlayers ?? []) as any[])
+      .filter((p: any) => p.isWinner && p.best?.length)
+      .flatMap((p: any) => p.best)
+      .map((c: any) => `${c.r}${c.s}`),
+  );
   function isWinningCard(c: any): boolean {
-    return winningCardKeys.has(`${c.r}${c.s}`);
+    return !!c && winningCardKeys.has(`${c.r}${c.s}`);
   }
 
   let chipFlies: {
@@ -389,17 +296,8 @@
   class="absolute inset-0 flex items-center justify-center"
   style="padding: 110px 6px 210px 6px;"
 >
-  <div class="relative felt" style="width: {feltW}px; height: {feltH}px;">
-    <!-- Table image -->
-    <img
-      src="/table-top-mobile.webp"
-      alt=""
-      class="absolute inset-0 w-full h-full object-fill select-none pointer-events-none"
-      draggable="false"
-      style="filter: drop-shadow(0 16px 40px rgba(0,0,0,0.9)) {isFinal
-        ? 'drop-shadow(0 0 32px rgba(212,175,55,0.4))'
-        : ''};"
-    />
+  <div class="relative" style="width: {feltW}px; height: {feltH}px;">
+    <TableSurface variant="mobile" {isFinal} tournament={theme === 'tournament'} />
 
     <!-- ========== TOURNAMENT TITLE BADGE ========== -->
     {#if theme === 'tournament' && tournamentTitle}
@@ -418,7 +316,7 @@
     <!-- ========== WINNER ANNOUNCEMENT ========== -->
     {#if winnerPlayer && winners.length > 0}
       <div
-        class="absolute left-1/2 -translate-x-1/2 z-[70] winner-announce pointer-events-none"
+        class="absolute left-1/2 -translate-x-1/2 z-[50] winner-announce pointer-events-none"
         style="top: 20%;"
       >
         <div
@@ -426,7 +324,9 @@
           style="background: linear-gradient(180deg, rgba(8,13,36,0.99), rgba(5,8,15,0.99)); border: 2px solid #d4af37; min-width: 160px; box-shadow: 0 8px 24px rgba(0,0,0,0.9);"
         >
           <p class="text-[8px] uppercase tracking-[0.3em] text-gold font-extrabold mb-1">
-            {winners.length > 1 ? '🏆 Winners' : '🏆 Winner'}
+            {winners.length > 1
+              ? '<Icon name="trophy" size={18} color="#f4c95d" /> Winners'
+              : '<Icon name="trophy" size={18} color="#f4c95d" /> Winner'}
           </p>
           <p class="text-[14px] font-extrabold text-white leading-tight mb-1">
             {winnerDisplayName}
@@ -470,7 +370,7 @@
                 class="text-[7px] font-bold truncate"
                 style="color: {p.isWinner ? '#f4e5a8' : 'rgba(255,255,255,0.6)'};"
               >
-                {p.userId === myUserId
+                {Number(p.userId) === Number(myUserId)
                   ? 'You'
                   : shortName(allSeats.find((s: any) => s.seat === p.seat)?.displayName ?? '?')}
               </span>
@@ -521,7 +421,7 @@
             >
             <span
               class="font-black text-gold tabular-nums pot-display"
-              style="font-size: {S.potFont}px;">${fmt(totalPot)}</span
+              style="font-size: {S.potFont}px;">${fmt(shownPot)}</span
             >
           </div>
         </div>
@@ -533,13 +433,20 @@
       class="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-[5] pointer-events-none"
       style="top: {logoY}%;"
     >
-      <img
-        src="/logo-flop-club.png"
-        alt=""
-        class="object-contain select-none"
-        style="width: 40px; height: 40px; opacity: 0.5;"
-        draggable="false"
-      />
+      <div class="flex flex-col items-center">
+        <img
+          src="/logo-flop-club.png"
+          alt=""
+          class="object-contain select-none"
+          style="width: 58px; height: 58px; opacity: 0.22; filter: drop-shadow(0 2px 10px rgba(0,0,0,0.6));"
+          draggable="false"
+        />
+        <span
+          style="font-size: 10px; font-weight: 800; letter-spacing: 0.34em; text-transform: uppercase; color: rgba(212,175,55,0.3); margin-top: -4px;"
+        >
+          Flop Club
+        </span>
+      </div>
     </div>
 
     <!-- ========== CHIP FLY ========== -->
@@ -548,20 +455,20 @@
         class="chip-fly"
         style="--from-x: {fly.fromX}%; --from-y: {fly.fromY}%; --to-x: {fly.toX}%; --to-y: {fly.toY}%; animation-delay: {fly.delay}s;"
       >
-        <PokerChip amount={Math.min(totalPot, 100)} size={16} />
+        <PokerChip amount={totalPot} size={16} maxStack={5} />
       </div>
     {/each}
 
     <!-- ========== COMMUNITY CARDS ========== -->
     {#if gameState}
       <div
-        class="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-1 z-[10]"
-        style="top: {boardY}%;"
+        class="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 flex justify-center gap-1 z-[60]"
+        style="top: {boardY}%; width: 84%;"
       >
         {#each Array(5) as _, i}
           {#if community[i]}
             {@const isWinCard = isWinningCard(community[i])}
-            <div class="relative">
+            <div class="relative {isWinCard && winners.length > 0 ? 'z-[60]' : ''}">
               <PlayingCard
                 rank={community[i].r}
                 suit={suitChar(community[i].s)}
@@ -579,14 +486,14 @@
             <div
               class="rounded-md"
               style="width: {S.cardSize === 'md'
-                ? 50
+                ? 60
                 : S.cardSize === 'sm'
-                  ? 34
-                  : 26}px; height: {S.cardSize === 'md'
-                ? 70
+                  ? 44
+                  : 32}px; height: {S.cardSize === 'md'
+                ? 84
                 : S.cardSize === 'sm'
-                  ? 48
-                  : 36}px; background: rgba(0,0,0,0.4); border: 1px solid rgba(212,175,55,0.12); box-shadow: inset 0 2px 6px rgba(0,0,0,0.7);"
+                  ? 62
+                  : 44}px; background: rgba(0,0,0,0.4); border: 1px solid rgba(212,175,55,0.12); box-shadow: inset 0 2px 6px rgba(0,0,0,0.7);"
             ></div>
           {/if}
         {/each}
@@ -643,9 +550,12 @@
 
       {#if betAmount > 0 && !s.folded && winners.length === 0}
         <div
-          class="absolute -translate-x-1/2 -translate-y-1/2 z-[22] pointer-events-none chip-enter"
+          class="absolute -translate-x-1/2 -translate-y-1/2 z-[18] pointer-events-none chip-enter flex flex-col items-center"
           style="left: {bPos.x}; top: {bPos.y};"
         >
+          <div class="mb-0.5">
+            <PokerChip amount={betAmount} size={14} maxStack={3} />
+          </div>
           <div
             class="flex items-center justify-center rounded-full"
             style="height: 18px; min-width: 26px; padding: 0 7px; background: linear-gradient(180deg, #f4e5a8 0%, #d4af37 55%, #a87a15 100%); box-shadow: 0 2px 6px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -1px 0 rgba(0,0,0,0.3); border: 1px solid rgba(122,86,10,0.9);"
@@ -670,16 +580,16 @@
       {#if heroHole.length > 0 && !isEliminated}
         {#key gameState.handNo}
           <div
-            class="absolute left-1/2 -translate-x-1/2 flex justify-center gap-1.5 z-[25]"
+            class="absolute left-1/2 -translate-x-1/2 flex justify-center gap-1.5 z-[60]"
             style="top: {heroCardsY}%; filter: drop-shadow(0 6px 14px rgba(0,0,0,0.9));"
           >
             {#each heroHole as c, i}
               {@const isWinCard = isWinningCard(c)}
-              <div class="relative">
+              <div class="relative {isWinCard && winners.length > 0 ? 'z-[60]' : ''}">
                 <PlayingCard
                   rank={c.r}
                   suit={suitChar(c.s)}
-                  size={S.cardSize}
+                  size={heroCardSize}
                   dealFrom="top-left"
                   dealDelay={i * 0.15}
                 />
@@ -726,9 +636,12 @@
       {#if mySeat.betThisStreet > 0 && !mySeat.folded && winners.length === 0}
         {@const heroBet = betPos(heroPos)}
         <div
-          class="absolute -translate-x-1/2 -translate-y-1/2 z-[22] pointer-events-none chip-enter"
+          class="absolute -translate-x-1/2 -translate-y-1/2 z-[18] pointer-events-none chip-enter flex flex-col items-center"
           style="left: {heroBet.x}; top: {heroBet.y};"
         >
+          <div class="mb-0.5">
+            <PokerChip amount={mySeat.betThisStreet} size={14} maxStack={3} />
+          </div>
           <div
             class="flex items-center justify-center rounded-full"
             style="height: 18px; min-width: 26px; padding: 0 7px; background: linear-gradient(180deg, #f4e5a8 0%, #d4af37 55%, #a87a15 100%); box-shadow: 0 2px 6px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -1px 0 rgba(0,0,0,0.3); border: 1px solid rgba(122,86,10,0.9);"
@@ -741,6 +654,8 @@
         </div>
       {/if}
     {/if}
+
+    <ProvablyFairFooter {gameState} />
   </div>
 </div>
 

@@ -122,27 +122,27 @@
       class="rounded-2xl p-2.5 relative overflow-hidden"
       style="
         background:
-          radial-gradient(ellipse at 100% 0%, rgba(139,92,246,0.15) 0%, transparent 60%),
+          radial-gradient(ellipse at 100% 0%, rgba(37,99,235,0.15) 0%, transparent 60%),
           linear-gradient(180deg, rgba(15,31,58,0.85), rgba(7,14,27,0.95));
-        border: 1px solid rgba(139,92,246,0.3);
+        border: 1px solid rgba(37,99,235,0.3);
         box-shadow: 0 4px 12px rgba(0,0,0,0.35);
       "
     >
       <div class="flex items-center gap-1.5 mb-1.5">
         <div
           class="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
-          style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4);"
+          style="background: rgba(37,99,235,0.2); border: 1px solid rgba(37,99,235,0.4);"
         >
-          <Icon name="star" size={12} color="#c4b5fd" />
+          <Icon name="star" size={12} color="#93c5fd" />
         </div>
-        <span class="text-[8px] font-extrabold text-violet-300 uppercase tracking-wider">
+        <span class="text-[8px] font-extrabold text-blue-300 uppercase tracking-wider">
           XP In
         </span>
       </div>
       {#if loading}
         <div class="h-4 w-12 rounded-md" style="background: rgba(255,255,255,0.08);"></div>
       {:else}
-        <p class="text-[16px] font-extrabold text-violet-300 tabular-nums leading-none">
+        <p class="text-[16px] font-extrabold text-blue-300 tabular-nums leading-none">
           {fmtAmount(xpEarned)}
         </p>
       {/if}
@@ -245,19 +245,19 @@
           class="rounded-2xl p-6 text-center relative overflow-hidden"
           style="
             background:
-              radial-gradient(ellipse at 50% 0%, rgba(139,92,246,0.12) 0%, transparent 60%),
+              radial-gradient(ellipse at 50% 0%, rgba(37,99,235,0.12) 0%, transparent 60%),
               linear-gradient(180deg, rgba(15,31,58,0.6), rgba(11,19,36,0.85));
-            border: 1px dashed rgba(139,92,246,0.35);
+            border: 1px dashed rgba(37,99,235,0.35);
           "
         >
           <div
             class="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
             style="
-              background: linear-gradient(180deg, rgba(139,92,246,0.25), rgba(109,40,217,0.1));
-              border: 1px solid rgba(139,92,246,0.45);
+              background: linear-gradient(180deg, rgba(37,99,235,0.25), rgba(109,40,217,0.1));
+              border: 1px solid rgba(37,99,235,0.45);
             "
           >
-            <Icon name="star" size={22} color="#c4b5fd" />
+            <Icon name="star" size={22} color="#93c5fd" />
           </div>
           <p class="text-sm font-extrabold text-white">No XP transactions yet</p>
           <p class="text-[11px] text-white/55 mt-1 font-bold">
@@ -274,24 +274,24 @@
             style="
               background:
                 radial-gradient(ellipse at 0% 50%, {isEarn
-              ? 'rgba(139,92,246,0.12)'
+              ? 'rgba(37,99,235,0.12)'
               : 'rgba(245,158,11,0.12)'} 0%, transparent 60%),
                 linear-gradient(180deg, rgba(15,31,58,0.85), rgba(7,14,27,0.95));
-              border: 1px solid {isEarn ? 'rgba(139,92,246,0.3)' : 'rgba(245,158,11,0.3)'};
+              border: 1px solid {isEarn ? 'rgba(37,99,235,0.3)' : 'rgba(245,158,11,0.3)'};
               box-shadow: 0 4px 12px rgba(0,0,0,0.35);
             "
           >
             <div
               class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
               style="
-                background: {isEarn ? 'rgba(139,92,246,0.2)' : 'rgba(245,158,11,0.2)'};
-                border: 1px solid {isEarn ? 'rgba(139,92,246,0.45)' : 'rgba(245,158,11,0.45)'};
+                background: {isEarn ? 'rgba(37,99,235,0.2)' : 'rgba(245,158,11,0.2)'};
+                border: 1px solid {isEarn ? 'rgba(37,99,235,0.45)' : 'rgba(245,158,11,0.45)'};
               "
             >
               <Icon
                 name={isEarn ? 'trending-up' : 'trending-down'}
                 size={16}
-                color={isEarn ? '#c4b5fd' : '#fcd34d'}
+                color={isEarn ? '#93c5fd' : '#fcd34d'}
               />
             </div>
             <div class="flex-1 min-w-0">
@@ -304,7 +304,7 @@
             </div>
             <p
               class="text-[13px] font-extrabold tabular-nums shrink-0 leading-none"
-              style="color: {isEarn ? '#a78bfa' : '#fcd34d'};"
+              style="color: {isEarn ? '#60a5fa' : '#fcd34d'};"
             >
               {fmtAmount(tx.amount)} XP
             </p>
@@ -405,7 +405,7 @@
             >
             {#if p.xp_awarded > 0}<span
                 class="px-1.5 py-0.5 rounded-full"
-                style="background: rgba(139,92,246,0.2); color: #c4b5fd;"
+                style="background: rgba(37,99,235,0.2); color: #93c5fd;"
                 >+{Number(p.xp_awarded).toLocaleString()} XP</span
               >{/if}
             {#if Number(p.voucher_amount) > 0}<span

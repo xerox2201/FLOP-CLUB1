@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fmtAmount } from '../lib/table-geometry';
   import { onMount, onDestroy } from 'svelte';
   import { api } from '../lib/api';
   import { auth } from '../stores/auth';
@@ -31,7 +32,8 @@
   }
 
   function fmt(n: any, decimals = 2): string {
-    return Number(Number(n || 0).toFixed(decimals)).toFixed(decimals);
+    const v = Number(n || 0);
+    return decimals === 2 ? fmtAmount(v) : v.toFixed(decimals);
   }
 
   async function loadAll() {
@@ -206,8 +208,19 @@
 
   <!-- HEADER -->
   <div class="px-4 mt-2 mb-3">
-    <h1 class="text-2xl font-extrabold text-white leading-none">Wallet</h1>
-    <p class="text-[11px] text-white/45 mt-1">Instant · Automatic · Provably fair</p>
+    <h1
+      class="text-[26px] font-extrabold leading-none tracking-[-0.02em]"
+      style="
+        background: linear-gradient(180deg, #ffffff 0%, #f4e5a8 50%, #d4af37 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        filter: drop-shadow(0 2px 8px rgba(244,201,93,0.4));
+      "
+    >
+      Wallet
+    </h1>
+    <p class="text-[11px] text-white/45 mt-1.5">Instant · Automatic · Provably fair</p>
   </div>
 
   {#if loading}
@@ -527,23 +540,23 @@
               class="rounded-2xl p-4"
               style="
                 background:
-                  radial-gradient(ellipse at 100% 0%, rgba(139,92,246,0.12) 0%, transparent 60%),
-                  linear-gradient(180deg, rgba(139,92,246,0.08), rgba(7,14,27,0.95));
-                border: 1.5px solid rgba(139,92,246,0.4);
+                  radial-gradient(ellipse at 100% 0%, rgba(37,99,235,0.12) 0%, transparent 60%),
+                  linear-gradient(180deg, rgba(37,99,235,0.08), rgba(7,14,27,0.95));
+                border: 1.5px solid rgba(37,99,235,0.4);
               "
             >
               <div class="flex items-center gap-2 mb-3">
                 <div
                   class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
                   style="
-                    background: rgba(139,92,246,0.2);
-                    border: 1px solid rgba(139,92,246,0.5);
+                    background: rgba(37,99,235,0.2);
+                    border: 1px solid rgba(37,99,235,0.5);
                   "
                 >
-                  <Icon name="unlock" size={16} color="#c4b5fd" />
+                  <Icon name="unlock" size={16} color="#93c5fd" />
                 </div>
                 <div class="flex-1">
-                  <p class="text-[11px] font-extrabold uppercase tracking-wider text-violet-300">
+                  <p class="text-[11px] font-extrabold uppercase tracking-wider text-blue-300">
                     Unlock Withdrawals
                   </p>
                   <p class="text-[9px] text-white/45 font-bold">Complete all conditions once</p>

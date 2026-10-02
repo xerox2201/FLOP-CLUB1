@@ -6,6 +6,8 @@
   export let rank: string = 'A';
   export let suit: '♠' | '♥' | '♦' | '♣' = '♠';
   export let size: 'xs' | 'sm' | 'md' | 'lg' | 'xl' = 'md';
+  /** Phase 8: mobile cards render larger; desktop keeps the original sizes. */
+  export let variant: 'mobile' | 'desktop' = 'mobile';
   export let rotation: number = 0;
   export let faceDown: boolean = false;
   export let selected: boolean = false;
@@ -17,14 +19,24 @@
   export let dealDelay: number = 0;
   export let folding: boolean = false;
 
-  const sizes = {
+  const MOBILE_SIZES = {
+    xs: { w: 32, h: 44 },
+    sm: { w: 44, h: 62 },
+    md: { w: 60, h: 84 },
+    lg: { w: 76, h: 106 },
+    xl: { w: 96, h: 134 },
+  };
+
+  const DESKTOP_SIZES = {
     xs: { w: 26, h: 36 },
     sm: { w: 34, h: 48 },
     md: { w: 50, h: 70 },
     lg: { w: 64, h: 90 },
     xl: { w: 82, h: 115 },
   };
-  $: s = sizes[size];
+
+  $: sizeMap = variant === 'mobile' ? MOBILE_SIZES : DESKTOP_SIZES;
+  $: s = sizeMap[size];
   $: radius = Math.max(3, s.w * 0.09);
 
   const RANK_MAP: Record<string, string> = {
@@ -150,6 +162,19 @@
       transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
       box-shadow 0.25s ease;
     will-change: transform;
+  }
+
+  /* Phase 8 (spec M3): every card gets a dark hairline, a soft drop shadow and
+     a subtle top highlight so it separates cleanly from the felt. These are
+     <img> elements, so border/box-shadow apply but pseudo-elements would not.
+     The proportional border-radius stays inline (it matches the art's corners);
+     a flat 2px would clip the artwork. */
+  .card-front,
+  .card-back {
+    border: 1px solid rgba(0, 0, 0, 0.55);
+    box-shadow:
+      0 2px 6px rgba(0, 0, 0, 0.7),
+      inset 0 1px 0 rgba(255, 255, 255, 0.14);
   }
 
   /* Hover lift + gold glow.

@@ -27,7 +27,7 @@
   }
 
   function flash(msg: string, isError = false) {
-    toast = (isError ? '❌ ' : '✅ ') + msg;
+    toast = (isError ? '❌ ' : ' ') + msg;
     setTimeout(() => (toast = ''), 3000);
   }
 

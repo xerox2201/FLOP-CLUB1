@@ -107,10 +107,10 @@
     style="
       background:
         radial-gradient(ellipse at 100% 0%,
-          {canClaim ? 'rgba(244,201,93,0.28)' : 'rgba(139,92,246,0.15)'} 0%,
+          {canClaim ? 'rgba(244,201,93,0.28)' : 'rgba(37,99,235,0.15)'} 0%,
           transparent 70%),
         linear-gradient(135deg, rgba(8,20,40,0.95), rgba(5,12,25,0.98));
-      border: 1.5px solid {canClaim ? 'rgba(244,201,93,0.5)' : 'rgba(139,92,246,0.3)'};
+      border: 1.5px solid {canClaim ? 'rgba(244,201,93,0.5)' : 'rgba(37,99,235,0.3)'};
       box-shadow: 0 4px 14px rgba(0,0,0,0.4){canClaim
       ? ', 0 0 20px rgba(244,201,93,0.2)'
       : ''}, inset 0 1px 0 rgba(255,255,255,0.05);
@@ -125,13 +125,13 @@
         class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
         style="
           background: radial-gradient(circle at 30% 30%,
-            {canClaim ? 'rgba(255,235,170,0.4)' : 'rgba(139,92,246,0.3)'},
-            {canClaim ? 'rgba(244,201,93,0.15)' : 'rgba(139,92,246,0.08)'});
-          border: 1px solid {canClaim ? 'rgba(244,201,93,0.6)' : 'rgba(139,92,246,0.4)'};
+            {canClaim ? 'rgba(255,235,170,0.4)' : 'rgba(37,99,235,0.3)'},
+            {canClaim ? 'rgba(244,201,93,0.15)' : 'rgba(37,99,235,0.08)'});
+          border: 1px solid {canClaim ? 'rgba(244,201,93,0.6)' : 'rgba(37,99,235,0.4)'};
           {canClaim ? 'animation: reward-pulse 2s ease-in-out infinite;' : ''}
         "
       >
-        <Icon name="gift" size={14} color={canClaim ? '#f4c95d' : '#a78bfa'} />
+        <Icon name="gift" size={14} color={canClaim ? '#f4c95d' : '#60a5fa'} />
         {#if canClaim}
           <span
             class="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-amber-300 animate-pulse"
@@ -141,7 +141,7 @@
       </div>
       <span
         class="text-[9px] font-extrabold uppercase tracking-wider"
-        style="color: {canClaim ? '#f4c95d' : '#a78bfa'};"
+        style="color: {canClaim ? '#f4c95d' : '#60a5fa'};"
       >
         Daily
       </span>

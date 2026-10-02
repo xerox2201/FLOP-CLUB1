@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fmtAmount } from '../lib/table-geometry';
   import { onMount } from 'svelte';
   import { api } from '../lib/api';
   import { auth } from '../stores/auth';
@@ -215,19 +216,19 @@
       class="rounded-2xl p-3 relative overflow-hidden"
       style="
         background:
-          radial-gradient(ellipse at 100% 0%, rgba(139,92,246,0.15) 0%, transparent 60%),
+          radial-gradient(ellipse at 100% 0%, rgba(37,99,235,0.15) 0%, transparent 60%),
           linear-gradient(180deg, rgba(15,31,58,0.85), rgba(7,14,27,0.95));
-        border: 1px solid rgba(139,92,246,0.3);
+        border: 1px solid rgba(37,99,235,0.3);
       "
     >
       <div class="flex items-center gap-1.5 mb-2">
         <div
           class="w-6 h-6 rounded-lg flex items-center justify-center"
-          style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4);"
+          style="background: rgba(37,99,235,0.2); border: 1px solid rgba(37,99,235,0.4);"
         >
-          <Icon name="star" size={12} color="#c4b5fd" />
+          <Icon name="star" size={12} color="#93c5fd" />
         </div>
-        <span class="text-[9px] font-extrabold text-violet-300 uppercase tracking-wider"
+        <span class="text-[9px] font-extrabold text-blue-300 uppercase tracking-wider"
           >Bonus XP</span
         >
       </div>
@@ -264,7 +265,7 @@
       </p>
       <p class="text-[9px] text-white/45 mt-1 font-bold truncate">
         {bestPack
-          ? `${bestPack.name} · $${(bestPack.priceUsdDiscounted ?? bestPack.priceUsd).toFixed(2)}`
+          ? `${bestPack.name} · $${fmtAmount(bestPack.priceUsdDiscounted ?? bestPack.priceUsd)}`
           : 'no packs'}
       </p>
     </div>
@@ -299,9 +300,9 @@
   <!-- Info bar -->
   <div
     class="mx-4 rounded-2xl p-3 mb-4 flex items-center gap-2"
-    style="background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.3);"
+    style="background: rgba(37,99,235,0.1); border: 1px solid rgba(37,99,235,0.3);"
   >
-    <Icon name="info" size={16} color="#c4b5fd" />
+    <Icon name="info" size={16} color="#93c5fd" />
     <p class="text-[10px] text-white/70 flex-1">
       Every pack delivers chips instantly, plus XP and a rake-based voucher.
     </p>
@@ -384,7 +385,7 @@
                 >
                 {#if p.priceUsdDiscounted && p.priceUsdDiscounted < p.priceUsd}
                   <span class="text-[10px] text-white/40 line-through tabular-nums"
-                    >${p.priceUsd.toFixed(2)}</span
+                    >${fmtAmount(p.priceUsd)}</span
                   >
                 {/if}
                 <span class="text-[10px] text-cyan-300 font-mono tabular-nums"
@@ -399,7 +400,7 @@
                 >
                 <span
                   class="px-1.5 py-0.5 rounded-full"
-                  style="background: rgba(139,92,246,0.2); color: #c4b5fd;"
+                  style="background: rgba(37,99,235,0.2); color: #93c5fd;"
                   >+{p.xp.toLocaleString()} XP</span
                 >
                 {#if p.voucher > 0}
@@ -442,7 +443,7 @@
       </div>
       <h2 class="text-lg font-extrabold text-white">{selected.name}</h2>
       <p class="text-3xl font-extrabold text-gold tabular-nums mt-2">
-        ${currentDiscountedPrice.toFixed(2)}
+        ${fmtAmount(currentDiscountedPrice)}
       </p>
       <p class="text-[10px] text-cyan-300 font-mono mt-1">{currentTonPrice} TON</p>
     </div>
@@ -458,8 +459,8 @@
         >
       </div>
       <div class="flex justify-between text-[11px]">
-        <span class="text-white/50">XP</span><span
-          class="text-violet-300 font-extrabold tabular-nums">+{selected.xp.toLocaleString()}</span
+        <span class="text-white/50">XP</span><span class="text-blue-300 font-extrabold tabular-nums"
+          >+{selected.xp.toLocaleString()}</span
         >
       </div>
       {#if selected.voucher > 0}

@@ -27,7 +27,7 @@ export interface TableState {
   mode?: 'free' | 'real';
   totalRake?: number;
   totalRebuy?: number;
- tournamentId?: number;
+  tournamentId?: number;
   tournamentTableNumber?: number;
   clientSeed?: string;
   revealSeed?: string;
@@ -114,7 +114,7 @@ export class TableSocketIO {
             const message = res?.error ?? 'join_failed';
             this.emit({ type: 'error', message, code });
 
-            // 🔴 STALE_TOURNAMENT: kill this socket permanently
+            // STALE_TOURNAMENT: kill this socket permanently
             if (code === 'STALE_TOURNAMENT') {
               console.warn(
                 `[TableSocketIO] STALE_TOURNAMENT for table ${this.tableId} — closing socket permanently`,
@@ -290,13 +290,11 @@ export class TableSocketIO {
   }
 
   close(): void {
-    
     this.closedByUser = true;
     this.listeners.clear();
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
-      
     }
   }
 }

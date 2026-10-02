@@ -61,7 +61,7 @@
   $: graphicsLabel = prefs.graphics.charAt(0).toUpperCase() + prefs.graphics.slice(1);
   $: summary = [
     { key: 'lang', icon: 'chat', color: '#22d3ee', label: 'Language', value: langLabel },
-    { key: 'theme', icon: 'gem', color: '#8b5cf6', label: 'Card Theme', value: activeTheme.name },
+    { key: 'theme', icon: 'gem', color: '#3b82f6', label: 'Card Theme', value: activeTheme.name },
     {
       key: 'audio',
       icon: 'bell',
@@ -104,7 +104,7 @@
 
     <div class="flex-1 min-w-0">
       <h1
-        class="text-[24px] font-extrabold leading-none tracking-tight"
+        class="text-[26px] font-extrabold leading-none tracking-[-0.02em]"
         style="
           background: linear-gradient(180deg, #ffffff 0%, #f4e5a8 50%, #d4af37 100%);
           -webkit-background-clip: text;
@@ -337,9 +337,9 @@
       <div class="flex items-center gap-3">
         <div
           class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-          style="background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.3);"
+          style="background: rgba(37,99,235,0.12); border: 1px solid rgba(37,99,235,0.3);"
         >
-          <Icon name="zap" size={16} color="#c4b5fd" />
+          <Icon name="zap" size={16} color="#93c5fd" />
         </div>
         <div>
           <p class="text-sm font-bold text-white">Haptics</p>
@@ -471,9 +471,9 @@
       <div class="flex items-center gap-3">
         <div
           class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-          style="background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.3);"
+          style="background: rgba(37,99,235,0.12); border: 1px solid rgba(37,99,235,0.3);"
         >
-          <Icon name="gem" size={16} color="#a78bfa" />
+          <Icon name="gem" size={16} color="#60a5fa" />
         </div>
         <div>
           <p class="text-sm font-bold text-white">Four-Color Cards</p>

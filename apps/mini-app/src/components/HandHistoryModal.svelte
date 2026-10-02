@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fmtAmount } from '../lib/table-geometry';
   import { api } from '../lib/api';
   import PlayingCard from './PlayingCard.svelte';
   import Icon from './Icon.svelte';
@@ -19,7 +20,7 @@
   let filter: 'all' | 'won' | 'lost' | 'real' | 'free' = 'all';
 
   function fmt(n: any): string {
-    return Number(Number(n || 0).toFixed(2)).toFixed(2);
+    return fmtAmount(Number(n || 0));
   }
 
   function suitChar(s: string): '♠' | '♥' | '♦' | '♣' {
@@ -542,14 +543,14 @@
                                   ? 'rgba(16,185,129,0.15)'
                                   : a.action === 'RAISE' || a.action === 'BET'
                                     ? 'rgba(59,130,246,0.15)'
-                                    : 'rgba(139,92,246,0.15)'};
+                                    : 'rgba(37,99,235,0.15)'};
                                 color: {a.action === 'FOLD'
                                 ? '#fca5a5'
                                 : a.action === 'CALL'
                                   ? '#6ee7b7'
                                   : a.action === 'RAISE' || a.action === 'BET'
                                     ? '#93c5fd'
-                                    : '#c4b5fd'};
+                                    : '#93c5fd'};
                               "
                             >
                               {a.action}

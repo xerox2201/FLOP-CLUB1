@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fmtAmount } from '../lib/table-geometry';
   import Avatar from './Avatar.svelte';
   import Icon from './Icon.svelte';
 
@@ -9,10 +10,10 @@
   export let onMute: (userId: number) => void = () => {};
 
   function fmt(n: any): string {
-    return Number(Number(n || 0).toFixed(2)).toFixed(2);
+    return fmtAmount(Number(n || 0));
   }
 
-  $: isMe = player?.userId === myUserId;
+  $: isMe = Number(player?.userId) === Number(myUserId);
 </script>
 
 {#if open && player}
@@ -25,13 +26,13 @@
 
   <div
     class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] rounded-3xl p-5 w-[90%] max-w-[360px]"
-    style="background: linear-gradient(180deg, #101a3a, #080d24); border: 1px solid rgba(139,92,246,0.35); box-shadow: 0 20px 60px rgba(0,0,0,0.9);"
+    style="background: linear-gradient(180deg, #101a3a, #080d24); border: 1px solid rgba(37,99,235,0.35); box-shadow: 0 20px 60px rgba(0,0,0,0.9);"
   >
     <!-- Avatar + name -->
     <div class="flex items-center gap-3 mb-4">
       <div
         class="rounded-full p-[3px]"
-        style="border: 2.5px solid {isMe ? '#f4c95d' : 'rgba(139,92,246,0.6)'};"
+        style="border: 2.5px solid {isMe ? '#f4c95d' : 'rgba(37,99,235,0.6)'};"
       >
         <div class="w-14 h-14 rounded-full overflow-hidden">
           <Avatar avatarId={player.avatarId || 'spade'} size="md" />
@@ -71,7 +72,7 @@
       </div>
       <div
         class="rounded-xl p-3 text-center"
-        style="background: rgba(16,26,58,0.6); border: 1px solid rgba(139,92,246,0.2);"
+        style="background: rgba(16,26,58,0.6); border: 1px solid rgba(37,99,235,0.2);"
       >
         <p class="text-[9px] text-white/40 uppercase tracking-wider font-bold">Bet This Street</p>
         <p class="text-lg font-extrabold text-cyan tabular-nums">
@@ -117,7 +118,7 @@
             onClose();
           }}
           class="rounded-xl py-2.5 text-xs font-bold text-white/70 active:scale-[0.98]"
-          style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3);"
+          style="background: rgba(37,99,235,0.15); border: 1px solid rgba(37,99,235,0.3);"
         >
           <span class="flex items-center justify-center gap-1.5">
             <Icon name="close" size={12} color="rgba(255,255,255,0.7)" />
@@ -130,7 +131,7 @@
         class="rounded-xl py-2.5 text-xs font-bold text-white/70 active:scale-[0.98] {isMe
           ? 'col-span-2'
           : ''}"
-        style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3);"
+        style="background: rgba(37,99,235,0.15); border: 1px solid rgba(37,99,235,0.3);"
       >
         Close
       </button>

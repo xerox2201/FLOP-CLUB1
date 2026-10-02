@@ -64,7 +64,7 @@
   ></button>
   <div
     class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] rounded-3xl p-5 w-[90%] max-w-[380px]"
-    style="background: linear-gradient(180deg, #101a3a, #080d24); border: 1.5px solid rgba(139,92,246,0.5); box-shadow: 0 20px 60px rgba(0,0,0,0.9);"
+    style="background: linear-gradient(180deg, #101a3a, #080d24); border: 1.5px solid rgba(37,99,235,0.5); box-shadow: 0 20px 60px rgba(0,0,0,0.9);"
   >
     <div class="flex items-center gap-2 mb-4">
       <Icon name="gem" size={24} />
@@ -102,7 +102,7 @@
 
     <div
       class="rounded-2xl p-4 mb-4"
-      style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.3);"
+      style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.3);"
     >
       <p class="text-[10px] text-white/40 uppercase tracking-wider font-bold mb-2">Amount (XP)</p>
       <div class="flex items-center gap-2">
@@ -126,7 +126,7 @@
         <button
           on:click={() => setPreset(o.p)}
           class="rounded-xl py-2 text-[11px] font-extrabold active:scale-95"
-          style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.4); color: #c4b5fd;"
+          style="background: rgba(37,99,235,0.15); border: 1px solid rgba(37,99,235,0.4); color: #93c5fd;"
           >{o.l}</button
         >
       {/each}
@@ -134,7 +134,7 @@
 
     <p class="text-[10px] text-white/40 mb-3 text-center leading-relaxed">
       Min 5,000 XP · Max 50,000 XP/month · Once per 24h<br />
-      ⚠️ Level change نمی‌کنه (XP از lifetime حساب می‌شه)
+      <Icon name="alert" size={12} color="#f59e0b" /> Level change نمی‌کنه (XP از lifetime حساب می‌شه)
     </p>
 
     {#if success}
@@ -154,7 +154,7 @@
         on:click={convert}
         disabled={!canSubmit}
         class="w-full rounded-xl py-3 text-[13px] font-extrabold active:scale-[0.98] disabled:opacity-40"
-        style="background: linear-gradient(180deg, #a78bfa, #6d28d9); color: white; box-shadow: 0 3px 0 #4c1d95;"
+        style="background: linear-gradient(180deg, #60a5fa, #6d28d9); color: white; box-shadow: 0 3px 0 #4c1d95;"
         >{busy ? 'Processing…' : `Convert ${amount.toLocaleString()} XP`}</button
       >
       {#if error}<p class="text-[11px] text-red-300 text-center mt-3">{error}</p>{/if}

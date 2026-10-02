@@ -39,7 +39,7 @@
     { key: 'all', label: 'All', color: '#d4af37' },
     { key: 'running', label: 'Live', color: '#10b981' },
     { key: 'registering', label: 'Open', color: '#22d3ee' },
-    { key: 'scheduled', label: 'Upcoming', color: '#8b5cf6' },
+    { key: 'scheduled', label: 'Upcoming', color: '#3b82f6' },
     { key: 'finished', label: 'Finished', color: '#6b7280' },
   ];
 
@@ -86,7 +86,7 @@
     if (status === 'running') return '#10b981';
     if (status === 'final_table') return '#d4af37';
     if (status === 'registering') return '#22d3ee';
-    if (status === 'scheduled') return '#8b5cf6';
+    if (status === 'scheduled') return '#3b82f6';
     if (status === 'finished') return '#6b7280';
     return '#ef4444';
   }
@@ -142,7 +142,7 @@
       style="
         background:
           radial-gradient(ellipse at 100% 0%, rgba(244,201,93,0.2) 0%, transparent 60%),
-          radial-gradient(ellipse at 0% 100%, rgba(139,92,246,0.14) 0%, transparent 60%),
+          radial-gradient(ellipse at 0% 100%, rgba(37,99,235,0.14) 0%, transparent 60%),
           linear-gradient(135deg, rgba(20,45,82,0.9) 0%, rgba(15,31,58,0.9) 55%, rgba(7,14,27,0.98) 100%);
         border: 1.5px solid rgba(244,201,93,0.4);
         box-shadow: 0 10px 32px rgba(0,0,0,0.6), 0 0 28px rgba(244,201,93,0.12);
@@ -275,19 +275,19 @@
       class="rounded-2xl p-3 relative overflow-hidden"
       style="
         background:
-          radial-gradient(ellipse at 100% 0%, rgba(139,92,246,0.15) 0%, transparent 60%),
+          radial-gradient(ellipse at 100% 0%, rgba(37,99,235,0.15) 0%, transparent 60%),
           linear-gradient(180deg, rgba(15,31,58,0.85), rgba(7,14,27,0.95));
-        border: 1px solid rgba(139,92,246,0.3);
+        border: 1px solid rgba(37,99,235,0.3);
       "
     >
       <div class="flex items-center gap-1.5 mb-2">
         <div
           class="w-6 h-6 rounded-lg flex items-center justify-center"
-          style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4);"
+          style="background: rgba(37,99,235,0.2); border: 1px solid rgba(37,99,235,0.4);"
         >
-          <Icon name="clock" size={12} color="#c4b5fd" />
+          <Icon name="clock" size={12} color="#93c5fd" />
         </div>
-        <span class="text-[9px] font-extrabold text-violet-300 uppercase tracking-wider">
+        <span class="text-[9px] font-extrabold text-blue-300 uppercase tracking-wider">
           Upcoming
         </span>
       </div>
@@ -574,7 +574,7 @@
 
               <div class="text-right shrink-0">
                 <div
-                  class="text-[14px] font-extrabold tabular-nums leading-none"
+                  class="text-[15px] font-extrabold tabular-nums leading-none"
                   style="
                     background: linear-gradient(180deg, #f4e5a8, #d4af37 50%, #a87a15);
                     -webkit-background-clip: text;
@@ -585,7 +585,7 @@
                   {t.buyIn > 0 ? `$${fmt(t.buyIn)}` : 'FREE'}
                 </div>
                 {#if t.guaranteed > 0}
-                  <div class="text-[9px] text-gold/60 mt-1 tabular-nums">
+                  <div class="text-[10px] text-gold/75 mt-1 tabular-nums">
                     GTD ${fmt(t.guaranteed)}
                   </div>
                 {/if}
@@ -600,7 +600,7 @@
                 <p class="text-[9px] uppercase tracking-wider text-white/40 font-bold mb-0.5">
                   Players
                 </p>
-                <p class="text-[12px] font-extrabold text-white tabular-nums">
+                <p class="text-[14px] font-extrabold text-white tabular-nums">
                   {t.activeCount > 0 ? t.activeCount : t.registeredCount}
                   <span class="text-white/40 font-bold"> / {t.maxPlayers}</span>
                 </p>
@@ -609,7 +609,7 @@
                 <p class="text-[9px] uppercase tracking-wider text-white/40 font-bold mb-0.5">
                   Prize
                 </p>
-                <p class="text-[12px] font-extrabold tabular-nums" style="color: #6ee7b7;">
+                <p class="text-[14px] font-extrabold tabular-nums" style="color: #6ee7b7;">
                   ${fmt(t.totalPrizePool)}
                 </p>
               </div>
@@ -617,7 +617,7 @@
                 <p class="text-[9px] uppercase tracking-wider text-white/40 font-bold mb-0.5">
                   {t.status === 'running' || t.status === 'final_table' ? 'Level' : 'Starts'}
                 </p>
-                <p class="text-[12px] font-extrabold tabular-nums" style="color: {sc};">
+                <p class="text-[14px] font-extrabold tabular-nums" style="color: {sc};">
                   {#if t.status === 'running' || t.status === 'final_table'}
                     Lvl {t.currentLevel}
                   {:else if t.scheduledStart}

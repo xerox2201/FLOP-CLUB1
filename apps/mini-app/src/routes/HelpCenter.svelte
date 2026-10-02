@@ -49,7 +49,7 @@
     {
       id: 'tournaments',
       icon: 'ticket',
-      color: '#8b5cf6',
+      color: '#3b82f6',
       title: 'Tournaments',
       items: [
         {
@@ -216,20 +216,20 @@
       class="rounded-2xl p-2.5 relative overflow-hidden"
       style="
         background:
-          radial-gradient(ellipse at 100% 0%, rgba(139,92,246,0.15) 0%, transparent 60%),
+          radial-gradient(ellipse at 100% 0%, rgba(37,99,235,0.15) 0%, transparent 60%),
           linear-gradient(180deg, rgba(15,31,58,0.85), rgba(7,14,27,0.95));
-        border: 1px solid rgba(139,92,246,0.3);
+        border: 1px solid rgba(37,99,235,0.3);
         box-shadow: 0 4px 12px rgba(0,0,0,0.35);
       "
     >
       <div class="flex items-center gap-1.5 mb-1.5">
         <div
           class="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
-          style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4);"
+          style="background: rgba(37,99,235,0.2); border: 1px solid rgba(37,99,235,0.4);"
         >
-          <Icon name="chat" size={12} color="#c4b5fd" />
+          <Icon name="chat" size={12} color="#93c5fd" />
         </div>
-        <span class="text-[8px] font-extrabold text-violet-300 uppercase tracking-wider">
+        <span class="text-[8px] font-extrabold text-blue-300 uppercase tracking-wider">
           Answers
         </span>
       </div>

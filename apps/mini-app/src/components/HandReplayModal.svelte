@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fmtAmount } from '../lib/table-geometry';
   import { onDestroy } from 'svelte';
   import { api } from '../lib/api';
   import PlayingCard from './PlayingCard.svelte';
@@ -19,7 +20,7 @@
   let playInterval: any = null;
 
   function fmt(n: any): string {
-    return Number(Number(n || 0).toFixed(2)).toFixed(2);
+    return fmtAmount(Number(n || 0));
   }
 
   function suitChar(s: string): '♠' | '♥' | '♦' | '♣' {

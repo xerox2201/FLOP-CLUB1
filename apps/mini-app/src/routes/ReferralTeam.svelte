@@ -94,10 +94,10 @@
         </div>
         <div
           class="rounded-2xl p-3 text-center"
-          style="background: linear-gradient(180deg, rgba(15,31,58,0.85), rgba(7,14,27,0.95)); border: 1px solid rgba(139,92,246,0.3);"
+          style="background: linear-gradient(180deg, rgba(15,31,58,0.85), rgba(7,14,27,0.95)); border: 1px solid rgba(37,99,235,0.3);"
         >
           <p class="text-[9px] text-white/45 uppercase font-bold mb-1">Indirect</p>
-          <p class="text-xl font-extrabold text-violet-300 tabular-nums leading-none">
+          <p class="text-xl font-extrabold text-blue-300 tabular-nums leading-none">
             {data.indirect.length}
           </p>
         </div>
@@ -245,14 +245,14 @@
   {:else if data.indirect.length === 0}
     <div
       class="mx-4 rounded-2xl p-6 text-center"
-      style="background: linear-gradient(180deg, rgba(15,31,58,0.6), rgba(11,19,36,0.85)); border: 1px dashed rgba(139,92,246,0.3);"
+      style="background: linear-gradient(180deg, rgba(15,31,58,0.6), rgba(11,19,36,0.85)); border: 1px dashed rgba(37,99,235,0.3);"
     >
       <div class="flex justify-center mb-3">
         <div
           class="w-14 h-14 rounded-2xl flex items-center justify-center"
-          style="background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.3);"
+          style="background: rgba(37,99,235,0.1); border: 1px solid rgba(37,99,235,0.3);"
         >
-          <Icon name="users" size={24} color="#a78bfa" />
+          <Icon name="users" size={24} color="#60a5fa" />
         </div>
       </div>
       <p class="text-sm font-extrabold text-white">No indirect referrals yet</p>
@@ -265,14 +265,14 @@
       {#each data.indirect as g}
         <div
           class="rounded-2xl p-3.5"
-          style="background: linear-gradient(180deg, rgba(15,31,58,0.85), rgba(7,14,27,0.95)); border: 1px solid rgba(139,92,246,0.25);"
+          style="background: linear-gradient(180deg, rgba(15,31,58,0.85), rgba(7,14,27,0.95)); border: 1px solid rgba(37,99,235,0.25);"
         >
           <div class="flex items-center gap-2 mb-2">
-            <Icon name="users" size={14} color="#a78bfa" />
+            <Icon name="users" size={14} color="#60a5fa" />
             <p class="text-[12px] font-extrabold text-white flex-1 truncate">
-              via <span class="text-violet-300">{g.viaName}</span>
+              via <span class="text-blue-300">{g.viaName}</span>
             </p>
-            <span class="text-[11px] font-extrabold text-violet-300 tabular-nums">
+            <span class="text-[11px] font-extrabold text-blue-300 tabular-nums">
               {g.count}
               {g.count === 1 ? 'friend' : 'friends'}
             </span>

@@ -17,7 +17,7 @@
   let errorMsg = '';
   let lastSendAt = 0;
 
-  const QUICK_EMOJIS = ['👋', '😎', '🔥', '👍', '😂', '😱', '👏', '🤑', '🤝', '🍀'];
+  const QUICK_EMOJIS = ['', '', '', '', '', '', '', '', '', ''];
 
   const QUICK_CHAT = [
     'Nice hand!',
@@ -180,7 +180,7 @@
         </div>
       {:else}
         {#each messages as m (m.id)}
-          {@const isMine = m.userId === myUserId}
+          {@const isMine = Number(m.userId) === Number(myUserId)}
           <div class="flex items-start gap-2.5 {isMine ? 'flex-row-reverse' : ''}">
             <div
               class="w-10 h-10 rounded-full overflow-hidden shrink-0 flex items-center justify-center"

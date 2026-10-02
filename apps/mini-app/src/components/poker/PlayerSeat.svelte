@@ -1,7 +1,9 @@
 <script lang="ts">
+  import Icon from '../Icon.svelte';
   import Avatar from '../Avatar.svelte';
   import PlayingCard from '../PlayingCard.svelte';
   import TimerRing from '../TimerRing.svelte';
+  import { fmtAmount } from '../../lib/table-geometry';
 
   export let player: any = {};
   export let isHero: boolean = false;
@@ -24,15 +26,15 @@
   export let onClick: () => void = () => {};
 
   const SIZES = {
-    sm: { avatar: 26, panelW: 54, nameFont: 8, stackFont: 8, cardW: 16, timerExtra: 6 },
-    md: { avatar: 32, panelW: 64, nameFont: 9, stackFont: 9, cardW: 18, timerExtra: 8 },
-    lg: { avatar: 40, panelW: 78, nameFont: 10, stackFont: 10, cardW: 22, timerExtra: 10 },
-    xl: { avatar: 52, panelW: 96, nameFont: 11, stackFont: 11, cardW: 26, timerExtra: 12 },
+    sm: { avatar: 26, panelW: 68, nameFont: 8, stackFont: 9, cardW: 16, timerExtra: 6 },
+    md: { avatar: 32, panelW: 76, nameFont: 9, stackFont: 10, cardW: 18, timerExtra: 8 },
+    lg: { avatar: 40, panelW: 86, nameFont: 10, stackFont: 12, cardW: 22, timerExtra: 10 },
+    xl: { avatar: 52, panelW: 104, nameFont: 11, stackFont: 13, cardW: 26, timerExtra: 12 },
   };
   $: Z = SIZES[size];
 
   function fmt(n: any): string {
-    return Number(Number(n || 0).toFixed(2)).toFixed(2);
+    return fmtAmount(Number(n || 0));
   }
   function suitChar(s: string): '♠' | '♥' | '♦' | '♣' {
     if (s === 's') return '♠';
@@ -138,6 +140,9 @@
       <p class="stack" style="font-size: {Z.stackFont}px;">
         ${fmt(player.stack)}
       </p>
+      {#if isHero && player.bestHandName && !player.folded}
+        <div class="hand-strength-hero">{player.bestHandName}</div>
+      {/if}
     </div>
   </div>
 
@@ -155,7 +160,9 @@
   <!-- ACTION / RESULT -->
   {#if isShowdown}
     <div class="pill pill-win" class:lose={isShowdownLose}>
-      {isShowdownWin ? '✓ WIN' : '✗ LOSE'}
+      {isShowdownWin
+        ? '<Icon name="check" size={12} color="#34d399" /> WIN'
+        : '<Icon name="close" size={12} color="#f87171" /> LOSE'}
     </div>
     {#if handName}
       <div class="pill pill-hand">{handName}</div>
@@ -285,6 +292,28 @@
     line-height: 1.1;
     font-variant-numeric: tabular-nums;
     margin-top: 1px;
+  }
+
+  /* Phase 8: live hand strength — HERO ONLY. Opponents must never see it.
+     8px + a 2-line clamp so long names ("FULL HOUSE, FOURS OVER QUEENS") stay
+     readable instead of collapsing to "PAIR OF QU…". */
+  .hand-strength-hero {
+    font-size: 8px;
+    font-weight: 700;
+    color: rgba(212, 175, 55, 0.95);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    line-height: 1.15;
+    margin-top: 2px;
+    max-width: 100%;
+    text-align: center;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: break-word;
   }
 
   .cards-abs {

@@ -27,7 +27,7 @@
       label: 'Ranks',
       sub: 'Top players',
       icon: 'trophy',
-      color: '#a78bfa',
+      color: '#60a5fa',
       handler: () => onLeaderboard(),
     },
   ];

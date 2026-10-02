@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fmtAmount } from '../lib/table-geometry';
   import { requestAdmin } from '../stores/admin';
   import { auth } from '../stores/auth';
   import { api } from '../lib/api';
@@ -41,15 +42,15 @@
   let infoOpen: InfoKey = null;
 
   const INFO_META: Record<Exclude<InfoKey, null>, { title: string; icon: string }> = {
-    real: { title: 'Real Money Stats', icon: '💰' },
-    rake: { title: 'Rake', icon: '💵' },
-    rakeback: { title: 'Rakeback', icon: '🎁' },
-    net: { title: 'Net Position', icon: '💎' },
-    free: { title: 'Free Play', icon: '🎮' },
-    xp: { title: 'XP System', icon: '⭐' },
-    loyalty: { title: 'Loyalty Progress', icon: '🎯' },
-    vouchers: { title: 'Vouchers', icon: '🎫' },
-    seeds: { title: 'Seeds', icon: '🌱' },
+    real: { title: 'Real Money Stats', icon: '' },
+    rake: { title: 'Rake', icon: '' },
+    rakeback: { title: 'Rakeback', icon: '' },
+    net: { title: 'Net Position', icon: '' },
+    free: { title: 'Free Play', icon: '' },
+    xp: { title: 'XP System', icon: '' },
+    loyalty: { title: 'Loyalty Progress', icon: '' },
+    vouchers: { title: 'Vouchers', icon: '' },
+    seeds: { title: 'Seeds', icon: '' },
   };
 
   $: user = $auth.user;
@@ -84,7 +85,7 @@
   $: availableXp = loyalty?.availableXp ?? 0;
 
   $: tierLabel = loyalty?.tierLabel ?? 'Welcome';
-  $: tierIcon = loyalty?.tierIcon ?? '🌱';
+  $: tierIcon = loyalty?.tierIcon ?? '';
   $: tierColor = loyalty?.tierColor ?? '#6ee7b7';
   $: rakebackPct = Math.round((loyalty?.rakebackPct ?? 0.6) * 100);
   $: lifetimeRake = loyalty?.lifetimeRake ?? 0;
@@ -103,7 +104,7 @@
 
   // ===== Helpers =====
   function fmtMoney(n: any): string {
-    return `$${Number(n || 0).toFixed(2)}`;
+    return fmtAmount(Number(n || 0));
   }
   function fmtChips(n: any): string {
     const num = Number(n || 0);
@@ -131,7 +132,7 @@
   // ─── Menu groups ───
   const QUICK_ACTIONS = [
     { icon: 'users', label: 'Refer', page: 'referral', color: '#f4c95d' },
-    { icon: 'ticket', label: 'Tourneys', page: 'my-tournaments', color: '#a78bfa' },
+    { icon: 'ticket', label: 'Tourneys', page: 'my-tournaments', color: '#60a5fa' },
     { icon: 'dollar', label: 'My Money', page: 'my-money', color: '#6ee7b7' },
     { icon: 'trophy', label: 'Ranks', page: 'leaderboard', color: '#60a5fa' },
   ];
@@ -142,7 +143,7 @@
       label: 'Loyalty',
       sub: 'XP, Tier, Rakeback',
       page: 'loyalty',
-      color: '#a78bfa',
+      color: '#60a5fa',
     },
     {
       icon: 'users',
@@ -198,19 +199,30 @@
   <!-- HEADER -->
   <div class="flex items-center justify-between mt-2 mb-3 px-4">
     <div>
-      <h1 class="text-2xl font-extrabold text-white leading-none">Profile</h1>
-      <p class="text-[11px] text-white/45 mt-1">Manage your account</p>
+      <h1
+        class="text-[26px] font-extrabold leading-none tracking-[-0.02em]"
+        style="
+          background: linear-gradient(180deg, #ffffff 0%, #f4e5a8 50%, #d4af37 100%);
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          filter: drop-shadow(0 2px 8px rgba(244,201,93,0.4));
+        "
+      >
+        Profile
+      </h1>
+      <p class="text-[11px] text-white/45 mt-1.5">Manage your account</p>
     </div>
     <button
       on:click={() => onNavigate('settings')}
       aria-label="Settings"
       class="w-10 h-10 rounded-2xl flex items-center justify-center active:scale-95 transition"
       style="
-        background: linear-gradient(180deg, rgba(139,92,246,0.2), rgba(109,40,217,0.08));
-        border: 1px solid rgba(139,92,246,0.35);
+        background: linear-gradient(180deg, rgba(37,99,235,0.2), rgba(109,40,217,0.08));
+        border: 1px solid rgba(37,99,235,0.35);
       "
     >
-      <Icon name="settings" size={18} color="#c4b5fd" />
+      <Icon name="settings" size={18} color="#93c5fd" />
     </button>
   </div>
 
@@ -235,13 +247,14 @@
         >
           <Avatar avatarId={selectedAvatar} size="xl" frame={selectedFrame} />
           <div
-            class="absolute -bottom-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center"
+            class="absolute bottom-[13%] right-[7%] w-7 h-7 rounded-full flex items-center justify-center z-10"
             style="
               background: linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15);
               border: 2px solid #0a0d1a;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.6);
             "
           >
-            <Icon name="edit" size={11} color="#0a0800" />
+            <Icon name="edit" size={15} color="#1a1200" />
           </div>
         </button>
 
@@ -411,8 +424,8 @@
             class="h-full rounded-full transition-all"
             style="
               width: {xpPct}%;
-              background: linear-gradient(90deg, #c4b5fd, #8b5cf6 50%, #6d28d9);
-              box-shadow: 0 0 8px rgba(139,92,246,0.6);
+              background: linear-gradient(90deg, #93c5fd, #3b82f6 50%, #6d28d9);
+              box-shadow: 0 0 8px rgba(37,99,235,0.6);
             "
           ></div>
         </div>
@@ -448,8 +461,8 @@
         on:click={() => (showXpConvert = true)}
         class="w-full rounded-xl py-2.5 text-[11px] font-extrabold active:scale-[0.98] flex items-center justify-center gap-1.5"
         style="
-          background: linear-gradient(180deg, rgba(139,92,246,0.3), rgba(109,40,217,0.15));
-          border: 1px solid rgba(139,92,246,0.55);
+          background: linear-gradient(180deg, rgba(37,99,235,0.3), rgba(109,40,217,0.15));
+          border: 1px solid rgba(37,99,235,0.55);
           color: #e9d5ff;
         "
       >
@@ -566,7 +579,8 @@
                   {#if s.claimed}
                     <span
                       class="text-[8px] font-extrabold px-1.5 py-0.5 rounded-full"
-                      style="background: rgba(16,185,129,0.25); color: #6ee7b7;">✓ CLAIMED</span
+                      style="background: rgba(16,185,129,0.25); color: #6ee7b7;"
+                      ><Icon name="check" size={12} color="#34d399" /> CLAIMED</span
                     >
                   {:else if s.eligible}
                     <span
@@ -603,7 +617,7 @@
                 class="text-[11px] font-extrabold tabular-nums shrink-0"
                 style="color: #86efac;"
               >
-                ${s.amount.toFixed(2)}
+                ${fmtAmount(s.amount)}
               </span>
             </button>
           {/each}
@@ -821,9 +835,9 @@
   <div class="space-y-2 mb-3">
     <div
       class="rounded-xl p-3"
-      style="background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.3);"
+      style="background: rgba(37,99,235,0.1); border: 1px solid rgba(37,99,235,0.3);"
     >
-      <p class="text-[11px] font-extrabold mb-1 text-violet-300">1. XP Level</p>
+      <p class="text-[11px] font-extrabold mb-1 text-blue-300">1. XP Level</p>
       <p class="text-[11px]">
         Based on XP earned. Current: <strong class="text-white">Level {level}</strong>
       </p>
@@ -850,16 +864,24 @@
   <p class="mb-3">Free real-money rewards earned by playing free tables.</p>
   <div class="space-y-1.5 mb-3 text-[11px]">
     <div class="flex justify-between">
-      <span>🥉 Bronze</span><span class="font-mono">50 hands + 10 wins → $0.50</span>
+      <span><Icon name="medal" size={18} color="#d97706" /> Bronze</span><span class="font-mono"
+        >50 hands + 10 wins → $0.50</span
+      >
     </div>
     <div class="flex justify-between">
-      <span>🥈 Silver</span><span class="font-mono">200 hands + 50 wins → $1.00</span>
+      <span><Icon name="medal" size={18} color="#cbd5e1" /> Silver</span><span class="font-mono"
+        >200 hands + 50 wins → $1.00</span
+      >
     </div>
     <div class="flex justify-between">
-      <span>🥇 Gold</span><span class="font-mono">500 hands + 150 wins → $2.50</span>
+      <span><Icon name="medal" size={18} color="#f4c95d" /> Gold</span><span class="font-mono"
+        >500 hands + 150 wins → $2.50</span
+      >
     </div>
     <div class="flex justify-between">
-      <span>💎 Platinum</span><span class="font-mono">2000 hands + 500 wins → $5.00</span>
+      <span><Icon name="gem" size={16} color="#67e8f9" /> Platinum</span><span class="font-mono"
+        >2000 hands + 500 wins → $5.00</span
+      >
     </div>
   </div>
 </InfoSheet>

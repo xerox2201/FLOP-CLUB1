@@ -1,5 +1,7 @@
 import { PokerGame } from '../../../packages/poker-engine/src/game.js';
-import type { PlayerInit } from '../../../packages/poker-engine/src/types.js';
+import type { Card, PlayerInit } from '../../../packages/poker-engine/src/types.js';
+import { evaluateSeatForDisplay } from './hand-eval-helper.js';
+import { describeHand } from '../../../packages/shared/src/hand-names.js';
 import { HandPersister } from './hand-persister.js';
 import { ErrorCode, type CommandResult } from './errors.js';
 import { getAchievementsService } from './achievement-service.js';
@@ -468,7 +470,15 @@ class GameManager {
               rake: handResult.rake,
               revealSeed: handResult.revealSeed,
               showdown: handResult.showdown,
-              showdownPlayers: handResult.showdownPlayers,
+              showdownPlayers: (handResult.showdownPlayers ?? []).map((sp: any) => ({
+                ...sp,
+                // Enrich the short category ('Full House') with the full name
+                // ('Full House, Aces over Kings'). Shape stays identical.
+                handName:
+                  sp.best && sp.best.length >= 5
+                    ? describeHand(sp.best) || sp.handName
+                    : sp.handName,
+              })),
               sidePots: handResult.sidePots,
               totalRake: room.totalRake,
               totalRebuy: room.totalRebuy,
@@ -969,6 +979,22 @@ class GameManager {
     const limits = TIME_LIMITS[room.speed];
     const effectiveLimit = limits.action + (room.turnBankUsed ? limits.bank : 0);
 
+    // Phase 8: live hand strength per seat. Computed ONCE per broadcast (not per
+    // viewer) and read from the engine's real state, because publicView() masks
+    // other players' hole cards.
+    const rawState = room.game.state;
+    const displayHands = new Map<number, ReturnType<typeof evaluateSeatForDisplay>>();
+    for (const s of rawState.seats) {
+      if (!s.userId || s.folded || !s.hole || s.hole.length === 0) {
+        displayHands.set(s.seat, { bestCards: null, handName: null });
+        continue;
+      }
+      displayHands.set(
+        s.seat,
+        evaluateSeatForDisplay(s.hole, rawState.community ?? [], rawState.variant),
+      );
+    }
+
     for (const [, info] of room.players) {
       try {
         if (!info.socketId) continue;
@@ -981,12 +1007,22 @@ class GameManager {
           minRaise: round2(view.minRaise ?? 0),
           smallBlind: round2(view.smallBlind ?? 0),
           bigBlind: round2(view.bigBlind ?? 0),
-          seats: view.seats.map((s: any) => ({
-            ...s,
-            stack: round2(s.stack ?? 0),
-            betThisStreet: round2(s.betThisStreet ?? 0),
-            totalBet: round2(s.totalBet ?? 0),
-          })),
+          seats: view.seats.map((s: any) => {
+            const hand = displayHands.get(s.seat);
+            return {
+              ...s,
+              stack: round2(s.stack ?? 0),
+              betThisStreet: round2(s.betThisStreet ?? 0),
+              totalBet: round2(s.totalBet ?? 0),
+              // Hand strength is exposed to the seat's OWNER only (or once the
+              // hand is face-up at showdown). Sending it for every seat would
+              // leak opponents' hand strength through the socket payload even
+              // if the UI never rendered it.
+              bestHandName:
+                s.userId === info.userId || s.revealed ? (hand?.handName ?? null) : null,
+              bestCards: s.userId === info.userId || s.revealed ? (hand?.bestCards ?? null) : null,
+            };
+          }),
           serverTime: Date.now(),
           turnStartedAt: room.turnStartedAt,
           autoActionAt: room.autoActionAt,

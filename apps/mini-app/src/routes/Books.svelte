@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fmtAmount } from '../lib/table-geometry';
   import { onMount, onDestroy } from 'svelte';
   import { api } from '../lib/api';
   import TopBar from '../components/TopBar.svelte';
@@ -22,7 +23,8 @@
   ];
 
   function fmt(n: any, digits = 2): string {
-    return Number(Number(n || 0).toFixed(digits)).toFixed(digits);
+    const v = Number(n || 0);
+    return digits === 2 ? fmtAmount(v) : v.toFixed(digits);
   }
 
   function fmtPct(x: any, digits = 1): string {
@@ -79,9 +81,17 @@
     >
       <Icon name="arrow-left" size={18} color="#ffffff" />
     </button>
-    <h1 class="text-xl font-extrabold text-white flex-1 flex items-center gap-2">
+    <h1 class="text-[22px] font-extrabold flex-1 flex items-center gap-2">
       <Icon name="chart" size={22} color="#60a5fa" />
-      <span>Live Books</span>
+      <span
+        style="
+          background: linear-gradient(180deg, #ffffff 0%, #f4e5a8 50%, #d4af37 100%);
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          filter: drop-shadow(0 2px 8px rgba(244,201,93,0.35));
+        ">Live Books</span
+      >
     </h1>
   </div>
 
@@ -231,13 +241,13 @@
         </div>
         <div
           class="rounded-2xl p-3.5"
-          style="background: linear-gradient(180deg, rgba(15,31,58,0.85), rgba(7,14,27,0.95)); border: 1px solid rgba(139,92,246,0.25);"
+          style="background: linear-gradient(180deg, rgba(15,31,58,0.85), rgba(7,14,27,0.95)); border: 1px solid rgba(37,99,235,0.25);"
         >
           <div class="flex items-center gap-1.5 mb-2">
-            <Icon name="shield" size={11} color="#a78bfa" />
+            <Icon name="shield" size={11} color="#60a5fa" />
             <p class="text-[9px] text-white/45 uppercase font-bold">House Net</p>
           </div>
-          <p class="text-lg font-extrabold text-violet-300 tabular-nums leading-none">
+          <p class="text-lg font-extrabold text-blue-300 tabular-nums leading-none">
             ${fmt(data.houseNet, 0)}
           </p>
           <p class="text-[9px] text-white/40 mt-1">{fmtPct(data.houseNetPct, 1)} of rake</p>

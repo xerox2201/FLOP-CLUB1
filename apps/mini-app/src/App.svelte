@@ -230,7 +230,7 @@
     <main class="flex-1 relative min-w-0" class:with-side={!hideNav} style="min-height: 100dvh;">
       <div
         class="mx-auto w-full"
-        style="max-width: {currentPage === 'table' ? '100%' : 'min(520px, 100%)'};"
+        style="max-width: {currentPage === 'table' ? '100%' : 'var(--page-max, min(520px, 100%))'};"
       >
         {#if currentPage === 'home'}
           <Home onNavigate={navigate} onQuickSeat={quickSeat} />

@@ -28,3 +28,6 @@ export const FREE_CHIPS_START = 10000;
 
 export const LANGUAGES = ['en', 'fa', 'ar', 'tr', 'ru', 'zh'] as const;
 export type Lang = (typeof LANGUAGES)[number];
+
+// Phase 8 — human-readable hand names.
+export { describeHand, describePreflop } from './hand-names.js';

@@ -699,7 +699,7 @@
         : `${API}/api/admin/anticheat/user/${userId}/shadowban`;
       const res = await fetch(url, { method: 'POST', headers: headers() });
       if (res.ok) {
-        flash(isShadow ? 'Unshadowbanned' : 'Shadowbanned', isShadow ? 'success' : 'shield_alert');
+        flash(isShadow ? 'Unshadowbanned' : 'Shadowbanned', isShadow ? 'success' : 'shield');
         await loadAnticheat();
       } else {
         error = 'toggle failed';
@@ -804,7 +804,7 @@
     if (s === 'running') return '#10b981';
     if (s === 'final_table') return '#d4af37';
     if (s === 'registering') return '#22d3ee';
-    if (s === 'scheduled') return '#8b5cf6';
+    if (s === 'scheduled') return '#3b82f6';
     if (s === 'finished') return '#6b7280';
     if (s === 'paused') return '#f59e0b';
     if (s === 'cancelled') return '#ef4444';
@@ -921,7 +921,7 @@
       on:click={onBack}
       aria-label="Back"
       class="w-10 h-10 rounded-full flex items-center justify-center text-white/70 active:scale-95"
-      style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.25);"
+      style="background: rgba(37,99,235,0.15); border: 1px solid rgba(37,99,235,0.25);"
     >
       <Icon name="arrow-left" size={18} color="#ffffff" />
     </button>
@@ -955,7 +955,7 @@
         on:keydown={(e) => e.key === 'Enter' && login()}
         placeholder="Admin secret"
         class="w-full rounded-xl px-3 py-3 text-sm text-white outline-none"
-        style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+        style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
       />
       <button
         on:click={login}
@@ -1162,7 +1162,7 @@
           {#each overview.recentUsers as u}
             <div
               class="rounded-xl px-3 py-2 flex items-center gap-2"
-              style="background: rgba(16,26,58,0.5); border: 1px solid rgba(139,92,246,0.15);"
+              style="background: rgba(16,26,58,0.5); border: 1px solid rgba(37,99,235,0.15);"
             >
               <p class="flex-1 text-[11px] font-bold text-white truncate">
                 {u.displayName || 'Anon'}
@@ -1202,7 +1202,7 @@
           on:click={loadTournaments}
           aria-label="Refresh tournaments"
           class="w-12 rounded-xl text-white/70 active:scale-95 flex items-center justify-center"
-          style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3);"
+          style="background: rgba(37,99,235,0.15); border: 1px solid rgba(37,99,235,0.3);"
         >
           <Icon name="refresh" size={18} />
         </button>
@@ -1219,7 +1219,7 @@
               bind:value={form.name}
               placeholder="e.g. Daily Freeroll #1"
               class="w-full rounded-lg px-3 py-2.5 text-sm text-white outline-none"
-              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
             />
             <p class="text-[9px] text-white/40 mt-1 leading-snug">
               Display name shown to all players in the tournaments list.
@@ -1238,7 +1238,7 @@
               type="datetime-local"
               bind:value={form.scheduledStart}
               class="w-full rounded-lg px-3 py-2.5 text-sm text-white outline-none font-mono"
-              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25); color-scheme: dark;"
+              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25); color-scheme: dark;"
             />
             <p class="text-[9px] text-white/40 mt-1 leading-snug">
               Leave empty for instant SNG. Set a future UTC time to auto-start an MTT.
@@ -1253,7 +1253,7 @@
               <select
                 bind:value={form.variant}
                 class="w-full rounded-lg px-2 py-2.5 text-xs text-white outline-none"
-                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
               >
                 <option value="holdem">Hold'em</option>
                 <option value="omaha4">Omaha 4</option>
@@ -1270,7 +1270,7 @@
               <select
                 bind:value={form.mode}
                 class="w-full rounded-lg px-2 py-2.5 text-xs text-white outline-none"
-                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
               >
                 <option value="free">Free</option>
                 <option value="real">Real</option>
@@ -1286,7 +1286,7 @@
               <select
                 bind:value={form.format}
                 class="w-full rounded-lg px-2 py-2.5 text-xs text-white outline-none"
-                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
               >
                 <option value="sng">SNG</option>
                 <option value="mtt">MTT</option>
@@ -1308,7 +1308,7 @@
                 bind:value={form.buyIn}
                 placeholder="0"
                 class="w-full rounded-lg px-2 py-2.5 text-xs text-white outline-none"
-                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
               />
               <p class="text-[9px] text-white/40 mt-1 leading-snug">
                 Entry cost in USD. Use 0 for freeroll.
@@ -1323,7 +1323,7 @@
                 bind:value={form.fee}
                 placeholder="0"
                 class="w-full rounded-lg px-2 py-2.5 text-xs text-white outline-none"
-                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
               />
               <p class="text-[9px] text-white/40 mt-1 leading-snug">
                 Platform rake per player. Standard: SNG 6%, MTT 8%.
@@ -1338,7 +1338,7 @@
                 bind:value={form.startingStack}
                 placeholder="1500"
                 class="w-full rounded-lg px-2 py-2.5 text-xs text-white outline-none"
-                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
               />
               <p class="text-[9px] text-white/40 mt-1 leading-snug">
                 Chips each player starts with. Typical: 1500 SNG, 5000 Turbo MTT.
@@ -1356,7 +1356,7 @@
                 bind:value={form.minPlayers}
                 placeholder="2"
                 class="w-full rounded-lg px-2 py-2.5 text-xs text-white outline-none"
-                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
               />
               <p class="text-[9px] text-white/40 mt-1 leading-snug">
                 Won't start below this. Typical: 2 for HU, 6 for SNG, 10+ for MTT.
@@ -1371,7 +1371,7 @@
                 bind:value={form.maxPlayers}
                 placeholder="9"
                 class="w-full rounded-lg px-2 py-2.5 text-xs text-white outline-none"
-                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
               />
               <p class="text-[9px] text-white/40 mt-1 leading-snug">
                 Hard cap on seats. Typical: 9 for SNG, 100+ for MTT.
@@ -1384,7 +1384,7 @@
               <select
                 bind:value={form.speed}
                 class="w-full rounded-lg px-2 py-2.5 text-xs text-white outline-none"
-                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
               >
                 <option value="regular">Regular</option>
                 <option value="turbo">Turbo</option>
@@ -1406,7 +1406,7 @@
                 bind:value={form.lateRegLevel}
                 placeholder="0"
                 class="w-full rounded-lg px-2 py-2.5 text-xs text-white outline-none"
-                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
               />
               <p class="text-[9px] text-white/40 mt-1 leading-snug">
                 Last blind level allowing late registration. 0 = disabled.
@@ -1419,7 +1419,7 @@
               <select
                 bind:value={form.blindStructureId}
                 class="w-full rounded-lg px-2 py-2.5 text-xs text-white outline-none"
-                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
               >
                 {#each blindStructures as b}<option value={b.id}>{b.name}</option>{/each}
               </select>
@@ -1540,7 +1540,7 @@
               <input
                 type="checkbox"
                 bind:checked={form.allowAddon}
-                class="w-4 h-4 accent-violet-500"
+                class="w-4 h-4 accent-blue-500"
               />
               <span>Enable Addon</span>
             </label>
@@ -1555,7 +1555,7 @@
                     bind:value={form.addonAmount}
                     placeholder="0"
                     class="w-full rounded-lg px-2 py-2 text-xs text-white outline-none"
-                    style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.3);"
+                    style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.3);"
                   />
                 </div>
                 <div>
@@ -1566,7 +1566,7 @@
                     bind:value={form.addonStack}
                     placeholder="0 (use starting stack)"
                     class="w-full rounded-lg px-2 py-2 text-xs text-white outline-none"
-                    style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.3);"
+                    style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.3);"
                   />
                 </div>
               </div>
@@ -1578,7 +1578,7 @@
                   bind:value={form.addonAtLevel}
                   placeholder="6"
                   class="w-full rounded-lg px-2 py-2 text-xs text-white outline-none"
-                  style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.3);"
+                  style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.3);"
                 />
                 <p class="text-[9px] text-white/40 mt-0.5">Addon offered only at this level</p>
               </div>
@@ -1651,9 +1651,9 @@
                     {#if t.allowAddon}
                       <span
                         class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider inline-flex items-center gap-1"
-                        style="background: rgba(139,92,246,0.2); color: #c4b5fd; border: 1px solid rgba(139,92,246,0.4);"
+                        style="background: rgba(37,99,235,0.2); color: #93c5fd; border: 1px solid rgba(37,99,235,0.4);"
                       >
-                        <Icon name="gift" size={9} color="#c4b5fd" />
+                        <Icon name="gift" size={9} color="#93c5fd" />
                         <span>Addon</span>
                       </span>
                     {/if}
@@ -1739,13 +1739,13 @@
             bind:value={tform.name}
             placeholder="Template name"
             class="w-full rounded-lg px-3 py-2.5 text-sm text-white outline-none"
-            style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+            style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
           />
           <div class="grid grid-cols-3 gap-2">
             <select
               bind:value={tform.variant}
               class="rounded-lg px-2 py-2.5 text-xs text-white"
-              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
             >
               <option value="holdem">Hold'em</option><option value="omaha4">Omaha 4</option><option
                 value="omaha5">Omaha 5</option
@@ -1754,14 +1754,14 @@
             <select
               bind:value={tform.mode}
               class="rounded-lg px-2 py-2.5 text-xs text-white"
-              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
             >
               <option value="free">Free</option><option value="real">Real</option>
             </select>
             <select
               bind:value={tform.scheduleType}
               class="rounded-lg px-2 py-2.5 text-xs text-white"
-              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
             >
               <option value="hourly">Hourly</option><option value="daily">Daily</option><option
                 value="weekly">Weekly</option
@@ -1774,27 +1774,27 @@
               bind:value={tform.buyIn}
               placeholder="Buy-in"
               class="rounded-lg px-2 py-2.5 text-xs text-white"
-              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
             />
             <input
               type="number"
               bind:value={tform.startingStack}
               placeholder="Stack"
               class="rounded-lg px-2 py-2.5 text-xs text-white"
-              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
             />
             <input
               type="number"
               bind:value={tform.maxPlayers}
               placeholder="Max"
               class="rounded-lg px-2 py-2.5 text-xs text-white"
-              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
             />
           </div>
           <select
             bind:value={tform.blindStructureId}
             class="w-full rounded-lg px-2 py-2.5 text-xs text-white"
-            style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+            style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
           >
             {#each blindStructures as b}<option value={b.id}>{b.name}</option>{/each}
           </select>
@@ -1804,7 +1804,7 @@
               bind:value={tform.scheduleTime}
               placeholder="14:00"
               class="w-full rounded-lg px-2 py-2.5 text-xs text-white font-mono"
-              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
             />
           {/if}
           <!-- Rebuy / Addon (template) -->
@@ -1875,7 +1875,7 @@
               <input
                 type="checkbox"
                 bind:checked={tform.allowAddon}
-                class="w-4 h-4 accent-violet-500"
+                class="w-4 h-4 accent-blue-500"
               />
               <span>Enable Addon</span>
             </label>
@@ -1888,7 +1888,7 @@
                   bind:value={tform.addonAmount}
                   placeholder="$ Cost"
                   class="rounded-lg px-2 py-2 text-xs text-white"
-                  style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.3);"
+                  style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.3);"
                 />
                 <input
                   type="number"
@@ -1896,7 +1896,7 @@
                   bind:value={tform.addonStack}
                   placeholder="Stack"
                   class="rounded-lg px-2 py-2 text-xs text-white"
-                  style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.3);"
+                  style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.3);"
                 />
               </div>
               <input
@@ -1905,7 +1905,7 @@
                 bind:value={tform.addonAtLevel}
                 placeholder="At Level"
                 class="w-full rounded-lg px-2 py-2 text-xs text-white"
-                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.3);"
+                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.3);"
               />
             {/if}
           </div>
@@ -2032,7 +2032,7 @@
         <button
           on:click={loadTables}
           class="w-12 rounded-xl text-white/70 flex items-center justify-center"
-          style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3);"
+          style="background: rgba(37,99,235,0.15); border: 1px solid rgba(37,99,235,0.3);"
         >
           <Icon name="refresh" size={18} />
         </button>
@@ -2045,13 +2045,13 @@
             bind:value={tableForm.name}
             placeholder="Table name"
             class="w-full rounded-lg px-3 py-2.5 text-sm text-white"
-            style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+            style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
           />
           <div class="grid grid-cols-2 gap-2">
             <select
               bind:value={tableForm.variant}
               class="rounded-lg px-2 py-2.5 text-xs text-white"
-              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
             >
               <option value="holdem">Hold'em</option><option value="omaha4">Omaha 4</option><option
                 value="omaha5">Omaha 5</option
@@ -2060,7 +2060,7 @@
             <select
               bind:value={tableForm.mode}
               class="rounded-lg px-2 py-2.5 text-xs text-white"
-              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
             >
               <option value="free">Free</option><option value="real">Real</option>
             </select>
@@ -2071,21 +2071,21 @@
               bind:value={tableForm.small_blind}
               placeholder="SB"
               class="rounded-lg px-2 py-2.5 text-xs text-white"
-              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
             />
             <input
               type="number"
               bind:value={tableForm.big_blind}
               placeholder="BB"
               class="rounded-lg px-2 py-2.5 text-xs text-white"
-              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
             />
             <input
               type="number"
               bind:value={tableForm.ante}
               placeholder="Ante"
               class="rounded-lg px-2 py-2.5 text-xs text-white"
-              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
             />
           </div>
           <div class="grid grid-cols-3 gap-2">
@@ -2094,21 +2094,21 @@
               bind:value={tableForm.min_buyin}
               placeholder="Min buy"
               class="rounded-lg px-2 py-2.5 text-xs text-white"
-              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
             />
             <input
               type="number"
               bind:value={tableForm.max_buyin}
               placeholder="Max buy"
               class="rounded-lg px-2 py-2.5 text-xs text-white"
-              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
             />
             <input
               type="number"
               bind:value={tableForm.seats}
               placeholder="Seats"
               class="rounded-lg px-2 py-2.5 text-xs text-white"
-              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
             />
           </div>
           <input
@@ -2117,7 +2117,7 @@
             bind:value={tableForm.rake_pct}
             placeholder="Rake (0.03 = 3%)"
             class="w-full rounded-lg px-2 py-2.5 text-xs text-white"
-            style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+            style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
           />
           <button
             on:click={createTable}
@@ -2230,13 +2230,13 @@
           on:keydown={(e) => e.key === 'Enter' && loadPlayers()}
           placeholder="Search by name, username, telegram id…"
           class="flex-1 rounded-xl px-3 py-2.5 text-sm text-white outline-none"
-          style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+          style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
         />
         <button
           on:click={loadPlayers}
           aria-label="Search players"
           class="px-3 rounded-xl text-white/70 flex items-center justify-center"
-          style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3);"
+          style="background: rgba(37,99,235,0.15); border: 1px solid rgba(37,99,235,0.3);"
         >
           <Icon name="search" size={16} />
         </button>
@@ -2271,7 +2271,7 @@
               class="w-full text-left rounded-xl px-3 py-2.5 flex items-center gap-2"
               style="background: rgba(16,26,58,0.7); border: 1px solid {p.isBanned
                 ? 'rgba(239,68,68,0.4)'
-                : 'rgba(139,92,246,0.15)'};"
+                : 'rgba(37,99,235,0.15)'};"
             >
               <div
                 class="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-extrabold shrink-0"
@@ -2399,7 +2399,7 @@
 
         <!-- Shadowbanned -->
         <h3 class="text-sm font-extrabold text-white mb-2 mt-4 flex items-center gap-2">
-          <Icon name="shield_alert" size={16} color="#c4b5fd" />
+          <Icon name="shield" size={16} color="#93c5fd" />
           <span>Shadowbanned / Banned</span>
         </h3>
         <div class="space-y-1.5 mb-4">
@@ -2408,7 +2408,7 @@
             <div
               class="rounded-xl px-3 py-2 flex items-center gap-2"
               style="background: rgba(16,26,58,0.7); border: 1px solid {isShadow
-                ? 'rgba(139,92,246,0.4)'
+                ? 'rgba(37,99,235,0.4)'
                 : 'rgba(239,68,68,0.4)'};"
             >
               <div class="flex-1 min-w-0">
@@ -2416,8 +2416,8 @@
                   <span
                     class="text-[10px] font-extrabold px-1.5 py-0.5 rounded uppercase"
                     style="background: {isShadow
-                      ? 'rgba(139,92,246,0.25)'
-                      : 'rgba(239,68,68,0.25)'}; color: {isShadow ? '#c4b5fd' : '#fca5a5'};"
+                      ? 'rgba(37,99,235,0.25)'
+                      : 'rgba(239,68,68,0.25)'}; color: {isShadow ? '#93c5fd' : '#fca5a5'};"
                   >
                     {isShadow ? 'SHADOW' : 'BANNED'}
                   </span>
@@ -2574,7 +2574,7 @@
         {#each walletActions as a}
           <div
             class="rounded-xl px-3 py-2"
-            style="background: rgba(16,26,58,0.7); border: 1px solid rgba(139,92,246,0.15);"
+            style="background: rgba(16,26,58,0.7); border: 1px solid rgba(37,99,235,0.15);"
           >
             <div class="flex items-center gap-2">
               <span
@@ -2627,7 +2627,7 @@
           on:click={loadBroadcasts}
           aria-label="Refresh broadcasts"
           class="w-12 rounded-xl text-white/70 flex items-center justify-center"
-          style="background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3);"
+          style="background: rgba(37,99,235,0.15); border: 1px solid rgba(37,99,235,0.3);"
         >
           <Icon name="refresh" size={18} />
         </button>
@@ -2640,20 +2640,20 @@
             bind:value={bcastForm.title}
             placeholder="Title"
             class="w-full rounded-lg px-3 py-2.5 text-sm text-white"
-            style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+            style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
           />
           <textarea
             bind:value={bcastForm.message}
             placeholder="Message…"
             rows="4"
             class="w-full rounded-lg px-3 py-2.5 text-sm text-white outline-none"
-            style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25); resize: vertical;"
+            style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25); resize: vertical;"
           ></textarea>
           <div class="grid grid-cols-2 gap-2">
             <select
               bind:value={bcastForm.target}
               class="rounded-lg px-2 py-2.5 text-xs text-white"
-              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
             >
               <option value="all">All Users</option>
               <option value="active">Active Only</option>
@@ -2663,7 +2663,7 @@
             <select
               bind:value={bcastForm.severity}
               class="rounded-lg px-2 py-2.5 text-xs text-white"
-              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(139,92,246,0.25);"
+              style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.25);"
             >
               <option value="info">Info</option>
               <option value="success">Success</option>
@@ -2795,12 +2795,12 @@
           {#each actionsLog as a}
             <div
               class="rounded-xl px-3 py-2"
-              style="background: rgba(16,26,58,0.5); border: 1px solid rgba(139,92,246,0.15);"
+              style="background: rgba(16,26,58,0.5); border: 1px solid rgba(37,99,235,0.15);"
             >
               <div class="flex items-center gap-2">
                 <span
                   class="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase"
-                  style="background: rgba(139,92,246,0.2); color: #a78bfa;">{a.action}</span
+                  style="background: rgba(37,99,235,0.2); color: #60a5fa;">{a.action}</span
                 >
                 {#if a.targetType}<span class="text-[9px] text-white/40"
                     >{a.targetType} #{a.targetId}</span
@@ -2847,7 +2847,7 @@
   >
     <div
       class="w-full max-w-md rounded-3xl p-5 max-h-[85vh] overflow-y-auto no-scrollbar"
-      style="background: linear-gradient(180deg, #101a3a, #080d24); border: 1.5px solid rgba(139,92,246,0.4); box-shadow: 0 20px 60px rgba(0,0,0,0.9);"
+      style="background: linear-gradient(180deg, #101a3a, #080d24); border: 1.5px solid rgba(37,99,235,0.4); box-shadow: 0 20px 60px rgba(0,0,0,0.9);"
       on:click={(e) => e.stopPropagation()}
       on:keydown={(e) => e.stopPropagation()}
       role="dialog"
@@ -2900,7 +2900,7 @@
             </span>{/if}
           <span
             class="text-[9px] font-bold px-2 py-1 rounded-full"
-            style="background: rgba(139,92,246,0.15); color: #c4b5fd;"
+            style="background: rgba(37,99,235,0.15); color: #93c5fd;"
             >{playerDetail.language || 'en'}</span
           >
         </div>

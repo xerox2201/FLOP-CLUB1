@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fmtAmount } from '../lib/table-geometry';
   import Avatar from './Avatar.svelte';
   import Icon from './Icon.svelte';
 
@@ -6,12 +7,10 @@
   export let onSeeAll: () => void = () => {};
 
   function fmt(n: any): string {
-    const v = Number(n || 0);
-    if (v >= 1000) return `$${(v / 1000).toFixed(1)}K`;
-    return `$${v.toFixed(v < 10 ? 2 : 0)}`;
+    return fmtAmount(Number(n || 0));
   }
 
-  const MEDALS = ['🥇', '🥈', '🥉'];
+  const MEDALS = ['', '', ''];
 </script>
 
 {#if winners.length > 0}

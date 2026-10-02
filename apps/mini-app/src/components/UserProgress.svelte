@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fmtAmount } from '../lib/table-geometry';
   import { onMount } from 'svelte';
   import { api } from '../lib/api';
   import Icon from './Icon.svelte';
@@ -10,7 +11,8 @@
   let money: any = null;
 
   function fmt(n: any, digits = 2): string {
-    return Number(Number(n || 0).toFixed(digits)).toFixed(digits);
+    const v = Number(n || 0);
+    return digits === 2 ? fmtAmount(v) : v.toFixed(digits);
   }
   function fmtPct(x: any): string {
     return `${(Number(x || 0) * 100).toFixed(0)}%`;
@@ -30,7 +32,7 @@
   $: xpNext = progress?.xpForNextLevel ?? 100;
   $: xpPct = xpNext > 0 ? Math.min(100, (xpInto / xpNext) * 100) : 0;
   $: tierLabel = progress?.tierLabel ?? 'Welcome';
-  $: tierIcon = progress?.tierIcon ?? '🌱';
+  $: tierIcon = progress?.tierIcon ?? '';
   $: tierColor = progress?.tierColor ?? '#6ee7b7';
   $: rakebackPct = Math.round((progress?.rakebackPct ?? 0) * 100);
   $: progressToNextTier = Math.round((progress?.progressToNextTier ?? 0) * 100);
@@ -103,8 +105,8 @@
             class="h-full rounded-full transition-all"
             style="
               width: {xpPct}%;
-              background: linear-gradient(90deg, #c4b5fd, #8b5cf6 50%, #6d28d9);
-              box-shadow: 0 0 8px rgba(139,92,246,0.6);
+              background: linear-gradient(90deg, #93c5fd, #3b82f6 50%, #6d28d9);
+              box-shadow: 0 0 8px rgba(37,99,235,0.6);
             "
           ></div>
         </div>

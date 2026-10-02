@@ -77,10 +77,10 @@
       style="
         background:
           radial-gradient(ellipse at 0% 50%,
-            {canClaim ? 'rgba(244,201,93,0.28)' : 'rgba(139,92,246,0.15)'} 0%,
+            {canClaim ? 'rgba(244,201,93,0.28)' : 'rgba(37,99,235,0.15)'} 0%,
             transparent 60%),
           linear-gradient(135deg, rgba(8,20,40,0.95), rgba(5,12,25,0.98));
-        border: 1.5px solid {canClaim ? 'rgba(244,201,93,0.55)' : 'rgba(139,92,246,0.35)'};
+        border: 1.5px solid {canClaim ? 'rgba(244,201,93,0.55)' : 'rgba(37,99,235,0.35)'};
         box-shadow:
           0 6px 24px rgba(0,0,0,0.5),
           0 0 24px {canClaim ? 'rgba(244,201,93,0.2)' : 'rgba(0,0,0,0)'},
@@ -96,16 +96,16 @@
         class="w-12 h-12 rounded-2xl flex items-center justify-center relative shrink-0"
         style="
           background: radial-gradient(circle at 30% 30%,
-            {canClaim ? 'rgba(255,235,170,0.5)' : 'rgba(139,92,246,0.3)'},
-            {canClaim ? 'rgba(244,201,93,0.15)' : 'rgba(139,92,246,0.08)'});
-          border: 1.5px solid {canClaim ? 'rgba(244,201,93,0.65)' : 'rgba(139,92,246,0.4)'};
+            {canClaim ? 'rgba(255,235,170,0.5)' : 'rgba(37,99,235,0.3)'},
+            {canClaim ? 'rgba(244,201,93,0.15)' : 'rgba(37,99,235,0.08)'});
+          border: 1.5px solid {canClaim ? 'rgba(244,201,93,0.65)' : 'rgba(37,99,235,0.4)'};
           box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 4px 12px {canClaim
           ? 'rgba(244,201,93,0.3)'
           : 'rgba(0,0,0,0.3)'};
           {canClaim ? 'animation: daily-pulse 2s ease-in-out infinite;' : ''}
         "
       >
-        <Icon name="gift" size={24} color={canClaim ? '#f4c95d' : '#a78bfa'} />
+        <Icon name="gift" size={24} color={canClaim ? '#f4c95d' : '#60a5fa'} />
         {#if canClaim}
           <span
             class="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-amber-300 animate-pulse"
@@ -118,7 +118,7 @@
       <div class="flex-1 min-w-0 relative">
         <p
           class="text-[10px] font-extrabold uppercase tracking-widest mb-0.5"
-          style="color: {canClaim ? '#f4c95d' : '#a78bfa'};"
+          style="color: {canClaim ? '#f4c95d' : '#60a5fa'};"
         >
           {canClaim ? 'Daily Bonus Ready' : 'Daily Bonus'}
         </p>
@@ -145,8 +145,8 @@
         style="
           background: {canClaim
           ? 'linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15)'
-          : 'rgba(139,92,246,0.15)'};
-          border: 1px solid {canClaim ? 'rgba(255,235,170,0.6)' : 'rgba(139,92,246,0.35)'};
+          : 'rgba(37,99,235,0.15)'};
+          border: 1px solid {canClaim ? 'rgba(255,235,170,0.6)' : 'rgba(37,99,235,0.35)'};
           box-shadow: {canClaim ? '0 3px 0 #7a560a, 0 4px 12px rgba(212,175,55,0.4)' : 'none'};
         "
       >
@@ -160,7 +160,7 @@
             height="12"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="#a78bfa"
+            stroke="#60a5fa"
             stroke-width="2.5"
             stroke-linecap="round"
             stroke-linejoin="round"

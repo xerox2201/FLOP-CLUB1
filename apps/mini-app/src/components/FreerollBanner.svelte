@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fmtAmount } from '../lib/table-geometry';
   import { onMount, onDestroy } from 'svelte';
   import { api } from '../lib/api';
   import { serverOffset } from '../lib/serverTime';
@@ -62,7 +63,7 @@
   })();
 
   function fmt(n: any): string {
-    return `$${Number(n || 0).toFixed(2)}`;
+    return fmtAmount(Number(n || 0));
   }
 </script>
 
