@@ -502,9 +502,11 @@
               ? 'linear-gradient(135deg, #10b981, #059669)'
               : 'linear-gradient(135deg, #ef4444, #991b1b)'}; color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.6);"
           >
-            {isShowdownWin
-              ? '<Icon name="check" size={12} color="#34d399" /> WIN'
-              : '<Icon name="close" size={12} color="#f87171" /> LOSE'}
+            {#if isShowdownWin}
+              <Icon name="check" size={12} color="#34d399" /> WIN
+            {:else}
+              <Icon name="close" size={12} color="#f87171" /> LOSE
+            {/if}
           </div>
           {#if payoutForSeat(s.seat) > 0 && !gameState?.tournamentId}
             <div
@@ -674,9 +676,11 @@
               ? 'linear-gradient(135deg, #10b981, #059669)'
               : 'linear-gradient(135deg, #ef4444, #991b1b)'}; color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.6);"
           >
-            {isShowdownWin
-              ? '<Icon name="check" size={12} color="#34d399" /> WIN'
-              : '<Icon name="close" size={12} color="#f87171" /> LOSE'}
+            {#if isShowdownWin}
+              <Icon name="check" size={12} color="#34d399" /> WIN
+            {:else}
+              <Icon name="close" size={12} color="#f87171" /> LOSE
+            {/if}
           </div>
           {#if payoutForSeat(mySeat.seat) > 0 && !gameState?.tournamentId}
             <div

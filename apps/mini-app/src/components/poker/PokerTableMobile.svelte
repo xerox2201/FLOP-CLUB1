@@ -324,9 +324,8 @@
           style="background: linear-gradient(180deg, rgba(8,13,36,0.99), rgba(5,8,15,0.99)); border: 2px solid #d4af37; min-width: 160px; box-shadow: 0 8px 24px rgba(0,0,0,0.9);"
         >
           <p class="text-[8px] uppercase tracking-[0.3em] text-gold font-extrabold mb-1">
-            {winners.length > 1
-              ? '<Icon name="trophy" size={18} color="#f4c95d" /> Winners'
-              : '<Icon name="trophy" size={18} color="#f4c95d" /> Winner'}
+            <Icon name="trophy" size={18} color="#f4c95d" />
+            {winners.length > 1 ? 'Winners' : 'Winner'}
           </p>
           <p class="text-[14px] font-extrabold text-white leading-tight mb-1">
             {winnerDisplayName}

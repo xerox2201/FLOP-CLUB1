@@ -160,9 +160,11 @@
   <!-- ACTION / RESULT -->
   {#if isShowdown}
     <div class="pill pill-win" class:lose={isShowdownLose}>
-      {isShowdownWin
-        ? '<Icon name="check" size={12} color="#34d399" /> WIN'
-        : '<Icon name="close" size={12} color="#f87171" /> LOSE'}
+      {#if isShowdownWin}
+        <Icon name="check" size={12} color="#34d399" /> WIN
+      {:else}
+        <Icon name="close" size={12} color="#f87171" /> LOSE
+      {/if}
     </div>
     {#if handName}
       <div class="pill pill-hand">{handName}</div>
