@@ -36,12 +36,7 @@ playwright-report/
 tmp/
 temp/
 *.tmp
-# Snapshots (not part of source code)
+# Code dumps, logs and snapshots (not part of source code)
 snapshots/
-ALL_CODE_DUMP*.txt
-ALL_CODE_DUM*.txt
-
-# Snapshots (not part of source code)
-snapshots/
-ALL_CODE_DUMP*.txt
-ALL_CODE_DUM*.txt
+ALL_CODE*.txt
+backend-log.txt
