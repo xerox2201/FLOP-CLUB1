@@ -129,13 +129,15 @@
   $: heroCardSize = CARD_UP[S.cardSize] ?? S.cardSize;
 
   // ============================================================
-  // BET POSITION — 42% along player→center vector
+  // HERO BET POSITION
+  // Opponent bets are anchored to their own seat box (see the OPPONENTS
+  // block). The hero's chips get a fixed slot instead: the felt strip directly
+  // above the hero's hole cards. Below the cards there is no room (cards end at
+  // heroCardsY + 62px and the hero nameplate starts right after), and a
+  // percentage anchor towards the centre put the chips behind the hero's own
+  // cards, which are painted on top (z-[60]).
   // ============================================================
-  function betPos(pos: { x: number; y: number }): { x: string; y: string } {
-    const dx = 50 - pos.x;
-    const dy = 50 - pos.y;
-    return { x: `${pos.x + dx * 0.28}%`, y: `${pos.y + dy * 0.28}%` };
-  }
+  $: heroBetY = heroCardsY - 4;
 
   $: allSeats = gameState?.seats ?? [];
   $: totalSeats = allSeats.length;
@@ -502,7 +504,6 @@
     <!-- ========== OPPONENTS ========== -->
     {#each opponents as s}
       {@const pos = seatPositionAt(s._arrayIdx)}
-      {@const bPos = betPos(pos)}
       {@const panelSide = pos.x > 50 ? 'left' : 'right'}
       {@const isTurn =
         gameState?.currentSeat === s.seat && !s.folded && !s.allIn && winners.length === 0}
@@ -545,27 +546,31 @@
           {panelSide}
           onClick={() => onPlayerClick(s.userId)}
         />
-      </div>
 
-      {#if betAmount > 0 && !s.folded && winners.length === 0}
-        <div
-          class="absolute -translate-x-1/2 -translate-y-1/2 z-[18] pointer-events-none chip-enter flex flex-col items-center"
-          style="left: {bPos.x}; top: {bPos.y};"
-        >
-          <div class="mb-0.5">
-            <PokerChip amount={betAmount} size={14} maxStack={3} />
-          </div>
+        <!-- Bet chips are anchored to THIS seat's own box, on the side that
+             faces the table centre, so the stack always hangs in clear felt:
+             a felt-percentage anchor put it behind the nameplate on 6 of the 8
+             seats (the nameplate sits on the centre-facing side of the avatar). -->
+        {#if betAmount > 0 && !s.folded && winners.length === 0}
           <div
-            class="flex items-center justify-center rounded-full"
-            style="height: 18px; min-width: 26px; padding: 0 7px; background: linear-gradient(180deg, #f4e5a8 0%, #d4af37 55%, #a87a15 100%); box-shadow: 0 2px 6px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -1px 0 rgba(0,0,0,0.3); border: 1px solid rgba(122,86,10,0.9);"
+            class="absolute left-1/2 pointer-events-none chip-enter-anchored flex flex-col items-center"
+            style={pos.y < 50 ? 'top: 100%; margin-top: 3px;' : 'bottom: 100%; margin-bottom: 3px;'}
           >
-            <span
-              class="font-black text-black tabular-nums leading-none"
-              style="font-size: 9px; letter-spacing: -0.02em;">{fmt(betAmount)}</span
+            <div class="mb-0.5">
+              <PokerChip amount={betAmount} size={14} maxStack={3} />
+            </div>
+            <div
+              class="flex items-center justify-center rounded-full"
+              style="height: 18px; min-width: 26px; padding: 0 7px; background: linear-gradient(180deg, #f4e5a8 0%, #d4af37 55%, #a87a15 100%); box-shadow: 0 2px 6px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -1px 0 rgba(0,0,0,0.3); border: 1px solid rgba(122,86,10,0.9);"
             >
+              <span
+                class="font-black text-black tabular-nums leading-none"
+                style="font-size: 9px; letter-spacing: -0.02em;">{fmt(betAmount)}</span
+              >
+            </div>
           </div>
-        </div>
-      {/if}
+        {/if}
+      </div>
     {/each}
 
     <!-- ========== HERO ========== -->
@@ -631,12 +636,11 @@
         />
       </div>
 
-      <!-- Hero bet chip toward center -->
+      <!-- Hero bet chip: the felt strip directly above the hero's hole cards -->
       {#if mySeat.betThisStreet > 0 && !mySeat.folded && winners.length === 0}
-        {@const heroBet = betPos(heroPos)}
         <div
-          class="absolute -translate-x-1/2 -translate-y-1/2 z-[18] pointer-events-none chip-enter flex flex-col items-center"
-          style="left: {heroBet.x}; top: {heroBet.y};"
+          class="absolute -translate-x-1/2 -translate-y-1/2 z-[22] pointer-events-none chip-enter flex flex-col items-center"
+          style="left: 50%; top: {heroBetY}%;"
         >
           <div class="mb-0.5">
             <PokerChip amount={mySeat.betThisStreet} size={14} maxStack={3} />
@@ -675,6 +679,27 @@
   }
   .chip-enter {
     animation: chip-enter-kf 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  /* Opponent bets are anchored with left:50% + top/bottom:100% on their own
+     seat box, so this variant only centres them horizontally (translateX) and
+     pops them into place. */
+  @keyframes chip-enter-anchored-kf {
+    0% {
+      opacity: 0;
+      transform: translateX(-50%) scale(0.6);
+    }
+    60% {
+      opacity: 1;
+      transform: translateX(-50%) scale(1.1);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+  }
+  .chip-enter-anchored {
+    animation: chip-enter-anchored-kf 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   }
 
   @keyframes winner-announce-in {
