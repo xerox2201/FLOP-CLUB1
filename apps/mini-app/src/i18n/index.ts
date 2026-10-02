@@ -12,7 +12,7 @@
 
 import { derived, get } from 'svelte/store';
 import en from './catalog/en';
-import { applyDocumentLang, dir, isRtl, lang, localeTag, messages, persistLang } from './state';
+import { applyDocumentLang, lang, localeTag, messages, persistLang } from './state';
 import { detectLang, loadCatalog, lookup } from './loaders';
 import type { Dict, Lang, LanguageOption, MessageKey, MessageParams, TranslateFn } from './types';
 
