@@ -3,7 +3,10 @@ import type { Card, PlayerInit } from '../../../packages/poker-engine/src/types.
 import { evaluateSeatForDisplay } from './hand-eval-helper.js';
 import { describeHand } from '../../../packages/shared/src/hand-names.js';
 import { HandPersister } from './hand-persister.js';
-import { FairSeedService } from './fair-seed-service.js';
+import { FairSeedService, type FairSeedInput } from './fair-seed-service.js';
+import { FairClientSeedService } from './fair-client-seed-service.js';
+import { sha256Hex } from '../../../packages/shared/src/fair/sha256.js';
+import { DECK_V2_ALGORITHM } from '../../../packages/shared/src/fair/deck-core.js';
 import { ErrorCode, type CommandResult } from './errors.js';
 import { getAchievementsService } from './achievement-service.js';
 import { LoyaltyService } from './loyalty/service.js';
@@ -57,6 +60,16 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
+/** Provably Fair — the commitment data of one hand, decided before the deal. */
+interface FairHandContext {
+  handNo: number;
+  algorithm: string;
+  clientSeed: string | null;
+  clientSeedHash: string | null;
+  clientSeedSource: 'player' | 'server';
+  clientSeedInputs: FairSeedInput[];
+}
+
 function ts(): string {
   return new Date().toISOString().slice(11, 23);
 }
@@ -65,6 +78,7 @@ class GameManager {
   private rooms: Map<number, TableRoom> = new Map();
   private persister: HandPersister | null = null;
   private fairSeeds: FairSeedService | null = null;
+  private fairClientSeeds: FairClientSeedService | null = null;
   private tournamentHandEndCallback:
     ((tournamentId: number, room: TableRoom, handResult?: any) => void | Promise<void>) | null =
     null;
@@ -88,22 +102,82 @@ class GameManager {
     return this.fairSeeds;
   }
 
+  private getFairClientSeeds(): FairClientSeedService {
+    if (!this.fairClientSeeds) {
+      const pool = (globalThis as any).__dbPool;
+      if (!pool) throw new Error('DB pool not initialized');
+      this.fairClientSeeds = new FairClientSeedService(pool);
+    }
+    return this.fairClientSeeds;
+  }
+
+  /**
+   * Provably Fair — the table-level hand counter (also the hand's nonce).
+   * Falls back to the in-memory counter when the DB is unavailable.
+   */
+  private async reserveHandNo(tableId: number, fallback: number): Promise<number> {
+    try {
+      const reserved = await this.getFairSeeds().reserveTableHandNo(tableId);
+      if (reserved !== null) return reserved;
+    } catch (e: any) {
+      console.error('[fair] hand counter reserve failed:', e.message);
+    }
+    return fallback + 1;
+  }
+
+  /**
+   * Provably Fair — everything the commitment of the next hand needs:
+   * the combined player client seed, its source and the per-player inputs.
+   */
+  private async buildFairHandContext(room: TableRoom, handNo: number): Promise<FairHandContext> {
+    const algorithm = DECK_V2_ALGORITHM;
+    const engineClientSeed = room.game.state.clientSeed ?? null;
+
+    let playerSeed: string | null = null;
+    let inputs: FairHandContext['clientSeedInputs'] = [];
+
+    try {
+      const userIds = [...room.players.values()].map((p) => Number(p.userId));
+      const handSeed = await this.getFairClientSeeds().getHandClientSeed(room.tableId, userIds);
+      playerSeed = handSeed.clientSeed;
+      inputs = handSeed.inputs;
+    } catch (e: any) {
+      console.error('[fair] client seed lookup failed:', e.message);
+    }
+
+    const clientSeed = playerSeed ?? engineClientSeed;
+    const hash = clientSeed ? await sha256Hex(clientSeed) : null;
+
+    return {
+      handNo,
+      algorithm,
+      clientSeed,
+      clientSeedHash: hash,
+      clientSeedSource: playerSeed ? 'player' : 'server',
+      clientSeedInputs: inputs,
+    };
+  }
+
   /**
    * Provably Fair — publish the commitment for a freshly persisted hand.
    * Fire-and-forget: a failure must never block or break the hand.
    */
-  private commitFairSeed(room: TableRoom, handId: number): void {
+  private commitFairSeed(room: TableRoom, handId: number, fair: FairHandContext): void {
     try {
       const hash = room.game.state.serverSeedHash;
-      const clientSeed = room.game.state.clientSeed;
-      if (!hash || !clientSeed) return;
+      if (!hash || !fair.clientSeed) return;
       this.getFairSeeds()
         .commit({
           handId,
           tableId: room.tableId,
-          handNo: room.handCounter,
+          handNo: fair.handNo,
+          algorithm: fair.algorithm,
           serverSeedHash: hash,
-          clientSeed,
+          clientSeed: fair.clientSeed,
+          clientSeedHash: fair.clientSeedHash,
+          clientSeedSource: fair.clientSeedSource,
+          clientSeedInputs: fair.clientSeedInputs,
+          nonce: fair.handNo,
         })
         .catch((e: any) => console.error('[fair] commit failed:', e.message));
     } catch (e: any) {
@@ -112,19 +186,15 @@ class GameManager {
   }
 
   /**
-   * Provably Fair — reveal the seed once the hand ended.
+   * Provably Fair — reveal the seed once the hand ended. The committed row
+   * carries the algorithm and client seed, so the reveal only needs the seed.
    * Fire-and-forget: a failure must never block or break the hand.
    */
   private revealFairSeed(room: TableRoom, handId: number, serverSeed: string): void {
     try {
       if (!serverSeed) return;
       this.getFairSeeds()
-        .reveal({
-          handId,
-          serverSeed,
-          serverSeedHash: room.game.state.serverSeedHash ?? null,
-          clientSeed: room.game.state.clientSeed ?? null,
-        })
+        .reveal({ handId, serverSeed })
         .catch((e: any) => console.error('[fair] reveal failed:', e.message));
     } catch (e: any) {
       console.error('[fair] reveal hook failed:', e.message);
@@ -899,6 +969,13 @@ class GameManager {
       const prevHandCounter = room.handCounter ?? 0;
       const prevDealerSeat = room.game.state.dealerSeat;
 
+      // Provably Fair — the hand number is the table-level counter, which is
+      // also the nonce mixed into the deck. Tournament hands are not persisted
+      // and keep the in-memory counter.
+      const handNo = isTournament
+        ? prevHandCounter + 1
+        : await this.reserveHandNo(tableId, prevHandCounter);
+
       room.game = new PokerGame(
         {
           tableId,
@@ -916,10 +993,18 @@ class GameManager {
         room.game.state.dealerSeat = prevDealerSeat;
       }
 
+      // Provably Fair — decide the client seed before the shuffle so player
+      // entropy is part of the deck (deck-v2).
+      const fair = isTournament ? null : await this.buildFairHandContext(room, handNo);
+      room.game.state.nonce = handNo;
+      if (fair?.clientSeed) {
+        room.game.state.clientSeed = fair.clientSeed;
+      }
+
       room.game.startHand([]);
 
-      room.handCounter = prevHandCounter + 1;
-      room.game.state.handNo = room.handCounter;
+      room.handCounter = handNo;
+      room.game.state.handNo = handNo;
       room.currentSequence = 0;
       room.turnBankUsed = false;
 
@@ -961,7 +1046,7 @@ class GameManager {
             players: handPlayers,
           });
           room.currentHandId = handId;
-          if (handId) this.commitFairSeed(room, handId);
+          if (handId && fair) this.commitFairSeed(room, handId, fair);
         } catch (e: any) {
           console.error('[game-manager] persister.startHand error:', e.message);
           room.currentHandId = null;

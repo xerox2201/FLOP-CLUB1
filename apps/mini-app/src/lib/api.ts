@@ -135,16 +135,42 @@ class ApiClient {
   }
 
   // ============================================================
-  // Provably Fair (server-side verification)
+  // Provably Fair (player client seeds + verification proof)
   // ============================================================
-  async verifyFairHand(
-    commitment: string,
-  ): Promise<
-    ApiResponse<{ verified: boolean; pending: boolean; found: boolean; reason?: string }>
+  async verifyFairHand(commitment: string): Promise<
+    ApiResponse<{
+      verified: boolean;
+      pending: boolean;
+      found: boolean;
+      reason?: string;
+      proof?: Record<string, unknown>;
+      checks?: Record<string, boolean | null>;
+    }>
   > {
     return this.request('/api/fair/verify', {
       method: 'POST',
       body: JSON.stringify({ commitment }),
+    });
+  }
+
+  async getFairClientSeed(tableId: number): Promise<
+    ApiResponse<{
+      tableId: number;
+      seed: string | null;
+      seedHash: string | null;
+      rules: { minLength: number; maxLength: number; charset: string; changeCooldownMs: number };
+    }>
+  > {
+    return this.request(`/api/fair/client-seed?tableId=${tableId}`);
+  }
+
+  async setFairClientSeed(
+    tableId: number,
+    seed: string,
+  ): Promise<ApiResponse<{ ok: boolean; seedHash: string }>> {
+    return this.request('/api/fair/client-seed', {
+      method: 'PUT',
+      body: JSON.stringify({ tableId, seed }),
     });
   }
 

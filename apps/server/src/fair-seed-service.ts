@@ -1,12 +1,11 @@
 /**
- * Provably Fair — commit / reveal persistence.
+ * Provably Fair — commit / reveal persistence + the table-level hand counter.
  *
  * hand_seeds is the source of truth. `hands.server_seed` is only mirrored at
  * reveal time so existing hand queries keep working.
  *
- * Both operations are called fire-and-forget from game-manager: a failure here
- * must never break a hand, so every method swallows nothing but returns a
- * boolean and callers attach a .catch().
+ * commit/reveal are called fire-and-forget from game-manager: a failure here
+ * must never break a hand, so callers always attach a .catch().
  */
 
 import { Pool } from 'pg';
@@ -15,29 +14,31 @@ import {
   deckFromSeedV1,
   deckHashV1,
 } from '../../../packages/shared/src/fair/deck-v1.js';
+import { DECK_V2_ALGORITHM, deckHashV2 } from '../../../packages/shared/src/fair/deck-v2.js';
 
-/**
- * Part B keeps the nonce fixed: deck-v1 does not mix the nonce in yet, so
- * hand-level and table-level nonces produce the same deck today.
- * TODO(part-c): nonce should be table-level hand counter
- */
-export const FAIR_NONCE_PART_B = 1;
+export interface FairSeedInput {
+  userId: number;
+  seed: string;
+  seedHash: string;
+}
 
 export interface FairCommitInput {
   handId: number;
   tableId?: number | null;
   handNo?: number | null;
+  algorithm: string;
   serverSeedHash: string;
   clientSeed: string;
-  algorithm?: string;
+  clientSeedHash?: string | null;
+  clientSeedSource?: 'player' | 'server' | null;
+  clientSeedInputs?: FairSeedInput[] | null;
+  /** Table-level hand counter. */
+  nonce: number;
 }
 
 export interface FairRevealInput {
   handId: number;
   serverSeed: string;
-  serverSeedHash?: string | null;
-  clientSeed?: string | null;
-  algorithm?: string;
 }
 
 export interface FairSeedRecord {
@@ -48,6 +49,9 @@ export interface FairSeedRecord {
   server_seed_hash: string;
   server_seed: string | null;
   client_seed: string;
+  client_seed_hash: string | null;
+  client_seed_source: 'player' | 'server' | null;
+  client_seed_inputs: FairSeedInput[] | null;
   nonce: number;
   deck_hash: string | null;
   committed_at: Date;
@@ -57,67 +61,73 @@ export interface FairSeedRecord {
 export class FairSeedService {
   constructor(private db: Pool) {}
 
+  /**
+   * Atomically reserve the next hand number for a table.
+   *
+   * Returns null when the table row does not exist (e.g. virtual tournament
+   * tables) or on a database error, so the caller can fall back.
+   */
+  async reserveTableHandNo(tableId: number): Promise<number | null> {
+    const res = await this.db.query(
+      `UPDATE poker_tables SET hand_sequence = hand_sequence + 1
+       WHERE id = $1 RETURNING hand_sequence`,
+      [tableId],
+    );
+    return res.rows[0] ? Number(res.rows[0].hand_sequence) : null;
+  }
+
   /** Publish the commitment for a hand before any card is dealt. */
   async commit(input: FairCommitInput): Promise<boolean> {
-    const algorithm = input.algorithm ?? DECK_V1_ALGORITHM;
     const res = await this.db.query(
       `INSERT INTO hand_seeds
-         (hand_id, table_id, hand_no, algorithm, server_seed_hash, client_seed, nonce)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+         (hand_id, table_id, hand_no, algorithm, server_seed_hash, client_seed,
+          client_seed_hash, client_seed_source, client_seed_inputs, nonce)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        ON CONFLICT (hand_id) DO NOTHING`,
       [
         input.handId,
         input.tableId ?? null,
         input.handNo ?? null,
-        algorithm,
+        input.algorithm,
         input.serverSeedHash,
         input.clientSeed,
-        FAIR_NONCE_PART_B,
+        input.clientSeedHash ?? null,
+        input.clientSeedSource ?? null,
+        input.clientSeedInputs ? JSON.stringify(input.clientSeedInputs) : null,
+        input.nonce,
       ],
     );
     return (res.rowCount ?? 0) > 0;
   }
 
-  /** Reveal the seed once the hand is over and mirror it onto the hands row. */
+  /**
+   * Reveal the seed once the hand is over, store the deck hash and mirror the
+   * seed onto the hands row. The committed row drives the derivation, so a
+   * missing commitment means nothing is revealed.
+   */
   async reveal(input: FairRevealInput): Promise<boolean> {
-    const algorithm = input.algorithm ?? DECK_V1_ALGORITHM;
-    const deckHash = deckHashV1(deckFromSeedV1(input.serverSeed));
+    const row = await this.getByHandId(input.handId);
+    if (!row) return false;
 
-    const canInsert = !!input.serverSeedHash && !!input.clientSeed;
-    let rowCount = 0;
+    const algorithm = row.algorithm ?? DECK_V1_ALGORITHM;
+    let deckHash: string | null = null;
 
-    if (canInsert) {
-      const res = await this.db.query(
-        `INSERT INTO hand_seeds
-           (hand_id, algorithm, server_seed_hash, client_seed, nonce,
-            server_seed, deck_hash, revealed_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
-         ON CONFLICT (hand_id) DO UPDATE
-           SET server_seed = EXCLUDED.server_seed,
-               deck_hash   = EXCLUDED.deck_hash,
-               revealed_at = NOW()`,
-        [
-          input.handId,
-          algorithm,
-          input.serverSeedHash,
-          input.clientSeed,
-          FAIR_NONCE_PART_B,
-          input.serverSeed,
-          deckHash,
-        ],
-      );
-      rowCount = res.rowCount ?? 0;
+    if (algorithm === DECK_V2_ALGORITHM) {
+      if (row.client_seed && row.nonce !== null && row.nonce !== undefined) {
+        deckHash = await deckHashV2(input.serverSeed, row.client_seed, Number(row.nonce));
+      } else {
+        console.error(`[fair] reveal ${input.handId}: deck-v2 without client seed/nonce`);
+      }
     } else {
-      // The commit row is missing its commitment fields: only the reveal can
-      // be written, never a new commitment.
-      const res = await this.db.query(
-        `UPDATE hand_seeds
-            SET server_seed = $1, deck_hash = $2, revealed_at = NOW()
-          WHERE hand_id = $3`,
-        [input.serverSeed, deckHash, input.handId],
-      );
-      rowCount = res.rowCount ?? 0;
+      deckHash = deckHashV1(deckFromSeedV1(input.serverSeed));
     }
+
+    const res = await this.db.query(
+      `UPDATE hand_seeds
+          SET server_seed = $1, deck_hash = $2, revealed_at = NOW()
+        WHERE hand_id = $3`,
+      [input.serverSeed, deckHash, input.handId],
+    );
 
     // Mirror only — hand_seeds stays the source of truth.
     await this.db.query(`UPDATE hands SET server_seed = $1 WHERE id = $2`, [
@@ -125,7 +135,7 @@ export class FairSeedService {
       input.handId,
     ]);
 
-    return rowCount > 0;
+    return (res.rowCount ?? 0) > 0;
   }
 
   async getByHandId(handId: number): Promise<FairSeedRecord | null> {

@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import type { Card, Suit, Rank } from './types.js';
 
 const SUITS: Suit[] = ['s', 'h', 'd', 'c'];
@@ -13,17 +14,29 @@ export function makeDeck(): Card[] {
   return deck;
 }
 
-export function shuffleDeck(deck: Card[], seed?: string): Card[] {
+export function shuffleDeck(
+  deck: Card[],
+  seed?: string,
+  clientSeed?: string,
+  nonce?: number,
+): Card[] {
   if (!Array.isArray(deck)) {
     console.error('[shuffleDeck] deck is not an array:', typeof deck);
     return [];
   }
 
+  // deck-v2: mix player entropy into the shuffle seed (HMAC-SHA256).
+  // Without clientSeed/nonce the derivation stays deck-v1: seed used as-is.
+  const shuffleSeed =
+    seed && clientSeed !== undefined && nonce !== undefined
+      ? crypto.createHmac('sha256', seed).update(`${clientSeed}:${nonce}`).digest('hex')
+      : seed;
+
   let rng: () => number;
-  if (seed && typeof seed === 'string' && seed.length > 0) {
+  if (shuffleSeed && typeof shuffleSeed === 'string' && shuffleSeed.length > 0) {
     let h = 0;
-    for (let i = 0; i < seed.length; i++) {
-      h = (h << 5) - h + seed.charCodeAt(i);
+    for (let i = 0; i < shuffleSeed.length; i++) {
+      h = (h << 5) - h + shuffleSeed.charCodeAt(i);
       h |= 0;
     }
     let state = h || 1;

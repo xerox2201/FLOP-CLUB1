@@ -1,6 +1,11 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
   import { api } from '../lib/api';
+  import {
+    verifyHand,
+    type FairProof,
+    type FairVerdict,
+  } from '../../../../packages/shared/src/fair/verifier.js';
 
   /** The table's gameState; serverSeedHash / revealSeed / clientSeed / nonce. */
   export let gameState: any = null;
@@ -11,6 +16,7 @@
   $: seed = gameState?.revealSeed ?? '';
   $: clientSeed = gameState?.clientSeed ?? '';
   $: nonce = gameState?.nonce ?? null;
+  $: tableId = Number(gameState?.tableId ?? 0);
   $: shortHash = hash ? `${hash.slice(0, 8)}…` : '';
 
   type Verdict = { state: 'ok' | 'pending' | 'not_found' | 'failed' | 'error'; detail: string };
@@ -19,18 +25,73 @@
   let verdict: Verdict | null = null;
   let verdictCommitment = '';
 
+  let localVerdict: FairVerdict | null = null;
+  let serverVerified: boolean | null = null;
+
+  let mySeedInput = '';
+  let mySeed = '';
+  let seedStatus = '';
+  let seedBusy = false;
+  let seedLoadedFor = '';
+
+  const SEED_ERRORS: Record<string, string> = {
+    seed_too_short: 'Too short (min 8 characters).',
+    seed_too_long: 'Too long (max 64 characters).',
+    seed_bad_charset: 'Only letters, digits, "-" and "_" are allowed.',
+    seed_change_cooldown: 'You can change the seed once every 5 minutes.',
+    hand_in_progress: 'A hand is being played. Try again between hands.',
+    invalid_table_id: 'Unknown table.',
+    notoken: 'Session expired, reopen the app.',
+  };
+
   // A new hand means a new commitment: drop the previous verdict.
   $: if (hash !== verdictCommitment) {
     verdictCommitment = hash;
     verdict = null;
+    localVerdict = null;
+    serverVerified = null;
     verifying = false;
+  }
+
+  $: if (open && tableId > 0 && seedLoadedFor !== String(tableId)) {
+    seedLoadedFor = String(tableId);
+    void loadMySeed(tableId);
+  }
+
+  async function loadMySeed(id: number): Promise<void> {
+    const res = await api.getFairClientSeed(id);
+    if (res.ok && res.data) {
+      mySeed = res.data.seed ?? '';
+      mySeedInput = mySeed;
+      seedStatus = mySeed ? '' : 'No seed set for this table yet.';
+    } else {
+      seedStatus = SEED_ERRORS[res.error ?? ''] ?? res.error ?? 'Could not load your seed.';
+    }
+  }
+
+  async function saveMySeed(): Promise<void> {
+    if (seedBusy || tableId <= 0) return;
+    seedBusy = true;
+    seedStatus = '';
+    const res = await api.setFairClientSeed(tableId, mySeedInput.trim());
+    seedBusy = false;
+    if (res.ok && res.data) {
+      mySeed = mySeedInput.trim();
+      seedStatus = 'Saved. It applies from the next hand.';
+      return;
+    }
+    const err = res.error ?? '';
+    seedStatus = SEED_ERRORS[err] ?? `Could not save (${err || res.status}).`;
   }
 
   async function verify(): Promise<void> {
     if (!hash || verifying) return;
     verifying = true;
     verdict = null;
+    localVerdict = null;
+    serverVerified = null;
 
+    // 1) Fetch the proof: commitment, revealed seed, client seed and board.
     const res = await api.verifyFairHand(hash);
     verifying = false;
 
@@ -45,16 +106,39 @@
         state: 'pending',
         detail: 'Hand in progress. The seed is revealed when the hand ends.',
       };
-    } else if (data.found === false) {
-      verdict = { state: 'not_found', detail: 'No commitment stored for this hand.' };
-    } else if (data.verified) {
-      verdict = {
-        state: 'ok',
-        detail: 'Commitment, deck derivation and board all match the committed hash.',
-      };
-    } else {
-      verdict = { state: 'failed', detail: 'Verification failed. Do not trust this hand.' };
+      return;
     }
+    if (data.found === false) {
+      verdict = { state: 'not_found', detail: 'No commitment stored for this hand.' };
+      return;
+    }
+
+    serverVerified = !!data.verified;
+
+    // 2) Re-run the verifier locally: this browser rebuilds the deck itself.
+    if (data.proof) {
+      try {
+        localVerdict = await verifyHand(data.proof as FairProof);
+      } catch (e: any) {
+        verdict = { state: 'error', detail: `Local verification failed: ${e.message}` };
+        return;
+      }
+    }
+
+    const ok = localVerdict ? localVerdict.ok : serverVerified;
+    verdict = ok
+      ? {
+          state: 'ok',
+          detail: localVerdict
+            ? 'Verified locally in this browser: commitment, deck and board all match.'
+            : 'Verified by the server. Local re-check was unavailable for this hand.',
+        }
+      : { state: 'failed', detail: 'Verification failed. Do not trust this hand.' };
+  }
+
+  function checkLabel(value: boolean | null | undefined): string {
+    if (value === null || value === undefined) return 'n/a';
+    return value ? 'ok' : 'FAIL';
   }
 </script>
 
@@ -87,17 +171,34 @@
       </p>
     {/if}
 
-    <p class="pf-label">Client seed · nonce</p>
-    <p class="pf-mono">{clientSeed || '—'} · {nonce ?? '—'}</p>
-    <p class="pf-note">
-      Note: client seed is server-generated in this version. Player-controlled entropy is planned.
-    </p>
+    <p class="pf-label">Client seed · nonce ({nonce ?? '—'})</p>
+    <p class="pf-mono">{clientSeed || '—'}</p>
+
+    <p class="pf-label">Your client seed · table #{tableId || '—'}</p>
+    <div class="pf-row">
+      <input
+        class="pf-input"
+        type="text"
+        maxlength="64"
+        placeholder="8-64 chars: A-Z a-z 0-9 - _"
+        bind:value={mySeedInput}
+        disabled={seedBusy}
+      />
+      <button class="pf-btn pf-btn--sm" on:click={saveMySeed} disabled={seedBusy}>Save</button>
+    </div>
+    {#if seedStatus}
+      <p class="pf-note">{seedStatus}</p>
+    {/if}
 
     <button class="pf-btn" on:click={verify} disabled={verifying}>
-      {verifying ? 'Verifying…' : 'Verify this hand'}
+      {verifying ? 'Verifying…' : 'Verify locally'}
     </button>
 
-    <p class="pf-note">Server-side verification. Independent client verification coming soon.</p>
+    <p class="pf-note">
+      Player-controlled entropy is mixed into the deck (deck-v2): shuffle seed = HMAC-SHA256(server
+      seed, "combined client seed:nonce"). The check above runs in this browser, with the same code
+      the server uses, so no trust in the server verdict is required.
+    </p>
 
     {#if verdict}
       <p class="pf-verdict pf-verdict--{verdict.state}">
@@ -105,6 +206,28 @@
           found{:else if verdict.state === 'failed'}Failed{:else}Error{/if}
         · {verdict.detail}
       </p>
+    {/if}
+
+    {#if localVerdict}
+      <p class="pf-label">Local checks · {localVerdict.algorithm}</p>
+      <p class="pf-mono">
+        commitment {checkLabel(localVerdict.checks.commitmentMatches)} · deck {checkLabel(
+          localVerdict.checks.deckHashMatches,
+        )} · board {checkLabel(localVerdict.checks.communityCardsMatch)} · deal {checkLabel(
+          localVerdict.checks.boardDealMatches,
+        )}
+      </p>
+      {#if localVerdict.communityPositions}
+        <p class="pf-label">Board positions · expected</p>
+        <p class="pf-mono">
+          {localVerdict.communityPositions.join(',')} · {localVerdict.expectedBoardPositions?.join(
+            ',',
+          ) ?? '—'}
+        </p>
+      {/if}
+      {#if serverVerified !== null}
+        <p class="pf-note">Server cross-check: {serverVerified ? 'verified' : 'not verified'}.</p>
+      {/if}
     {/if}
   </div>
 {/if}
@@ -152,6 +275,8 @@
     z-index: 81;
     width: 90%;
     max-width: 380px;
+    max-height: 86vh;
+    overflow-y: auto;
     border-radius: 16px;
     padding: 16px;
     background: linear-gradient(180deg, rgba(15, 26, 46, 0.99), rgba(10, 14, 26, 0.99));
@@ -206,6 +331,26 @@
     margin-bottom: 10px;
   }
 
+  .pf-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .pf-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.06);
+    color: #ffffff;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 10px;
+  }
+  .pf-input::placeholder {
+    color: rgba(255, 255, 255, 0.35);
+  }
+
   .pf-btn {
     width: 100%;
     padding: 8px 10px;
@@ -220,6 +365,12 @@
     text-transform: uppercase;
     cursor: pointer;
   }
+  .pf-btn--sm {
+    width: auto;
+    margin-bottom: 0;
+    flex: 0 0 auto;
+    padding: 8px 12px;
+  }
   .pf-btn:disabled {
     opacity: 0.55;
     cursor: default;
@@ -228,7 +379,7 @@
   .pf-verdict {
     font-size: 10px;
     line-height: 1.45;
-    margin-bottom: 0;
+    margin-bottom: 10px;
     color: rgba(255, 255, 255, 0.75);
   }
   .pf-verdict--ok {

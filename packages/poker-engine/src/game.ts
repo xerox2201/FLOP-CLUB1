@@ -46,7 +46,7 @@ export class PokerGame {
       serverSeed: undefined,
       serverSeedHash: undefined,
       clientSeed: crypto.randomBytes(16).toString('hex'),
-      nonce: 0,
+      nonce: undefined,
       revealSeed: undefined,
       turnStartedAt: 0,
       turnBankActive: false,
@@ -258,7 +258,9 @@ export class PokerGame {
     }
 
     this.state.handNo += 1;
-    this.state.nonce = this.state.handNo;
+    // nonce defaults to the hand number; callers that mix player entropy
+    // (deck-v2) preset state.nonce with the table-level hand counter.
+    this.state.nonce = this.state.nonce ?? this.state.handNo;
     this.state.phase = 'preflop';
     this.state.community = [];
     this.state.pot = 0;
@@ -293,7 +295,7 @@ export class PokerGame {
 
     this.deck = makeDeck();
     const seed = this.serverSeed || `${this.state.tableId}-${this.state.handNo}-${Date.now()}`;
-    shuffleDeck(this.deck, seed);
+    shuffleDeck(this.deck, seed, this.state.clientSeed, this.state.nonce);
 
     // Post blinds
     const activeCount = activeSeats.length;
