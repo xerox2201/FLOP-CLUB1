@@ -1,5 +1,6 @@
 <script lang="ts">
   import { fmtAmount } from '../lib/table-geometry';
+  import { formatAmount } from '../lib/format';
   import { onMount } from 'svelte';
   import { api } from '../lib/api';
   import { auth } from '../stores/auth';
@@ -289,7 +290,7 @@
         <span class="text-[9px] font-extrabold text-gold uppercase tracking-wider">From</span>
       </div>
       <p class="text-[17px] font-extrabold text-gold tabular-nums leading-none">
-        ${startingPrice.toFixed(2)}
+        ${formatAmount(startingPrice)}
       </p>
       <p class="text-[9px] text-white/45 mt-1 font-bold">
         {discPct > 0 ? `${discPct}% level discount active` : 'Discount unlocks from L10'}
@@ -381,7 +382,7 @@
               <p class="text-[15px] font-extrabold text-white leading-tight mb-0.5">{p.name}</p>
               <div class="flex items-baseline gap-2 mb-1">
                 <span class="text-[13px] font-extrabold text-gold tabular-nums"
-                  >${disc.toFixed(2)}</span
+                  >${formatAmount(disc)}</span
                 >
                 {#if p.priceUsdDiscounted && p.priceUsdDiscounted < p.priceUsd}
                   <span class="text-[10px] text-white/40 line-through tabular-nums"
@@ -472,7 +473,7 @@
         <div class="flex justify-between text-[11px]">
           <span class="text-white/50">Need rake</span><span
             class="text-amber-300 font-extrabold tabular-nums"
-            >${(selected.voucher * 2.5).toFixed(2)}</span
+            >${formatAmount(selected.voucher * 2.5)}</span
           >
         </div>
       {/if}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { formatAmount } from '../lib/format';
   import { onMount, onDestroy } from 'svelte';
   import { get } from 'svelte/store';
   import PokerTable from '../components/PokerTable.svelte';
@@ -277,7 +278,7 @@
     gameState.phase !== 'waiting';
 
   function fmt(n: any): string {
-    return Number(Number(n || 0).toFixed(2)).toFixed(2);
+    return formatAmount(n);
   }
 
   function suitChar(s: string): '♠' | '♥' | '♦' | '♣' {

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { formatUSD } from '../lib/format';
   import { onMount } from 'svelte';
   import { auth } from '../stores/auth';
   import { api } from '../lib/api';
@@ -12,7 +13,7 @@
   let showXpConvert = false;
 
   function fmt(n: any): string {
-    return `$${Number(n || 0).toFixed(2)}`;
+    return formatUSD(n);
   }
   function fmtN(n: any): string {
     return Number(n || 0).toLocaleString();

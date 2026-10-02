@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { formatAmount, formatUSD } from '../lib/format';
   import { onMount } from 'svelte';
   import { api } from '../lib/api';
   import TopBar from '../components/TopBar.svelte';
@@ -34,7 +35,7 @@
   onMount(load);
 
   function fmt(n: any): string {
-    return `$${Number(n || 0).toFixed(2)}`;
+    return formatUSD(n);
   }
   function fmtDate(iso: string): string {
     try {
@@ -394,7 +395,7 @@
               </p>
             </div>
             <p class="text-[14px] font-extrabold text-gold tabular-nums shrink-0 leading-none">
-              ${Number(p.usd_amount).toFixed(2)}
+              ${formatAmount(p.usd_amount)}
             </p>
           </div>
           <div class="flex flex-wrap gap-1.5 text-[9px] font-bold">
@@ -411,7 +412,7 @@
             {#if Number(p.voucher_amount) > 0}<span
                 class="px-1.5 py-0.5 rounded-full"
                 style="background: rgba(244,201,93,0.2); color: #f4c95d;"
-                >Voucher ${Number(p.voucher_amount).toFixed(2)}</span
+                >Voucher ${formatAmount(p.voucher_amount)}</span
               >{/if}
             <span
               class="px-1.5 py-0.5 rounded-full"

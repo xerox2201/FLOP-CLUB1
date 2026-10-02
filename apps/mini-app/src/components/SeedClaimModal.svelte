@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { formatAmount } from '../lib/format';
   import { api } from '../lib/api';
   import { auth } from '../stores/auth';
   import Icon from './Icon.svelte';
@@ -64,7 +65,9 @@
       style="background: linear-gradient(135deg, rgba(34,197,94,0.15), rgba(5,150,105,0.05)); border: 1px solid rgba(34,197,94,0.4);"
     >
       <p class="text-[10px] text-emerald-300/80 uppercase tracking-wider font-bold mb-1">Reward</p>
-      <p class="text-3xl font-extrabold text-emerald-400 tabular-nums">${seed.amount.toFixed(2)}</p>
+      <p class="text-3xl font-extrabold text-emerald-400 tabular-nums">
+        ${formatAmount(seed.amount)}
+      </p>
       <p class="text-[10px] text-white/50 mt-2 leading-relaxed">
         10x playthrough · $15 rake · 150 real hands · 14 days
       </p>
@@ -78,7 +81,7 @@
           class="text-[12px] font-extrabold text-emerald-300 flex items-center gap-1 justify-center"
         >
           <Icon name="success" size={14} color="#6ee7b7" />
-          <span>Claimed! ${seed.amount.toFixed(2)} added</span>
+          <span>Claimed! ${formatAmount(seed.amount)} added</span>
         </p>
       </div>
     {:else}

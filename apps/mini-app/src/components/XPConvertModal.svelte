@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { formatAmount } from '../lib/format';
   import { api } from '../lib/api';
   import { auth } from '../stores/auth';
   import Icon from './Icon.svelte';
@@ -18,7 +19,7 @@
 
   $: maxXp = Math.floor((availableXp ?? 0) / STEP) * STEP;
   $: canSubmit = !busy && level >= 5 && amount >= MIN_XP && amount <= maxXp && amount % STEP === 0;
-  $: usdValue = (amount / 1000).toFixed(2);
+  $: usdValue = formatAmount(amount / 1000);
 
   $: if (open) {
     busy = false;

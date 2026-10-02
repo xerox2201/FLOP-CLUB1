@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { formatAmount } from '../lib/format';
   import { onMount, onDestroy } from 'svelte';
   import { api } from '../lib/api';
   import TopBar from '../components/TopBar.svelte';
@@ -71,7 +72,7 @@
   }
   function fmtBlind(v: any): string {
     const n = Number(v ?? 0);
-    if (n === Math.floor(n)) return String(n);
+    if (n === Math.floor(n)) return n.toLocaleString('en-US');
     return n.toFixed(2).replace(/\.?0+$/, '');
   }
   function seatStatus(l: number, m: number): { color: string; label: string } {
@@ -403,7 +404,7 @@
                   Min buy-in
                 </span>
                 <span class="text-[10px] font-extrabold text-gold tabular-nums">
-                  ${Number(table.minBuyIn).toFixed(0)}
+                  ${formatAmount(table.minBuyIn, 0)}
                 </span>
               </div>
             {/if}

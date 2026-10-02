@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { formatAmount } from '../lib/format';
   import { onMount } from 'svelte';
   import { api } from '../lib/api';
   import TopBar from '../components/TopBar.svelte';
@@ -23,7 +24,7 @@
   };
 
   function fmt(n: any, digits = 2): string {
-    return Number(Number(n || 0).toFixed(digits)).toFixed(digits);
+    return formatAmount(n, digits);
   }
 
   function flash(msg: string, isError = false) {

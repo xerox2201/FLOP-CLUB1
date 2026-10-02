@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { fmtAmount } from '../lib/table-geometry';
+  import { formatAmount } from '../lib/format';
   import { onMount, onDestroy } from 'svelte';
   import { api } from '../lib/api';
   import { auth } from '../stores/auth';
@@ -69,7 +69,7 @@
 
   function fmt(n: any, d = 2): string {
     const v = Number(n || 0);
-    return d === 2 ? fmtAmount(v) : v.toFixed(d);
+    return formatAmount(v, d);
   }
   function fmtInt(n: any): string {
     return Math.round(Number(n || 0)).toLocaleString();

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { formatAmount } from '../lib/format';
   import { auth } from '../stores/auth';
   import Avatar from './Avatar.svelte';
   import Icon from './Icon.svelte';
@@ -99,7 +100,7 @@
           {user?.display_name || 'Player'}
         </p>
         <p class="text-[9px] text-gold/70 font-mono">
-          ${Number($auth.wallet?.balance_usd || 0).toFixed(2)}
+          ${formatAmount($auth.wallet?.balance_usd || 0)}
         </p>
       </div>
     </button>

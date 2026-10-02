@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { formatAmount } from '../lib/format';
   import { onMount, onDestroy } from 'svelte';
   import { api } from '../lib/api';
   import { getRealtime, realtimeConnected, TOURNAMENT_EVENT_RE } from '../lib/realtime';
@@ -17,7 +18,7 @@
   let pollTimer: any = null;
 
   function fmt(n: any): string {
-    return Number(Number(n || 0).toFixed(2)).toFixed(2);
+    return formatAmount(n);
   }
 
   function fmtTime(iso: string | null): string {

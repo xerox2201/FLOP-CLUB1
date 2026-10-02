@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { formatAmount } from '../lib/format';
   import { auth } from '../stores/auth';
   import Avatar from './Avatar.svelte';
   import Icon from './Icon.svelte';
@@ -31,7 +32,7 @@
         filter: drop-shadow(0 1px 4px rgba(212,175,55,0.5));
       "
     >
-      ${Number((wallet as any)?.balance_usd || 0).toFixed(2)}
+      ${formatAmount((wallet as any)?.balance_usd || 0)}
     </span>
     <span
       class="w-5 h-5 rounded-full border border-gold/60 flex items-center justify-center shrink-0"

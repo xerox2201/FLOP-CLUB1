@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { formatUSD } from '../lib/format';
   import { onMount } from 'svelte';
   import TopBar from '../components/TopBar.svelte';
   import Icon from '../components/Icon.svelte';
@@ -653,7 +654,7 @@
       });
       const data = await res.json();
       if (res.ok) {
-        flash(`Balance: $${data.newBalance.toFixed(2)}`, 'dollar');
+        flash(`Balance: ${formatUSD(data.newBalance)}`, 'dollar');
         walletAdjustAmount = 0;
         walletAdjustReason = '';
         await loadPlayerDetail(id);
@@ -791,7 +792,7 @@
   }
 
   function fmtMoney(n: any): string {
-    return `$${Number(n || 0).toFixed(2)}`;
+    return formatUSD(n);
   }
 
   function logout() {

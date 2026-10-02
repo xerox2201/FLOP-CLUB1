@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { fmtAmount } from '../lib/table-geometry';
+  import { formatAmount } from '../lib/format';
   import { onMount, onDestroy } from 'svelte';
   import { api } from '../lib/api';
   import { auth } from '../stores/auth';
@@ -33,7 +33,7 @@
 
   function fmt(n: any, decimals = 2): string {
     const v = Number(n || 0);
-    return decimals === 2 ? fmtAmount(v) : v.toFixed(decimals);
+    return formatAmount(v, decimals);
   }
 
   async function loadAll() {
@@ -753,7 +753,7 @@
                 <div class="flex justify-between text-[13px]">
                   <span class="text-white/70 font-bold">You receive</span>
                   <span class="text-emerald-400 font-extrabold tabular-nums">
-                    ~{estReceive.toFixed(4)} TON
+                    ~{formatAmount(estReceive, 4)} TON
                   </span>
                 </div>
               </div>

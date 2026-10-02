@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { formatUSD } from '../lib/format';
   import { onMount } from 'svelte';
   import { api } from '../lib/api';
   import { auth } from '../stores/auth';
@@ -234,7 +235,7 @@
                   style="color: {m.achieved ? '#6ee7b7' : 'rgba(255,255,255,0.6)'};"
                 >
                   {m.metric === 'lifetime_earned'
-                    ? `$${m.current.toFixed(2)} / $${m.threshold}`
+                    ? `${formatUSD(m.current)} / ${formatUSD(m.threshold)}`
                     : `${m.current} / ${m.threshold}`}
                 </span>
               </div>

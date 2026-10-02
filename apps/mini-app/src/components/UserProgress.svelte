@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { fmtAmount } from '../lib/table-geometry';
+  import { formatAmount } from '../lib/format';
   import { onMount } from 'svelte';
   import { api } from '../lib/api';
   import Icon from './Icon.svelte';
@@ -12,7 +12,7 @@
 
   function fmt(n: any, digits = 2): string {
     const v = Number(n || 0);
-    return digits === 2 ? fmtAmount(v) : v.toFixed(digits);
+    return formatAmount(v, digits);
   }
   function fmtPct(x: any): string {
     return `${(Number(x || 0) * 100).toFixed(0)}%`;

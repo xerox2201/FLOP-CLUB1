@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { formatAmount } from '../lib/format';
   import { onMount } from 'svelte';
   import TopBar from '../components/TopBar.svelte';
   import { api } from '../lib/api';
@@ -14,7 +15,7 @@
   let stats: any = null;
 
   function fmt(n: any): string {
-    return Number(Number(n || 0).toFixed(2)).toFixed(2);
+    return formatAmount(n);
   }
 
   function fmtDate(iso: string | null): string {
