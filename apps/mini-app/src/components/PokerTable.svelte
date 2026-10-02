@@ -199,6 +199,25 @@
     return showdownData?.[seat]?.payout ?? 0;
   }
 
+  // Winner announcement — the desktop counterpart of the mobile pill.
+  // Data bridge (the desktop has no mobile-style `winnerPlayer`):
+  //   handResult.showdownPlayers -> first isWinner   = winnerPlayer
+  //   allSeats by seat -> displayName                = winnerDisplayName
+  //   showdownData[seat] -> handName / payout        = the pill's detail lines
+  $: winnerPlayer = handResult?.showdownPlayers?.find((p: any) => p.isWinner) ?? null;
+  $: winnerIsMe = !!winnerPlayer && Number(winnerPlayer.userId) === Number(myUserId);
+  $: winnerDisplayName = !winnerPlayer
+    ? ''
+    : winnerIsMe
+      ? 'You'
+      : (allSeats.find((s: any) => s.seat === winnerPlayer.seat)?.displayName ?? 'Winner');
+  $: winnerHandName = winnerPlayer ? handName(winnerPlayer.seat) : '';
+  $: winnerPayout = winnerPlayer ? payoutForSeat(winnerPlayer.seat) : 0;
+  // Same rule as mobile: the made hand is only meaningful when at least two
+  // players actually showed cards.
+  $: winnerShowedDown =
+    (handResult?.showdownPlayers ?? []).filter((p: any) => p.hole?.length > 0).length > 1;
+
   let chipVisible = false;
   let chipLeft = 50;
   let chipTop = 40;
@@ -260,6 +279,40 @@
     {/if}
 
     <TableSurface variant="desktop" isFinal={isFinalTable} tournament={theme === 'tournament'} />
+
+    <!-- WINNER ANNOUNCEMENT. One compact line at the top of the felt: the
+         vertical mobile card (~90px) would cover the top-centre seat, whose
+         nameplate owns the 11-19% band of the desktop felt. z-[50] keeps it
+         above the seat ring and below the winning cards (z-[60]) and modals. -->
+    {#if winnerPlayer && winners.length > 0}
+      <div
+        class="absolute left-1/2 -translate-x-1/2 z-[50] winner-announce pointer-events-none"
+        style="top: 2.5%;"
+      >
+        <div
+          class="rounded-full px-4 py-1.5 flex items-center gap-2 winner-glow-card"
+          style="background: linear-gradient(180deg, rgba(8,13,36,0.99), rgba(5,8,15,0.99)); border: 2px solid #d4af37; box-shadow: 0 8px 24px rgba(0,0,0,0.9);"
+        >
+          <Icon name="trophy" size={16} color="#f4c95d" />
+          <span class="text-[11px] uppercase tracking-[0.2em] text-gold font-extrabold">
+            {winners.length > 1 ? 'Winners' : 'Winner'}
+          </span>
+          <span class="text-[13px] font-extrabold text-white leading-none">
+            {winnerDisplayName}
+          </span>
+          {#if winnerHandName && winnerShowedDown}
+            <span class="text-[10px] font-bold text-gold/90 uppercase tracking-wider">
+              {winnerHandName}
+            </span>
+          {/if}
+          {#if winnerPayout > 0}
+            <span class="text-[12px] font-extrabold text-emerald-400 tabular-nums">
+              +${fmt(winnerPayout)}
+            </span>
+          {/if}
+        </div>
+      </div>
+    {/if}
 
     {#if gameState && totalPot > 0 && winners.length === 0}
       {#if sidePots.length > 1}
@@ -766,6 +819,39 @@
     box-shadow:
       0 2px 8px rgba(0, 0, 0, 0.8),
       inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  /* Winner announcement — same look as the mobile pill, adapted to one compact
+     line so it clears the top-centre seat band of the desktop felt. */
+  @keyframes winner-announce-in {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -14px) scale(0.9);
+    }
+    60% {
+      opacity: 1;
+      transform: translate(-50%, 0) scale(1.04);
+    }
+    100% {
+      opacity: 1;
+      transform: translate(-50%, 0) scale(1);
+    }
+  }
+  .winner-announce {
+    animation: winner-announce-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  @keyframes winner-glow-card-kf {
+    0%,
+    100% {
+      box-shadow: 0 0 30px rgba(212, 175, 55, 0.6);
+    }
+    50% {
+      box-shadow: 0 0 55px rgba(212, 175, 55, 1);
+    }
+  }
+  .winner-glow-card {
+    animation: winner-glow-card-kf 1.6s ease-in-out infinite;
   }
 
   /* Phase 8: hero hand strength — HERO ONLY (the server never sends
