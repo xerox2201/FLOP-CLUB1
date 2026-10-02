@@ -105,6 +105,7 @@
 
 <div
   class="card-outer"
+  dir="ltr"
   style="
     width: {s.w}px;
     height: {s.h}px;

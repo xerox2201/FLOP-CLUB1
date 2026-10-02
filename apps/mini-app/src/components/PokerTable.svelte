@@ -256,6 +256,7 @@
 </script>
 
 <div
+  dir="ltr"
   class="table-shell absolute left-1/2 -translate-x-1/2 {compact ? 'is-compact' : ''}"
   style="
     top: {compact ? '50%' : '45%'};

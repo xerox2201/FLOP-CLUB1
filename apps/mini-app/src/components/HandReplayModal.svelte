@@ -284,7 +284,7 @@
     {:else if currentState && replay?.hand}
       <!-- Table -->
       <div class="flex-1 relative" style="min-height: 0;">
-        <div class="absolute inset-0 flex items-center justify-center p-3">
+        <div class="absolute inset-0 flex items-center justify-center p-3" dir="ltr">
           <div class="relative w-full" style="aspect-ratio: 1 / 1; max-width: 380px;">
             <!-- Outer rim -->
             <div

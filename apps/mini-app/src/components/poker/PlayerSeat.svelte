@@ -51,6 +51,7 @@
 
 <button
   class="player-seat"
+  dir="ltr"
   on:click={onClick}
   aria-label={player.displayName || 'Player'}
   type="button"

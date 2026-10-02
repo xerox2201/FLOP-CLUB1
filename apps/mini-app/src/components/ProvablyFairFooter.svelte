@@ -250,6 +250,8 @@
     cursor: pointer;
     pointer-events: auto;
     white-space: nowrap;
+    /* Shows the short hash: keep it left-to-right in RTL too. */
+    direction: ltr;
   }
   .pf-footer:hover {
     color: rgba(212, 175, 55, 0.9);
@@ -323,6 +325,9 @@
     color: #ffffff;
     word-break: break-all;
     margin-bottom: 10px;
+    /* Hashes, seeds and nonces are machine values: never mirrored. */
+    direction: ltr;
+    text-align: left;
   }
   .pf-note {
     font-size: 10px;
@@ -339,6 +344,7 @@
   .pf-input {
     flex: 1 1 auto;
     min-width: 0;
+    direction: ltr;
     padding: 8px 10px;
     border-radius: 10px;
     border: 1px solid rgba(255, 255, 255, 0.18);

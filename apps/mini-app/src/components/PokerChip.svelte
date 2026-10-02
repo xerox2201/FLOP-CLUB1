@@ -66,7 +66,11 @@
 </script>
 
 {#if amount > 0}
-  <div class="chip-root {popClass} {pulseClass} {collectClass}" style="gap: {size * 0.1}px;">
+  <div
+    dir="ltr"
+    class="chip-root {popClass} {pulseClass} {collectClass}"
+    style="gap: {size * 0.1}px;"
+  >
     {#each columns as c (c.key)}
       <div class="chip-column" style="width: {c.disc}px; height: {c.height}px;">
         {#each Array(c.visible) as _, i}

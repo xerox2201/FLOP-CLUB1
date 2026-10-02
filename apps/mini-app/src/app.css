@@ -4,6 +4,15 @@
 @import '@fontsource/sora/700.css';
 @import '@fontsource/sora/800.css';
 
+/* RTL script coverage. Only the `arabic` subset is imported: Sora stays in the
+   stack for Latin text, so Persian/Arabic glyphs come from Vazirmatn and
+   everything else keeps the brand font (fontsource subsets ship unicode-range). */
+@import '@fontsource/vazirmatn/arabic-400.css';
+@import '@fontsource/vazirmatn/arabic-500.css';
+@import '@fontsource/vazirmatn/arabic-600.css';
+@import '@fontsource/vazirmatn/arabic-700.css';
+@import '@fontsource/vazirmatn/arabic-800.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -507,4 +516,47 @@
       transform: rotate(360deg);
     }
   }
+}
+
+/* ============================================================
+   RTL layer (P2 wave B)
+
+   Active only while <html dir="rtl">, which the i18n store sets for fa/ar.
+   The poker felt and the provably-fair proofs are LTR islands: they keep
+   physical offsets and are excluded from the logical-property migration, so
+   they can not mirror. See P2_I18N_DESIGN.md.
+   ============================================================ */
+
+:root {
+  /* Multiplier for direction-aware transforms:
+     translateX(calc(10px * var(--dir-sign))). */
+  --dir-sign: 1;
+}
+
+html[dir='rtl'] {
+  --dir-sign: -1;
+}
+
+/* An LTR island keeps left-to-right maths even inside an RTL document. */
+html[dir='rtl'] [dir='ltr'] {
+  --dir-sign: 1;
+}
+
+html[dir='rtl'] body {
+  /* Vazirmatn covers the arabic subset; Latin falls through to Sora. */
+  font-family: 'Vazirmatn', 'Sora', system-ui, sans-serif;
+  /* Persian/Arabic need more leading than the Latin defaults. */
+  line-height: 1.7;
+}
+
+/* Negative tracking is a Latin-only device: it clips Persian letter joins. */
+html[dir='rtl'] [class*='tracking-[-'] {
+  letter-spacing: 0;
+}
+
+/* Persian has no letter case; uppercase utility is harmless but the wide
+   tracking that usually ships with it is not. */
+html[dir='rtl'] [class*='tracking-wider'],
+html[dir='rtl'] [class*='tracking-widest'] {
+  letter-spacing: 0.02em;
 }

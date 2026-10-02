@@ -295,6 +295,7 @@
 
 <div
   bind:this={wrapperEl}
+  dir="ltr"
   class="absolute inset-0 flex items-center justify-center"
   style="padding: 110px 6px 210px 6px;"
 >

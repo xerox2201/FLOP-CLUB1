@@ -1,7 +1,20 @@
 <script lang="ts">
+  import { dir } from '../i18n';
+
   export let name: string;
   export let size: number = 20;
   export let color: string = 'currentColor';
+  /**
+   * Mirror the glyph in RTL. Defaults to auto for direction-aware icons, so
+   * "back"/"forward" affordances point the right way without touching call
+   * sites. Pass false where an arrow is part of a physical layout.
+   */
+  export let mirror: boolean | undefined = undefined;
+
+  const AUTO_MIRROR = new Set(['arrow-left', 'arrow-right', 'logout', 'send']);
+
+  $: mirrored = (mirror ?? AUTO_MIRROR.has(name)) && $dir === 'rtl';
+  $: flipStyle = mirrored ? ' transform: scaleX(-1);' : '';
 
   // ─── PNG (فایل‌های خودت) ────────────────────────────
   const PNG_MAP: Record<string, string> = {
@@ -98,7 +111,7 @@
     alt={name}
     width={size}
     height={size}
-    style="display: inline-block; vertical-align: middle; flex-shrink: 0; object-fit: contain;"
+    style="display: inline-block; vertical-align: middle; flex-shrink: 0; object-fit: contain;{flipStyle}"
     draggable="false"
   />
 {:else if svgFile}
@@ -107,11 +120,19 @@
     alt={name}
     width={size}
     height={size}
-    style="display: inline-block; vertical-align: middle; flex-shrink: 0; object-fit: contain;"
+    style="display: inline-block; vertical-align: middle; flex-shrink: 0; object-fit: contain;{flipStyle}"
     draggable="false"
   />
 {:else}
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} stroke-width="2">
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={color}
+    stroke-width="2"
+    style={flipStyle}
+  >
     <circle cx="12" cy="12" r="10" />
   </svg>
 {/if}

@@ -19,7 +19,7 @@
   $: glow = isFinal ? ' drop-shadow(0 0 34px rgba(212,175,55,0.42))' : '';
 </script>
 
-<div class="surface" aria-hidden="true">
+<div class="surface" dir="ltr" aria-hidden="true">
   <div class="surface-fallback {tournament ? 'is-tournament' : 'is-cash'}"></div>
   <img {src} alt="" class="surface-img" draggable="false" style="filter: {baseShadow}{glow};" />
 </div>
