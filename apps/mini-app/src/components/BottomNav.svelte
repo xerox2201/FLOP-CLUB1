@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { t } from '../i18n';
+  import { t, type MessageKey } from '../i18n';
   import { unreadCount } from '../lib/broadcasts';
   import Icon from './Icon.svelte';
 
@@ -17,7 +17,7 @@
   export let current: Page;
   export let onNavigate: (page: Page) => void;
 
-  const items = [
+  const items: { id: Page; key: MessageKey; icon: string }[] = [
     { id: 'home' as Page, key: 'nav.home', icon: 'home' },
     { id: 'tables' as Page, key: 'nav.tables', icon: 'tables' },
     { id: 'tournaments' as Page, key: 'nav.tournaments', icon: 'tournaments' },

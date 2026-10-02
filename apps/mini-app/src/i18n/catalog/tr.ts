@@ -7,6 +7,8 @@ export default {
     ok: 'Tamam',
     back: 'Geri',
     soon: 'Yakında',
+    players_one: '{n} oyuncu',
+    players_other: '{n} oyuncu',
   },
   home: {
     instantPlay: 'Anında Oyna',

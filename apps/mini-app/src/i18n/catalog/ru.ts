@@ -7,6 +7,10 @@ export default {
     ok: 'OK',
     back: 'Назад',
     soon: 'Скоро',
+    players_one: '{n} игрок',
+    players_few: '{n} игрока',
+    players_many: '{n} игроков',
+    players_other: '{n} игрока',
   },
   home: {
     instantPlay: 'Быстрая игра',

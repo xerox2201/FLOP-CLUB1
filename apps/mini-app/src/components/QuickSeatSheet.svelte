@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import { t } from '../i18n';
+  import { t, type MessageKey } from '../i18n';
 
   export let open: boolean = false;
   export let freeChips: number = 0;
@@ -10,7 +10,13 @@
   let selectedVariant: string = 'holdem';
   let selectedMode: 'free' | 'real' = 'free';
 
-  const variants = [
+  const variants: {
+    id: string;
+    labelKey: MessageKey;
+    emoji: string;
+    gradient: string;
+    activeBorder: string;
+  }[] = [
     {
       id: 'holdem',
       labelKey: 'games.holdem',

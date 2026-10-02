@@ -7,6 +7,8 @@ export default {
     ok: 'تأیید',
     back: 'بازگشت',
     soon: 'به‌زودی',
+    players_one: '{n} بازیکن',
+    players_other: '{n} بازیکن',
   },
   home: {
     instantPlay: 'بازی سریع',

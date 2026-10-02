@@ -7,6 +7,7 @@ export default {
     ok: '确定',
     back: '返回',
     soon: '即将',
+    players_other: '{n} 位玩家',
   },
   home: {
     instantPlay: '即时游戏',

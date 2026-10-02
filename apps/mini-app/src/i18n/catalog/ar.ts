@@ -13,6 +13,12 @@ export default {
     ok: 'موافق',
     back: 'رجوع',
     soon: 'قريباً',
+    players_zero: 'لا لاعبين',
+    players_one: 'لاعب واحد',
+    players_two: 'لاعبان',
+    players_few: '{n} لاعبين',
+    players_many: '{n} لاعباً',
+    players_other: '{n} لاعب',
   },
   home: {
     instantPlay: 'لعب فوري',

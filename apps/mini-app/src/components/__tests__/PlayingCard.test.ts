@@ -5,8 +5,8 @@ import PlayingCard from '../PlayingCard.svelte';
 describe('PlayingCard', () => {
   it('renders rank and suit', () => {
     render(PlayingCard, { rank: 'A', suit: '♠' });
-    expect(screen.getByText('A')).toBeTruthy();
-    expect(screen.getByText('♠')).toBeTruthy();
+    // The face is an image; the rank/suit live in its alt text.
+    expect(screen.getByRole('img')).toHaveAttribute('alt', 'A♠');
   });
 
   it('renders different sizes', () => {

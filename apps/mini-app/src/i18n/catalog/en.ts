@@ -14,6 +14,8 @@ export default {
     ok: 'OK',
     back: 'Back',
     soon: 'Coming soon',
+    players_one: '{n} player',
+    players_other: '{n} players',
   },
   home: {
     instantPlay: 'Instant Play',
@@ -144,7 +146,7 @@ export default {
     fee: 'fee',
     confirmStart: 'Start this tournament now?',
     toastRegistered: 'Registered!',
-    toastUnregistered: '↩️ Unregistered',
+    toastUnregistered: 'Unregistered',
     toastStarted: 'Started!',
     status: {
       scheduled: 'scheduled',
