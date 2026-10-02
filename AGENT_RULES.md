@@ -54,7 +54,9 @@ These are working and must not be modified without explicit approval:
 
 - Never invent files, endpoints, or test results.
 - Never claim something works unless verified.
-- Persian in UI is FORBIDDEN. Only English.
+- Hardcoded Persian (or any non-source) strings in UI are FORBIDDEN. All UI text is
+  English in source and comes from the i18n catalogs (`apps/mini-app/src/i18n/**`);
+  Persian/Arabic reach the UI only through the `fa`/`ar` catalogs at runtime.
 - Emoji in code is FORBIDDEN. (Allowed in user-facing Telegram strings.)
 - Every change must be verifiable with a specific command.
 - If something breaks, debug. Do not use placeholders.
