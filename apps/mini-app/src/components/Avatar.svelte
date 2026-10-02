@@ -51,7 +51,10 @@
           draggable="false"
         />
       {:else}
-        <div class="w-full h-full flex items-center justify-center" style="font-size: {fontSize}px;">
+        <div
+          class="w-full h-full flex items-center justify-center"
+          style="font-size: {fontSize}px;"
+        >
           {av.emoji}
         </div>
       {/if}
@@ -79,7 +82,10 @@
           draggable="false"
         />
       {:else}
-        <div class="w-full h-full flex items-center justify-center" style="font-size: {fontSize}px;">
+        <div
+          class="w-full h-full flex items-center justify-center"
+          style="font-size: {fontSize}px;"
+        >
           {av.emoji}
         </div>
       {/if}
@@ -88,7 +94,7 @@
 
   {#if showOnline}
     <span
-      class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 z-20"
+      class="absolute bottom-0 end-0 w-3 h-3 rounded-full border-2 z-20"
       style="background: #10b981; border-color: #05080f;"
     ></span>
   {/if}

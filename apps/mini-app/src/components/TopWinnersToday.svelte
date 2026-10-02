@@ -18,13 +18,13 @@
     <div class="flex items-center justify-between mb-2">
       <div class="flex items-center gap-2">
         <Icon name="trophy" size={14} color="#f4c95d" />
-        <p class="text-[11px] font-extrabold text-white/90 uppercase tracking-widest">
+        <p class="text-tiny font-extrabold text-white/90 uppercase tracking-widest">
           Top Winners · Today
         </p>
       </div>
       <button
         on:click={onSeeAll}
-        class="text-[10px] font-bold text-gold active:opacity-70 flex items-center gap-1"
+        class="text-mini font-bold text-gold active:opacity-70 flex items-center gap-1"
       >
         <span>See All</span>
         <Icon name="arrow-right" size={10} />
@@ -59,7 +59,7 @@
             {#if i < 3}
               <span>{MEDALS[i]}</span>
             {:else}
-              <span class="text-[10px] font-extrabold text-white/70">#{i + 1}</span>
+              <span class="text-mini font-extrabold text-white/70">#{i + 1}</span>
             {/if}
           </div>
 
@@ -76,14 +76,14 @@
             <p class="text-[12px] font-extrabold text-white truncate leading-tight">
               {w.displayName || 'Player'}
             </p>
-            <p class="text-[9px] text-white/40 font-bold leading-tight mt-0.5">
+            <p class="text-micro text-white/40 font-bold leading-tight mt-0.5">
               {w.wins}
               {w.wins === 1 ? 'win' : 'wins'} today
             </p>
           </div>
 
           <!-- Amount -->
-          <div class="text-right shrink-0">
+          <div class="text-end shrink-0">
             <p
               class="text-[14px] font-extrabold tabular-nums leading-none"
               style="

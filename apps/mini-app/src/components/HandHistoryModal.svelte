@@ -168,7 +168,7 @@
       {#if view === 'detail' && selectedHand}
         <button
           on:click={() => onReplay(selectedHand.id)}
-          class="px-3 py-1.5 rounded-xl text-[10px] font-extrabold active:scale-95 flex items-center gap-1"
+          class="px-3 py-1.5 rounded-xl text-mini font-extrabold active:scale-95 flex items-center gap-1"
           style="
             background: linear-gradient(180deg, #f4e5a8 0%, #d4af37 45%, #a87a15 100%);
             color: #0a0800;
@@ -207,7 +207,7 @@
         <div class="px-3 pt-3">
           <div class="relative">
             <span
-              class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none flex items-center"
+              class="absolute start-3 top-1/2 -translate-y-1/2 pointer-events-none flex items-center"
             >
               <Icon name="search" size={14} color="rgba(255,255,255,0.4)" />
             </span>
@@ -215,7 +215,7 @@
               type="text"
               bind:value={searchQuery}
               placeholder="Search hand # or table…"
-              class="w-full rounded-xl pl-9 pr-3 py-2.5 text-[12px] text-white outline-none"
+              class="w-full rounded-xl ps-9 pe-3 py-2.5 text-[12px] text-white outline-none"
               style="background: rgba(0,0,0,0.4); border: 1px solid rgba(212,175,55,0.18);"
             />
           </div>
@@ -226,7 +226,7 @@
           {#each [{ k: 'all', l: 'All' }, { k: 'won', l: 'Won' }, { k: 'lost', l: 'Lost' }, { k: 'real', l: 'Real' }, { k: 'free', l: 'Free' }] as f}
             <button
               on:click={() => (filter = f.k as any)}
-              class="shrink-0 px-3 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider"
+              class="shrink-0 px-3 py-1.5 rounded-full text-mini font-extrabold uppercase tracking-wider"
               style="
                 background: {filter === f.k
                 ? 'linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15)'
@@ -246,7 +246,7 @@
               <Icon name="receipt" size={48} color="rgba(212,175,55,0.3)" />
             </div>
             <p class="text-white/40 text-sm font-bold">No hands found</p>
-            <p class="text-white/30 text-[11px] mt-1">Play some hands to see your history</p>
+            <p class="text-white/30 text-tiny mt-1">Play some hands to see your history</p>
           </div>
         {:else}
           <div class="p-3 pt-1 space-y-2">
@@ -254,7 +254,7 @@
               {@const isWin = h.winners && h.winners.length > 0}
               <button
                 on:click={() => openHand(h)}
-                class="w-full text-left rounded-2xl p-3 active:scale-[0.99] transition relative overflow-hidden"
+                class="w-full text-start rounded-2xl p-3 active:scale-[0.99] transition relative overflow-hidden"
                 style="
                   background: linear-gradient(135deg, rgba(15,31,58,0.7), rgba(7,14,27,0.9));
                   border: 1px solid {isWin ? 'rgba(16,185,129,0.25)' : 'rgba(212,175,55,0.15)'};
@@ -262,13 +262,13 @@
               >
                 <!-- Left accent -->
                 <div
-                  class="absolute left-0 top-0 bottom-0 w-1"
+                  class="absolute start-0 top-0 bottom-0 w-1"
                   style="background: linear-gradient(180deg, {isWin ? '#10b981' : '#6b7280'}, {isWin
                     ? '#10b98166'
                     : '#6b728066'});"
                 ></div>
 
-                <div class="pl-2 flex items-center gap-3">
+                <div class="ps-2 flex items-center gap-3">
                   <!-- Status badge -->
                   <div
                     class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
@@ -289,7 +289,7 @@
                   <!-- Info -->
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-1.5 mb-0.5">
-                      <span class="text-[11px] font-extrabold text-white">Hand #{h.handNo}</span>
+                      <span class="text-tiny font-extrabold text-white">Hand #{h.handNo}</span>
                       <span
                         class="text-[8px] font-extrabold px-1.5 py-0.5 rounded-full tracking-wider"
                         style="
@@ -302,17 +302,17 @@
                         {h.mode === 'free' ? 'FREE' : 'REAL'}
                       </span>
                     </div>
-                    <p class="text-[10px] text-white/50">
+                    <p class="text-mini text-white/50">
                       {h.variant?.toUpperCase() || 'HOLDEM'} · {h.playerCount || 0} players
                     </p>
-                    <p class="text-[9px] text-white/30 font-mono mt-0.5">{fmtDate(h.startedAt)}</p>
+                    <p class="text-micro text-white/30 font-mono mt-0.5">{fmtDate(h.startedAt)}</p>
                   </div>
 
                   <!-- Pot -->
-                  <div class="text-right shrink-0">
+                  <div class="text-end shrink-0">
                     <p class="text-[13px] font-extrabold text-gold tabular-nums">${fmt(h.pot)}</p>
                     {#if h.rake > 0}
-                      <p class="text-[9px] text-white/40 tabular-nums">rake ${fmt(h.rake)}</p>
+                      <p class="text-micro text-white/40 tabular-nums">rake ${fmt(h.rake)}</p>
                     {/if}
                   </div>
                 </div>
@@ -329,7 +329,7 @@
           {#each [['summary', 'SUMMARY'], ['actions', 'ACTIONS'], ['results', 'RESULTS']] as [key, label]}
             <button
               on:click={() => (activeTab = key as any)}
-              class="flex-1 py-2.5 text-[10px] font-extrabold uppercase tracking-wider"
+              class="flex-1 py-2.5 text-mini font-extrabold uppercase tracking-wider"
               style="
                 color: {activeTab === key ? '#f4e5a8' : 'rgba(255,255,255,0.4)'};
                 border-bottom: 2px solid {activeTab === key ? '#d4af37' : 'transparent'};
@@ -348,17 +348,17 @@
                 class="rounded-2xl p-3"
                 style="background: rgba(15,31,58,0.7); border: 1px solid rgba(212,175,55,0.15);"
               >
-                <div class="text-[9px] uppercase tracking-widest text-gold/70 mb-2 font-bold">
+                <div class="text-micro uppercase tracking-widest text-gold/70 mb-2 font-bold">
                   Info
                 </div>
-                <div class="space-y-1.5 text-[11px] font-mono">
+                <div class="space-y-1.5 text-tiny font-mono">
                   <div class="flex justify-between">
                     <span class="text-white/40">Date</span>
                     <span class="text-white/85">{fmtDate(selectedHand.startedAt)}</span>
                   </div>
                   <div class="flex justify-between">
                     <span class="text-white/40">Table</span>
-                    <span class="text-white/85 truncate ml-2"
+                    <span class="text-white/85 truncate ms-2"
                       >{selectedDetail.hand.tableName || selectedHand.tableName}</span
                     >
                   </div>
@@ -384,14 +384,14 @@
                 "
               >
                 <div class="flex items-baseline justify-between mb-1">
-                  <span class="text-[10px] uppercase tracking-widest text-gold/80 font-bold"
+                  <span class="text-mini uppercase tracking-widest text-gold/80 font-bold"
                     >Total Pot</span
                   >
                   <span class="text-xl font-extrabold text-gold tabular-nums"
                     >${fmt(selectedHand.pot)}</span
                   >
                 </div>
-                <div class="flex justify-between text-[10px] text-white/50">
+                <div class="flex justify-between text-mini text-white/50">
                   <span>Rake</span>
                   <span class="tabular-nums">${fmt(selectedHand.rake)}</span>
                 </div>
@@ -403,7 +403,7 @@
                   class="rounded-2xl p-3"
                   style="background: rgba(15,31,58,0.7); border: 1px solid rgba(212,175,55,0.15);"
                 >
-                  <div class="text-[9px] uppercase tracking-widest text-gold/70 mb-2 font-bold">
+                  <div class="text-micro uppercase tracking-widest text-gold/70 mb-2 font-bold">
                     Board ({selectedDetail.hand.community.length}/5)
                   </div>
                   <div class="flex gap-1.5 justify-center py-1">
@@ -431,11 +431,11 @@
                 class="rounded-2xl p-3"
                 style="background: rgba(15,31,58,0.7); border: 1px solid rgba(212,175,55,0.15);"
               >
-                <div class="text-[9px] uppercase tracking-widest text-gold/70 mb-2 font-bold">
+                <div class="text-micro uppercase tracking-widest text-gold/70 mb-2 font-bold">
                   Players ({selectedDetail.hand.players?.length || 0})
                 </div>
                 {#if !selectedDetail.hand.players || selectedDetail.hand.players.length === 0}
-                  <p class="text-[11px] text-white/40">No player data</p>
+                  <p class="text-tiny text-white/40">No player data</p>
                 {:else}
                   <div class="space-y-1">
                     {#each selectedDetail.hand.players as p}
@@ -465,15 +465,15 @@
                               <span class="w-3"></span>
                             {/if}
                             <span
-                              class="text-[11px] font-bold"
+                              class="text-tiny font-bold"
                               style="color: {won ? '#f4e5a8' : 'rgba(255,255,255,0.75)'};"
                             >
                               {p.displayName}
                             </span>
-                            <span class="text-[9px] text-white/30 font-mono">S{p.seat}</span>
+                            <span class="text-micro text-white/30 font-mono">S{p.seat}</span>
                           </div>
                           <span
-                            class="text-[11px] font-mono tabular-nums"
+                            class="text-tiny font-mono tabular-nums"
                             style="color: {won ? '#d4af37' : 'rgba(255,255,255,0.6)'};"
                           >
                             ${fmt(p.stack)}
@@ -499,7 +499,7 @@
                             {/each}
                             {#if sp?.handName}
                               <span
-                                class="text-[9px] font-bold self-center ml-1"
+                                class="text-micro font-bold self-center ms-1"
                                 style="color: {won ? '#f4c95d' : 'rgba(255,255,255,0.5)'};"
                               >
                                 {sp.handName}
@@ -522,20 +522,20 @@
                     style="background: rgba(15,31,58,0.7); border: 1px solid rgba(212,175,55,0.15);"
                   >
                     <div
-                      class="text-[10px] uppercase tracking-widest text-gold/80 mb-2 font-bold flex items-center gap-2"
+                      class="text-mini uppercase tracking-widest text-gold/80 mb-2 font-bold flex items-center gap-2"
                     >
                       <span>{label}</span>
                       <span class="text-white/30 font-normal">· {actionsByStreet[key].length}</span>
                     </div>
                     <div class="space-y-1">
                       {#each actionsByStreet[key] as a}
-                        <div class="flex items-center justify-between text-[11px] py-1">
+                        <div class="flex items-center justify-between text-tiny py-1">
                           <span class="text-white/70 font-semibold truncate">
                             {a.displayName || `Seat ${a.seat}`}
                           </span>
                           <div class="flex items-center gap-2 shrink-0">
                             <span
-                              class="font-extrabold uppercase text-[10px] px-2 py-0.5 rounded-md"
+                              class="font-extrabold uppercase text-mini px-2 py-0.5 rounded-md"
                               style="
                                 background: {a.action === 'FOLD'
                                 ? 'rgba(239,68,68,0.15)'
@@ -584,7 +584,7 @@
                       <Icon name="trophy" size={16} color="#f4c95d" />
                       <span class="text-[13px] font-extrabold text-gold">{w.displayName}</span>
                     </div>
-                    <p class="text-[10px] text-white/60">
+                    <p class="text-mini text-white/60">
                       Winner · Seat {w.seat} · ${fmt(w.stack)}
                     </p>
                   </div>
@@ -594,7 +594,7 @@
                   class="rounded-2xl p-3 text-center"
                   style="background: linear-gradient(135deg, rgba(244,201,93,0.15), rgba(168,121,34,0.05)); border: 1px solid rgba(244,201,93,0.4);"
                 >
-                  <p class="text-[11px] text-white/70">
+                  <p class="text-tiny text-white/70">
                     Winners: Seats {selectedHand.winners.join(', ')}
                   </p>
                 </div>
@@ -604,10 +604,10 @@
                 class="rounded-2xl p-3"
                 style="background: rgba(15,31,58,0.7); border: 1px solid rgba(212,175,55,0.15);"
               >
-                <div class="text-[9px] uppercase tracking-widest text-gold/70 mb-2 font-bold">
+                <div class="text-micro uppercase tracking-widest text-gold/70 mb-2 font-bold">
                   Final
                 </div>
-                <div class="space-y-1.5 text-[11px] font-mono">
+                <div class="space-y-1.5 text-tiny font-mono">
                   <div class="flex justify-between">
                     <span class="text-white/40">Pot</span>
                     <span class="text-white/85 tabular-nums">${fmt(selectedHand.pot)}</span>

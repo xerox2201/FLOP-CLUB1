@@ -70,7 +70,7 @@
           class="h-px w-12"
           style="background: linear-gradient(to right, transparent, #d4af37);"
         ></div>
-        <p class="text-[10px] font-extrabold tracking-[0.4em] text-gold/90 uppercase">
+        <p class="text-mini font-extrabold tracking-[0.4em] text-gold/90 uppercase">
           Play · Compete · Win
         </p>
         <div
@@ -89,7 +89,7 @@
           style="background: linear-gradient(to right, transparent, rgba(212,175,55,0.7));"
         ></div>
         <p
-          class="text-[11px] font-extrabold tracking-[0.55em] uppercase"
+          class="text-tiny font-extrabold tracking-[0.55em] uppercase"
           style="
             color: #d4af37;
             text-shadow:
@@ -163,7 +163,7 @@
       </button>
 
       <p
-        class="text-[10px] text-white/60 mt-4 text-center leading-relaxed max-w-xs"
+        class="text-mini text-white/60 mt-4 text-center leading-relaxed max-w-xs"
         style="text-shadow: 0 1px 6px rgba(0,0,0,1);"
       >
         By entering, you agree to our<br />

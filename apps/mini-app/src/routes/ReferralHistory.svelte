@@ -124,13 +124,15 @@
     >
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <p class="text-[9px] text-white/45 uppercase font-bold mb-1">Lifetime</p>
+          <p class="text-micro text-white/45 uppercase font-bold mb-1">Lifetime</p>
           <p class="text-xl font-extrabold text-emerald-400 tabular-nums leading-none">
             ${fmt(total)}
           </p>
         </div>
-        <div style="border-left: 1px solid rgba(255,255,255,0.06); padding-left: 12px;">
-          <p class="text-[9px] text-white/45 uppercase font-bold mb-1">This Month</p>
+        <div
+          style="border-inline-start: 1px solid rgba(255,255,255,0.06); padding-inline-start: 12px;"
+        >
+          <p class="text-micro text-white/45 uppercase font-bold mb-1">This Month</p>
           <p class="text-xl font-extrabold text-emerald-400 tabular-nums leading-none">
             ${fmt(thisMonth)}
           </p>
@@ -144,7 +146,7 @@
     {#each FILTERS as f}
       <button
         on:click={() => setFilter(f.key)}
-        class="shrink-0 px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider active:scale-95 transition-all"
+        class="shrink-0 px-3 py-1.5 rounded-xl text-mini font-extrabold uppercase tracking-wider active:scale-95 transition-all"
         style="
           background: {filter === f.key
           ? `linear-gradient(180deg, ${f.color}, ${f.color}bb)`
@@ -170,8 +172,7 @@
       style="background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.35);"
     >
       <p class="text-sm text-red-300 font-bold">{error}</p>
-      <button on:click={() => load(true)} class="mt-2 text-[11px] text-gold font-bold">Retry</button
-      >
+      <button on:click={() => load(true)} class="mt-2 text-tiny text-gold font-bold">Retry</button>
     </div>
   {:else if entries.length === 0}
     <div
@@ -189,7 +190,7 @@
       <p class="text-sm font-extrabold text-white">
         No {filter === 'all' ? '' : filter + ' '}earnings yet
       </p>
-      <p class="text-[11px] text-white/50 mt-1">Activity will show up here in real time</p>
+      <p class="text-tiny text-white/50 mt-1">Activity will show up here in real time</p>
     </div>
   {:else}
     <div class="px-4 space-y-1.5">
@@ -210,13 +211,13 @@
             class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
             style="background: {sourceColor}20; border: 1px solid {sourceColor}50;"
           >
-            <span class="text-[10px] font-extrabold" style="color: {sourceColor};">
+            <span class="text-mini font-extrabold" style="color: {sourceColor};">
               L{e.level}
             </span>
           </div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-1.5">
-              <p class="text-[11px] font-extrabold text-white truncate">{e.refereeName}</p>
+              <p class="text-tiny font-extrabold text-white truncate">{e.refereeName}</p>
               <span
                 class="text-[8px] font-extrabold px-1.5 py-0.5 rounded-full uppercase tracking-wider"
                 style="background: {sourceColor}25; color: {sourceColor};"
@@ -224,11 +225,11 @@
                 {e.source}
               </span>
             </div>
-            <p class="text-[9px] text-white/45 mt-0.5">
+            <p class="text-micro text-white/45 mt-0.5">
               {Math.round(e.rate * 100)}% of ${fmt(e.rakeShare)} rake · {fmtDate(e.paidAt)}
             </p>
           </div>
-          <div class="text-right shrink-0">
+          <div class="text-end shrink-0">
             <p class="text-[12px] font-extrabold text-emerald-400 tabular-nums">
               +${fmt(e.amount)}
             </p>
@@ -240,7 +241,7 @@
         <button
           on:click={loadMore}
           disabled={loadingMore}
-          class="w-full mt-2 rounded-2xl py-3 text-[11px] font-extrabold active:scale-[0.98] disabled:opacity-50"
+          class="w-full mt-2 rounded-2xl py-3 text-tiny font-extrabold active:scale-[0.98] disabled:opacity-50"
           style="background: rgba(37,99,235,0.15); border: 1px solid rgba(37,99,235,0.4); color: #93c5fd;"
         >
           {loadingMore ? 'Loading…' : `Load more (${total - entries.length} left)`}

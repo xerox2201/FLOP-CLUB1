@@ -112,7 +112,7 @@
         >
           Rewards History
         </h1>
-        <p class="text-[11px] text-white/45 mt-1 font-bold">XP, rakeback and shop purchases</p>
+        <p class="text-tiny text-white/45 mt-1 font-bold">XP, rakeback and shop purchases</p>
       </div>
     </div>
   </div>
@@ -215,7 +215,7 @@
     {#each TABS as t}
       <button
         on:click={() => (tab = t.k)}
-        class="shrink-0 px-4 py-2 rounded-xl text-[11px] font-extrabold active:scale-95"
+        class="shrink-0 px-4 py-2 rounded-xl text-tiny font-extrabold active:scale-95"
         style="background: {tab === t.k
           ? 'linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15)'
           : 'rgba(15,31,58,0.7)'}; color: {tab === t.k
@@ -261,7 +261,7 @@
             <Icon name="star" size={22} color="#93c5fd" />
           </div>
           <p class="text-sm font-extrabold text-white">No XP transactions yet</p>
-          <p class="text-[11px] text-white/55 mt-1 font-bold">
+          <p class="text-tiny text-white/55 mt-1 font-bold">
             Play hands and claim bonuses to start earning XP
           </p>
         </div>
@@ -296,10 +296,10 @@
               />
             </div>
             <div class="flex-1 min-w-0">
-              <p class="text-[11px] font-extrabold text-white/90 capitalize truncate leading-tight">
+              <p class="text-tiny font-extrabold text-white/90 capitalize truncate leading-tight">
                 {tx.source}
               </p>
-              <p class="text-[9px] text-white/40 mt-0.5 font-bold truncate">
+              <p class="text-micro text-white/40 mt-0.5 font-bold truncate">
                 {fmtDate(tx.created_at)}
               </p>
             </div>
@@ -334,7 +334,7 @@
           <Icon name="gift" size={22} color="#f4c95d" />
         </div>
         <p class="text-sm font-extrabold text-white">Rakeback history</p>
-        <p class="text-[11px] text-white/55 mt-1 font-bold">coming soon (per-hand log)</p>
+        <p class="text-tiny text-white/55 mt-1 font-bold">coming soon (per-hand log)</p>
       </div>
     </div>
   {:else if purchases.length === 0}
@@ -358,7 +358,7 @@
           <Icon name="cart" size={22} color="#22d3ee" />
         </div>
         <p class="text-sm font-extrabold text-white">No purchases yet</p>
-        <p class="text-[11px] text-white/55 mt-1 font-bold">
+        <p class="text-tiny text-white/55 mt-1 font-bold">
           Chip packs and cosmetics you buy will appear here
         </p>
       </div>
@@ -390,7 +390,7 @@
               <p class="text-[12px] font-extrabold text-white capitalize truncate leading-tight">
                 {p.pack_id}
               </p>
-              <p class="text-[9px] text-white/40 mt-0.5 font-bold truncate">
+              <p class="text-micro text-white/40 mt-0.5 font-bold truncate">
                 {fmtDate(p.created_at)}
               </p>
             </div>
@@ -398,7 +398,7 @@
               ${formatAmount(p.usd_amount)}
             </p>
           </div>
-          <div class="flex flex-wrap gap-1.5 text-[9px] font-bold">
+          <div class="flex flex-wrap gap-1.5 text-micro font-bold">
             <span
               class="px-1.5 py-0.5 rounded-full"
               style="background: rgba(16,185,129,0.2); color: #6ee7b7;"

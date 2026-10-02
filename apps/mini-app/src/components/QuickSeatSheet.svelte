@@ -52,7 +52,7 @@
     on:click={onClose}
   ></button>
 
-  <div class="fixed bottom-0 left-0 right-0 z-50 max-w-[480px] mx-auto px-3 pb-3">
+  <div class="fixed bottom-0 start-0 end-0 z-50 max-w-[480px] mx-auto px-3 pb-3">
     <div
       class="rounded-3xl p-5"
       style="background: linear-gradient(180deg, rgba(16,26,58,0.98), rgba(8,13,36,0.98)); border: 1px solid rgba(37,99,235,0.35); box-shadow: 0 -8px 40px rgba(0,0,0,0.7); backdrop-filter: blur(20px);"
@@ -73,7 +73,7 @@
         </button>
       </div>
 
-      <p class="text-[10px] uppercase tracking-widest text-white/40 font-bold mb-2">
+      <p class="text-mini uppercase tracking-widest text-white/40 font-bold mb-2">
         {$t('quickSeat.variant')}
       </p>
       <div class="grid grid-cols-3 gap-2 mb-5">
@@ -93,7 +93,7 @@
         {/each}
       </div>
 
-      <p class="text-[10px] uppercase tracking-widest text-white/40 font-bold mb-2">
+      <p class="text-mini uppercase tracking-widest text-white/40 font-bold mb-2">
         {$t('quickSeat.mode')}
       </p>
       <div

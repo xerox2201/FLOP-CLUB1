@@ -103,7 +103,7 @@
         type="button"
         on:click={dismiss}
         aria-label="Dismiss"
-        class="absolute top-1.5 right-1.5 w-7 h-7 rounded-full flex items-center justify-center z-10 active:scale-90"
+        class="absolute top-1.5 end-1.5 w-7 h-7 rounded-full flex items-center justify-center z-10 active:scale-90"
         style="background: rgba(0,0,0,0.45);"
       >
         <Icon name="close" size={11} color="rgba(255,255,255,0.65)" />
@@ -112,7 +112,7 @@
       <button
         type="button"
         on:click={() => (expanded = !expanded)}
-        class="w-full text-left p-3.5 pr-12 flex items-center gap-3"
+        class="w-full text-start p-3.5 pe-12 flex items-center gap-3"
       >
         <div
           class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
@@ -124,8 +124,8 @@
           <Icon name="chat" size={18} color="#67e8f9" />
         </div>
         <div class="flex-1 min-w-0">
-          <p class="text-[11px] font-extrabold text-cyan-300 mb-0.5">Join the Flop Club</p>
-          <p class="text-[10px] text-white/60 leading-tight">
+          <p class="text-tiny font-extrabold text-cyan-300 mb-0.5">Join the Flop Club</p>
+          <p class="text-mini text-white/60 leading-tight">
             Announcements, chat & exclusive promos
           </p>
         </div>
@@ -143,7 +143,7 @@
             <button
               type="button"
               on:click={() => openLink(channelUrl())}
-              class="flex-1 rounded-xl py-2.5 text-[11px] font-extrabold active:scale-95 flex items-center justify-center gap-1.5"
+              class="flex-1 rounded-xl py-2.5 text-tiny font-extrabold active:scale-95 flex items-center justify-center gap-1.5"
               style="background: linear-gradient(180deg, #60a5fa, #2563eb); color: #ffffff; box-shadow: 0 2px 0 #1e40af;"
             >
               <Icon name="broadcast" size={12} color="#ffffff" />
@@ -154,7 +154,7 @@
             <button
               type="button"
               on:click={() => openLink(groupUrl())}
-              class="flex-1 rounded-xl py-2.5 text-[11px] font-extrabold active:scale-95 flex items-center justify-center gap-1.5"
+              class="flex-1 rounded-xl py-2.5 text-tiny font-extrabold active:scale-95 flex items-center justify-center gap-1.5"
               style="background: linear-gradient(180deg, #34d399, #059669); color: #04220f; box-shadow: 0 2px 0 #065f46;"
             >
               <Icon name="chat" size={12} color="#ffffff" />

@@ -111,7 +111,7 @@
       >
         My Tournaments
       </h1>
-      <p class="text-[10px] text-white/45 mt-1 font-bold">Your results, payouts and points</p>
+      <p class="text-mini text-white/45 mt-1 font-bold">Your results, payouts and points</p>
     </div>
 
     <div
@@ -146,7 +146,7 @@
           >
             <Icon name="tables" size={11} color="#60a5fa" />
           </div>
-          <span class="text-[9px] font-extrabold text-blue-300 uppercase tracking-wider">
+          <span class="text-micro font-extrabold text-blue-300 uppercase tracking-wider">
             Played
           </span>
         </div>
@@ -173,7 +173,7 @@
           >
             <Icon name="trophy" size={11} color="#f4c95d" />
           </div>
-          <span class="text-[9px] font-extrabold text-gold uppercase tracking-wider"> Wins </span>
+          <span class="text-micro font-extrabold text-gold uppercase tracking-wider"> Wins </span>
         </div>
         <p class="text-[18px] font-extrabold text-gold tabular-nums leading-none">
           {stats.wins}
@@ -198,7 +198,7 @@
           >
             <Icon name="star" size={11} color="#60a5fa" />
           </div>
-          <span class="text-[9px] font-extrabold text-blue-300 uppercase tracking-wider">
+          <span class="text-micro font-extrabold text-blue-300 uppercase tracking-wider">
             Points
           </span>
         </div>
@@ -221,17 +221,17 @@
       "
     >
       <div
-        class="absolute -top-12 -right-12 w-36 h-36 rounded-full opacity-20 pointer-events-none"
+        class="absolute -top-12 -end-12 w-36 h-36 rounded-full opacity-20 pointer-events-none"
         style="background: radial-gradient(circle, #10b981, transparent 70%);"
       ></div>
 
       <div class="flex items-center gap-2 mb-2 relative">
         <Icon name="trending-up" size={14} color="#6ee7b7" />
-        <p class="text-[10px] uppercase tracking-widest text-emerald-300/80 font-extrabold flex-1">
+        <p class="text-mini uppercase tracking-widest text-emerald-300/80 font-extrabold flex-1">
           Net Profit
         </p>
         <span
-          class="text-[10px] font-extrabold px-1.5 py-0.5 rounded-full tabular-nums"
+          class="text-mini font-extrabold px-1.5 py-0.5 rounded-full tabular-nums"
           style="background: rgba(0,0,0,0.35); color: {roiColor};"
         >
           ROI {stats.roi >= 0 ? '+' : ''}{stats.roi}%
@@ -254,19 +254,19 @@
         style="border-top: 1px solid rgba(16,185,129,0.2);"
       >
         <div>
-          <p class="text-[9px] text-white/40 uppercase font-bold tracking-wider">Won</p>
+          <p class="text-micro text-white/40 uppercase font-bold tracking-wider">Won</p>
           <p class="text-[12px] font-extrabold text-emerald-400 tabular-nums mt-0.5">
             ${fmt(stats.totalWon)}
           </p>
         </div>
         <div>
-          <p class="text-[9px] text-white/40 uppercase font-bold tracking-wider">Invested</p>
+          <p class="text-micro text-white/40 uppercase font-bold tracking-wider">Invested</p>
           <p class="text-[12px] font-extrabold text-white/70 tabular-nums mt-0.5">
             ${fmt(stats.totalInvested)}
           </p>
         </div>
         <div>
-          <p class="text-[9px] text-white/40 uppercase font-bold tracking-wider">ITM</p>
+          <p class="text-micro text-white/40 uppercase font-bold tracking-wider">ITM</p>
           <p class="text-[12px] font-extrabold text-cyan tabular-nums mt-0.5">
             {stats.itm} ({stats.itmPct}%)
           </p>
@@ -280,7 +280,7 @@
     {#each FILTERS as f}
       <button
         on:click={() => setFilter(f.key)}
-        class="px-3.5 py-2 rounded-xl text-[11px] font-extrabold whitespace-nowrap active:scale-95 transition-all uppercase tracking-wider"
+        class="px-3.5 py-2 rounded-xl text-tiny font-extrabold whitespace-nowrap active:scale-95 transition-all uppercase tracking-wider"
         style="background: {filter === f.key
           ? `linear-gradient(180deg, ${f.color}, ${f.color}bb)`
           : 'linear-gradient(180deg, rgba(15,31,58,0.7), rgba(11,19,36,0.9))'}; color: {filter ===
@@ -343,7 +343,7 @@
         <Icon name="ticket" size={28} color="#f4c95d" />
       </div>
       <p class="text-sm font-extrabold text-white">No tournaments yet</p>
-      <p class="text-[11px] text-white/55 mt-1 font-bold">Play a tournament to see it here</p>
+      <p class="text-tiny text-white/55 mt-1 font-bold">Play a tournament to see it here</p>
     </div>
   {:else}
     <div class="space-y-2">
@@ -360,27 +360,27 @@
           "
         >
           <div
-            class="absolute left-0 top-0 bottom-0 w-1"
+            class="absolute start-0 top-0 bottom-0 w-1"
             style="background: linear-gradient(180deg, {sc}, {sc}66);"
           ></div>
 
-          <div class="flex items-start justify-between gap-2 mb-2 pl-1.5">
+          <div class="flex items-start justify-between gap-2 mb-2 ps-1.5">
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-1.5 mb-1 flex-wrap">
                 <span
-                  class="text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider"
+                  class="text-micro font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider"
                   style="background: {sc}25; color: {sc}; border: 1px solid {sc}60;"
                 >
                   {statusLabel(t)}
                 </span>
                 {#if t.finalPosition}
-                  <span class="text-[9px] text-white/60 font-mono"
+                  <span class="text-micro text-white/60 font-mono"
                     >#{t.finalPosition}/{t.totalPlayers}</span
                   >
                 {/if}
               </div>
               <p class="text-[13px] font-extrabold text-white truncate">{t.name}</p>
-              <p class="text-[10px] text-white/40 mt-0.5">
+              <p class="text-mini text-white/40 mt-0.5">
                 {t.variant.toUpperCase()} · {t.format.toUpperCase()} · {t.buyIn > 0
                   ? `$${fmt(t.buyIn)}`
                   : 'FREE'}
@@ -388,7 +388,7 @@
                   · {t.reEntries} re-entry{/if}
               </p>
             </div>
-            <div class="text-right shrink-0">
+            <div class="text-end shrink-0">
               {#if t.payout > 0}
                 <p class="text-[13px] font-extrabold text-emerald-400 tabular-nums">
                   +${fmt(t.payout)}
@@ -397,14 +397,14 @@
               {#if t.points > 0}
                 <div class="flex items-center gap-1 justify-end mt-0.5">
                   <Icon name="star" size={9} color="#d4af37" />
-                  <p class="text-[10px] font-bold text-gold tabular-nums">+{t.points} pts</p>
+                  <p class="text-mini font-bold text-gold tabular-nums">+{t.points} pts</p>
                 </div>
               {/if}
             </div>
           </div>
 
           <div
-            class="pl-1.5 flex items-center justify-between text-[9px] text-white/40 font-mono pt-2"
+            class="ps-1.5 flex items-center justify-between text-micro text-white/40 font-mono pt-2"
             style="border-top: 1px solid rgba(255,255,255,0.06);"
           >
             <span class="flex items-center gap-1">

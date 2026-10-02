@@ -111,7 +111,7 @@
       <!-- UTC -->
       <div
         class="px-3 py-2.5 flex items-center gap-2.5"
-        style="border-right: 1px solid rgba(255,255,255,0.06);"
+        style="border-inline-end: 1px solid rgba(255,255,255,0.06);"
       >
         <div
           class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
@@ -121,7 +121,7 @@
         </div>
         <div class="min-w-0">
           <div class="flex items-center gap-1.5 mb-0.5">
-            <span class="text-[9px] font-extrabold text-blue-300 uppercase tracking-wider">
+            <span class="text-micro font-extrabold text-blue-300 uppercase tracking-wider">
               UTC
             </span>
             <span
@@ -132,7 +132,7 @@
           <p class="text-[15px] font-extrabold text-white tabular-nums leading-none tracking-tight">
             {utc.time}
           </p>
-          <p class="text-[9px] text-white/45 font-bold mt-0.5 truncate">{utc.date}</p>
+          <p class="text-micro text-white/45 font-bold mt-0.5 truncate">{utc.date}</p>
         </div>
       </div>
 
@@ -146,7 +146,7 @@
         </div>
         <div class="min-w-0">
           <div class="flex items-center gap-1.5 mb-0.5">
-            <span class="text-[9px] font-extrabold text-gold uppercase tracking-wider truncate">
+            <span class="text-micro font-extrabold text-gold uppercase tracking-wider truncate">
               {offsetLabel}
             </span>
             <span
@@ -157,7 +157,7 @@
           <p class="text-[15px] font-extrabold text-white tabular-nums leading-none tracking-tight">
             {local.time}
           </p>
-          <p class="text-[9px] text-white/45 font-bold mt-0.5 truncate">{local.date}</p>
+          <p class="text-micro text-white/45 font-bold mt-0.5 truncate">{local.date}</p>
         </div>
       </div>
     </div>
@@ -171,7 +171,7 @@
       "
     >
       <Icon name="calendar" size={9} color="rgba(255,255,255,0.35)" />
-      <span class="text-[9px] text-white/45 font-bold tracking-wide">
+      <span class="text-micro text-white/45 font-bold tracking-wide">
         {sameDate ? utc.date : `${utc.date} · ${local.date}`} · {utc.year}
       </span>
     </div>

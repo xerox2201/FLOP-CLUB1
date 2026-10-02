@@ -22,7 +22,7 @@
 
 <button
   on:click={onClick}
-  class="rounded-2xl active:scale-[0.97] transition-all text-left w-[160px] shrink-0 relative overflow-hidden"
+  class="rounded-2xl active:scale-[0.97] transition-all text-start w-[160px] shrink-0 relative overflow-hidden"
   style="
     background: linear-gradient(180deg, rgba(15,31,58,0.85) 0%, rgba(7,14,27,0.95) 100%);
     border: 1.5px solid {isFree ? 'rgba(16,185,129,0.3)' : 'rgba(212,175,55,0.35)'};
@@ -65,7 +65,7 @@
 
     <!-- Mode badge -->
     <span
-      class="absolute top-2 right-2 text-[8px] font-extrabold px-1.5 py-0.5 rounded-full tracking-wider"
+      class="absolute top-2 end-2 text-[8px] font-extrabold px-1.5 py-0.5 rounded-full tracking-wider"
       style="
         background: {isFree
         ? 'rgba(16,185,129,0.25)'
@@ -81,11 +81,11 @@
 
   <!-- Info -->
   <div class="p-2.5">
-    <p class="text-[11px] font-extrabold text-white truncate leading-tight">
+    <p class="text-tiny font-extrabold text-white truncate leading-tight">
       {variantLabel(table.variant)}
     </p>
 
-    <p class="text-[9px] text-white/55 font-mono mt-1 tabular-nums">
+    <p class="text-micro text-white/55 font-mono mt-1 tabular-nums">
       ${table.blinds?.sb ?? 0}/${table.blinds?.bb ?? 0}
     </p>
 
@@ -98,7 +98,7 @@
           box-shadow: 0 0 6px {accentColor};
         "
       ></span>
-      <span class="text-[9px] font-bold" style="color: {accentColor};">
+      <span class="text-micro font-bold" style="color: {accentColor};">
         {table.live_players ?? Math.floor(Math.random() * 4) + 1} playing
       </span>
     </div>

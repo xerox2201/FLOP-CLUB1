@@ -60,7 +60,7 @@
   {#if cardsAbove && displayCards.length > 0}
     <div class="cards-abs cards-above">
       {#each displayCards as c, i}
-        <div style="margin-left: {i > 0 ? -6 : 0}px; z-index: {i};">
+        <div style="margin-inline-start: {i > 0 ? -6 : 0}px; z-index: {i};">
           <PlayingCard rank={c.r} suit={suitChar(c.s)} size="xs" {faceDown} dim={player.folded} />
         </div>
       {/each}
@@ -151,7 +151,7 @@
   {#if !cardsAbove && displayCards.length > 0}
     <div class="cards-abs cards-below">
       {#each displayCards as c, i}
-        <div style="margin-left: {i > 0 ? -6 : 0}px; z-index: {i};">
+        <div style="margin-inline-start: {i > 0 ? -6 : 0}px; z-index: {i};">
           <PlayingCard rank={c.r} suit={suitChar(c.s)} size="xs" {faceDown} dim={player.folded} />
         </div>
       {/each}
@@ -263,7 +263,7 @@
     flex-direction: column;
     align-items: flex-start;
     justify-content: center;
-    margin-left: -8px;
+    margin-inline-start: -8px;
     padding: 2px 6px 2px 12px;
     border-radius: 6px;
     background: linear-gradient(180deg, rgba(8, 20, 40, 0.96), rgba(5, 12, 25, 0.98));
@@ -274,8 +274,8 @@
     z-index: 1;
   }
   .avatar-panel-row.flip .panel {
-    margin-left: 0;
-    margin-right: -8px;
+    margin-inline-start: 0;
+    margin-inline-end: -8px;
     padding: 2px 12px 2px 6px;
     align-items: flex-end;
   }

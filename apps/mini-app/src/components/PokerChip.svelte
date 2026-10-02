@@ -89,7 +89,7 @@
 
         {#if c.count > maxStack}
           <div
-            class="chip-count absolute -top-2 -right-2 rounded-full px-1.5 py-0.5 font-extrabold z-10"
+            class="chip-count absolute -top-2 -end-2 rounded-full px-1.5 py-0.5 font-extrabold z-10"
             style="font-size: {Math.max(7, c.disc * 0.36)}px;"
           >
             ×{c.count}

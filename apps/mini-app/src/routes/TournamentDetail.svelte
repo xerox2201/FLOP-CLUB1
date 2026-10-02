@@ -317,14 +317,14 @@
       {#if t}
         <div class="flex items-center gap-1.5 mt-0.5">
           <span
-            class="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full tracking-widest uppercase"
+            class="text-micro font-extrabold px-1.5 py-0.5 rounded-full tracking-widest uppercase"
             style="background: {statusColor(t.status)}25; color: {statusColor(
               t.status,
             )}; border: 1px solid {statusColor(t.status)}60;"
           >
             {statusLabel(t.status)}
           </span>
-          <button on:click={copyId} class="text-[9px] text-white/40 font-mono active:text-white/80">
+          <button on:click={copyId} class="text-micro text-white/40 font-mono active:text-white/80">
             #{t.id}
           </button>
         </div>
@@ -337,7 +337,7 @@
         style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.4);"
       >
         <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span class="text-[9px] font-extrabold text-emerald-300 uppercase tracking-wider">Live</span
+        <span class="text-micro font-extrabold text-emerald-300 uppercase tracking-wider">Live</span
         >
       </div>
     {/if}
@@ -365,11 +365,11 @@
       "
     >
       <div
-        class="absolute -top-12 -right-12 w-40 h-40 rounded-full opacity-20 pointer-events-none"
+        class="absolute -top-12 -end-12 w-40 h-40 rounded-full opacity-20 pointer-events-none"
         style="background: radial-gradient(circle, #f4c95d, transparent 70%);"
       ></div>
 
-      <p class="text-[10px] uppercase tracking-widest text-gold/80 font-bold mb-1 relative">
+      <p class="text-mini uppercase tracking-widest text-gold/80 font-bold mb-1 relative">
         Prize Pool
       </p>
       <div class="flex items-baseline gap-2 mb-2 relative">
@@ -388,7 +388,7 @@
       </div>
 
       {#if t.guaranteed > 0}
-        <div class="flex items-center gap-2 text-[10px] mb-3 relative">
+        <div class="flex items-center gap-2 text-mini mb-3 relative">
           <span class="text-white/60">
             Guaranteed <span class="text-white font-bold">${fmt(t.guaranteed)}</span>
           </span>
@@ -407,22 +407,22 @@
         style="border-top: 1px solid rgba(244,201,93,0.2);"
       >
         <div class="text-center">
-          <p class="text-[9px] text-white/40 uppercase font-bold mb-1">Players</p>
+          <p class="text-micro text-white/40 uppercase font-bold mb-1">Players</p>
           <p class="text-base font-extrabold text-white tabular-nums leading-none">
             {displayPlayerCount}<span class="text-white/40 text-xs">/{t.maxPlayers}</span>
           </p>
         </div>
         <div
           class="text-center"
-          style="border-left: 1px solid rgba(255,255,255,0.06); border-right: 1px solid rgba(255,255,255,0.06);"
+          style="border-inline-start: 1px solid rgba(255,255,255,0.06); border-inline-end: 1px solid rgba(255,255,255,0.06);"
         >
-          <p class="text-[9px] text-white/40 uppercase font-bold mb-1">Avg Stack</p>
+          <p class="text-micro text-white/40 uppercase font-bold mb-1">Avg Stack</p>
           <p class="text-base font-extrabold text-white tabular-nums leading-none">
             {avgStack > 0 ? fmtInt(avgStack) : '—'}
           </p>
         </div>
         <div class="text-center">
-          <p class="text-[9px] text-white/40 uppercase font-bold mb-1">Blinds</p>
+          <p class="text-micro text-white/40 uppercase font-bold mb-1">Blinds</p>
           <p class="text-base font-extrabold tabular-nums leading-none" style="color: #67e8f9;">
             {#if t.currentLevelData}
               {fmtInt(t.currentLevelData.sb)}/{fmtInt(t.currentLevelData.bb)}
@@ -448,14 +448,14 @@
           <div class="flex items-center gap-2">
             <span><Icon name={isPaused ? 'pause' : 'clock'} size={16} /></span>
             <p
-              class="text-[10px] uppercase tracking-widest font-extrabold"
+              class="text-mini uppercase tracking-widest font-extrabold"
               style="color: {isPaused ? '#fbbf24' : '#fb923c'};"
             >
               {isPaused ? 'Paused' : `Level ${currentLevel}`}
             </p>
           </div>
           {#if !isPaused}
-            <p class="text-[9px] text-white/40 font-bold">Next in</p>
+            <p class="text-micro text-white/40 font-bold">Next in</p>
           {/if}
         </div>
 
@@ -489,7 +489,7 @@
             ></div>
           </div>
         {:else}
-          <p class="text-center text-[11px] text-amber-300 font-bold mb-3">
+          <p class="text-center text-tiny text-amber-300 font-bold mb-3">
             Level will resume when tournament is resumed
           </p>
         {/if}
@@ -500,22 +500,22 @@
             style="border-top: 1px solid rgba(255,255,255,0.08);"
           >
             <div class="text-center">
-              <p class="text-[9px] text-white/40 uppercase font-bold mb-1">Small Blind</p>
+              <p class="text-micro text-white/40 uppercase font-bold mb-1">Small Blind</p>
               <p class="text-sm font-extrabold text-white tabular-nums">
                 {fmtInt(t.currentLevelData.sb)}
               </p>
             </div>
             <div
               class="text-center"
-              style="border-left: 1px solid rgba(255,255,255,0.06); border-right: 1px solid rgba(255,255,255,0.06);"
+              style="border-inline-start: 1px solid rgba(255,255,255,0.06); border-inline-end: 1px solid rgba(255,255,255,0.06);"
             >
-              <p class="text-[9px] text-white/40 uppercase font-bold mb-1">Big Blind</p>
+              <p class="text-micro text-white/40 uppercase font-bold mb-1">Big Blind</p>
               <p class="text-sm font-extrabold text-white tabular-nums">
                 {fmtInt(t.currentLevelData.bb)}
               </p>
             </div>
             <div class="text-center">
-              <p class="text-[9px] text-white/40 uppercase font-bold mb-1">Ante</p>
+              <p class="text-micro text-white/40 uppercase font-bold mb-1">Ante</p>
               <p class="text-sm font-extrabold text-white tabular-nums">
                 {t.currentLevelData.ante > 0 ? fmtInt(t.currentLevelData.ante) : '—'}
               </p>
@@ -527,10 +527,10 @@
               class="mt-3 pt-2 text-center"
               style="border-top: 1px solid rgba(255,255,255,0.06);"
             >
-              <p class="text-[9px] text-white/40 uppercase tracking-wider font-bold">
+              <p class="text-micro text-white/40 uppercase tracking-wider font-bold">
                 Next · L{t.nextLevelData.level}
               </p>
-              <p class="text-[11px] font-extrabold text-white/70 tabular-nums mt-0.5">
+              <p class="text-tiny font-extrabold text-white/70 tabular-nums mt-0.5">
                 {fmtInt(t.nextLevelData.sb)}/{fmtInt(t.nextLevelData.bb)}
                 {#if t.nextLevelData.ante > 0}
                   <span class="text-white/50">+a{fmtInt(t.nextLevelData.ante)}</span>
@@ -557,13 +557,13 @@
         <div class="flex items-center gap-2 mb-3">
           <span><Icon name={ye.isRegistered ? 'success' : 'target'} size={18} /></span>
           <p
-            class="text-[10px] uppercase tracking-widest font-extrabold flex-1"
+            class="text-mini uppercase tracking-widest font-extrabold flex-1"
             style="color: {ye.isRegistered ? '#6ee7b7' : '#60a5fa'};"
           >
             Your Status
           </p>
           <span
-            class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+            class="text-micro font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
             style="background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.7);"
           >
             {ye.entryStatus}
@@ -573,20 +573,20 @@
         {#if ye.isRegistered}
           <div class="grid grid-cols-3 gap-2 mb-3">
             <div class="text-center">
-              <p class="text-[9px] text-white/40 uppercase font-bold mb-1">Seat</p>
+              <p class="text-micro text-white/40 uppercase font-bold mb-1">Seat</p>
               <p class="text-base font-extrabold text-white tabular-nums">{ye.seat ?? '—'}</p>
             </div>
             <div
               class="text-center"
-              style="border-left: 1px solid rgba(255,255,255,0.06); border-right: 1px solid rgba(255,255,255,0.06);"
+              style="border-inline-start: 1px solid rgba(255,255,255,0.06); border-inline-end: 1px solid rgba(255,255,255,0.06);"
             >
-              <p class="text-[9px] text-white/40 uppercase font-bold mb-1">Stack</p>
+              <p class="text-micro text-white/40 uppercase font-bold mb-1">Stack</p>
               <p class="text-base font-extrabold text-gold tabular-nums">
                 {ye.stack != null ? `$${fmtInt(ye.stack)}` : '—'}
               </p>
             </div>
             <div class="text-center">
-              <p class="text-[9px] text-white/40 uppercase font-bold mb-1">Table</p>
+              <p class="text-micro text-white/40 uppercase font-bold mb-1">Table</p>
               <p class="text-base font-extrabold text-white tabular-nums">
                 {ye.tableNumber ?? '—'}
               </p>
@@ -647,7 +647,7 @@
             >
               {#if (ye.rebuyCount ?? 0) > 0}
                 <div class="text-center">
-                  <p class="text-[9px] text-white/40 uppercase font-bold mb-1">Rebuys</p>
+                  <p class="text-micro text-white/40 uppercase font-bold mb-1">Rebuys</p>
                   <p class="text-base font-extrabold text-white tabular-nums">
                     {ye.rebuyCount}
                     {#if t.maxRebuys > 0}
@@ -658,7 +658,7 @@
               {/if}
               {#if ye.hasAddon}
                 <div class="text-center">
-                  <p class="text-[9px] text-white/40 uppercase font-bold mb-1">Addon</p>
+                  <p class="text-micro text-white/40 uppercase font-bold mb-1">Addon</p>
                   <p class="text-base font-extrabold text-emerald-400">
                     <Icon name="check" size={12} color="#34d399" />
                   </p>
@@ -671,11 +671,11 @@
             class="rounded-xl p-3 text-center mb-3"
             style="background: rgba(107,114,128,0.15); border: 1px solid rgba(107,114,128,0.3);"
           >
-            <p class="text-[11px] text-white/60 font-bold">
+            <p class="text-tiny text-white/60 font-bold">
               Eliminated {ye.finalPosition ? `· #${ye.finalPosition}` : ''}
             </p>
             {#if ye.payoutAmount > 0}
-              <p class="text-[11px] text-emerald-400 font-extrabold mt-1">
+              <p class="text-tiny text-emerald-400 font-extrabold mt-1">
                 Won ${fmt(ye.payoutAmount)}
               </p>
             {/if}
@@ -721,13 +721,13 @@
       >
         <div class="flex items-center gap-2 mb-3">
           <span><Icon name="trophy" size={18} /></span>
-          <p class="text-[10px] uppercase tracking-widest font-extrabold text-gold/80 flex-1">
+          <p class="text-mini uppercase tracking-widest font-extrabold text-gold/80 flex-1">
             Payouts
           </p>
         </div>
         <div class="space-y-1.5">
           {#each t.payouts as po}
-            <div class="flex items-center justify-between text-[11px] py-1">
+            <div class="flex items-center justify-between text-tiny py-1">
               <span class="font-bold text-white/80">
                 {po.position === 1
                   ? '1st'
@@ -741,7 +741,7 @@
                 <span class="text-white/50 font-mono tabular-nums">
                   {(po.percentage * 100).toFixed(1)}%
                 </span>
-                <span class="text-gold font-extrabold tabular-nums min-w-[68px] text-right">
+                <span class="text-gold font-extrabold tabular-nums min-w-[68px] text-end">
                   ${fmt(po.amount)}
                 </span>
               </div>
@@ -759,7 +759,7 @@
       >
         <div class="flex items-center gap-2 mb-3">
           <span><Icon name="users" size={18} /></span>
-          <p class="text-[10px] uppercase tracking-widest font-extrabold text-gold/80 flex-1">
+          <p class="text-mini uppercase tracking-widest font-extrabold text-gold/80 flex-1">
             Players ({allPlayers.length})
           </p>
         </div>
@@ -780,7 +780,7 @@
               "
             >
               <div
-                class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-[11px]"
+                class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-tiny"
                 style="
                   background: {isWinner
                   ? 'linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15)'
@@ -824,7 +824,7 @@
                     </span>
                   {/if}
                 </div>
-                <p class="text-[9px] text-white/40 font-mono">
+                <p class="text-micro text-white/40 font-mono">
                   {p.seat != null ? `Seat ${p.seat}` : ''}
                   {#if p.finalPosition}
                     · Finished #{p.finalPosition}
@@ -832,7 +832,7 @@
                 </p>
               </div>
 
-              <div class="text-right shrink-0">
+              <div class="text-end shrink-0">
                 <p
                   class="text-[12px] font-extrabold tabular-nums"
                   style="color: {isElim ? 'rgba(255,255,255,0.3)' : '#d4af37'};"
@@ -854,7 +854,7 @@
                 "
               >
                 <div
-                  class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-[11px] font-extrabold"
+                  class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-tiny font-extrabold"
                   style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.7);"
                 >
                   #{allPlayers.indexOf(selfPlayer) + 1}
@@ -875,11 +875,11 @@
                       YOU
                     </span>
                   </div>
-                  <p class="text-[9px] text-white/40 font-mono">
+                  <p class="text-micro text-white/40 font-mono">
                     {selfPlayer.seat != null ? `Seat ${selfPlayer.seat}` : ''}
                   </p>
                 </div>
-                <div class="text-right shrink-0">
+                <div class="text-end shrink-0">
                   <p class="text-[12px] font-extrabold text-gold tabular-nums">
                     ${fmtInt(selfPlayer.stack)}
                   </p>
@@ -903,11 +903,11 @@
         >
           <span><Icon name="chart" size={18} /></span>
           <p
-            class="text-[10px] uppercase tracking-widest font-extrabold text-gold/80 flex-1 text-left"
+            class="text-mini uppercase tracking-widest font-extrabold text-gold/80 flex-1 text-start"
           >
             Blind Structure
           </p>
-          <span class="text-[10px] font-bold text-white/50">
+          <span class="text-mini font-bold text-white/50">
             {expandBlinds ? 'Collapse' : 'Expand'}
           </span>
           <svg
@@ -940,7 +940,7 @@
               "
             >
               <span
-                class="text-[10px] font-extrabold font-mono w-8 shrink-0"
+                class="text-mini font-extrabold font-mono w-8 shrink-0"
                 style="color: {isCurrent
                   ? '#fb923c'
                   : isPast
@@ -951,12 +951,12 @@
               </span>
 
               {#if b.isBreak}
-                <span class="text-[10px] font-bold text-cyan-300 flex-1">
+                <span class="text-mini font-bold text-cyan-300 flex-1">
                   Break · {Math.round(b.durationSec / 60)}min
                 </span>
               {:else}
                 <span
-                  class="text-[11px] font-extrabold tabular-nums shrink-0"
+                  class="text-tiny font-extrabold tabular-nums shrink-0"
                   style="color: {isCurrent
                     ? '#fb923c'
                     : 'rgba(255,255,255,0.85)'}; min-width: 78px;"
@@ -964,12 +964,12 @@
                   {fmtInt(b.sb)}/{fmtInt(b.bb)}
                 </span>
                 <span
-                  class="text-[9px] text-white/40 font-mono shrink-0 tabular-nums"
+                  class="text-micro text-white/40 font-mono shrink-0 tabular-nums"
                   style="min-width: 42px;"
                 >
                   {b.ante > 0 ? `a${fmtInt(b.ante)}` : '—'}
                 </span>
-                <span class="text-[9px] text-white/40 shrink-0 flex-1">
+                <span class="text-micro text-white/40 shrink-0 flex-1">
                   {Math.round(b.durationSec / 60)}min
                 </span>
               {/if}
@@ -989,7 +989,7 @@
           {/each}
 
           {#if !expandBlinds && allBlinds.length > 5 && currentLevel > 3}
-            <p class="text-center text-[9px] text-white/30 pt-1">
+            <p class="text-center text-micro text-white/30 pt-1">
               Showing L{Math.max(1, currentLevel - 2)}–L{currentLevel + 2} of {allBlinds.length}
             </p>
           {/if}
@@ -999,7 +999,7 @@
 
     <!-- INFO -->
     <div
-      class="rounded-2xl p-3.5 mb-3 space-y-2 text-[11px] font-mono"
+      class="rounded-2xl p-3.5 mb-3 space-y-2 text-tiny font-mono"
       style="background: linear-gradient(180deg, rgba(15,31,58,0.6), rgba(7,14,27,0.9)); border: 1px solid rgba(212,175,55,0.12);"
     >
       <div class="flex justify-between">
@@ -1086,7 +1086,7 @@
           <Icon name="refresh" size={48} />
         </div>
         <h2 class="text-lg font-extrabold text-white">Confirm Rebuy</h2>
-        <p class="text-[11px] text-white/50 mt-1">
+        <p class="text-tiny text-white/50 mt-1">
           Top up your stack by {t.rebuyStack > 0 ? fmtInt(t.rebuyStack) : fmtInt(t.startingStack)} chips
         </p>
       </div>
@@ -1094,11 +1094,11 @@
         class="rounded-2xl p-3 mb-4 space-y-1.5"
         style="background: rgba(0,0,0,0.4); border: 1px solid rgba(59,130,246,0.3);"
       >
-        <div class="flex justify-between text-[11px]">
+        <div class="flex justify-between text-tiny">
           <span class="text-white/50">Current Stack</span>
           <span class="text-white/85 font-extrabold tabular-nums">{fmtInt(ye.stack ?? 0)}</span>
         </div>
-        <div class="flex justify-between text-[11px]">
+        <div class="flex justify-between text-tiny">
           <span class="text-white/50">Rebuy Stack</span>
           <span class="text-emerald-400 font-extrabold tabular-nums">
             +{fmtInt(t.rebuyStack > 0 ? t.rebuyStack : t.startingStack)}
@@ -1106,7 +1106,7 @@
         </div>
         {#if t.rebuyAmount > 0}
           <div
-            class="flex justify-between text-[11px] pt-2"
+            class="flex justify-between text-tiny pt-2"
             style="border-top: 1px solid rgba(255,255,255,0.06);"
           >
             <span class="text-white/50">Cost</span>
@@ -1153,7 +1153,7 @@
           <Icon name="gift" size={48} />
         </div>
         <h2 class="text-lg font-extrabold text-white">Confirm Addon</h2>
-        <p class="text-[11px] text-white/50 mt-1">
+        <p class="text-tiny text-white/50 mt-1">
           One-time stack top-up available at level {t.addonAtLevel}
         </p>
       </div>
@@ -1161,11 +1161,11 @@
         class="rounded-2xl p-3 mb-4 space-y-1.5"
         style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.3);"
       >
-        <div class="flex justify-between text-[11px]">
+        <div class="flex justify-between text-tiny">
           <span class="text-white/50">Current Stack</span>
           <span class="text-white/85 font-extrabold tabular-nums">{fmtInt(ye.stack ?? 0)}</span>
         </div>
-        <div class="flex justify-between text-[11px]">
+        <div class="flex justify-between text-tiny">
           <span class="text-white/50">Addon Stack</span>
           <span class="text-emerald-400 font-extrabold tabular-nums">
             +{fmtInt(t.addonStack > 0 ? t.addonStack : t.startingStack)}
@@ -1173,7 +1173,7 @@
         </div>
         {#if t.addonAmount > 0}
           <div
-            class="flex justify-between text-[11px] pt-2"
+            class="flex justify-between text-tiny pt-2"
             style="border-top: 1px solid rgba(255,255,255,0.06);"
           >
             <span class="text-white/50">Cost</span>

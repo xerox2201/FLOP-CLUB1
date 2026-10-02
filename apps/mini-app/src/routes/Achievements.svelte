@@ -167,14 +167,14 @@
       >
         Achievements
       </h1>
-      <p class="text-[10px] text-white/45 mt-1.5 font-bold">
+      <p class="text-mini text-white/45 mt-1.5 font-bold">
         Collect badges, claim your chip rewards
       </p>
     </div>
 
     {#if claimableCount > 0}
       <span
-        class="text-[10px] font-extrabold px-2.5 py-1 rounded-full shrink-0"
+        class="text-mini font-extrabold px-2.5 py-1 rounded-full shrink-0"
         style="
           background: linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15);
           color: #0a0800;
@@ -227,10 +227,10 @@
           </div>
         </div>
         <p class="text-sm font-extrabold text-red-300">{error}</p>
-        <p class="text-[10px] text-white/45 mt-1 font-bold">Could not load your achievements</p>
+        <p class="text-mini text-white/45 mt-1 font-bold">Could not load your achievements</p>
         <button
           on:click={load}
-          class="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-extrabold active:scale-95 transition"
+          class="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-tiny font-extrabold active:scale-95 transition"
           style="
             background: linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15);
             color: #0a0800;
@@ -266,7 +266,7 @@
           </div>
         </div>
         <p class="text-sm font-extrabold text-white">No achievements yet</p>
-        <p class="text-[11px] text-white/55 mt-1 font-bold">
+        <p class="text-tiny text-white/55 mt-1 font-bold">
           Play hands and tournaments to start earning badges
         </p>
       </div>
@@ -291,15 +291,15 @@
           >
             <Icon name="success" size={12} color="#6ee7b7" />
           </div>
-          <span class="text-[9px] font-extrabold text-emerald-300 uppercase tracking-wider">
+          <span class="text-micro font-extrabold text-emerald-300 uppercase tracking-wider">
             Unlocked
           </span>
         </div>
         <p class="text-[17px] font-extrabold text-white tabular-nums leading-none">
           {unlockedCount}
-          <span class="text-[11px] text-white/40 font-bold">/ {totalCount}</span>
+          <span class="text-tiny text-white/40 font-bold">/ {totalCount}</span>
         </p>
-        <p class="text-[9px] text-white/45 mt-1 font-bold">
+        <p class="text-micro text-white/45 mt-1 font-bold">
           {inProgressCount} in progress
         </p>
       </div>
@@ -321,7 +321,7 @@
           >
             <Icon name="gift" size={12} color="#f4c95d" />
           </div>
-          <span class="text-[9px] font-extrabold text-gold uppercase tracking-wider">
+          <span class="text-micro font-extrabold text-gold uppercase tracking-wider">
             Claimable
           </span>
         </div>
@@ -331,7 +331,7 @@
         >
           {claimableCount}
         </p>
-        <p class="text-[9px] text-white/45 mt-1 font-bold">
+        <p class="text-micro text-white/45 mt-1 font-bold">
           {claimableCount > 0 ? 'Ready to collect' : 'Nothing pending'}
         </p>
       </div>
@@ -360,10 +360,10 @@
             <Icon name="trending-up" size={15} color="#93c5fd" />
           </div>
           <div class="flex-1 min-w-0">
-            <p class="text-[10px] uppercase tracking-widest font-extrabold text-blue-300">
+            <p class="text-mini uppercase tracking-widest font-extrabold text-blue-300">
               Collection Progress
             </p>
-            <p class="text-[9px] text-white/45 font-bold">
+            <p class="text-micro text-white/45 font-bold">
               {unlockedCount} of {totalCount} badges unlocked
             </p>
           </div>
@@ -390,7 +390,7 @@
       {#each CATEGORIES as c}
         <button
           on:click={() => (activeFilter = c.key)}
-          class="shrink-0 px-3.5 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider active:scale-95 transition"
+          class="shrink-0 px-3.5 py-1.5 rounded-full text-mini font-extrabold uppercase tracking-wider active:scale-95 transition"
           style="
             background: {activeFilter === c.key
             ? 'linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15)'
@@ -428,7 +428,7 @@
         >
           {#if a.unlocked}
             <div
-              class="absolute -top-8 -right-8 w-24 h-24 rounded-full opacity-20 pointer-events-none"
+              class="absolute -top-8 -end-8 w-24 h-24 rounded-full opacity-20 pointer-events-none"
               style="background: radial-gradient(circle, #f4c95d, transparent 70%);"
             ></div>
           {/if}
@@ -490,7 +490,7 @@
                 {/if}
               </div>
 
-              <p class="text-[10px] text-white/50 leading-snug mt-0.5">{a.description}</p>
+              <p class="text-mini text-white/50 leading-snug mt-0.5">{a.description}</p>
 
               <div class="flex items-center gap-1.5 mt-1.5">
                 <span
@@ -501,7 +501,7 @@
                 </span>
                 {#if a.unlocked && a.rewardChips > 0}
                   <span
-                    class="inline-flex items-center gap-1 text-[9px] text-gold font-bold shrink-0"
+                    class="inline-flex items-center gap-1 text-micro text-gold font-bold shrink-0"
                   >
                     <Icon name="coin" size={10} color="#f4c95d" />
                     <span class="tabular-nums">+{a.rewardChips}</span>
@@ -509,7 +509,7 @@
                 {/if}
                 {#if a.unlocked && a.rewardUsd > 0}
                   <span
-                    class="inline-flex items-center gap-1 text-[9px] text-gold font-bold shrink-0"
+                    class="inline-flex items-center gap-1 text-micro text-gold font-bold shrink-0"
                   >
                     <Icon name="dollar" size={10} color="#f4c95d" />
                     <span class="tabular-nums">+{a.rewardUsd}</span>
@@ -532,22 +532,22 @@
                       "
                     ></div>
                   </div>
-                  <span class="text-[9px] font-mono text-white/50 tabular-nums shrink-0">
+                  <span class="text-micro font-mono text-white/50 tabular-nums shrink-0">
                     {a.progress}/{a.threshold}
                   </span>
                 </div>
               {:else if a.unlocked}
                 <div class="mt-1.5 flex items-center gap-1.5">
                   <Icon name="success" size={11} color="#6ee7b7" />
-                  <span class="text-[9px] text-emerald-400 font-bold">Unlocked</span>
+                  <span class="text-micro text-emerald-400 font-bold">Unlocked</span>
                   {#if a.claimed}
-                    <span class="text-[9px] text-white/40 font-bold">Claimed</span>
+                    <span class="text-micro text-white/40 font-bold">Claimed</span>
                   {/if}
                 </div>
               {:else}
                 <div class="mt-1.5 flex items-center gap-1.5">
                   <Icon name="target" size={10} color="rgba(255,255,255,0.35)" />
-                  <span class="text-[9px] text-white/35 font-mono">
+                  <span class="text-micro text-white/35 font-mono">
                     Target: {a.threshold}
                   </span>
                 </div>
@@ -560,7 +560,7 @@
                 <button
                   on:click={() => claim(a.code)}
                   disabled={claiming === a.code}
-                  class="rounded-xl px-3 py-2 text-[10px] font-extrabold uppercase tracking-wider disabled:opacity-40 active:scale-95 transition"
+                  class="rounded-xl px-3 py-2 text-mini font-extrabold uppercase tracking-wider disabled:opacity-40 active:scale-95 transition"
                   style="
                     background: linear-gradient(180deg, #f4e5a8 0%, #d4af37 45%, #a87a15 100%);
                     color: #0a0800;
@@ -608,7 +608,7 @@
             </div>
           </div>
           <p class="text-[13px] font-extrabold text-white/70">No achievements in this category</p>
-          <p class="text-[10px] text-white/40 mt-1 font-bold">
+          <p class="text-mini text-white/40 mt-1 font-bold">
             Try another filter to see more badges
           </p>
         </div>

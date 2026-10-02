@@ -128,7 +128,7 @@
   ></button>
 
   <div
-    class="fixed bottom-0 left-0 right-0 z-[100] max-w-[480px] mx-auto rounded-t-3xl flex flex-col"
+    class="fixed bottom-0 start-0 end-0 z-[100] max-w-[480px] mx-auto rounded-t-3xl flex flex-col"
     style="
       height: 78vh;
       background: linear-gradient(180deg, rgba(15,31,58,0.99), rgba(7,14,27,1));
@@ -176,7 +176,7 @@
             <Icon name="chat" size={26} color="#d4af37" />
           </div>
           <p class="text-white/50 text-sm font-bold">No messages yet</p>
-          <p class="text-white/35 text-[11px] mt-1">Say hi to your opponents</p>
+          <p class="text-white/35 text-tiny mt-1">Say hi to your opponents</p>
         </div>
       {:else}
         {#each messages as m (m.id)}
@@ -194,7 +194,7 @@
             </div>
             <div class="max-w-[75%] {isMine ? 'items-end' : 'items-start'} flex flex-col">
               <p
-                class="text-[9px] font-bold mb-0.5 {isMine ? 'text-right' : ''}"
+                class="text-micro font-bold mb-0.5 {isMine ? 'text-end' : ''}"
                 style="color: {isMine ? '#f4e5a8' : 'rgba(255,255,255,0.5)'};"
               >
                 {isMine ? 'You' : m.displayName}
@@ -225,7 +225,7 @@
     {#if errorMsg}
       <div class="px-3 pb-1">
         <div
-          class="rounded-xl px-3 py-1.5 text-center text-[10px] font-bold"
+          class="rounded-xl px-3 py-1.5 text-center text-mini font-bold"
           style="background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); color: #fca5a5;"
         >
           {errorMsg}
@@ -240,7 +240,7 @@
           <button
             on:click={() => sendMessage(q)}
             disabled={sending}
-            class="shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold active:scale-95 transition disabled:opacity-40"
+            class="shrink-0 px-3 py-1.5 rounded-full text-mini font-bold active:scale-95 transition disabled:opacity-40"
             style="
               background: rgba(212,175,55,0.12);
               border: 1px solid rgba(212,175,55,0.3);

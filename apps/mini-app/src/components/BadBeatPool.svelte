@@ -43,7 +43,7 @@
 {#if !loading}
   <div class="px-4 mb-4">
     <div
-      class="w-full rounded-2xl p-4 text-left relative overflow-hidden"
+      class="w-full rounded-2xl p-4 text-start relative overflow-hidden"
       style="
         background:
           radial-gradient(ellipse at 100% 0%, rgba(239,68,68,0.18) 0%, transparent 55%),
@@ -54,7 +54,7 @@
       "
     >
       <div
-        class="absolute -top-10 -right-10 w-32 h-32 rounded-full opacity-20 pointer-events-none"
+        class="absolute -top-10 -end-10 w-32 h-32 rounded-full opacity-20 pointer-events-none"
         style="background: radial-gradient(circle, #ef4444, transparent 70%);"
       ></div>
 
@@ -70,10 +70,10 @@
           <Icon name="fire" size={20} color="#fca5a5" />
         </div>
         <div class="flex-1 min-w-0">
-          <p class="text-[9px] uppercase tracking-[0.3em] font-extrabold" style="color: #f4c95d;">
+          <p class="text-micro uppercase tracking-[0.3em] font-extrabold" style="color: #f4c95d;">
             BAD BEAT JACKPOT
           </p>
-          <p class="text-[10px] text-white/50 font-bold mt-0.5">
+          <p class="text-mini text-white/50 font-bold mt-0.5">
             Lose with quads or better and get paid
           </p>
         </div>
@@ -92,7 +92,7 @@
         >
           {fmt(pool)}
         </span>
-        <span class="text-[10px] uppercase tracking-wider text-white/40 font-bold">
+        <span class="text-mini uppercase tracking-wider text-white/40 font-bold">
           in the pool
         </span>
       </div>
@@ -102,22 +102,22 @@
         style="border-top: 1px solid rgba(244,201,93,0.2);"
       >
         <div class="min-w-0">
-          <p class="text-[9px] uppercase tracking-wider text-white/40 font-bold">Last payout</p>
+          <p class="text-micro uppercase tracking-wider text-white/40 font-bold">Last payout</p>
           {#if lastPayout}
-            <p class="text-[11px] font-extrabold text-white truncate">
+            <p class="text-tiny font-extrabold text-white truncate">
               {fmt(lastPayout.amountUsd)}
               <span class="text-white/40 font-bold">
                 · {shortName(lastPayout.displayName)}
               </span>
             </p>
           {:else}
-            <p class="text-[11px] font-bold text-white/50">No payouts yet</p>
+            <p class="text-tiny font-bold text-white/50">No payouts yet</p>
           {/if}
         </div>
 
-        <div class="text-right shrink-0">
-          <p class="text-[9px] uppercase tracking-wider text-white/40 font-bold">Paid all time</p>
-          <p class="text-[11px] font-extrabold tabular-nums" style="color: #6ee7b7;">
+        <div class="text-end shrink-0">
+          <p class="text-micro uppercase tracking-wider text-white/40 font-bold">Paid all time</p>
+          <p class="text-tiny font-extrabold tabular-nums" style="color: #6ee7b7;">
             {fmt(totalPaid)}
           </p>
         </div>

@@ -42,7 +42,7 @@
   <div class="px-4 mb-4">
     <button
       on:click={onOpen}
-      class="w-full rounded-2xl p-3.5 text-left relative overflow-hidden active:scale-[0.98] transition-all"
+      class="w-full rounded-2xl p-3.5 text-start relative overflow-hidden active:scale-[0.98] transition-all"
       style="
         background:
           radial-gradient(ellipse at 100% 0%, {tierColor}15 0%, transparent 60%),
@@ -63,9 +63,7 @@
           <span class="text-base leading-none">{tierIcon}</span>
         </div>
         <div class="flex-1 min-w-0">
-          <p
-            class="text-[10px] text-white/45 uppercase tracking-widest font-bold leading-none mb-1"
-          >
+          <p class="text-mini text-white/45 uppercase tracking-widest font-bold leading-none mb-1">
             Your Progress
           </p>
           <p class="text-[13px] font-extrabold text-white leading-none">
@@ -74,8 +72,8 @@
             <span style="color: {tierColor};">{tierLabel}</span>
           </p>
         </div>
-        <div class="text-right shrink-0">
-          <p class="text-[9px] text-white/40 uppercase tracking-wider font-bold leading-none mb-1">
+        <div class="text-end shrink-0">
+          <p class="text-micro text-white/40 uppercase tracking-wider font-bold leading-none mb-1">
             Rakeback
           </p>
           <p
@@ -90,10 +88,10 @@
       <!-- XP bar -->
       <div class="mb-2">
         <div class="flex justify-between items-center mb-1">
-          <span class="text-[9px] text-white/50 font-bold uppercase tracking-wider">
+          <span class="text-micro text-white/50 font-bold uppercase tracking-wider">
             XP · Level {level}
           </span>
-          <span class="text-[9px] text-white/60 font-bold tabular-nums">
+          <span class="text-micro text-white/60 font-bold tabular-nums">
             {xpInto.toLocaleString()} / {xpNext.toLocaleString()}
           </span>
         </div>
@@ -115,10 +113,10 @@
       <!-- Tier bar -->
       <div>
         <div class="flex justify-between items-center mb-1">
-          <span class="text-[9px] text-white/50 font-bold uppercase tracking-wider">
+          <span class="text-micro text-white/50 font-bold uppercase tracking-wider">
             Tier Progress
           </span>
-          <span class="text-[9px] font-bold tabular-nums" style="color: {tierColor};">
+          <span class="text-micro font-bold tabular-nums" style="color: {tierColor};">
             {progressToNextTier}%
           </span>
         </div>
@@ -139,7 +137,7 @@
 
       <!-- Footer hint -->
       <div class="flex items-center justify-end gap-1 mt-2.5">
-        <span class="text-[9px] font-extrabold" style="color: {tierColor};"> View details </span>
+        <span class="text-micro font-extrabold" style="color: {tierColor};"> View details </span>
         <Icon name="arrow-right" size={10} color={tierColor} />
       </div>
     </button>
@@ -149,7 +147,7 @@
       <button
         type="button"
         on:click={onOpenMoney}
-        class="w-full mt-2 rounded-2xl p-3 relative overflow-hidden active:scale-[0.98] transition-all text-left"
+        class="w-full mt-2 rounded-2xl p-3 relative overflow-hidden active:scale-[0.98] transition-all text-start"
         style="
           background:
             radial-gradient(ellipse at 100% 0%, rgba(16,185,129,0.15) 0%, transparent 60%),
@@ -166,16 +164,16 @@
           </div>
           <div class="flex-1 min-w-0">
             <p
-              class="text-[9px] uppercase tracking-widest font-extrabold text-emerald-300/80 mb-0.5"
+              class="text-micro uppercase tracking-widest font-extrabold text-emerald-300/80 mb-0.5"
             >
               Your Money · 30d
             </p>
-            <p class="text-[11px] font-extrabold text-white/90 tabular-nums leading-tight">
+            <p class="text-tiny font-extrabold text-white/90 tabular-nums leading-tight">
               Rake ${fmt(money.rakePaid, 2)} →
               <span class="text-emerald-400">Back ${fmt(money.totalReturned, 2)}</span>
             </p>
           </div>
-          <div class="text-right shrink-0">
+          <div class="text-end shrink-0">
             <p class="text-[14px] font-extrabold text-emerald-400 tabular-nums leading-none">
               {fmtPct(money.returnPct)}
             </p>

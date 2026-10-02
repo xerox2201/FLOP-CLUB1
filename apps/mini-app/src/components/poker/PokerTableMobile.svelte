@@ -309,7 +309,7 @@
           class="rounded-full px-3 py-1"
           style="background: rgba(0,0,0,0.85); border: 1px solid rgba(244,201,93,0.5); box-shadow: 0 4px 12px rgba(0,0,0,0.7);"
         >
-          <span class="text-[9px] font-extrabold text-gold tracking-widest uppercase">
+          <span class="text-micro font-extrabold text-gold tracking-widest uppercase">
             {tournamentTitle}
           </span>
         </div>
@@ -336,7 +336,7 @@
           {#if winnerPlayer.handName && handResult?.showdownPlayers?.filter((p: any) => p.hole?.length > 0).length > 1}
             <div class="flex items-center justify-center gap-1 mb-1.5">
               <div class="h-px w-3" style="background: rgba(212,175,55,0.5);"></div>
-              <p class="text-[10px] text-gold font-extrabold uppercase tracking-wider">
+              <p class="text-mini text-gold font-extrabold uppercase tracking-wider">
                 {winnerPlayer.handName}
               </p>
               <div class="h-px w-3" style="background: rgba(212,175,55,0.5);"></div>
@@ -353,7 +353,7 @@
 
     <!-- ========== HAND COMPARISON ========== -->
     {#if handResult?.showdownPlayers && handResult.showdownPlayers.length > 1 && winners.length > 0 && handResult.showdownPlayers.filter((p: any) => p.hole?.length > 0).length > 1}
-      <div class="absolute top-[1%] right-[2%] z-[65] comparison-panel">
+      <div class="absolute top-[1%] end-[2%] z-[65] comparison-panel">
         <div
           class="rounded-lg p-1 space-y-0.5"
           style="background: rgba(5,8,15,0.94); border: 1px solid rgba(212,175,55,0.35); backdrop-filter: blur(10px); min-width: 108px;"
@@ -377,7 +377,7 @@
                   : shortName(allSeats.find((s: any) => s.seat === p.seat)?.displayName ?? '?')}
               </span>
               <span
-                class="text-[6px] font-mono ml-1 shrink-0"
+                class="text-[6px] font-mono ms-1 shrink-0"
                 style="color: {p.isWinner ? '#d4af37' : 'rgba(255,255,255,0.4)'};"
                 >{p.handName}</span
               >
@@ -396,7 +396,7 @@
         >
           {#each sidePots as pot}
             <div
-              class="rounded-full pl-1.5 pr-2 py-0.5 flex items-center gap-1"
+              class="rounded-full ps-1.5 pe-2 py-0.5 flex items-center gap-1"
               style="background: rgba(0,0,0,0.92); border: 1.5px solid {pot.type === 'main'
                 ? '#d4af37'
                 : '#3b82f6'};"

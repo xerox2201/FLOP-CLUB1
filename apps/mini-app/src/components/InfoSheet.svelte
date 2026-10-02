@@ -16,7 +16,7 @@
   ></button>
 
   <div
-    class="fixed bottom-0 left-0 right-0 z-[100] mx-auto flex flex-col rounded-t-3xl sheet-in"
+    class="fixed bottom-0 start-0 end-0 z-[100] mx-auto flex flex-col rounded-t-3xl sheet-in"
     style="
       max-width: 520px;
       max-height: 70vh;

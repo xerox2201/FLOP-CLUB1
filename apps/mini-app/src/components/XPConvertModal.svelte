@@ -84,7 +84,7 @@
         class="rounded-xl p-3 mb-4"
         style="background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4);"
       >
-        <p class="text-[11px] text-amber-300 font-bold flex items-center gap-1">
+        <p class="text-tiny text-amber-300 font-bold flex items-center gap-1">
           <Icon name="warning" size={12} color="#fcd34d" />
           <span>Level 5 مورد نیازه (الان Level {level})</span>
         </p>
@@ -94,7 +94,7 @@
         class="rounded-xl p-3 mb-4"
         style="background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4);"
       >
-        <p class="text-[11px] text-amber-300 font-bold flex items-center gap-1">
+        <p class="text-tiny text-amber-300 font-bold flex items-center gap-1">
           <Icon name="warning" size={12} color="#fcd34d" />
           <span>حداقل ۵۰۰۰ XP برای برداشت لازمه (الان {availableXp.toLocaleString()} XP)</span>
         </p>
@@ -105,7 +105,7 @@
       class="rounded-2xl p-4 mb-4"
       style="background: rgba(0,0,0,0.4); border: 1px solid rgba(37,99,235,0.3);"
     >
-      <p class="text-[10px] text-white/40 uppercase tracking-wider font-bold mb-2">Amount (XP)</p>
+      <p class="text-mini text-white/40 uppercase tracking-wider font-bold mb-2">Amount (XP)</p>
       <div class="flex items-center gap-2">
         <input
           type="number"
@@ -115,9 +115,9 @@
           max={maxXp}
           class="flex-1 bg-transparent text-2xl font-extrabold text-white tabular-nums outline-none"
         />
-        <span class="text-[11px] text-white/40">XP</span>
+        <span class="text-tiny text-white/40">XP</span>
       </div>
-      <p class="text-[11px] text-white/50 mt-2">
+      <p class="text-tiny text-white/50 mt-2">
         = <span class="font-extrabold text-emerald-400">${usdValue}</span>
       </p>
     </div>
@@ -126,14 +126,14 @@
       {#each [{ p: 0.25, l: '25%' }, { p: 0.5, l: '50%' }, { p: 1, l: 'MAX' }] as o}
         <button
           on:click={() => setPreset(o.p)}
-          class="rounded-xl py-2 text-[11px] font-extrabold active:scale-95"
+          class="rounded-xl py-2 text-tiny font-extrabold active:scale-95"
           style="background: rgba(37,99,235,0.15); border: 1px solid rgba(37,99,235,0.4); color: #93c5fd;"
           >{o.l}</button
         >
       {/each}
     </div>
 
-    <p class="text-[10px] text-white/40 mb-3 text-center leading-relaxed">
+    <p class="text-mini text-white/40 mb-3 text-center leading-relaxed">
       Min 5,000 XP · Max 50,000 XP/month · Once per 24h<br />
       <Icon name="alert" size={12} color="#f59e0b" /> Level change نمی‌کنه (XP از lifetime حساب می‌شه)
     </p>
@@ -158,7 +158,7 @@
         style="background: linear-gradient(180deg, #60a5fa, #6d28d9); color: white; box-shadow: 0 3px 0 #4c1d95;"
         >{busy ? 'Processing…' : `Convert ${amount.toLocaleString()} XP`}</button
       >
-      {#if error}<p class="text-[11px] text-red-300 text-center mt-3">{error}</p>{/if}
+      {#if error}<p class="text-tiny text-red-300 text-center mt-3">{error}</p>{/if}
     {/if}
   </div>
 {/if}

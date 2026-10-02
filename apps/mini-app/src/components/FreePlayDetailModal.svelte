@@ -55,7 +55,7 @@
         class="rounded-2xl p-3 text-center"
         style="background: rgba(0,0,0,0.4); border: 1px solid rgba(16,185,129,0.25);"
       >
-        <p class="text-[9px] text-white/40 uppercase tracking-wider font-bold mb-1">Hands Played</p>
+        <p class="text-micro text-white/40 uppercase tracking-wider font-bold mb-1">Hands Played</p>
         <p class="text-xl font-extrabold text-white tabular-nums">
           {stats.free_hands.toLocaleString()}
         </p>
@@ -64,7 +64,7 @@
         class="rounded-2xl p-3 text-center"
         style="background: rgba(0,0,0,0.4); border: 1px solid rgba(16,185,129,0.25);"
       >
-        <p class="text-[9px] text-white/40 uppercase tracking-wider font-bold mb-1">Hands Won</p>
+        <p class="text-micro text-white/40 uppercase tracking-wider font-bold mb-1">Hands Won</p>
         <p class="text-xl font-extrabold text-emerald-400 tabular-nums">
           {stats.free_hands_won.toLocaleString()}
         </p>
@@ -73,14 +73,14 @@
         class="rounded-2xl p-3 text-center"
         style="background: rgba(0,0,0,0.4); border: 1px solid rgba(16,185,129,0.25);"
       >
-        <p class="text-[9px] text-white/40 uppercase tracking-wider font-bold mb-1">Chips Now</p>
+        <p class="text-micro text-white/40 uppercase tracking-wider font-bold mb-1">Chips Now</p>
         <p class="text-xl font-extrabold text-gold tabular-nums">{fmtChips(stats.chips)}</p>
       </div>
       <div
         class="rounded-2xl p-3 text-center"
         style="background: rgba(0,0,0,0.4); border: 1px solid rgba(16,185,129,0.25);"
       >
-        <p class="text-[9px] text-white/40 uppercase tracking-wider font-bold mb-1">Total Won</p>
+        <p class="text-micro text-white/40 uppercase tracking-wider font-bold mb-1">Total Won</p>
         <p class="text-xl font-extrabold text-emerald-400 tabular-nums">
           {fmtChips(stats.free_won)}
         </p>
@@ -91,13 +91,13 @@
       class="mt-3 rounded-2xl p-3 text-center"
       style="background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.05)); border: 1px solid rgba(16,185,129,0.3);"
     >
-      <p class="text-[9px] text-emerald-300/80 uppercase tracking-wider font-bold mb-1">
+      <p class="text-micro text-emerald-300/80 uppercase tracking-wider font-bold mb-1">
         Free Win Rate
       </p>
       <p class="text-2xl font-extrabold text-emerald-400 tabular-nums">{winRate}%</p>
     </div>
 
-    <p class="text-[10px] text-white/40 text-center mt-3 leading-relaxed">
+    <p class="text-mini text-white/40 text-center mt-3 leading-relaxed">
       Free chips have no cash value.<br />Play unlimited hands — no risk.
     </p>
   </div>

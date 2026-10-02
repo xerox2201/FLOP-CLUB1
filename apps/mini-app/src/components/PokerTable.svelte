@@ -272,7 +272,7 @@
           class="rounded-full px-3 py-1"
           style="background: rgba(0,0,0,0.85); border: 1px solid rgba(244,201,93,0.5); box-shadow: 0 4px 12px rgba(0,0,0,0.7);"
         >
-          <span class="text-[10px] font-extrabold text-gold tracking-widest uppercase">
+          <span class="text-mini font-extrabold text-gold tracking-widest uppercase">
             {tournamentTitle}
           </span>
         </div>
@@ -295,14 +295,14 @@
           style="background: linear-gradient(180deg, rgba(8,13,36,0.99), rgba(5,8,15,0.99)); border: 2px solid #d4af37; box-shadow: 0 8px 24px rgba(0,0,0,0.9);"
         >
           <Icon name="trophy" size={16} color="#f4c95d" />
-          <span class="text-[11px] uppercase tracking-[0.2em] text-gold font-extrabold">
+          <span class="text-tiny uppercase tracking-[0.2em] text-gold font-extrabold">
             {winners.length > 1 ? 'Winners' : 'Winner'}
           </span>
           <span class="text-[13px] font-extrabold text-white leading-none">
             {winnerDisplayName}
           </span>
           {#if winnerHandName && winnerShowedDown}
-            <span class="text-[10px] font-bold text-gold/90 uppercase tracking-wider">
+            <span class="text-mini font-bold text-gold/90 uppercase tracking-wider">
               {winnerHandName}
             </span>
           {/if}
@@ -356,8 +356,8 @@
         >
           <div
             class="rounded-full {compact
-              ? 'pl-1 pr-3 py-0.5'
-              : 'pl-1.5 pr-3.5 py-0.5'} flex items-center gap-2 pot-display"
+              ? 'ps-1 pe-3 py-0.5'
+              : 'ps-1.5 pe-3.5 py-0.5'} flex items-center gap-2 pot-display"
             style="background: rgba(0,0,0,0.92); border: 1.5px solid #f4c95d; box-shadow: 0 4px 16px rgba(0,0,0,0.9), 0 0 16px rgba(244,201,93,0.25);"
           >
             <PokerChip amount={totalPot} size={SZ.potChipSize} />
@@ -588,8 +588,8 @@
           >
             <div
               class="flex items-center gap-1.5 rounded-full {compact
-                ? 'pl-1 pr-2 py-0.5'
-                : 'pl-1.5 pr-2.5 py-0.5'}"
+                ? 'ps-1 pe-2 py-0.5'
+                : 'ps-1.5 pe-2.5 py-0.5'}"
               style="background: rgba(0,0,0,0.92); border: 1.5px solid rgba(244,201,93,0.55);"
             >
               <PokerChip amount={betAmount} size={SZ.betChipSize} />

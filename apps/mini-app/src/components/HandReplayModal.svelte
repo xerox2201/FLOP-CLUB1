@@ -265,7 +265,7 @@
 
       {#if replay?.hand}
         <span
-          class="text-[10px] font-mono px-2 py-1 rounded-md"
+          class="text-mini font-mono px-2 py-1 rounded-md"
           style="background: rgba(0,0,0,0.4); color: rgba(255,255,255,0.6);"
         >
           #{replay.hand.hand_no}
@@ -348,7 +348,7 @@
                   <span class="text-[8px] uppercase tracking-widest font-extrabold text-white/70"
                     >POT</span
                   >
-                  <span class="text-[11px] font-extrabold text-gold tabular-nums"
+                  <span class="text-tiny font-extrabold text-gold tabular-nums"
                     >${fmt(currentState.pot)}</span
                   >
                 </div>
@@ -415,12 +415,12 @@
                   "
                 >
                   <p
-                    class="text-[9px] font-extrabold text-black leading-none whitespace-nowrap max-w-[72px] overflow-hidden text-ellipsis"
+                    class="text-micro font-extrabold text-black leading-none whitespace-nowrap max-w-[72px] overflow-hidden text-ellipsis"
                   >
                     {p.displayName}
                   </p>
                   <p
-                    class="text-[9px] font-extrabold leading-tight tabular-nums"
+                    class="text-micro font-extrabold leading-tight tabular-nums"
                     style="color: #a87a15;"
                   >
                     ${fmt(p.stack)}
@@ -457,7 +457,7 @@
                   style="left: {pos.x}%; top: {pos.y - 14}%;"
                 >
                   <div
-                    class="rounded-full px-2.5 py-1 text-[10px] font-extrabold whitespace-nowrap shadow-lg"
+                    class="rounded-full px-2.5 py-1 text-mini font-extrabold whitespace-nowrap shadow-lg"
                     style="
                       background: linear-gradient(135deg, #3b82f6, #1d4ed8);
                       color: white;
@@ -480,7 +480,7 @@
       <div class="px-3 py-3 shrink-0" style="border-top: 1px solid rgba(212,175,55,0.15);">
         <!-- Progress -->
         <div class="flex items-center gap-2 mb-3">
-          <span class="text-[10px] font-mono text-white/50 tabular-nums shrink-0">
+          <span class="text-mini font-mono text-white/50 tabular-nums shrink-0">
             {step + 1}/{states.length}
           </span>
           <input
@@ -498,7 +498,7 @@
             }}
           />
           <span
-            class="text-[10px] font-mono text-gold tabular-nums shrink-0 uppercase font-extrabold"
+            class="text-mini font-mono text-gold tabular-nums shrink-0 uppercase font-extrabold"
           >
             {currentStreet}
           </span>
@@ -514,7 +514,7 @@
             {#each [1, 2, 4] as s}
               <button
                 on:click={() => setSpeed(s)}
-                class="w-8 h-8 text-[10px] font-extrabold transition"
+                class="w-8 h-8 text-mini font-extrabold transition"
                 style="
                   background: {speed === s
                   ? 'linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15)'
@@ -572,7 +572,7 @@
           {#each [['preflop', 'PREFLOP'], ['flop', 'FLOP'], ['turn', 'TURN'], ['river', 'RIVER']] as [key, label]}
             <button
               on:click={() => goToStreet(key)}
-              class="flex-1 py-2 rounded-xl text-[9px] font-extrabold uppercase tracking-wider transition"
+              class="flex-1 py-2 rounded-xl text-micro font-extrabold uppercase tracking-wider transition"
               style="
                 background: {currentStreet === key
                 ? 'linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15)'

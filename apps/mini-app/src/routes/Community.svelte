@@ -104,7 +104,7 @@
       style="background: radial-gradient(ellipse at 100% 0%, rgba(37,99,235,0.15) 0%, transparent 60%), linear-gradient(180deg, rgba(15,31,58,0.85), rgba(7,14,27,0.95)); border: 1px solid rgba(37,99,235,0.35);"
     >
       <p class="text-[12px] font-extrabold text-blue-200 mb-1">Join the Flop Club</p>
-      <p class="text-[10px] text-white/60 leading-relaxed">
+      <p class="text-mini text-white/60 leading-relaxed">
         Get announcements, chat with players, and share hands. Our community is on Telegram.
       </p>
     </div>
@@ -122,7 +122,7 @@
       style="background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.35);"
     >
       <p class="text-sm text-red-300 font-bold">{error}</p>
-      <button on:click={load} class="mt-2 text-[11px] text-gold font-bold">Retry</button>
+      <button on:click={load} class="mt-2 text-tiny text-gold font-bold">Retry</button>
     </div>
   {:else}
     <!-- Channel -->
@@ -157,9 +157,9 @@
                 </span>
               {/if}
             </div>
-            <p class="text-[10px] text-white/50 mt-0.5">Official announcements</p>
+            <p class="text-mini text-white/50 mt-0.5">Official announcements</p>
             {#if community.channel?.member_count > 0}
-              <p class="text-[9px] text-blue-300 mt-1 font-bold">
+              <p class="text-micro text-blue-300 mt-1 font-bold">
                 {community.channel.member_count.toLocaleString()} subscribers
               </p>
             {/if}
@@ -188,7 +188,7 @@
           </button>
         {:else}
           <div
-            class="rounded-xl py-3 text-center text-[11px] font-bold text-white/40"
+            class="rounded-xl py-3 text-center text-tiny font-bold text-white/40"
             style="background: rgba(0,0,0,0.3); border: 1px dashed rgba(96,165,250,0.25);"
           >
             Channel coming soon
@@ -229,9 +229,9 @@
                 </span>
               {/if}
             </div>
-            <p class="text-[10px] text-white/50 mt-0.5">Player chat & community</p>
+            <p class="text-mini text-white/50 mt-0.5">Player chat & community</p>
             {#if community.group?.member_count > 0}
-              <p class="text-[9px] text-blue-300 mt-1 font-bold">
+              <p class="text-micro text-blue-300 mt-1 font-bold">
                 {community.group.member_count.toLocaleString()} members
               </p>
             {/if}
@@ -260,7 +260,7 @@
           </button>
         {:else}
           <div
-            class="rounded-xl py-3 text-center text-[11px] font-bold text-white/40"
+            class="rounded-xl py-3 text-center text-tiny font-bold text-white/40"
             style="background: rgba(0,0,0,0.3); border: 1px dashed rgba(37,99,235,0.25);"
           >
             Chat coming soon
@@ -273,7 +273,7 @@
     <div class="px-4 mb-3">
       <button
         on:click={load}
-        class="w-full rounded-2xl py-3 text-[11px] font-extrabold active:scale-[0.98] flex items-center justify-center gap-2"
+        class="w-full rounded-2xl py-3 text-tiny font-extrabold active:scale-[0.98] flex items-center justify-center gap-2"
         style="background: rgba(15,31,58,0.7); border: 1px solid rgba(212,175,55,0.2); color: rgba(255,255,255,0.7);"
       >
         <Icon name="refresh" size={14} color="rgba(255,255,255,0.7)" />
@@ -283,7 +283,7 @@
 
     <!-- Benefits -->
     <div class="px-4 mb-3">
-      <p class="text-[10px] uppercase tracking-widest font-extrabold text-gold/80 mb-2 px-1">
+      <p class="text-mini uppercase tracking-widest font-extrabold text-gold/80 mb-2 px-1">
         Why Join?
       </p>
       <div
@@ -303,7 +303,7 @@
             </div>
             <div class="flex-1 min-w-0">
               <p class="text-[12px] font-bold text-white/90">{b.label}</p>
-              <p class="text-[10px] text-white/45 mt-0.5">{b.sub}</p>
+              <p class="text-mini text-white/45 mt-0.5">{b.sub}</p>
             </div>
           </div>
         {/each}

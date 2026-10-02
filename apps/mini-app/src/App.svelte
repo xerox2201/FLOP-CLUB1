@@ -336,7 +336,7 @@
 <style>
   @media (min-width: 1024px) {
     :global(main.with-side) {
-      margin-left: 240px;
+      margin-inline-start: 240px;
     }
   }
   @media (max-width: 1023px) {

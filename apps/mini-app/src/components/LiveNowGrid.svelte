@@ -16,7 +16,7 @@
         class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"
         style="box-shadow: 0 0 8px #ef4444;"
       ></span>
-      <p class="text-[11px] font-extrabold text-white/90 uppercase tracking-widest">Live Now</p>
+      <p class="text-tiny font-extrabold text-white/90 uppercase tracking-widest">Live Now</p>
     </div>
 
     <div class="grid grid-cols-2 gap-2">
@@ -24,7 +24,7 @@
       <button
         on:click={onTables}
         disabled={activeTables === 0}
-        class="rounded-2xl p-3 text-left relative overflow-hidden transition-all active:scale-[0.97] {activeTables ===
+        class="rounded-2xl p-3 text-start relative overflow-hidden transition-all active:scale-[0.97] {activeTables ===
         0
           ? 'opacity-40'
           : ''}"
@@ -38,17 +38,17 @@
       >
         <div class="flex items-center gap-2 mb-1.5">
           <Icon name="tables" size={16} />
-          <span class="text-[9px] font-extrabold text-emerald-300 uppercase tracking-wider">
+          <span class="text-micro font-extrabold text-emerald-300 uppercase tracking-wider">
             Tables
           </span>
         </div>
         <p class="text-2xl font-extrabold text-white leading-none tabular-nums">
           {activeTables}
         </p>
-        <p class="text-[9px] text-white/50 mt-1 font-bold">running now</p>
+        <p class="text-micro text-white/50 mt-1 font-bold">running now</p>
         {#if activeTables > 0}
           <div class="flex items-center gap-1 mt-1.5">
-            <span class="text-[9px] font-extrabold text-emerald-300">Play</span>
+            <span class="text-micro font-extrabold text-emerald-300">Play</span>
             <Icon name="arrow-right" size={10} color="#6ee7b7" />
           </div>
         {/if}
@@ -58,7 +58,7 @@
       <button
         on:click={onTournaments}
         disabled={activeTournaments === 0}
-        class="rounded-2xl p-3 text-left relative overflow-hidden transition-all active:scale-[0.97] {activeTournaments ===
+        class="rounded-2xl p-3 text-start relative overflow-hidden transition-all active:scale-[0.97] {activeTournaments ===
         0
           ? 'opacity-40'
           : ''}"
@@ -72,17 +72,17 @@
       >
         <div class="flex items-center gap-2 mb-1.5">
           <Icon name="trophy" size={16} color="#f4c95d" />
-          <span class="text-[9px] font-extrabold text-gold uppercase tracking-wider">
+          <span class="text-micro font-extrabold text-gold uppercase tracking-wider">
             Tourneys
           </span>
         </div>
         <p class="text-2xl font-extrabold text-white leading-none tabular-nums">
           {activeTournaments}
         </p>
-        <p class="text-[9px] text-white/50 mt-1 font-bold">live events</p>
+        <p class="text-micro text-white/50 mt-1 font-bold">live events</p>
         {#if activeTournaments > 0}
           <div class="flex items-center gap-1 mt-1.5">
-            <span class="text-[9px] font-extrabold text-gold">View</span>
+            <span class="text-micro font-extrabold text-gold">View</span>
             <Icon name="arrow-right" size={10} color="#f4c95d" />
           </div>
         {/if}

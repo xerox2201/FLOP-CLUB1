@@ -90,7 +90,7 @@
       style="background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.35);"
     >
       <p class="text-sm text-red-300 font-bold">{error}</p>
-      <button on:click={load} class="mt-2 text-[11px] text-gold font-bold">Retry</button>
+      <button on:click={load} class="mt-2 text-tiny text-gold font-bold">Retry</button>
     </div>
   {:else if data}
     <!-- Hero -->
@@ -108,26 +108,26 @@
         <div class="relative">
           <div class="flex items-center gap-2 mb-2">
             <span
-              class="text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider"
+              class="text-micro font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider"
               style="background: rgba(34,211,238,0.25); color: #67e8f9; border: 1px solid rgba(34,211,238,0.5);"
             >
               {data.telegramGroupType}
             </span>
             {#if data.isVerified}
               <span
-                class="text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1"
+                class="text-micro font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1"
                 style="background: rgba(16,185,129,0.2); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.4);"
               >
                 <Icon name="check" size={9} color="#6ee7b7" />
                 <span>Verified</span>
               </span>
             {/if}
-            <span class="ml-auto text-[10px] font-extrabold text-cyan-300 tabular-nums">
+            <span class="ms-auto text-mini font-extrabold text-cyan-300 tabular-nums">
               {Math.round(data.ratePct * 100)}%
             </span>
           </div>
 
-          <p class="text-[10px] uppercase tracking-widest text-cyan-300/80 font-bold mb-1">
+          <p class="text-mini uppercase tracking-widest text-cyan-300/80 font-bold mb-1">
             Total Earned
           </p>
           <p class="text-4xl font-extrabold tabular-nums leading-none text-emerald-400 mb-3">
@@ -139,19 +139,23 @@
             style="border-top: 1px solid rgba(255,255,255,0.1);"
           >
             <div>
-              <p class="text-[9px] text-white/45 uppercase font-bold mb-1">Members</p>
+              <p class="text-micro text-white/45 uppercase font-bold mb-1">Members</p>
               <p class="text-base font-extrabold text-white tabular-nums leading-none">
                 {data.totalMembers}
               </p>
             </div>
-            <div style="border-left: 1px solid rgba(255,255,255,0.06); padding-left: 8px;">
-              <p class="text-[9px] text-white/45 uppercase font-bold mb-1">Active</p>
+            <div
+              style="border-inline-start: 1px solid rgba(255,255,255,0.06); padding-inline-start: 8px;"
+            >
+              <p class="text-micro text-white/45 uppercase font-bold mb-1">Active</p>
               <p class="text-base font-extrabold text-cyan-300 tabular-nums leading-none">
                 {data.activeMembers}
               </p>
             </div>
-            <div style="border-left: 1px solid rgba(255,255,255,0.06); padding-left: 8px;">
-              <p class="text-[9px] text-white/45 uppercase font-bold mb-1">Group rake</p>
+            <div
+              style="border-inline-start: 1px solid rgba(255,255,255,0.06); padding-inline-start: 8px;"
+            >
+              <p class="text-micro text-white/45 uppercase font-bold mb-1">Group rake</p>
               <p class="text-base font-extrabold text-white/85 tabular-nums leading-none">
                 ${fmt(data.totalGroupRake, 0)}
               </p>
@@ -167,11 +171,11 @@
         class="rounded-2xl p-3"
         style="background: linear-gradient(180deg, rgba(15,31,58,0.85), rgba(7,14,27,0.95)); border: 1px solid rgba(34,211,238,0.3);"
       >
-        <p class="text-[10px] uppercase tracking-widest text-cyan-300/80 font-bold mb-2">
+        <p class="text-mini uppercase tracking-widest text-cyan-300/80 font-bold mb-2">
           Group Link
         </p>
         <div
-          class="rounded-xl p-2.5 mb-2 font-mono text-[10px] text-white/85 break-all"
+          class="rounded-xl p-2.5 mb-2 font-mono text-mini text-white/85 break-all"
           style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.06);"
         >
           {data.affiliateLink}
@@ -179,7 +183,7 @@
         <div class="flex gap-2">
           <button
             on:click={copyLink}
-            class="flex-1 rounded-xl py-2 text-[10px] font-extrabold active:scale-95 flex items-center justify-center gap-1.5"
+            class="flex-1 rounded-xl py-2 text-mini font-extrabold active:scale-95 flex items-center justify-center gap-1.5"
             style="background: rgba(37,99,235,0.15); border: 1px solid rgba(37,99,235,0.4); color: #93c5fd;"
           >
             <Icon name="copy" size={12} color="#93c5fd" />
@@ -187,7 +191,7 @@
           </button>
           <button
             on:click={shareLink}
-            class="flex-1 rounded-xl py-2 text-[10px] font-extrabold active:scale-95 flex items-center justify-center gap-1.5"
+            class="flex-1 rounded-xl py-2 text-mini font-extrabold active:scale-95 flex items-center justify-center gap-1.5"
             style="background: linear-gradient(180deg, #22d3ee, #0891b2); color: #ffffff; box-shadow: 0 2px 0 #155e75;"
           >
             <Icon name="send" size={12} color="#ffffff" />
@@ -200,7 +204,7 @@
     <!-- Daily earnings chart -->
     {#if data.dailyEarnings.length > 0}
       <div class="px-4 mb-3">
-        <p class="text-[10px] uppercase tracking-widest font-extrabold text-cyan-300/80 mb-2 px-1">
+        <p class="text-mini uppercase tracking-widest font-extrabold text-cyan-300/80 mb-2 px-1">
           Last 30 Days
         </p>
         <div
@@ -221,7 +225,7 @@
               ></div>
             {/each}
           </div>
-          <div class="flex justify-between mt-2 text-[9px] text-white/40 font-mono">
+          <div class="flex justify-between mt-2 text-micro text-white/40 font-mono">
             <span>{fmtDate(data.dailyEarnings[0]?.day)}</span>
             <span>{fmtDate(data.dailyEarnings[data.dailyEarnings.length - 1]?.day)}</span>
           </div>
@@ -232,7 +236,7 @@
     <!-- Top contributors -->
     {#if data.topContributors.length > 0}
       <div class="px-4 mb-3">
-        <p class="text-[10px] uppercase tracking-widest font-extrabold text-cyan-300/80 mb-2 px-1">
+        <p class="text-mini uppercase tracking-widest font-extrabold text-cyan-300/80 mb-2 px-1">
           Top Contributors
         </p>
         <div class="space-y-1.5">
@@ -242,13 +246,13 @@
               style="background: linear-gradient(180deg, rgba(15,31,58,0.7), rgba(7,14,27,0.9)); border: 1px solid rgba(255,255,255,0.06);"
             >
               <div
-                class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-[11px] font-extrabold"
+                class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-tiny font-extrabold"
                 style="background: rgba(0,0,0,0.4); color: rgba(255,255,255,0.6);"
               >
                 #{i + 1}
               </div>
-              <p class="flex-1 text-[11px] font-extrabold text-white truncate">{c.displayName}</p>
-              <p class="text-[11px] font-extrabold text-cyan-300 tabular-nums">
+              <p class="flex-1 text-tiny font-extrabold text-white truncate">{c.displayName}</p>
+              <p class="text-tiny font-extrabold text-cyan-300 tabular-nums">
                 ${fmt(c.rakeFrom)}
               </p>
             </div>
@@ -263,7 +267,7 @@
         class="rounded-2xl p-3.5"
         style="background: linear-gradient(180deg, rgba(15,31,58,0.7), rgba(7,14,27,0.9)); border: 1px solid rgba(212,175,55,0.15);"
       >
-        <div class="space-y-2 text-[11px] font-mono">
+        <div class="space-y-2 text-tiny font-mono">
           <div class="flex justify-between">
             <span class="text-white/40">Group ID</span>
             <span class="text-white/85 tabular-nums">{data.telegramGroupId}</span>

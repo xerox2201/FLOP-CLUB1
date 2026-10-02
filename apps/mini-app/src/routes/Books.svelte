@@ -112,7 +112,7 @@
           <p class="text-[12px] font-extrabold text-blue-200 mb-1">
             Every dollar in. Every dollar out. Live.
           </p>
-          <p class="text-[10px] text-white/60 leading-relaxed">
+          <p class="text-mini text-white/60 leading-relaxed">
             We publish our books publicly. You see exactly where the money goes. No tricks, no
             hidden rake, no fine print.
           </p>
@@ -126,7 +126,7 @@
     {#each PERIODS as p}
       <button
         on:click={() => setPeriod(p.key)}
-        class="flex-1 py-2 rounded-xl text-[10px] font-extrabold uppercase tracking-wider active:scale-95 transition-all"
+        class="flex-1 py-2 rounded-xl text-mini font-extrabold uppercase tracking-wider active:scale-95 transition-all"
         style="
           background: {period === p.key
           ? 'linear-gradient(180deg, #f4e5a8 0%, #d4af37 45%, #a87a15 100%)'
@@ -152,7 +152,7 @@
       style="background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.35);"
     >
       <p class="text-sm text-red-300 font-bold">{error}</p>
-      <button on:click={load} class="mt-2 text-[11px] text-gold font-bold">Retry</button>
+      <button on:click={load} class="mt-2 text-tiny text-gold font-bold">Retry</button>
     </div>
   {:else if data}
     <!-- Hero: Return % -->
@@ -169,7 +169,7 @@
         "
       >
         <div class="relative">
-          <p class="text-[10px] uppercase tracking-widest text-emerald-300/80 font-bold mb-1">
+          <p class="text-mini uppercase tracking-widest text-emerald-300/80 font-bold mb-1">
             Returned to Players
           </p>
           <div class="flex items-baseline gap-2 mb-3">
@@ -184,13 +184,15 @@
             style="border-top: 1px solid rgba(255,255,255,0.1);"
           >
             <div>
-              <p class="text-[9px] text-white/45 uppercase font-bold mb-1">Rake Collected</p>
+              <p class="text-micro text-white/45 uppercase font-bold mb-1">Rake Collected</p>
               <p class="text-base font-extrabold text-white tabular-nums leading-none">
                 ${fmt(data.rakeCollected)}
               </p>
             </div>
-            <div style="border-left: 1px solid rgba(255,255,255,0.06); padding-left: 12px;">
-              <p class="text-[9px] text-white/45 uppercase font-bold mb-1">Rewards Paid</p>
+            <div
+              style="border-inline-start: 1px solid rgba(255,255,255,0.06); padding-inline-start: 12px;"
+            >
+              <p class="text-micro text-white/45 uppercase font-bold mb-1">Rewards Paid</p>
               <p class="text-base font-extrabold text-emerald-400 tabular-nums leading-none">
                 ${fmt(data.rewardsPaid)}
               </p>
@@ -209,7 +211,7 @@
         >
           <div class="flex items-center gap-1.5 mb-2">
             <Icon name="arrow-right" size={11} color="#6ee7b7" />
-            <p class="text-[9px] text-white/45 uppercase font-bold">Deposits</p>
+            <p class="text-micro text-white/45 uppercase font-bold">Deposits</p>
           </div>
           <p class="text-lg font-extrabold text-emerald-400 tabular-nums leading-none">
             ${fmt(data.deposits, 0)}
@@ -221,7 +223,7 @@
         >
           <div class="flex items-center gap-1.5 mb-2">
             <Icon name="arrow-left" size={11} color="#f4c95d" />
-            <p class="text-[9px] text-white/45 uppercase font-bold">Withdrawals</p>
+            <p class="text-micro text-white/45 uppercase font-bold">Withdrawals</p>
           </div>
           <p class="text-lg font-extrabold text-gold tabular-nums leading-none">
             ${fmt(data.withdrawals, 0)}
@@ -233,7 +235,7 @@
         >
           <div class="flex items-center gap-1.5 mb-2">
             <Icon name="users" size={11} color="#60a5fa" />
-            <p class="text-[9px] text-white/45 uppercase font-bold">Player Balances</p>
+            <p class="text-micro text-white/45 uppercase font-bold">Player Balances</p>
           </div>
           <p class="text-lg font-extrabold text-blue-300 tabular-nums leading-none">
             ${fmt(data.playerBalances, 0)}
@@ -245,12 +247,12 @@
         >
           <div class="flex items-center gap-1.5 mb-2">
             <Icon name="shield" size={11} color="#60a5fa" />
-            <p class="text-[9px] text-white/45 uppercase font-bold">House Net</p>
+            <p class="text-micro text-white/45 uppercase font-bold">House Net</p>
           </div>
           <p class="text-lg font-extrabold text-blue-300 tabular-nums leading-none">
             ${fmt(data.houseNet, 0)}
           </p>
-          <p class="text-[9px] text-white/40 mt-1">{fmtPct(data.houseNetPct, 1)} of rake</p>
+          <p class="text-micro text-white/40 mt-1">{fmtPct(data.houseNetPct, 1)} of rake</p>
         </div>
       </div>
     </div>
@@ -258,7 +260,7 @@
     <!-- Top reward recipients -->
     {#if data.topRewardRecipients.length > 0}
       <div class="px-4 mb-3">
-        <p class="text-[10px] uppercase tracking-widest font-extrabold text-gold/80 mb-2 px-1">
+        <p class="text-mini uppercase tracking-widest font-extrabold text-gold/80 mb-2 px-1">
           Top Earners ({period})
         </p>
         <div
@@ -273,7 +275,7 @@
                 : 'none'};"
             >
               <div
-                class="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-extrabold shrink-0"
+                class="w-7 h-7 rounded-lg flex items-center justify-center text-tiny font-extrabold shrink-0"
                 style="background: rgba(0,0,0,0.4); color: {i === 0
                   ? '#f4c95d'
                   : 'rgba(255,255,255,0.6)'};"
@@ -296,7 +298,7 @@
         class="rounded-2xl p-3.5"
         style="background: rgba(96,165,250,0.08); border: 1px solid rgba(96,165,250,0.25);"
       >
-        <p class="text-[10px] text-blue-200 leading-relaxed">
+        <p class="text-mini text-blue-200 leading-relaxed">
           <b class="text-blue-100">How to read this:</b> Rake collected is the total fee taken from pots.
           Rewards paid is what we returned to players via rakeback, referrals, bonuses, and cashouts.
           House net is what we kept to run the platform. All numbers update live.
@@ -306,7 +308,7 @@
 
     <!-- Generated timestamp -->
     <div class="px-4 mb-3 text-center">
-      <p class="text-[9px] text-white/30 font-mono">
+      <p class="text-micro text-white/30 font-mono">
         Updated {fmtGeneratedAt(data.generatedAt)} · refreshes every 60s
       </p>
     </div>

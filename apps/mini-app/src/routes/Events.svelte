@@ -120,7 +120,7 @@
       >
         {$t('events.title')}
       </h1>
-      <p class="text-[10px] text-white/45 mt-1 font-bold">Sit and Go schedule and prize pools</p>
+      <p class="text-mini text-white/45 mt-1 font-bold">Sit and Go schedule and prize pools</p>
     </div>
 
     <div
@@ -176,7 +176,7 @@
           >
             <Icon name="calendar" size={11} color="#22d3ee" />
           </div>
-          <span class="text-[9px] font-extrabold uppercase tracking-wider" style="color: #67e8f9;">
+          <span class="text-micro font-extrabold uppercase tracking-wider" style="color: #67e8f9;">
             Events
           </span>
         </div>
@@ -203,11 +203,11 @@
           >
             <Icon name="clock" size={11} color="#6ee7b7" />
           </div>
-          <span class="text-[9px] font-extrabold text-emerald-300 uppercase tracking-wider">
+          <span class="text-micro font-extrabold text-emerald-300 uppercase tracking-wider">
             Next
           </span>
         </div>
-        <p class="text-[11px] font-extrabold text-white truncate leading-tight">{nextLabel}</p>
+        <p class="text-tiny font-extrabold text-white truncate leading-tight">{nextLabel}</p>
         <p class="text-[8px] text-white/40 font-bold mt-1 uppercase tracking-wider">start time</p>
       </div>
 
@@ -228,7 +228,7 @@
           >
             <Icon name="trophy" size={11} color="#f4c95d" />
           </div>
-          <span class="text-[9px] font-extrabold text-gold uppercase tracking-wider">Prizes</span>
+          <span class="text-micro font-extrabold text-gold uppercase tracking-wider">Prizes</span>
         </div>
         <p class="text-[18px] font-extrabold text-gold tabular-nums leading-none">
           {totalPrize.toLocaleString()}
@@ -285,7 +285,7 @@
         <Icon name="calendar" size={28} color="#67e8f9" />
       </div>
       <p class="text-sm font-extrabold text-white">{$t('events.noEvents')}</p>
-      <p class="text-[11px] text-white/55 mt-1 font-bold">
+      <p class="text-tiny text-white/55 mt-1 font-bold">
         New events appear here as soon as they are scheduled
       </p>
     </div>
@@ -294,7 +294,7 @@
       {#each events as ev (ev.id)}
         <button
           type="button"
-          class="w-full rounded-2xl p-3 flex items-center gap-3 text-left relative overflow-hidden active:scale-[0.99] transition-all"
+          class="w-full rounded-2xl p-3 flex items-center gap-3 text-start relative overflow-hidden active:scale-[0.99] transition-all"
           style="
             background:
               radial-gradient(ellipse at 100% 0%, rgba(34,211,238,0.1) 0%, transparent 60%),
@@ -328,13 +328,13 @@
             <p class="text-[12px] font-extrabold text-white leading-tight truncate">{ev.title}</p>
             <div class="flex items-center gap-1 mt-1.5">
               <Icon name="clock" size={10} color="rgba(255,255,255,0.4)" />
-              <span class="text-[9px] text-white/50 font-bold truncate">
+              <span class="text-micro text-white/50 font-bold truncate">
                 {dateLabel(startOf(ev))}
               </span>
             </div>
           </div>
 
-          <div class="text-right shrink-0">
+          <div class="text-end shrink-0">
             <p class="text-[13px] font-extrabold text-gold tabular-nums leading-none">
               {prizeOf(ev).toLocaleString()}
             </p>
@@ -388,7 +388,7 @@
           <p class="text-[14px] font-extrabold text-white leading-tight">{selected.title}</p>
           <div class="flex items-center gap-1 mt-1">
             <Icon name="clock" size={10} color="rgba(255,255,255,0.4)" />
-            <span class="text-[10px] text-white/50 font-bold">
+            <span class="text-mini text-white/50 font-bold">
               {dateLabel(startOf(selected))}
             </span>
           </div>
@@ -405,7 +405,7 @@
       </div>
 
       {#if selected.description}
-        <p class="text-[11px] text-white/70 leading-relaxed mb-3">{selected.description}</p>
+        <p class="text-tiny text-white/70 leading-relaxed mb-3">{selected.description}</p>
       {/if}
 
       <div
@@ -414,7 +414,7 @@
       >
         <div class="flex items-center gap-1.5">
           <Icon name="trophy" size={12} color="#f4c95d" />
-          <span class="text-[10px] font-extrabold text-gold/80 uppercase tracking-wider">
+          <span class="text-mini font-extrabold text-gold/80 uppercase tracking-wider">
             {$t('events.prize')}
           </span>
         </div>

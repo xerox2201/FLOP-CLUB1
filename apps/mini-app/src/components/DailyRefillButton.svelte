@@ -71,7 +71,7 @@
       type="button"
       on:click={canClaim ? claim : undefined}
       disabled={!canClaim || busy}
-      class="w-full rounded-2xl p-3.5 flex items-center gap-3 text-left transition-all relative overflow-hidden {canClaim
+      class="w-full rounded-2xl p-3.5 flex items-center gap-3 text-start transition-all relative overflow-hidden {canClaim
         ? 'active:scale-[0.98]'
         : 'cursor-default'}"
       style="
@@ -108,7 +108,7 @@
         <Icon name="gift" size={24} color={canClaim ? '#f4c95d' : '#60a5fa'} />
         {#if canClaim}
           <span
-            class="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-amber-300 animate-pulse"
+            class="absolute -top-1 -end-1 w-3 h-3 rounded-full bg-amber-300 animate-pulse"
             style="box-shadow: 0 0 10px #fbbf24;"
           ></span>
         {/if}
@@ -117,7 +117,7 @@
       <!-- Text -->
       <div class="flex-1 min-w-0 relative">
         <p
-          class="text-[10px] font-extrabold uppercase tracking-widest mb-0.5"
+          class="text-mini font-extrabold uppercase tracking-widest mb-0.5"
           style="color: {canClaim ? '#f4c95d' : '#60a5fa'};"
         >
           {canClaim ? 'Daily Bonus Ready' : 'Daily Bonus'}
@@ -128,7 +128,7 @@
         >
           +{status.refillAmount?.toLocaleString?.() ?? 0}
         </p>
-        <p class="text-[9px] text-white/45 mt-1 font-bold truncate">
+        <p class="text-micro text-white/45 mt-1 font-bold truncate">
           {#if canClaim}
             Tap to claim · {status.tierLabel} tier
           {:else if countdown}
@@ -151,7 +151,7 @@
         "
       >
         {#if canClaim}
-          <span class="text-[11px] font-extrabold" style="color: #0a0800;">
+          <span class="text-tiny font-extrabold" style="color: #0a0800;">
             {busy ? '…' : 'Claim'}
           </span>
         {:else}
@@ -173,7 +173,7 @@
     </button>
 
     {#if toast}
-      <p class="text-[11px] text-amber-300 font-bold text-center mt-2">{toast}</p>
+      <p class="text-tiny text-amber-300 font-bold text-center mt-2">{toast}</p>
     {/if}
   </div>
 {/if}

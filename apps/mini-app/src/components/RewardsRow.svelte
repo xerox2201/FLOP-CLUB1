@@ -68,7 +68,7 @@
   <!-- Free Chips -->
   <button
     on:click={onPlayFree}
-    class="rounded-2xl p-3 flex flex-col items-start text-left relative overflow-hidden active:scale-[0.97] transition-all"
+    class="rounded-2xl p-3 flex flex-col items-start text-start relative overflow-hidden active:scale-[0.97] transition-all"
     style="
       background:
         radial-gradient(ellipse at 0% 0%, rgba(16,185,129,0.22) 0%, transparent 70%),
@@ -87,21 +87,21 @@
       >
         <Icon name="gift" size={14} color="#6ee7b7" />
       </div>
-      <span class="text-[9px] font-extrabold text-emerald-300 uppercase tracking-wider">
+      <span class="text-micro font-extrabold text-emerald-300 uppercase tracking-wider">
         Free
       </span>
     </div>
     <p class="text-lg font-extrabold text-white leading-none tabular-nums">
       {chips.toLocaleString()}
     </p>
-    <p class="text-[9px] text-white/45 mt-0.5 font-bold">chips</p>
+    <p class="text-micro text-white/45 mt-0.5 font-bold">chips</p>
   </button>
 
   <!-- Daily Bonus -->
   <button
     on:click={canClaim ? claimRefill : undefined}
     disabled={!canClaim || busy}
-    class="rounded-2xl p-3 flex flex-col items-start text-left relative overflow-hidden transition-all {canClaim
+    class="rounded-2xl p-3 flex flex-col items-start text-start relative overflow-hidden transition-all {canClaim
       ? 'active:scale-[0.97]'
       : 'cursor-default'}"
     style="
@@ -134,13 +134,13 @@
         <Icon name="gift" size={14} color={canClaim ? '#f4c95d' : '#60a5fa'} />
         {#if canClaim}
           <span
-            class="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-amber-300 animate-pulse"
+            class="absolute -top-0.5 -end-0.5 w-2 h-2 rounded-full bg-amber-300 animate-pulse"
             style="box-shadow: 0 0 8px #fbbf24;"
           ></span>
         {/if}
       </div>
       <span
-        class="text-[9px] font-extrabold uppercase tracking-wider"
+        class="text-micro font-extrabold uppercase tracking-wider"
         style="color: {canClaim ? '#f4c95d' : '#60a5fa'};"
       >
         Daily
@@ -153,7 +153,7 @@
       +{refillStatus?.refillAmount?.toLocaleString?.() ?? 0}
     </p>
     <p
-      class="text-[9px] mt-0.5 font-bold relative truncate"
+      class="text-micro mt-0.5 font-bold relative truncate"
       style="color: {canClaim ? '#f4c95d' : 'rgba(255,255,255,0.4)'};"
     >
       {#if toast}

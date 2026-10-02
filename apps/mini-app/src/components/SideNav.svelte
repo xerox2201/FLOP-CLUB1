@@ -25,11 +25,11 @@
 </script>
 
 <aside
-  class="hidden lg:flex fixed left-0 top-0 bottom-0 z-40 flex-col"
+  class="hidden lg:flex fixed start-0 top-0 bottom-0 z-40 flex-col"
   style="
     width: 240px;
     background: linear-gradient(180deg, rgba(7,14,27,0.98) 0%, rgba(5,8,15,0.98) 100%);
-    border-right: 1px solid rgba(212,175,55,0.15);
+    border-inline-end: 1px solid rgba(212,175,55,0.15);
     backdrop-filter: blur(20px);
   "
 >
@@ -65,7 +65,7 @@
     {#each items as item}
       <button
         on:click={() => onNavigate(item.id)}
-        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all"
+        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-start transition-all"
         style="
           background: {current === item.id
           ? 'linear-gradient(90deg, rgba(212,175,55,0.2), rgba(212,175,55,0.05))'
@@ -79,7 +79,7 @@
         <span class="text-[12px] font-bold">{item.label}</span>
         {#if current === item.id}
           <span
-            class="ml-auto w-1.5 h-1.5 rounded-full bg-gold"
+            class="ms-auto w-1.5 h-1.5 rounded-full bg-gold"
             style="box-shadow: 0 0 6px #d4af37;"
           ></span>
         {/if}
@@ -95,11 +95,11 @@
       style="background: rgba(212,175,55,0.08); border: 1px solid rgba(212,175,55,0.2);"
     >
       <Avatar {avatarId} size="md" />
-      <div class="flex-1 text-left min-w-0">
-        <p class="text-[11px] font-extrabold text-white truncate">
+      <div class="flex-1 text-start min-w-0">
+        <p class="text-tiny font-extrabold text-white truncate">
           {user?.display_name || 'Player'}
         </p>
-        <p class="text-[9px] text-gold/70 font-mono">
+        <p class="text-micro text-gold/70 font-mono">
           ${formatAmount($auth.wallet?.balance_usd || 0)}
         </p>
       </div>

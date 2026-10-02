@@ -88,7 +88,7 @@
         <Icon name="bell" size={24} color="#f4c95d" />
         {#if $unreadCount > 0}
           <span
-            class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[9px] font-extrabold tabular-nums"
+            class="absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-micro font-extrabold tabular-nums"
             style="
               background: linear-gradient(180deg, #ef4444, #b91c1c);
               color: #ffffff;
@@ -114,7 +114,7 @@
         >
           Notifications
         </h1>
-        <p class="text-[10px] text-white/45 mt-1 font-bold truncate">
+        <p class="text-mini text-white/45 mt-1 font-bold truncate">
           Alerts, rewards and announcements
         </p>
       </div>
@@ -144,7 +144,7 @@
       <p class="text-[17px] font-extrabold text-gold tabular-nums leading-none">
         {$unreadCount}
       </p>
-      <p class="text-[9px] text-white/45 mt-1 font-bold">Unread</p>
+      <p class="text-micro text-white/45 mt-1 font-bold">Unread</p>
     </div>
 
     <div
@@ -168,7 +168,7 @@
       <p class="text-[17px] font-extrabold text-cyan tabular-nums leading-none">
         {$broadcasts.length}
       </p>
-      <p class="text-[9px] text-white/45 mt-1 font-bold truncate">
+      <p class="text-micro text-white/45 mt-1 font-bold truncate">
         {latestAt ? fmtDate(latestAt) : 'Total'}
       </p>
     </div>
@@ -194,7 +194,7 @@
       <p class="text-[17px] font-extrabold text-red-300 tabular-nums leading-none">
         {urgentCount}
       </p>
-      <p class="text-[9px] text-white/45 mt-1 font-bold">Action</p>
+      <p class="text-micro text-white/45 mt-1 font-bold">Action</p>
     </div>
   </div>
 
@@ -203,7 +203,7 @@
     <div class="px-4 mb-3">
       <button
         on:click={markAllRead}
-        class="w-full rounded-2xl py-3 flex items-center justify-center gap-2 text-[11px] font-extrabold active:scale-[0.98] transition-all"
+        class="w-full rounded-2xl py-3 flex items-center justify-center gap-2 text-tiny font-extrabold active:scale-[0.98] transition-all"
         style="
           background: linear-gradient(180deg, rgba(244,201,93,0.18), rgba(168,121,34,0.06));
           border: 1px solid rgba(244,201,93,0.4);
@@ -244,15 +244,15 @@
           <Icon name="bell" size={44} color="#d4af37" />
         </div>
         <p class="text-sm font-extrabold text-white">No notifications</p>
-        <p class="text-[11px] text-white/50 mt-1 font-bold">You're all caught up</p>
+        <p class="text-tiny text-white/50 mt-1 font-bold">You're all caught up</p>
       </div>
     </div>
   {:else}
     <!-- INBOX -->
     <div class="flex items-center gap-2 mb-2 px-4">
       <span class="w-1.5 h-1.5 rounded-full bg-gold" style="box-shadow: 0 0 6px #d4af37;"></span>
-      <p class="text-[10px] font-extrabold text-white/60 uppercase tracking-widest">Inbox</p>
-      <span class="text-[9px] font-bold text-white/35 tabular-nums ml-auto">
+      <p class="text-mini font-extrabold text-white/60 uppercase tracking-widest">Inbox</p>
+      <span class="text-micro font-bold text-white/35 tabular-nums ms-auto">
         {$broadcasts.length} messages
       </span>
     </div>
@@ -264,7 +264,7 @@
         {@const label = LABELS[n.severity] ?? 'Update'}
         <button
           on:click={() => markRead(n.id)}
-          class="w-full text-left rounded-2xl p-3 flex items-start gap-3 relative active:scale-[0.99] transition-all"
+          class="w-full text-start rounded-2xl p-3 flex items-start gap-3 relative active:scale-[0.99] transition-all"
           style="
             background: linear-gradient(135deg, {color}18, rgba(8,13,36,0.92));
             border: 1px solid {color}55;
@@ -279,7 +279,7 @@
           </div>
 
           <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2 mb-1 pr-5">
+            <div class="flex items-center gap-2 mb-1 pe-5">
               <span
                 class="text-[8px] font-extrabold px-1.5 py-0.5 rounded-full uppercase tracking-wider shrink-0"
                 style="background: {color}22; border: 1px solid {color}55; color: {color};"
@@ -289,17 +289,17 @@
               <p class="text-sm font-extrabold text-white truncate flex-1">{n.title}</p>
             </div>
 
-            <p class="text-[11px] text-white/70 leading-relaxed">{n.message}</p>
+            <p class="text-tiny text-white/70 leading-relaxed">{n.message}</p>
 
             <div class="flex items-center gap-1.5 mt-1.5">
               <Icon name="clock" size={10} color="rgba(255,255,255,0.4)" />
-              <p class="text-[9px] text-white/40 font-bold">{fmtDate(n.createdAt)}</p>
+              <p class="text-micro text-white/40 font-bold">{fmtDate(n.createdAt)}</p>
             </div>
           </div>
 
           <!-- Tap to dismiss hint -->
           <div
-            class="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center"
+            class="absolute top-2 end-2 w-5 h-5 rounded-full flex items-center justify-center"
             style="background: rgba(0,0,0,0.3);"
           >
             <Icon name="close" size={10} color="rgba(255,255,255,0.35)" />

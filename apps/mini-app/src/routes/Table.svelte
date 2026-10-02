@@ -541,7 +541,7 @@
 >
   <!-- HEADER -->
   <div
-    class="absolute top-0 left-0 right-0 z-40 px-3 flex items-start justify-between"
+    class="absolute top-0 start-0 end-0 z-40 px-3 flex items-start justify-between"
     style="padding-top: max(12px, env(safe-area-inset-top));"
   >
     <button
@@ -558,7 +558,7 @@
         {tableTitle}
         {#if seatCount}({seatCount} players){/if}
       </p>
-      <p class="text-[10px] text-cyan/80 font-semibold mt-0.5">
+      <p class="text-mini text-cyan/80 font-semibold mt-0.5">
         {variantLabel} · {blindsLabel}
       </p>
     </div>
@@ -594,7 +594,7 @@
       style="top: max(64px, calc(env(safe-area-inset-top) + 56px)); left:50%; transform: translateX(-50%); background: rgba(239,68,68,0.9); border: 1px solid rgba(255,255,255,0.2);"
     >
       <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
-      <span class="text-[10px] font-bold text-white">Reconnecting…</span>
+      <span class="text-mini font-bold text-white">Reconnecting…</span>
     </div>
   {/if}
 
@@ -618,7 +618,7 @@
           ×
         </button>
       </div>
-      <div class="space-y-2 text-[11px] font-mono">
+      <div class="space-y-2 text-tiny font-mono">
         <div>
           <p class="text-white/40 mb-1">Hand #</p>
           <p class="text-white break-all">{gameState.handNo}</p>
@@ -636,11 +636,11 @@
             <p class="text-gold/80 mb-1">Revealed Server Seed</p>
             <p class="text-gold break-all">{gameState.revealSeed}</p>
           </div>
-          <p class="text-emerald-400 text-[10px] mt-2">
+          <p class="text-emerald-400 text-mini mt-2">
             <Icon name="success" size={11} color="#34d399" /> Verified
           </p>
         {:else}
-          <p class="text-white/40 text-[10px] mt-2">
+          <p class="text-white/40 text-mini mt-2">
             <Icon name="lock" size={10} color="rgba(255,255,255,0.4)" /> Seed after hand ends revealed
           </p>
         {/if}
@@ -665,13 +665,13 @@
           showMenu = false;
           showHandHistory = true;
         }}
-        class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left active:scale-[0.98] transition"
+        class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-start active:scale-[0.98] transition"
         style="background: rgba(37,99,235,0.12);"
       >
         <span class="text-lg"><Icon name="receipt" size={18} color="#f4c95d" /></span>
         <div class="flex-1">
           <p class="text-sm font-bold text-white">Hand History</p>
-          <p class="text-[10px] text-white/50">View past hands</p>
+          <p class="text-mini text-white/50">View past hands</p>
         </div>
       </button>
 
@@ -680,13 +680,13 @@
           showMenu = false;
           showChat = true;
         }}
-        class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left active:scale-[0.98] transition"
+        class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-start active:scale-[0.98] transition"
         style="background: rgba(34,211,238,0.12);"
       >
         <span class="text-lg"><Icon name="chat" size={18} color="#67e8f9" /></span>
         <div class="flex-1">
           <p class="text-sm font-bold text-white">Chat</p>
-          <p class="text-[10px] text-white/50">Talk to players</p>
+          <p class="text-mini text-white/50">Talk to players</p>
         </div>
       </button>
 
@@ -695,13 +695,13 @@
           showMenu = false;
           showSeedModal = true;
         }}
-        class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left active:scale-[0.98] transition"
+        class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-start active:scale-[0.98] transition"
         style="background: rgba(34,211,238,0.1);"
       >
         <span class="text-lg"><Icon name="shield" size={18} color="#6ee7b7" /></span>
         <div class="flex-1">
           <p class="text-sm font-bold text-white">Provably Fair</p>
-          <p class="text-[10px] text-white/50">View seed</p>
+          <p class="text-mini text-white/50">View seed</p>
         </div>
       </button>
 
@@ -710,25 +710,25 @@
       {#if sittingOut}
         <button
           on:click={doSitIn}
-          class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left active:scale-[0.98] transition"
+          class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-start active:scale-[0.98] transition"
           style="background: rgba(16,185,129,0.12);"
         >
           <span class="text-lg">▶️</span>
           <div class="flex-1">
             <p class="text-sm font-bold text-white">Sit In</p>
-            <p class="text-[10px] text-white/50">Resume playing</p>
+            <p class="text-mini text-white/50">Resume playing</p>
           </div>
         </button>
       {:else}
         <button
           on:click={doSitOut}
-          class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left active:scale-[0.98] transition"
+          class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-start active:scale-[0.98] transition"
           style="background: rgba(244,201,93,0.1);"
         >
           <span class="text-lg">⏸️</span>
           <div class="flex-1">
             <p class="text-sm font-bold text-white">Sit Out</p>
-            <p class="text-[10px] text-white/50">Auto-fold next hands</p>
+            <p class="text-mini text-white/50">Auto-fold next hands</p>
           </div>
         </button>
       {/if}
@@ -737,13 +737,13 @@
 
       <button
         on:click={leaveTable}
-        class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left active:scale-[0.98] transition"
+        class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-start active:scale-[0.98] transition"
         style="background: rgba(220,38,38,0.15);"
       >
         <span class="text-lg"><Icon name="logout" size={18} color="#fca5a5" /></span>
         <div class="flex-1">
           <p class="text-sm font-bold text-red-300">Leave Table</p>
-          <p class="text-[10px] text-white/50">Return chips</p>
+          <p class="text-mini text-white/50">Return chips</p>
         </div>
       </button>
     </div>
@@ -851,7 +851,7 @@
   <!-- PRE-ACTION -->
   {#if showPreActions}
     <div
-      class="absolute bottom-0 left-0 right-0 z-30"
+      class="absolute bottom-0 start-0 end-0 z-30"
       style="padding: 10px 12px calc(14px + env(safe-area-inset-bottom)) 12px; max-width: min(720px, 92vw); margin: 0 auto;"
     >
       <div
@@ -859,11 +859,11 @@
         style="background: rgba(0,0,0,0.9); border: 1px solid rgba(37,99,235,0.2); backdrop-filter: blur(12px);"
       >
         <div class="flex items-center justify-between px-2 mb-1.5">
-          <span class="text-[9px] uppercase tracking-widest font-extrabold text-white/40">
+          <span class="text-micro uppercase tracking-widest font-extrabold text-white/40">
             Pre-Action
           </span>
           {#if preAction}
-            <span class="text-[9px] font-bold text-gold"> Armed · Tap again to cancel </span>
+            <span class="text-micro font-bold text-gold"> Armed · Tap again to cancel </span>
           {/if}
         </div>
         <div class="flex gap-1.5">
@@ -904,7 +904,7 @@
               </svg>
 
               <span
-                class="text-[9px] font-bold leading-none relative"
+                class="text-micro font-bold leading-none relative"
                 style="color: {preAction === pa.key ? 'white' : 'rgba(255,255,255,0.7)'};"
               >
                 {pa.label}
@@ -952,7 +952,7 @@
                 {p.label}
               </div>
               <div
-                class="text-[9px] font-extrabold text-white tabular-nums leading-tight mt-0.5 truncate"
+                class="text-micro font-extrabold text-white tabular-nums leading-tight mt-0.5 truncate"
               >
                 ${fmt(p.value)}
               </div>
@@ -981,7 +981,7 @@
                   (e.target as HTMLInputElement).blur();
                 }
               }}
-              class="rounded-md text-[10px] font-extrabold text-gold tabular-nums text-center outline-none"
+              class="rounded-md text-mini font-extrabold text-gold tabular-nums text-center outline-none"
               style="padding: 5px 2px; width: 100%; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(212,175,55,0.7);"
             />
           {:else}
@@ -999,7 +999,7 @@
               <div class="text-[7px] font-extrabold text-gold/80 uppercase leading-none">
                 CUSTOM
               </div>
-              <div class="text-[9px] font-extrabold text-gold tabular-nums leading-tight mt-0.5">
+              <div class="text-micro font-extrabold text-gold tabular-nums leading-tight mt-0.5">
                 $—
               </div>
             </button>
@@ -1034,7 +1034,7 @@
           on:pointercancel={() => (dragging = false)}
         >
           <div
-            class="absolute left-0 right-0 bottom-0 pointer-events-none"
+            class="absolute start-0 end-0 bottom-0 pointer-events-none"
             style="
               height: {raisePercent}%;
               background: linear-gradient(180deg, {isAllIn
@@ -1049,7 +1049,7 @@
           <div class="absolute inset-x-1 pointer-events-none" style="top: 32px; bottom: 32px;">
             {#each Array(5) as _, i}
               <div
-                class="absolute left-0 right-0 h-px"
+                class="absolute start-0 end-0 h-px"
                 style="
                   top: {(i / 4) * 100}%;
                   background: linear-gradient(90deg, transparent, rgba(212,175,55,{isAllIn
@@ -1060,7 +1060,7 @@
             {/each}
           </div>
 
-          <div class="absolute top-1 left-0 right-0 text-center pointer-events-none">
+          <div class="absolute top-1 start-0 end-0 text-center pointer-events-none">
             <div
               class="text-[6px] font-extrabold uppercase tracking-wider leading-none"
               style="color: {isAllIn ? '#fca5a5' : 'rgba(212,175,55,0.7)'};"
@@ -1138,7 +1138,7 @@
                 {p.label}
               </div>
               <div
-                class="text-[10px] font-extrabold text-white tabular-nums leading-tight mt-0.5 truncate"
+                class="text-mini font-extrabold text-white tabular-nums leading-tight mt-0.5 truncate"
               >
                 ${fmt(p.value)}
               </div>
@@ -1169,7 +1169,7 @@
                   (e.target as HTMLInputElement).blur();
                 }
               }}
-              class="flex-1 rounded-md text-[10px] font-extrabold text-gold tabular-nums text-center outline-none"
+              class="flex-1 rounded-md text-mini font-extrabold text-gold tabular-nums text-center outline-none"
               style="padding: 6px 4px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(212,175,55,0.7);"
             />
           {:else}
@@ -1184,7 +1184,7 @@
               <div class="text-[7px] font-extrabold text-gold/80 uppercase leading-none">
                 CUSTOM
               </div>
-              <div class="text-[10px] font-extrabold text-gold tabular-nums leading-tight mt-0.5">
+              <div class="text-mini font-extrabold text-gold tabular-nums leading-tight mt-0.5">
                 $—
               </div>
             </button>
@@ -1195,7 +1195,7 @@
             style="background: linear-gradient(180deg, rgba(239,68,68,0.4), rgba(239,68,68,0.15)); border: 1px solid rgba(239,68,68,0.6);"
           >
             <div class="text-[7px] font-extrabold text-red-300 uppercase leading-none">ALL-IN</div>
-            <div class="text-[10px] font-extrabold text-red-200 tabular-nums leading-tight mt-0.5">
+            <div class="text-mini font-extrabold text-red-200 tabular-nums leading-tight mt-0.5">
               ${fmt(hardMax)}
             </div>
           </button>
@@ -1215,7 +1215,7 @@
   <!-- ACTION BAR -->
   {#if gameState && !startingHand && !handResult && isMyTurn}
     <div
-      class="absolute bottom-0 left-0 right-0 z-30"
+      class="absolute bottom-0 start-0 end-0 z-30"
       style="padding: 10px 12px calc(14px + env(safe-area-inset-bottom)) 12px; max-width: min(720px, 92vw); margin: 0 auto;"
     >
       {#if !sittingOut}
@@ -1223,7 +1223,7 @@
           <div class="flex justify-center mb-2">
             <button
               on:click={useTimeBank}
-              class="rounded-full px-4 py-1.5 text-[11px] font-bold text-gold active:scale-95"
+              class="rounded-full px-4 py-1.5 text-tiny font-bold text-gold active:scale-95"
               style="background: rgba(0,0,0,0.85); border: 1px solid rgba(244,201,93,0.5); backdrop-filter: blur(10px);"
               ><Icon name="clock" size={12} color="#f4c95d" /> Use Time Bank</button
             >
@@ -1265,7 +1265,7 @@
               class="flex-1 rounded-xl py-3 active:scale-[0.97] transition-all disabled:opacity-50"
               style="background: linear-gradient(180deg, #22c55e 0%, #15803d 100%); box-shadow: 0 4px 0 #14532d, 0 6px 14px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.2);"
             >
-              <span class="block text-[11px] font-bold text-white/90 leading-none uppercase"
+              <span class="block text-tiny font-bold text-white/90 leading-none uppercase"
                 >CALL</span
               >
               <span
@@ -1302,7 +1302,7 @@
                   ? 180
                   : 0}deg);">▲</span
               >
-              <span class="block text-[11px] font-bold text-white/90 leading-none uppercase">
+              <span class="block text-tiny font-bold text-white/90 leading-none uppercase">
                 {showRaisePanel ? (isAllIn ? 'ALL-IN' : 'CONFIRM') : 'RAISE'}
               </span>
               <span
@@ -1334,7 +1334,7 @@
           <p class="text-xs font-bold text-gold">
             <Icon name="pause" size={11} color="#f4c95d" /> Sitting Out — Auto-folding
           </p>
-          <button on:click={doSitIn} class="mt-2 text-[11px] text-white underline"
+          <button on:click={doSitIn} class="mt-2 text-tiny text-white underline"
             >Resume playing</button
           >
         </div>

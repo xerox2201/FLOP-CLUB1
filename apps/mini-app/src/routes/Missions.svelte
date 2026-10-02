@@ -33,7 +33,7 @@
         >
           Daily Missions
         </h1>
-        <p class="text-[10px] text-white/50 mt-1 font-bold">
+        <p class="text-mini text-white/50 mt-1 font-bold">
           Complete missions, earn chips and XP · resets 00:00 UTC
         </p>
       </div>

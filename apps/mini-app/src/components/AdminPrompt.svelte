@@ -78,7 +78,7 @@
       </div>
 
       <h2 class="text-center text-lg font-extrabold text-white mb-1">Admin Access</h2>
-      <p class="text-center text-[11px] text-white/50 mb-5">Enter your admin secret key</p>
+      <p class="text-center text-tiny text-white/50 mb-5">Enter your admin secret key</p>
 
       <input
         type="password"
@@ -95,7 +95,7 @@
       />
 
       {#if error}
-        <p class="text-[11px] text-red-300 text-center mb-3 font-bold">{error}</p>
+        <p class="text-tiny text-red-300 text-center mb-3 font-bold">{error}</p>
       {/if}
 
       <div class="flex gap-2">

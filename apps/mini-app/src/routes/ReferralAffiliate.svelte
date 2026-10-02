@@ -153,8 +153,8 @@
           <Icon name="broadcast" size={18} color="#67e8f9" />
         </div>
         <div class="flex-1 min-w-0">
-          <p class="text-[11px] font-extrabold text-cyan-300 mb-0.5">Earn 8% from groups</p>
-          <p class="text-[10px] text-white/60 leading-relaxed">
+          <p class="text-tiny font-extrabold text-cyan-300 mb-0.5">Earn 8% from groups</p>
+          <p class="text-mini text-white/60 leading-relaxed">
             Register your Telegram group or channel. Earn 8% of every member's rake for 12 months.
           </p>
         </div>
@@ -170,7 +170,7 @@
           class="rounded-2xl p-3 text-center"
           style="background: linear-gradient(180deg, rgba(15,31,58,0.85), rgba(7,14,27,0.95)); border: 1px solid rgba(34,211,238,0.3);"
         >
-          <p class="text-[9px] text-white/45 uppercase font-bold mb-1">Members</p>
+          <p class="text-micro text-white/45 uppercase font-bold mb-1">Members</p>
           <p class="text-xl font-extrabold text-cyan-300 tabular-nums leading-none">
             {totalMembers}
           </p>
@@ -179,7 +179,7 @@
           class="rounded-2xl p-3 text-center"
           style="background: linear-gradient(180deg, rgba(15,31,58,0.85), rgba(7,14,27,0.95)); border: 1px solid rgba(16,185,129,0.3);"
         >
-          <p class="text-[9px] text-white/45 uppercase font-bold mb-1">Total Earned</p>
+          <p class="text-micro text-white/45 uppercase font-bold mb-1">Total Earned</p>
           <p class="text-xl font-extrabold text-emerald-400 tabular-nums leading-none">
             ${fmt(totalEarned)}
           </p>
@@ -197,7 +197,7 @@
       >
         <div class="flex items-center gap-2 mb-1">
           <Icon name="plus" size={14} color="#22d3ee" />
-          <p class="text-[10px] uppercase tracking-widest font-extrabold text-cyan-300">
+          <p class="text-mini uppercase tracking-widest font-extrabold text-cyan-300">
             Register a Group
           </p>
         </div>
@@ -205,7 +205,7 @@
         <div>
           <label
             for="grp-id"
-            class="text-[10px] text-white/60 font-bold uppercase tracking-wider block mb-1.5"
+            class="text-mini text-white/60 font-bold uppercase tracking-wider block mb-1.5"
           >
             Group / Channel ID
           </label>
@@ -217,7 +217,7 @@
             class="w-full rounded-xl px-3 py-2.5 text-[12px] text-white outline-none font-mono"
             style="background: rgba(0,0,0,0.4); border: 1px solid rgba(34,211,238,0.3);"
           />
-          <p class="text-[9px] text-white/40 mt-1 leading-relaxed">
+          <p class="text-micro text-white/40 mt-1 leading-relaxed">
             Forward a message from your group to <b class="text-cyan-300">@userinfobot</b> to get
             the ID. It usually starts with <span class="font-mono">-100</span>.
           </p>
@@ -226,7 +226,7 @@
         <div>
           <label
             for="grp-title"
-            class="text-[10px] text-white/60 font-bold uppercase tracking-wider block mb-1.5"
+            class="text-mini text-white/60 font-bold uppercase tracking-wider block mb-1.5"
           >
             Group Title
           </label>
@@ -243,7 +243,7 @@
         <div>
           <label
             for="grp-type"
-            class="text-[10px] text-white/60 font-bold uppercase tracking-wider block mb-1.5"
+            class="text-mini text-white/60 font-bold uppercase tracking-wider block mb-1.5"
           >
             Type
           </label>
@@ -262,7 +262,7 @@
         <div>
           <label
             for="grp-link"
-            class="text-[10px] text-white/60 font-bold uppercase tracking-wider block mb-1.5"
+            class="text-mini text-white/60 font-bold uppercase tracking-wider block mb-1.5"
           >
             Invite Link <span class="text-white/30 normal-case font-normal">(optional)</span>
           </label>
@@ -281,7 +281,7 @@
             class="rounded-xl px-3 py-2"
             style="background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4);"
           >
-            <p class="text-[10px] text-red-300 font-bold">{formError}</p>
+            <p class="text-mini text-red-300 font-bold">{formError}</p>
           </div>
         {/if}
 
@@ -289,7 +289,7 @@
           <button
             on:click={() => (showForm = false)}
             disabled={submitting}
-            class="flex-1 rounded-xl py-2.5 text-[11px] font-extrabold active:scale-95 disabled:opacity-40"
+            class="flex-1 rounded-xl py-2.5 text-tiny font-extrabold active:scale-95 disabled:opacity-40"
             style="background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7);"
           >
             Cancel
@@ -297,7 +297,7 @@
           <button
             on:click={submit}
             disabled={submitting}
-            class="flex-1 rounded-xl py-2.5 text-[11px] font-extrabold active:scale-95 disabled:opacity-40"
+            class="flex-1 rounded-xl py-2.5 text-tiny font-extrabold active:scale-95 disabled:opacity-40"
             style="background: linear-gradient(180deg, #22d3ee, #0891b2); color: #ffffff; box-shadow: 0 3px 0 #155e75;"
           >
             {submitting ? 'Registering…' : 'Register'}
@@ -320,7 +320,7 @@
       style="background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.35);"
     >
       <p class="text-sm text-red-300 font-bold">{error}</p>
-      <button on:click={load} class="mt-2 text-[11px] text-gold font-bold">Retry</button>
+      <button on:click={load} class="mt-2 text-tiny text-gold font-bold">Retry</button>
     </div>
   {:else if affiliates.length === 0}
     <div
@@ -336,12 +336,12 @@
         </div>
       </div>
       <p class="text-sm font-extrabold text-white">No groups connected</p>
-      <p class="text-[11px] text-white/50 mt-1 leading-relaxed max-w-[260px] mx-auto">
+      <p class="text-tiny text-white/50 mt-1 leading-relaxed max-w-[260px] mx-auto">
         Connect your Telegram group and start earning 8% of every member's rake.
       </p>
       <button
         on:click={() => (showForm = true)}
-        class="mt-3 px-4 py-2 rounded-xl text-[11px] font-extrabold active:scale-95"
+        class="mt-3 px-4 py-2 rounded-xl text-tiny font-extrabold active:scale-95"
         style="background: linear-gradient(180deg, #22d3ee, #0891b2); color: #ffffff; box-shadow: 0 2px 0 #155e75;"
       >
         Connect Group
@@ -377,7 +377,7 @@
                   >
                 {/if}
               </div>
-              <p class="text-[9px] text-cyan-300 font-mono mt-0.5">
+              <p class="text-micro text-cyan-300 font-mono mt-0.5">
                 {a.telegramGroupType} · {Math.round(a.ratePct * 100)}%
               </p>
 
@@ -387,17 +387,17 @@
               >
                 <div>
                   <p class="text-[8px] text-white/40 uppercase font-bold">Members</p>
-                  <p class="text-[11px] font-extrabold text-white tabular-nums">{a.totalMembers}</p>
+                  <p class="text-tiny font-extrabold text-white tabular-nums">{a.totalMembers}</p>
                 </div>
                 <div>
                   <p class="text-[8px] text-white/40 uppercase font-bold">Rake</p>
-                  <p class="text-[11px] font-extrabold text-white/85 tabular-nums">
+                  <p class="text-tiny font-extrabold text-white/85 tabular-nums">
                     ${fmt(a.totalGroupRake)}
                   </p>
                 </div>
-                <div class="text-right">
+                <div class="text-end">
                   <p class="text-[8px] text-white/40 uppercase font-bold">Earned</p>
-                  <p class="text-[11px] font-extrabold text-emerald-400 tabular-nums">
+                  <p class="text-tiny font-extrabold text-emerald-400 tabular-nums">
                     +${fmt(a.totalEarnings)}
                   </p>
                 </div>
@@ -408,7 +408,7 @@
           <div class="flex gap-2 mt-3 pt-2.5" style="border-top: 1px solid rgba(255,255,255,0.06);">
             <button
               on:click={() => onNavigate(`referral-affiliate-detail:${a.id}`)}
-              class="flex-1 rounded-lg py-1.5 text-[10px] font-extrabold active:scale-95"
+              class="flex-1 rounded-lg py-1.5 text-mini font-extrabold active:scale-95"
               style="background: rgba(34,211,238,0.15); border: 1px solid rgba(34,211,238,0.4); color: #67e8f9;"
             >
               Details
@@ -418,7 +418,7 @@
                 const link = a.affiliateLink;
                 navigator.clipboard.writeText(link).then(() => flash('Link copied'));
               }}
-              class="flex-1 rounded-lg py-1.5 text-[10px] font-extrabold active:scale-95"
+              class="flex-1 rounded-lg py-1.5 text-mini font-extrabold active:scale-95"
               style="background: rgba(244,201,93,0.15); border: 1px solid rgba(244,201,93,0.4); color: #f4c95d;"
             >
               Copy Link
@@ -426,7 +426,7 @@
             {#if a.isActive}
               <button
                 on:click={() => remove(a.id, a.telegramGroupTitle)}
-                class="rounded-lg px-3 py-1.5 text-[10px] font-extrabold active:scale-95"
+                class="rounded-lg px-3 py-1.5 text-mini font-extrabold active:scale-95"
                 style="background: rgba(220,38,38,0.15); border: 1px solid rgba(220,38,38,0.35); color: #fca5a5;"
                 aria-label="Disconnect"
               >

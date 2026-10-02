@@ -133,7 +133,7 @@
         <h1 class="text-[26px] font-extrabold text-white leading-none tracking-[-0.02em]">
           Tables
         </h1>
-        <p class="text-[11px] text-white/45 mt-1.5">Pick a table and join the action</p>
+        <p class="text-tiny text-white/45 mt-1.5">Pick a table and join the action</p>
       </div>
       <button
         on:click={() => loadTables(true)}
@@ -179,7 +179,7 @@
     {#each [{ k: 'all', l: 'All Games', icon: 'target', color: '#d4af37' }, { k: 'free', l: 'Free Play', icon: 'gift', color: '#10b981' }, { k: 'real', l: 'Real Money', icon: 'dollar', color: '#f4c95d' }] as f}
       <button
         on:click={() => (filterMode = f.k as any)}
-        class="shrink-0 px-3.5 py-2 rounded-full text-[11px] font-extrabold transition-all flex items-center gap-1.5 active:scale-95"
+        class="shrink-0 px-3.5 py-2 rounded-full text-tiny font-extrabold transition-all flex items-center gap-1.5 active:scale-95"
         style="
           background: {filterMode === f.k
           ? `linear-gradient(180deg, ${f.color}, ${f.color}cc)`
@@ -201,7 +201,7 @@
       {#each [{ k: 'all', l: 'All', color: '#d4af37' }, { k: 'holdem', l: "Hold'em", color: '#3b82f6' }, { k: 'omaha4', l: 'Omaha 4', color: '#ef4444' }, { k: 'omaha5', l: 'Omaha 5', color: '#10b981' }] as f}
         <button
           on:click={() => (filterVariant = f.k as any)}
-          class="shrink-0 px-2.5 py-1.5 rounded-lg text-[10px] font-extrabold transition-all active:scale-95"
+          class="shrink-0 px-2.5 py-1.5 rounded-lg text-mini font-extrabold transition-all active:scale-95"
           style="
             background: {filterVariant === f.k
             ? `linear-gradient(180deg, ${f.color}30, ${f.color}15)`
@@ -222,7 +222,7 @@
       aria-label="Change sort"
     >
       <Icon name={currentSort.icon} size={11} color="#93c5fd" />
-      <span class="text-[10px] font-extrabold text-blue-300">{currentSort.label}</span>
+      <span class="text-mini font-extrabold text-blue-300">{currentSort.label}</span>
     </button>
   </div>
 
@@ -243,7 +243,7 @@
         style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.35);"
       >
         <p class="text-sm text-red-300 font-bold">{error}</p>
-        <button on:click={() => loadTables(true)} class="mt-2 text-[11px] text-gold font-bold">
+        <button on:click={() => loadTables(true)} class="mt-2 text-tiny text-gold font-bold">
           Retry
         </button>
       </div>
@@ -268,13 +268,13 @@
           </div>
         </div>
         <p class="text-sm font-bold text-white/75">No tables match your filters</p>
-        <p class="text-[11px] text-white/45 mt-1">Try a different variant or mode</p>
+        <p class="text-tiny text-white/45 mt-1">Try a different variant or mode</p>
         <button
           on:click={() => {
             filterMode = 'all';
             filterVariant = 'all';
           }}
-          class="mt-4 px-4 py-2 rounded-xl text-[11px] font-extrabold active:scale-95"
+          class="mt-4 px-4 py-2 rounded-xl text-tiny font-extrabold active:scale-95"
           style="
             background: linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15);
             color: #0a0800;
@@ -299,7 +299,7 @@
 
         <button
           on:click={() => onOpenTable(table.id)}
-          class="w-full text-left rounded-2xl active:scale-[0.98] transition-all relative overflow-hidden"
+          class="w-full text-start rounded-2xl active:scale-[0.98] transition-all relative overflow-hidden"
           style="
             background:
               radial-gradient(ellipse at 100% 0%, {accent}15 0%, transparent 50%),
@@ -310,21 +310,21 @@
         >
           <!-- Left accent stripe -->
           <div
-            class="absolute left-0 top-0 bottom-0 w-1"
+            class="absolute start-0 top-0 bottom-0 w-1"
             style="background: linear-gradient(180deg, {accent}, {accent}66);"
           ></div>
 
-          <div class="pl-4 pr-3.5 py-3.5">
+          <div class="ps-4 pe-3.5 py-3.5">
             <!-- Top: badges row -->
             <div class="flex items-center gap-1.5 mb-2.5">
               <span
-                class="text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider"
+                class="text-micro font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider"
                 style="background: {accent}20; color: {accent}; border: 1px solid {accent}50;"
               >
                 {variantLabel(table.variant)}
               </span>
               <span
-                class="text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider"
+                class="text-micro font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider"
                 style="
                   background: {isFree ? 'rgba(16,185,129,0.18)' : 'rgba(244,201,93,0.18)'};
                   color: {isFree ? '#6ee7b7' : '#f4c95d'};
@@ -333,7 +333,7 @@
               >
                 {isFree ? 'Free' : 'Real'}
               </span>
-              <span class="ml-auto text-[9px] text-white/50 font-mono font-bold">#{table.id}</span>
+              <span class="ms-auto text-micro text-white/50 font-mono font-bold">#{table.id}</span>
             </div>
 
             <!-- Middle: name + status -->
@@ -349,7 +349,7 @@
                   style="background: {status.color}; box-shadow: 0 0 10px {status.color};"
                 ></span>
                 <span
-                  class="text-[10px] font-extrabold uppercase tracking-wider"
+                  class="text-mini font-extrabold uppercase tracking-wider"
                   style="color: {status.color};"
                 >
                   {status.label}
@@ -360,7 +360,7 @@
             <!-- Bottom: blinds + seats -->
             <div class="flex items-center justify-between gap-3">
               <div class="flex items-center gap-2 min-w-0">
-                <span class="text-[10px] text-white/40 uppercase tracking-wider font-bold">
+                <span class="text-mini text-white/40 uppercase tracking-wider font-bold">
                   Blinds
                 </span>
                 <span
@@ -369,7 +369,7 @@
                   ${fmtBlind(sb)}<span class="text-white/40 mx-0.5">/</span>${fmtBlind(bb)}
                 </span>
                 {#if Number(ante) > 0}
-                  <span class="text-[10px] text-white/40 font-mono">+a{fmtBlind(ante)}</span>
+                  <span class="text-mini text-white/40 font-mono">+a{fmtBlind(ante)}</span>
                 {/if}
               </div>
 
@@ -400,10 +400,10 @@
                 style="border-top: 1px solid rgba(255,255,255,0.05);"
               >
                 <Icon name="dollar" size={10} color="rgba(244,201,93,0.6)" />
-                <span class="text-[9px] text-white/40 font-bold uppercase tracking-wider">
+                <span class="text-micro text-white/40 font-bold uppercase tracking-wider">
                   Min buy-in
                 </span>
-                <span class="text-[10px] font-extrabold text-gold tabular-nums">
+                <span class="text-mini font-extrabold text-gold tabular-nums">
                   ${formatAmount(table.minBuyIn, 0)}
                 </span>
               </div>

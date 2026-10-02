@@ -158,7 +158,7 @@
       style="background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.35);"
     >
       <p class="text-sm text-red-300 font-bold">{error}</p>
-      <button on:click={load} class="mt-2 text-[11px] text-gold font-bold">Retry</button>
+      <button on:click={load} class="mt-2 text-tiny text-gold font-bold">Retry</button>
     </div>
   {:else if dashboard}
     <!-- HERO -->
@@ -175,12 +175,12 @@
         "
       >
         <div
-          class="absolute -top-16 -right-16 w-48 h-48 rounded-full opacity-25 pointer-events-none"
+          class="absolute -top-16 -end-16 w-48 h-48 rounded-full opacity-25 pointer-events-none"
           style="background: radial-gradient(circle, #f4c95d, transparent 70%);"
         ></div>
 
         <div class="relative">
-          <p class="text-[10px] uppercase tracking-widest text-gold/80 font-bold mb-1">
+          <p class="text-mini uppercase tracking-widest text-gold/80 font-bold mb-1">
             Lifetime Earnings
           </p>
           <div class="flex items-baseline gap-2 mb-3">
@@ -204,19 +204,23 @@
             style="border-top: 1px solid rgba(244,201,93,0.2);"
           >
             <div>
-              <p class="text-[9px] text-white/40 uppercase font-bold mb-1">This Month</p>
+              <p class="text-micro text-white/40 uppercase font-bold mb-1">This Month</p>
               <p class="text-base font-extrabold text-emerald-400 tabular-nums leading-none">
                 ${fmt(dashboard.thisMonth)}
               </p>
             </div>
-            <div style="border-left: 1px solid rgba(255,255,255,0.06); padding-left: 8px;">
-              <p class="text-[9px] text-white/40 uppercase font-bold mb-1">Active</p>
+            <div
+              style="border-inline-start: 1px solid rgba(255,255,255,0.06); padding-inline-start: 8px;"
+            >
+              <p class="text-micro text-white/40 uppercase font-bold mb-1">Active</p>
               <p class="text-base font-extrabold text-white tabular-nums leading-none">
                 {dashboard.activeRefs}
               </p>
             </div>
-            <div style="border-left: 1px solid rgba(255,255,255,0.06); padding-left: 8px;">
-              <p class="text-[9px] text-white/40 uppercase font-bold mb-1">Total</p>
+            <div
+              style="border-inline-start: 1px solid rgba(255,255,255,0.06); padding-inline-start: 8px;"
+            >
+              <p class="text-micro text-white/40 uppercase font-bold mb-1">Total</p>
               <p class="text-base font-extrabold text-white tabular-nums leading-none">
                 {dashboard.totalRefs}
               </p>
@@ -234,13 +238,13 @@
       >
         <div class="flex items-center gap-2 mb-2">
           <Icon name="send" size={14} color="#f4c95d" />
-          <p class="text-[10px] uppercase tracking-widest font-extrabold text-gold flex-1">
+          <p class="text-mini uppercase tracking-widest font-extrabold text-gold flex-1">
             Your Referral Link
           </p>
         </div>
 
         <div
-          class="rounded-xl p-2.5 mb-2.5 font-mono text-[10px] text-white/85 break-all leading-relaxed"
+          class="rounded-xl p-2.5 mb-2.5 font-mono text-mini text-white/85 break-all leading-relaxed"
           style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.06);"
         >
           {dashboard.shareLink}
@@ -249,7 +253,7 @@
         <div class="flex gap-2">
           <button
             on:click={copyLink}
-            class="flex-1 rounded-xl py-2.5 text-[11px] font-extrabold active:scale-95 flex items-center justify-center gap-1.5"
+            class="flex-1 rounded-xl py-2.5 text-tiny font-extrabold active:scale-95 flex items-center justify-center gap-1.5"
             style="background: rgba(37,99,235,0.15); border: 1px solid rgba(37,99,235,0.4); color: #93c5fd;"
           >
             <Icon name="copy" size={13} color="#93c5fd" />
@@ -257,7 +261,7 @@
           </button>
           <button
             on:click={shareToTelegram}
-            class="flex-1 rounded-xl py-2.5 text-[11px] font-extrabold active:scale-95 flex items-center justify-center gap-1.5"
+            class="flex-1 rounded-xl py-2.5 text-tiny font-extrabold active:scale-95 flex items-center justify-center gap-1.5"
             style="background: linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15); color: #0a0800; box-shadow: 0 3px 0 #7a560a;"
           >
             <Icon name="send" size={13} color="#0a0800" />
@@ -273,7 +277,7 @@
         class="rounded-2xl p-3.5"
         style="background: linear-gradient(180deg, rgba(15,31,58,0.85), rgba(7,14,27,0.95)); border: 1px solid rgba(212,175,55,0.3);"
       >
-        <p class="text-[10px] uppercase tracking-widest font-extrabold text-gold/80 mb-3">
+        <p class="text-mini uppercase tracking-widest font-extrabold text-gold/80 mb-3">
           Your Rates
         </p>
         <div class="grid grid-cols-3 gap-2">
@@ -282,7 +286,7 @@
               class="rounded-xl p-2.5 text-center"
               style="background: rgba(0,0,0,0.35); border: 1px solid {r.color}40;"
             >
-              <p class="text-[9px] uppercase font-bold mb-1" style="color: {r.color};">
+              <p class="text-micro uppercase font-bold mb-1" style="color: {r.color};">
                 {r.label}
               </p>
               <p class="text-xl font-extrabold tabular-nums" style="color: {r.color};">
@@ -299,7 +303,7 @@
         </div>
         {#if dashboard.bonusTier > 0}
           <div class="mt-2 pt-2" style="border-top: 1px solid rgba(244,201,93,0.15);">
-            <p class="text-[10px] font-bold text-emerald-400 text-center">
+            <p class="text-mini font-bold text-emerald-400 text-center">
               Active bonus: +{dashboard.bonusTier}% on direct rate
             </p>
           </div>
@@ -315,10 +319,10 @@
       >
         <div class="flex items-center gap-2 mb-2">
           <Icon name="star" size={14} color="#60a5fa" />
-          <p class="text-[10px] uppercase tracking-widest font-extrabold text-blue-300 flex-1">
+          <p class="text-mini uppercase tracking-widest font-extrabold text-blue-300 flex-1">
             Ambassador Progress
           </p>
-          <span class="text-[11px] font-extrabold text-blue-300 tabular-nums">
+          <span class="text-tiny font-extrabold text-blue-300 tabular-nums">
             {dashboard.activeRefs} / {dashboard.ambassadorTarget}
           </span>
         </div>
@@ -335,7 +339,7 @@
             "
           ></div>
         </div>
-        <p class="text-[10px] text-white/50 leading-relaxed">
+        <p class="text-mini text-white/50 leading-relaxed">
           Reach 25 active referrals to unlock +18% direct rate and access to the monthly $500
           Ambassador tournament.
         </p>
@@ -344,14 +348,14 @@
 
     <!-- QUICK LINKS -->
     <div class="px-4 mb-3">
-      <p class="text-[10px] uppercase tracking-widest font-extrabold text-gold/80 mb-2 px-1">
+      <p class="text-mini uppercase tracking-widest font-extrabold text-gold/80 mb-2 px-1">
         Manage
       </p>
       <div class="grid grid-cols-2 gap-2">
         {#each SUBPAGES as p}
           <button
             on:click={() => onNavigate(p.id)}
-            class="rounded-2xl p-3 flex flex-col items-start gap-1.5 active:scale-[0.97] transition-all text-left"
+            class="rounded-2xl p-3 flex flex-col items-start gap-1.5 active:scale-[0.97] transition-all text-start"
             style="
               background: linear-gradient(180deg, rgba(15,31,58,0.85), rgba(7,14,27,0.95));
               border: 1px solid {p.color}35;
@@ -364,8 +368,8 @@
               <Icon name={p.icon} size={15} color={p.color} />
             </div>
             <div>
-              <p class="text-[11px] font-extrabold text-white leading-tight">{p.label}</p>
-              <p class="text-[9px] text-white/45 leading-tight mt-0.5">{p.sub}</p>
+              <p class="text-tiny font-extrabold text-white leading-tight">{p.label}</p>
+              <p class="text-micro text-white/45 leading-tight mt-0.5">{p.sub}</p>
             </div>
           </button>
         {/each}
@@ -374,7 +378,7 @@
 
     <!-- RECENT ACTIVITY -->
     <div class="px-4 mb-3">
-      <p class="text-[10px] uppercase tracking-widest font-extrabold text-gold/80 mb-2 px-1">
+      <p class="text-mini uppercase tracking-widest font-extrabold text-gold/80 mb-2 px-1">
         Recent Activity
       </p>
       {#if dashboard.recentActivity.length === 0}
@@ -391,7 +395,7 @@
             </div>
           </div>
           <p class="text-[12px] font-extrabold text-white">No activity yet</p>
-          <p class="text-[10px] text-white/50 mt-1">Share your link to start earning</p>
+          <p class="text-mini text-white/50 mt-1">Share your link to start earning</p>
         </div>
       {:else}
         <div class="space-y-1.5">
@@ -407,12 +411,12 @@
                 <Icon name="dollar" size={14} color="#f4c95d" />
               </div>
               <div class="flex-1 min-w-0">
-                <p class="text-[11px] font-extrabold text-white truncate">{a.displayName}</p>
-                <p class="text-[9px] text-white/45 mt-0.5">
+                <p class="text-tiny font-extrabold text-white truncate">{a.displayName}</p>
+                <p class="text-micro text-white/45 mt-0.5">
                   Level {a.level} · {Math.round(a.rate * 100)}% · {fmtDate(a.paidAt)}
                 </p>
               </div>
-              <div class="text-right shrink-0">
+              <div class="text-end shrink-0">
                 <p class="text-[12px] font-extrabold text-emerald-400 tabular-nums">
                   +${fmt(a.amount)}
                 </p>

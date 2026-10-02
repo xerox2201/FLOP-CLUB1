@@ -64,7 +64,7 @@
       {#each [['avatar', 'Avatar'], ['frame', 'Frame']] as [k, l]}
         <button
           on:click={() => (tab = k as any)}
-          class="flex-1 py-3 text-[11px] font-extrabold uppercase tracking-wider"
+          class="flex-1 py-3 text-tiny font-extrabold uppercase tracking-wider"
           style="color: {tab === k
             ? '#f4e5a8'
             : 'rgba(255,255,255,0.4)'}; border-bottom: 2px solid {tab === k
@@ -117,13 +117,13 @@
                   class="w-16 h-16 rounded-full flex items-center justify-center"
                   style="background: radial-gradient(circle, #1a3a5c, #05080f); border: 1px solid rgba(255,255,255,0.1);"
                 >
-                  <span class="text-[10px] font-bold text-white/50">None</span>
+                  <span class="text-mini font-bold text-white/50">None</span>
                 </div>
               {:else}
                 <Avatar {avatarId} size="lg" frame={f.id} />
               {/if}
               <span
-                class="text-[9px] font-bold"
+                class="text-micro font-bold"
                 style="color: {frame === f.id ? '#f4e5a8' : 'rgba(255,255,255,0.55)'};"
               >
                 {f.label}

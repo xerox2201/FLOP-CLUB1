@@ -70,7 +70,7 @@
 {#if !loading && freeroll && !isPast}
   <button
     on:click={() => onOpen(freeroll.id)}
-    class="mx-4 mb-3 w-[calc(100%-2rem)] rounded-2xl p-3 text-left active:scale-[0.98] transition relative overflow-hidden"
+    class="mx-4 mb-3 w-[calc(100%-2rem)] rounded-2xl p-3 text-start active:scale-[0.98] transition relative overflow-hidden"
     style="
       background:
         radial-gradient(ellipse at 100% 0%, rgba(244,201,93,0.35) 0%, transparent 55%),
@@ -80,7 +80,7 @@
     "
   >
     <div
-      class="absolute -top-8 -right-8 w-32 h-32 rounded-full opacity-30 pointer-events-none"
+      class="absolute -top-8 -end-8 w-32 h-32 rounded-full opacity-30 pointer-events-none"
       style="background: radial-gradient(circle, #f4c95d, transparent 70%);"
     ></div>
 
@@ -100,7 +100,7 @@
           {#if isLive}
             <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
           {/if}
-          <p class="text-[9px] uppercase tracking-[0.3em] font-extrabold" style="color: #f4c95d;">
+          <p class="text-micro uppercase tracking-[0.3em] font-extrabold" style="color: #f4c95d;">
             {isLive ? 'LIVE NOW' : 'TODAY · FREEROLL'}
           </p>
         </div>
@@ -114,14 +114,14 @@
           >
             {fmt(freeroll.prize_usd)}
           </span>
-          <span class="text-[9px] uppercase tracking-wider text-emerald-300/70 font-bold"
+          <span class="text-micro uppercase tracking-wider text-emerald-300/70 font-bold"
             >prize</span
           >
-          <span class="text-white/30 text-[10px]">·</span>
-          <span class="text-[10px] text-white/70 tabular-nums font-bold">
+          <span class="text-white/30 text-mini">·</span>
+          <span class="text-mini text-white/70 tabular-nums font-bold">
             {freeroll.registered}
           </span>
-          <span class="text-[9px] uppercase tracking-wider text-white/40 font-bold">joined</span>
+          <span class="text-micro uppercase tracking-wider text-white/40 font-bold">joined</span>
         </div>
       </div>
     </div>
@@ -131,7 +131,7 @@
       style="border-top: 1px solid rgba(244,201,93,0.25);"
     >
       <div>
-        <p class="text-[9px] uppercase tracking-wider text-white/40 font-bold">
+        <p class="text-micro uppercase tracking-wider text-white/40 font-bold">
           {isLive ? 'Status' : 'Starts in'}
         </p>
         <p class="text-[13px] font-extrabold tabular-nums" style="color: #f4c95d;">
@@ -140,20 +140,20 @@
       </div>
 
       {#if eligibility && !eligibility.eligible}
-        <div class="text-right">
+        <div class="text-end">
           <div class="flex items-center gap-1 justify-end">
             <Icon name="lock" size={10} color="#fcd34d" />
-            <p class="text-[9px] uppercase tracking-wider text-amber-300 font-bold">
+            <p class="text-micro uppercase tracking-wider text-amber-300 font-bold">
               Deposit {fmt(eligibility.minRequired)}+ to join
             </p>
           </div>
-          <p class="text-[9px] text-white/50">
+          <p class="text-micro text-white/50">
             You: {fmt(eligibility.lifetimeDepositUsd)}
           </p>
         </div>
       {:else}
         <div
-          class="rounded-full px-3 py-1.5 text-[10px] font-extrabold"
+          class="rounded-full px-3 py-1.5 text-mini font-extrabold"
           style="background: linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15); color: #0a0800;"
         >
           {isLive ? 'PLAY →' : 'REGISTER →'}

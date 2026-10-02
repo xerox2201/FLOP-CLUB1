@@ -57,7 +57,7 @@
         <Icon name={a.icon} size={18} color={a.color} />
       </div>
       <div class="text-center leading-tight">
-        <p class="text-[10px] font-extrabold text-white">{a.label}</p>
+        <p class="text-mini font-extrabold text-white">{a.label}</p>
         <p class="text-[8px] text-white/45 mt-0.5">{a.sub}</p>
       </div>
     </button>

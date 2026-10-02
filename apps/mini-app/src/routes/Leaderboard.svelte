@@ -249,7 +249,7 @@
     >
       <button
         on:click={() => selectView('season')}
-        class="flex-1 rounded-xl py-2 text-[11px] font-extrabold transition"
+        class="flex-1 rounded-xl py-2 text-tiny font-extrabold transition"
         style="
           background: {view === 'season'
           ? 'linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15)'
@@ -261,7 +261,7 @@
       </button>
       <button
         on:click={() => selectView('race')}
-        class="flex-1 rounded-xl py-2 text-[11px] font-extrabold transition"
+        class="flex-1 rounded-xl py-2 text-tiny font-extrabold transition"
         style="
           background: {view === 'race'
           ? 'linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15)'
@@ -305,11 +305,11 @@
             Leaderboard
           </h1>
           {#if period?.period_start}
-            <p class="text-[10px] text-gold/70 mt-1 uppercase tracking-[0.2em] font-extrabold">
+            <p class="text-mini text-gold/70 mt-1 uppercase tracking-[0.2em] font-extrabold">
               {seasonName}
             </p>
           {:else}
-            <p class="text-[10px] text-white/40 mt-1 font-bold">Top players this month</p>
+            <p class="text-mini text-white/40 mt-1 font-bold">Top players this month</p>
           {/if}
         </div>
 
@@ -358,18 +358,18 @@
       >
         <!-- Decorative glow -->
         <div
-          class="absolute -top-16 -right-16 w-48 h-48 rounded-full opacity-25 pointer-events-none"
+          class="absolute -top-16 -end-16 w-48 h-48 rounded-full opacity-25 pointer-events-none"
           style="background: radial-gradient(circle, #f4c95d, transparent 70%);"
         ></div>
 
         <div class="relative">
           <div class="flex items-center gap-2 mb-1.5">
             <Icon name="trophy" size={14} color="#f4c95d" />
-            <p class="text-[10px] uppercase tracking-widest text-gold/80 font-extrabold">
+            <p class="text-mini uppercase tracking-widest text-gold/80 font-extrabold">
               Prize Pool
             </p>
             <span
-              class="ml-auto flex items-center gap-1 px-1.5 py-0.5 rounded-full"
+              class="ms-auto flex items-center gap-1 px-1.5 py-0.5 rounded-full"
               style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.4);"
             >
               <span
@@ -402,10 +402,10 @@
           >
             <div class="flex items-center gap-1.5">
               <Icon name="users" size={11} color="rgba(255,255,255,0.5)" />
-              <span class="text-[10px] text-white/60 font-bold"> Top 30 paid out </span>
+              <span class="text-mini text-white/60 font-bold"> Top 30 paid out </span>
             </div>
             {#if period}
-              <span class="text-[9px] font-mono text-white/40">
+              <span class="text-micro font-mono text-white/40">
                 {period.period_start?.slice(5, 10)} → {period.period_end?.slice(5, 10)}
               </span>
             {/if}
@@ -445,7 +445,7 @@
             />
           </div>
           <p class="text-sm font-extrabold text-white">Season hasn't started</p>
-          <p class="text-[11px] text-white/55 mt-1 font-bold">
+          <p class="text-tiny text-white/55 mt-1 font-bold">
             Play real-money hands to appear on the board
           </p>
         </div>
@@ -501,7 +501,7 @@
                   box-shadow: 0 4px 12px rgba(0,0,0,0.4);
                 "
                 >
-                  <p class="text-[11px] font-extrabold text-white truncate leading-tight">
+                  <p class="text-tiny font-extrabold text-white truncate leading-tight">
                     {second.display_name}
                   </p>
                   <p
@@ -514,9 +514,7 @@
                     style="border-top: 1px solid rgba(148,163,184,0.2);"
                   >
                     <Icon name="trophy" size={9} color="#cbd5e1" />
-                    <span
-                      class="text-[10px] font-extrabold text-slate-200 tabular-nums leading-none"
-                    >
+                    <span class="text-mini font-extrabold text-slate-200 tabular-nums leading-none">
                       ${fmt(prizeForRank(2, displayPrizePool))}
                     </span>
                     <span class="text-[8px] text-white/40 font-bold leading-none"> prize </span>
@@ -610,7 +608,7 @@
                     style="border-top: 1px solid rgba(244,201,93,0.2);"
                   >
                     <Icon name="trophy" size={9} color="#f4c95d" />
-                    <span class="text-[10px] font-extrabold text-gold tabular-nums leading-none">
+                    <span class="text-mini font-extrabold text-gold tabular-nums leading-none">
                       ${fmt(prizeForRank(1, displayPrizePool))}
                     </span>
                     <span class="text-[8px] text-white/40 font-bold leading-none"> prize </span>
@@ -673,7 +671,7 @@
                   box-shadow: 0 4px 12px rgba(0,0,0,0.4);
                 "
                 >
-                  <p class="text-[11px] font-extrabold text-white truncate leading-tight">
+                  <p class="text-tiny font-extrabold text-white truncate leading-tight">
                     {third.display_name}
                   </p>
                   <p
@@ -687,7 +685,7 @@
                   >
                     <Icon name="trophy" size={9} color="#d97706" />
                     <span
-                      class="text-[10px] font-extrabold tabular-nums leading-none"
+                      class="text-mini font-extrabold tabular-nums leading-none"
                       style="color: #f59e0b;"
                     >
                       ${fmt(prizeForRank(3, displayPrizePool))}
@@ -732,7 +730,7 @@
             </div>
             <div class="flex-1 min-w-0">
               <p class="text-[13px] font-extrabold text-white mb-1">Climb the ranks</p>
-              <p class="text-[10px] text-white/55 font-bold">
+              <p class="text-mini text-white/55 font-bold">
                 Play real-money hands to appear on this board
               </p>
             </div>
@@ -746,7 +744,7 @@
           <div class="flex items-center gap-2 mb-2">
             <span class="w-1.5 h-1.5 rounded-full bg-gold" style="box-shadow: 0 0 6px #d4af37;"
             ></span>
-            <p class="text-[10px] font-extrabold text-white/60 uppercase tracking-widest">
+            <p class="text-mini font-extrabold text-white/60 uppercase tracking-widest">
               Rank 4 — {entries.length}
             </p>
           </div>
@@ -768,7 +766,7 @@
               >
                 <!-- Rank -->
                 <div
-                  class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-[11px] font-extrabold tabular-nums"
+                  class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-tiny font-extrabold tabular-nums"
                   style="
                   background: {isMe ? 'rgba(212,175,55,0.2)' : 'rgba(0,0,0,0.4)'};
                   color: {isMe ? '#f4e5a8' : 'rgba(255,255,255,0.55)'};
@@ -813,21 +811,21 @@
                       </span>
                     {/if}
                   </div>
-                  <p class="text-[9px] text-white/40 mt-0.5 font-bold">
+                  <p class="text-micro text-white/40 mt-0.5 font-bold">
                     {e.hands_played}
                     {handsLabel(e.hands_played)}
                   </p>
                 </div>
 
                 <!-- Amount -->
-                <div class="text-right shrink-0">
+                <div class="text-end shrink-0">
                   <p class="text-[13px] font-extrabold text-emerald-400 tabular-nums leading-none">
                     +${fmt(e.total_won_usd)}
                   </p>
                   {#if rankPrize > 0}
                     <div class="flex items-center gap-1 justify-end mt-1 leading-none">
                       <Icon name="trophy" size={9} color="#d4af37" />
-                      <span class="text-[9px] font-bold text-gold tabular-nums">
+                      <span class="text-micro font-bold text-gold tabular-nums">
                         ${fmt(rankPrize)}
                       </span>
                     </div>
@@ -856,15 +854,15 @@
       >
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-[9px] uppercase tracking-[0.3em] font-extrabold text-gold">
+            <p class="text-micro uppercase tracking-[0.3em] font-extrabold text-gold">
               {raceBracketLabel} bracket
             </p>
-            <p class="text-[10px] text-white/50 font-bold mt-1">
+            <p class="text-mini text-white/50 font-bold mt-1">
               Top {racePaidPlaces || 20} paid
             </p>
           </div>
-          <div class="text-right">
-            <p class="text-[9px] uppercase tracking-wider text-white/40 font-bold">Resets in</p>
+          <div class="text-end">
+            <p class="text-micro uppercase tracking-wider text-white/40 font-bold">Resets in</p>
             <p class="text-[13px] font-extrabold text-white tabular-nums">{raceCountdown}</p>
           </div>
         </div>
@@ -882,7 +880,7 @@
           >
             ${fmt(racePoolUsd)}
           </span>
-          <span class="text-[10px] uppercase tracking-wider text-white/40 font-bold">
+          <span class="text-mini uppercase tracking-wider text-white/40 font-bold">
             prize pool
           </span>
         </div>
@@ -907,7 +905,7 @@
             "
           >
             <p
-              class="text-[11px] font-extrabold"
+              class="text-tiny font-extrabold"
               style="color: {raceBracket === b.key ? b.color : 'rgba(255,255,255,0.6)'};"
             >
               {b.label}
@@ -927,7 +925,7 @@
         class="w-full rounded-xl py-2.5 flex items-center justify-center gap-1.5 active:scale-[0.98] transition"
         style="background: rgba(0,0,0,0.35); border: 1px solid rgba(244,201,93,0.35);"
       >
-        <span class="text-[11px] font-extrabold text-gold">Open full Weekly Race page</span>
+        <span class="text-tiny font-extrabold text-gold">Open full Weekly Race page</span>
         <Icon name="arrow-right" size={11} color="#f4c95d" />
       </button>
     </div>
@@ -949,18 +947,18 @@
               box-shadow: 0 2px 0 #7a560a;
             "
           >
-            <span class="text-[11px] font-extrabold text-black leading-none">
+            <span class="text-tiny font-extrabold text-black leading-none">
               {raceMe.rank ? `#${raceMe.rank}` : '-'}
             </span>
           </div>
           <div class="flex-1 min-w-0">
-            <p class="text-[11px] font-extrabold text-white leading-none">Your position</p>
-            <p class="text-[9px] text-white/50 mt-1 leading-none">
+            <p class="text-tiny font-extrabold text-white leading-none">Your position</p>
+            <p class="text-micro text-white/50 mt-1 leading-none">
               ${fmt(raceMe.totalRake)} rake · {raceMe.bracketSize} players
             </p>
           </div>
-          <div class="text-right shrink-0">
-            <p class="text-[9px] text-gold/70 font-bold uppercase tracking-wider leading-none mb-1">
+          <div class="text-end shrink-0">
+            <p class="text-micro text-gold/70 font-bold uppercase tracking-wider leading-none mb-1">
               {raceMe.paid ? 'Won' : 'Est. prize'}
             </p>
             <p class="text-[13px] font-extrabold text-gold tabular-nums leading-none">
@@ -994,7 +992,7 @@
             <Icon name="trophy" size={28} color="#f4c95d" />
           </div>
           <p class="text-[12px] font-extrabold text-white">No racers yet</p>
-          <p class="text-[10px] text-white/50 font-bold mt-1">
+          <p class="text-mini text-white/50 font-bold mt-1">
             Play real-money hands to enter this week's race
           </p>
         </div>
@@ -1012,7 +1010,7 @@
               "
             >
               <div
-                class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-[11px] font-extrabold tabular-nums"
+                class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-tiny font-extrabold tabular-nums"
                 style="
                   background: {e.rank === 1
                   ? 'linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15)'
@@ -1030,7 +1028,7 @@
                 <p class="text-[12px] font-extrabold text-white truncate leading-tight">
                   {e.displayName}
                 </p>
-                <p class="text-[9px] text-white/40 font-bold mt-0.5">
+                <p class="text-micro text-white/40 font-bold mt-0.5">
                   ${fmt(e.totalRake)} rake
                 </p>
               </div>
@@ -1051,7 +1049,7 @@
 <!-- STICKY: MY RANK -->
 {#if view === 'season' && myRank && (myEntry || myRank > 30)}
   <div
-    class="fixed bottom-20 left-4 right-4 max-w-[480px] mx-auto rounded-2xl p-3 flex items-center gap-3 z-30"
+    class="fixed bottom-20 start-4 end-4 max-w-[480px] mx-auto rounded-2xl p-3 flex items-center gap-3 z-30"
     style="
       background:
         radial-gradient(ellipse at 0% 0%, rgba(244,201,93,0.15) 0%, transparent 60%),
@@ -1073,14 +1071,14 @@
       </span>
     </div>
     <div class="flex-1 min-w-0">
-      <p class="text-[11px] font-extrabold text-white leading-none">Your Rank</p>
-      <p class="text-[9px] text-white/50 mt-1 leading-none">
+      <p class="text-tiny font-extrabold text-white leading-none">Your Rank</p>
+      <p class="text-micro text-white/50 mt-1 leading-none">
         {myEntry?.hands_played || 0} hands · +${fmt(myEntry?.total_won_usd || 0)}
       </p>
     </div>
     {#if myEntry?.prize_usd > 0}
-      <div class="text-right shrink-0">
-        <p class="text-[9px] text-gold/70 font-bold uppercase tracking-wider leading-none mb-1">
+      <div class="text-end shrink-0">
+        <p class="text-micro text-gold/70 font-bold uppercase tracking-wider leading-none mb-1">
           Prize
         </p>
         <p class="text-[13px] font-extrabold text-gold tabular-nums leading-none">

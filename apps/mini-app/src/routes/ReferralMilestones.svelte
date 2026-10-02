@@ -84,7 +84,7 @@
     </h1>
     {#if claimableCount > 0}
       <span
-        class="text-[10px] font-extrabold px-2.5 py-1 rounded-full animate-pulse"
+        class="text-mini font-extrabold px-2.5 py-1 rounded-full animate-pulse"
         style="background: linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15); color: #0a0800;"
       >
         {claimableCount} CLAIM
@@ -104,7 +104,7 @@
       style="background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.35);"
     >
       <p class="text-sm text-red-300 font-bold">{error}</p>
-      <button on:click={load} class="mt-2 text-[11px] text-gold font-bold">Retry</button>
+      <button on:click={load} class="mt-2 text-tiny text-gold font-bold">Retry</button>
     </div>
   {:else}
     <!-- Summary -->
@@ -121,15 +121,13 @@
             <Icon name="target" size={22} color="#60a5fa" />
           </div>
           <div class="flex-1">
-            <p class="text-[10px] uppercase tracking-widest font-extrabold text-blue-300">
-              Progress
-            </p>
+            <p class="text-mini uppercase tracking-widest font-extrabold text-blue-300">Progress</p>
             <p class="text-2xl font-extrabold text-white tabular-nums leading-none mt-1">
               {achievedCount}<span class="text-white/40 text-sm">/{milestones.length}</span>
             </p>
           </div>
-          <div class="text-right">
-            <p class="text-[9px] text-white/45 uppercase font-bold">Claimed</p>
+          <div class="text-end">
+            <p class="text-micro text-white/45 uppercase font-bold">Claimed</p>
             <p class="text-sm font-extrabold text-blue-300 tabular-nums">
               {milestones.filter((m) => m.claimed).length}
             </p>
@@ -160,7 +158,7 @@
         >
           {#if m.claimable}
             <div
-              class="absolute -top-8 -right-8 w-24 h-24 rounded-full opacity-25 pointer-events-none"
+              class="absolute -top-8 -end-8 w-24 h-24 rounded-full opacity-25 pointer-events-none"
               style="background: radial-gradient(circle, #f4c95d, transparent 70%);"
             ></div>
           {/if}
@@ -220,18 +218,18 @@
                     >
                   {/if}
                 </div>
-                <p class="text-[10px] text-white/50 mt-0.5 leading-snug">{m.description}</p>
+                <p class="text-mini text-white/50 mt-0.5 leading-snug">{m.description}</p>
               </div>
             </div>
 
             <!-- Progress -->
             <div class="mb-2">
               <div class="flex items-center justify-between mb-1">
-                <span class="text-[9px] text-white/40 uppercase font-bold tracking-wider">
+                <span class="text-micro text-white/40 uppercase font-bold tracking-wider">
                   {m.metric === 'lifetime_earned' ? 'Earned' : 'Progress'}
                 </span>
                 <span
-                  class="text-[9px] font-mono tabular-nums"
+                  class="text-micro font-mono tabular-nums"
                   style="color: {m.achieved ? '#6ee7b7' : 'rgba(255,255,255,0.6)'};"
                 >
                   {m.metric === 'lifetime_earned'
@@ -270,7 +268,7 @@
               <div class="flex flex-wrap gap-1.5 flex-1">
                 {#if m.rewardChips > 0}
                   <span
-                    class="text-[9px] font-bold px-2 py-0.5 rounded-full"
+                    class="text-micro font-bold px-2 py-0.5 rounded-full"
                     style="background: rgba(16,185,129,0.15); color: #6ee7b7;"
                   >
                     +{m.rewardChips.toLocaleString()} chips
@@ -278,7 +276,7 @@
                 {/if}
                 {#if m.rewardUsd > 0}
                   <span
-                    class="text-[9px] font-bold px-2 py-0.5 rounded-full"
+                    class="text-micro font-bold px-2 py-0.5 rounded-full"
                     style="background: rgba(244,201,93,0.15); color: #f4c95d;"
                   >
                     +${m.rewardUsd}
@@ -286,7 +284,7 @@
                 {/if}
                 {#if m.rewardXp > 0}
                   <span
-                    class="text-[9px] font-bold px-2 py-0.5 rounded-full"
+                    class="text-micro font-bold px-2 py-0.5 rounded-full"
                     style="background: rgba(37,99,235,0.15); color: #93c5fd;"
                   >
                     +{m.rewardXp} XP
@@ -298,15 +296,13 @@
                 <button
                   on:click={() => claim(m.code)}
                   disabled={claiming === m.code}
-                  class="px-3 py-1.5 rounded-xl text-[10px] font-extrabold active:scale-95 disabled:opacity-40 shrink-0"
+                  class="px-3 py-1.5 rounded-xl text-mini font-extrabold active:scale-95 disabled:opacity-40 shrink-0"
                   style="background: linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15); color: #0a0800; box-shadow: 0 2px 0 #7a560a;"
                 >
                   {claiming === m.code ? '…' : 'Claim'}
                 </button>
               {:else if m.claimed}
-                <span
-                  class="text-[10px] font-bold text-emerald-400 flex items-center gap-1 shrink-0"
-                >
+                <span class="text-mini font-bold text-emerald-400 flex items-center gap-1 shrink-0">
                   <Icon name="check" size={11} color="#6ee7b7" />
                   <span>Done</span>
                 </span>

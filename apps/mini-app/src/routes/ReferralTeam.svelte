@@ -81,14 +81,14 @@
           class="rounded-2xl p-3 text-center"
           style="background: linear-gradient(180deg, rgba(15,31,58,0.85), rgba(7,14,27,0.95)); border: 1px solid rgba(244,201,93,0.3);"
         >
-          <p class="text-[9px] text-white/45 uppercase font-bold mb-1">Total</p>
+          <p class="text-micro text-white/45 uppercase font-bold mb-1">Total</p>
           <p class="text-xl font-extrabold text-white tabular-nums leading-none">{totalDirect}</p>
         </div>
         <div
           class="rounded-2xl p-3 text-center"
           style="background: linear-gradient(180deg, rgba(15,31,58,0.85), rgba(7,14,27,0.95)); border: 1px solid rgba(16,185,129,0.3);"
         >
-          <p class="text-[9px] text-white/45 uppercase font-bold mb-1">Active</p>
+          <p class="text-micro text-white/45 uppercase font-bold mb-1">Active</p>
           <p class="text-xl font-extrabold text-emerald-400 tabular-nums leading-none">
             {activeDirect}
           </p>
@@ -97,7 +97,7 @@
           class="rounded-2xl p-3 text-center"
           style="background: linear-gradient(180deg, rgba(15,31,58,0.85), rgba(7,14,27,0.95)); border: 1px solid rgba(37,99,235,0.3);"
         >
-          <p class="text-[9px] text-white/45 uppercase font-bold mb-1">Indirect</p>
+          <p class="text-micro text-white/45 uppercase font-bold mb-1">Indirect</p>
           <p class="text-xl font-extrabold text-blue-300 tabular-nums leading-none">
             {data.indirect.length}
           </p>
@@ -110,7 +110,7 @@
   <div class="flex gap-1.5 px-4 mb-3">
     <button
       on:click={() => (tab = 'direct')}
-      class="flex-1 py-2 rounded-xl text-[11px] font-extrabold uppercase tracking-wider active:scale-95 transition-all"
+      class="flex-1 py-2 rounded-xl text-tiny font-extrabold uppercase tracking-wider active:scale-95 transition-all"
       style="
         background: {tab === 'direct'
         ? 'linear-gradient(180deg, #f4e5a8 0%, #d4af37 45%, #a87a15 100%)'
@@ -123,7 +123,7 @@
     </button>
     <button
       on:click={() => (tab = 'indirect')}
-      class="flex-1 py-2 rounded-xl text-[11px] font-extrabold uppercase tracking-wider active:scale-95 transition-all"
+      class="flex-1 py-2 rounded-xl text-tiny font-extrabold uppercase tracking-wider active:scale-95 transition-all"
       style="
         background: {tab === 'indirect'
         ? 'linear-gradient(180deg, #f4e5a8 0%, #d4af37 45%, #a87a15 100%)'
@@ -148,7 +148,7 @@
       style="background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.35);"
     >
       <p class="text-sm text-red-300 font-bold">{error}</p>
-      <button on:click={load} class="mt-2 text-[11px] text-gold font-bold">Retry</button>
+      <button on:click={load} class="mt-2 text-tiny text-gold font-bold">Retry</button>
     </div>
   {:else if tab === 'direct'}
     {#if data.direct.length === 0}
@@ -165,10 +165,10 @@
           </div>
         </div>
         <p class="text-sm font-extrabold text-white">No direct referrals yet</p>
-        <p class="text-[11px] text-white/50 mt-1">Share your link to invite friends</p>
+        <p class="text-tiny text-white/50 mt-1">Share your link to invite friends</p>
         <button
           on:click={() => onNavigate('referral')}
-          class="mt-3 px-4 py-2 rounded-xl text-[11px] font-extrabold active:scale-95"
+          class="mt-3 px-4 py-2 rounded-xl text-tiny font-extrabold active:scale-95"
           style="background: linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15); color: #0a0800; box-shadow: 0 2px 0 #7a560a;"
         >
           Get link
@@ -201,7 +201,7 @@
               </div>
               {#if d.isActive}
                 <span
-                  class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full"
+                  class="absolute -bottom-0.5 -end-0.5 w-3 h-3 rounded-full"
                   style="background: #10b981; border: 2px solid #05080f; box-shadow: 0 0 6px #10b981;"
                 ></span>
               {/if}
@@ -218,26 +218,26 @@
                   >
                 {/if}
               </div>
-              <p class="text-[9px] text-white/45 mt-0.5">
+              <p class="text-micro text-white/45 mt-0.5">
                 Joined {fmtDate(d.joinedAt)} · Last active {fmtDate(d.lastActiveAt)}
               </p>
               <div class="flex items-center gap-2 mt-1">
-                <span class="text-[9px] text-white/50 font-mono tabular-nums">
+                <span class="text-micro text-white/50 font-mono tabular-nums">
                   rake ${fmt(d.rakeFrom)}
                 </span>
-                <span class="text-white/20 text-[9px]">·</span>
-                <span class="text-[9px] text-cyan-300 font-mono tabular-nums">
+                <span class="text-white/20 text-micro">·</span>
+                <span class="text-micro text-cyan-300 font-mono tabular-nums">
                   LVL {Math.floor(d.lifetimeXp / 1000) + 1}
                 </span>
               </div>
             </div>
 
             <!-- Earnings -->
-            <div class="text-right shrink-0">
+            <div class="text-end shrink-0">
               <p class="text-[13px] font-extrabold text-emerald-400 tabular-nums">
                 +${fmt(d.earned)}
               </p>
-              <p class="text-[9px] text-white/40 mt-0.5">earned</p>
+              <p class="text-micro text-white/40 mt-0.5">earned</p>
             </div>
           </div>
         {/each}
@@ -257,7 +257,7 @@
         </div>
       </div>
       <p class="text-sm font-extrabold text-white">No indirect referrals yet</p>
-      <p class="text-[11px] text-white/50 mt-1 leading-relaxed max-w-[240px] mx-auto">
+      <p class="text-tiny text-white/50 mt-1 leading-relaxed max-w-[240px] mx-auto">
         When your direct referrals invite their own friends, you'll see them here.
       </p>
     </div>
@@ -273,17 +273,17 @@
             <p class="text-[12px] font-extrabold text-white flex-1 truncate">
               via <span class="text-blue-300">{g.viaName}</span>
             </p>
-            <span class="text-[11px] font-extrabold text-blue-300 tabular-nums">
+            <span class="text-tiny font-extrabold text-blue-300 tabular-nums">
               {g.count}
               {g.count === 1 ? 'friend' : 'friends'}
             </span>
           </div>
-          <div class="flex items-center gap-3 text-[10px]">
+          <div class="flex items-center gap-3 text-mini">
             <div>
               <p class="text-white/40 uppercase tracking-wider font-bold text-[8px]">Rake</p>
               <p class="text-white/80 font-mono tabular-nums">${fmt(g.totalRake)}</p>
             </div>
-            <div class="ml-auto text-right">
+            <div class="ms-auto text-end">
               <p class="text-white/40 uppercase tracking-wider font-bold text-[8px]">Earned</p>
               <p class="text-emerald-400 font-extrabold tabular-nums">+${fmt(g.totalEarned)}</p>
             </div>

@@ -9,7 +9,7 @@
   {#each $notifications as n (n.id)}
     <button
       on:click={() => dismissNotif(n.id)}
-      class="w-full text-left rounded-2xl p-3 flex items-start gap-3 active:scale-[0.98] transition pointer-events-auto"
+      class="w-full text-start rounded-2xl p-3 flex items-start gap-3 active:scale-[0.98] transition pointer-events-auto"
       style="background: rgba(8,13,36,0.98); border: 1px solid {n.color}60; box-shadow: 0 8px 24px rgba(0,0,0,0.7), 0 0 24px {n.color}30; backdrop-filter: blur(16px); animation: toast-in 0.35s cubic-bezier(0.16, 1, 0.3, 1);"
     >
       <div
@@ -21,7 +21,7 @@
       <div class="flex-1 min-w-0">
         <p class="text-[12px] font-extrabold text-white leading-tight">{n.title}</p>
         {#if n.message}
-          <p class="text-[10px] text-white/60 mt-0.5 leading-tight">{n.message}</p>
+          <p class="text-mini text-white/60 mt-0.5 leading-tight">{n.message}</p>
         {/if}
       </div>
     </button>

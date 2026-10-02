@@ -107,14 +107,14 @@
       "
     >
       <div
-        class="absolute -top-16 -right-16 w-48 h-48 rounded-full opacity-25 pointer-events-none"
+        class="absolute -top-16 -end-16 w-48 h-48 rounded-full opacity-25 pointer-events-none"
         style="background: radial-gradient(circle, #f4c95d, transparent 70%);"
       ></div>
 
       <div class="relative">
         <div class="flex items-center gap-2 mb-1.5">
           <Icon name="trophy" size={14} color="#f4c95d" />
-          <p class="text-[10px] uppercase tracking-widest text-gold/80 font-extrabold">
+          <p class="text-mini uppercase tracking-widest text-gold/80 font-extrabold">
             Monthly Prize Pool
           </p>
         </div>
@@ -141,10 +141,10 @@
         >
           <div class="flex items-center gap-2">
             <Icon name="clock" size={11} color="rgba(255,255,255,0.5)" />
-            <span class="text-[10px] text-white/60 font-bold">Ends in {countdown}</span>
+            <span class="text-mini text-white/60 font-bold">Ends in {countdown}</span>
           </div>
           <div class="flex items-center gap-1.5">
-            <span class="text-[9px] text-white/40 font-bold">Top 10 paid</span>
+            <span class="text-micro text-white/40 font-bold">Top 10 paid</span>
           </div>
         </div>
       </div>
@@ -163,7 +163,7 @@
       style="background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.35);"
     >
       <p class="text-sm text-red-300 font-bold">{error}</p>
-      <button on:click={load} class="mt-2 text-[11px] text-gold font-bold">Retry</button>
+      <button on:click={load} class="mt-2 text-tiny text-gold font-bold">Retry</button>
     </div>
   {:else if data.entries.length === 0}
     <div
@@ -179,7 +179,7 @@
         </div>
       </div>
       <p class="text-sm font-extrabold text-white">Leaderboard starts this month</p>
-      <p class="text-[11px] text-white/50 mt-1">Start referring friends to appear here</p>
+      <p class="text-tiny text-white/50 mt-1">Start referring friends to appear here</p>
     </div>
   {:else}
     <!-- Podium -->
@@ -206,12 +206,12 @@
                 style="background: linear-gradient(180deg, rgba(15,31,58,0.9), rgba(7,14,27,0.95)); border: 1px solid rgba(148,163,184,0.4); min-height: 84px;"
               >
                 <span
-                  class="text-[10px] font-extrabold px-2 py-0.5 rounded-full inline-block mb-1"
+                  class="text-mini font-extrabold px-2 py-0.5 rounded-full inline-block mb-1"
                   style="background: rgba(148,163,184,0.25); color: #cbd5e1;"
                   ><Icon name="medal" size={18} color="#cbd5e1" /> 2nd</span
                 >
-                <p class="text-[10px] font-extrabold text-white truncate">{second.displayName}</p>
-                <p class="text-[11px] font-extrabold text-emerald-400 tabular-nums mt-0.5">
+                <p class="text-mini font-extrabold text-white truncate">{second.displayName}</p>
+                <p class="text-tiny font-extrabold text-emerald-400 tabular-nums mt-0.5">
                   ${fmt(second.earned)}
                 </p>
                 <p class="text-[8px] text-white/40 mt-0.5">${prizeForRank(2)} prize</p>
@@ -239,15 +239,15 @@
               style="background: linear-gradient(180deg, rgba(20,45,82,0.95), rgba(7,14,27,0.95)); border: 1.5px solid rgba(244,201,93,0.55); min-height: 100px; box-shadow: 0 0 20px rgba(244,201,93,0.2);"
             >
               <span
-                class="text-[10px] font-extrabold px-2 py-0.5 rounded-full inline-block mb-1"
+                class="text-mini font-extrabold px-2 py-0.5 rounded-full inline-block mb-1"
                 style="background: linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15); color: #0a0800;"
                 ><Icon name="medal" size={18} color="#f4c95d" /> 1st</span
               >
-              <p class="text-[11px] font-extrabold text-white truncate">{first.displayName}</p>
+              <p class="text-tiny font-extrabold text-white truncate">{first.displayName}</p>
               <p class="text-[12px] font-extrabold text-emerald-400 tabular-nums mt-0.5">
                 ${fmt(first.earned)}
               </p>
-              <p class="text-[9px] text-gold font-extrabold mt-0.5">${prizeForRank(1)} prize</p>
+              <p class="text-micro text-gold font-extrabold mt-0.5">${prizeForRank(1)} prize</p>
             </div>
           </div>
 
@@ -271,12 +271,12 @@
                 style="background: linear-gradient(180deg, rgba(15,31,58,0.9), rgba(7,14,27,0.95)); border: 1px solid rgba(217,119,6,0.4); min-height: 84px;"
               >
                 <span
-                  class="text-[10px] font-extrabold px-2 py-0.5 rounded-full inline-block mb-1"
+                  class="text-mini font-extrabold px-2 py-0.5 rounded-full inline-block mb-1"
                   style="background: rgba(217,119,6,0.25); color: #fbbf24;"
                   ><Icon name="medal" size={18} color="#d97706" /> 3rd</span
                 >
-                <p class="text-[10px] font-extrabold text-white truncate">{third.displayName}</p>
-                <p class="text-[11px] font-extrabold text-emerald-400 tabular-nums mt-0.5">
+                <p class="text-mini font-extrabold text-white truncate">{third.displayName}</p>
+                <p class="text-tiny font-extrabold text-emerald-400 tabular-nums mt-0.5">
                   ${fmt(third.earned)}
                 </p>
                 <p class="text-[8px] text-white/40 mt-0.5">${prizeForRank(3)} prize</p>
@@ -303,7 +303,7 @@
               "
             >
               <div
-                class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-[11px] font-extrabold tabular-nums"
+                class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-tiny font-extrabold tabular-nums"
                 style="background: rgba(0,0,0,0.4); color: rgba(255,255,255,0.6);"
               >
                 #{e.rank}
@@ -322,17 +322,17 @@
               </div>
               <div class="flex-1 min-w-0">
                 <p class="text-[12px] font-extrabold text-white truncate">{e.displayName}</p>
-                <p class="text-[9px] text-white/40 mt-0.5">
+                <p class="text-micro text-white/40 mt-0.5">
                   {e.refs}
                   {e.refs === 1 ? 'ref' : 'refs'}
                 </p>
               </div>
-              <div class="text-right shrink-0">
+              <div class="text-end shrink-0">
                 <p class="text-[13px] font-extrabold text-emerald-400 tabular-nums">
                   +${fmt(e.earned)}
                 </p>
                 {#if prizeForRank(e.rank) > 0}
-                  <p class="text-[9px] font-bold text-gold tabular-nums mt-0.5">
+                  <p class="text-micro font-bold text-gold tabular-nums mt-0.5">
                     ${prizeForRank(e.rank)} prize
                   </p>
                 {/if}
@@ -348,7 +348,7 @@
 <!-- Sticky: my rank -->
 {#if data.me && data.me.rank > 0}
   <div
-    class="fixed bottom-20 left-4 right-4 max-w-[480px] mx-auto rounded-2xl p-3 flex items-center gap-3 z-30"
+    class="fixed bottom-20 start-4 end-4 max-w-[480px] mx-auto rounded-2xl p-3 flex items-center gap-3 z-30"
     style="background: radial-gradient(ellipse at 0% 0%, rgba(244,201,93,0.15) 0%, transparent 60%), linear-gradient(180deg, rgba(8,13,36,0.98), rgba(5,8,15,0.98)); border: 1.5px solid rgba(244,201,93,0.5); backdrop-filter: blur(16px); box-shadow: 0 8px 32px rgba(0,0,0,0.7), 0 0 24px rgba(244,201,93,0.2);"
   >
     <div
@@ -360,15 +360,15 @@
       </span>
     </div>
     <div class="flex-1 min-w-0">
-      <p class="text-[11px] font-extrabold text-white">Your Rank</p>
-      <p class="text-[9px] text-white/50 mt-0.5">
+      <p class="text-tiny font-extrabold text-white">Your Rank</p>
+      <p class="text-micro text-white/50 mt-0.5">
         {data.me.refs}
         {data.me.refs === 1 ? 'ref' : 'refs'} · +${fmt(data.me.earned)}
       </p>
     </div>
     {#if prizeForRank(data.me.rank) > 0}
-      <div class="text-right shrink-0">
-        <p class="text-[9px] text-gold/70 font-bold uppercase tracking-wider">Prize</p>
+      <div class="text-end shrink-0">
+        <p class="text-micro text-gold/70 font-bold uppercase tracking-wider">Prize</p>
         <p class="text-[13px] font-extrabold text-gold tabular-nums">
           ${prizeForRank(data.me.rank)}
         </p>

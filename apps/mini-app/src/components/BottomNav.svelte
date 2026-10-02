@@ -27,7 +27,7 @@
 </script>
 
 <nav
-  class="fixed bottom-0 left-0 right-0 z-40 lg:hidden"
+  class="fixed bottom-0 start-0 end-0 z-40 lg:hidden"
   style="background: linear-gradient(180deg, rgba(5,8,15,0) 0%, rgba(5,8,15,0.88) 42%, #05080f 100%); backdrop-filter: blur(6px);"
 >
   <div class="max-w-[480px] mx-auto px-3 pb-2 pt-2">
@@ -49,7 +49,7 @@
             : 'text-white/45'}"
         >
           <Icon name={item.icon} size={22} />
-          <span class="text-[9px] font-bold">{$t(item.key)}</span>
+          <span class="text-micro font-bold">{$t(item.key)}</span>
           {#if current === item.id}
             <span
               class="w-1 h-1 rounded-full bg-gold"
@@ -58,7 +58,7 @@
           {/if}
           {#if item.id === 'profile' && $unreadCount > 0}
             <span
-              class="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full flex items-center justify-center text-[9px] font-extrabold"
+              class="absolute -top-1 -end-1 min-w-[16px] h-[16px] px-1 rounded-full flex items-center justify-center text-micro font-extrabold"
               style="background: linear-gradient(180deg, #ef4444, #991b1b); color: white; box-shadow: 0 0 8px rgba(239,68,68,0.8);"
             >
               {$unreadCount > 9 ? '9+' : $unreadCount}

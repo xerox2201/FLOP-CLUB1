@@ -56,7 +56,7 @@
     <div class="text-center mb-4">
       <div class="text-5xl mb-2">{seed.icon}</div>
       <h2 class="text-lg font-extrabold text-white">{seed.label}</h2>
-      <p class="text-[11px] text-white/50 mt-1">
+      <p class="text-tiny text-white/50 mt-1">
         {seed.progress.freeHands.toLocaleString()} hands · {seed.progress.freeWins.toLocaleString()} wins
       </p>
     </div>
@@ -64,11 +64,11 @@
       class="rounded-2xl p-4 mb-4 text-center"
       style="background: linear-gradient(135deg, rgba(34,197,94,0.15), rgba(5,150,105,0.05)); border: 1px solid rgba(34,197,94,0.4);"
     >
-      <p class="text-[10px] text-emerald-300/80 uppercase tracking-wider font-bold mb-1">Reward</p>
+      <p class="text-mini text-emerald-300/80 uppercase tracking-wider font-bold mb-1">Reward</p>
       <p class="text-3xl font-extrabold text-emerald-400 tabular-nums">
         ${formatAmount(seed.amount)}
       </p>
-      <p class="text-[10px] text-white/50 mt-2 leading-relaxed">
+      <p class="text-mini text-white/50 mt-2 leading-relaxed">
         10x playthrough · $15 rake · 150 real hands · 14 days
       </p>
     </div>
@@ -100,7 +100,7 @@
           >{busy ? '…' : 'Claim'}</button
         >
       </div>
-      {#if error}<p class="text-[11px] text-red-300 text-center mt-3">{error}</p>{/if}
+      {#if error}<p class="text-tiny text-red-300 text-center mt-3">{error}</p>{/if}
     {/if}
   </div>
 {/if}

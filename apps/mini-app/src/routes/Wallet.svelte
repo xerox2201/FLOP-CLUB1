@@ -220,7 +220,7 @@
     >
       Wallet
     </h1>
-    <p class="text-[11px] text-white/45 mt-1.5">Instant · Automatic · Provably fair</p>
+    <p class="text-tiny text-white/45 mt-1.5">Instant · Automatic · Provably fair</p>
   </div>
 
   {#if loading}
@@ -246,21 +246,21 @@
       >
         <!-- Decorative glow -->
         <div
-          class="absolute -top-16 -right-16 w-48 h-48 rounded-full opacity-25 pointer-events-none"
+          class="absolute -top-16 -end-16 w-48 h-48 rounded-full opacity-25 pointer-events-none"
           style="background: radial-gradient(circle, #d4af37, transparent 70%);"
         ></div>
 
         <div class="relative">
           <!-- Label row -->
           <div class="flex items-center justify-between mb-1">
-            <p class="text-[10px] uppercase tracking-widest text-gold/80 font-bold">Real Balance</p>
+            <p class="text-mini uppercase tracking-widest text-gold/80 font-bold">Real Balance</p>
             {#if walletConnected}
               <div class="flex items-center gap-1">
                 <span
                   class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"
                   style="box-shadow: 0 0 6px #34d399;"
                 ></span>
-                <span class="text-[9px] font-bold text-emerald-300 uppercase tracking-wider">
+                <span class="text-micro font-bold text-emerald-300 uppercase tracking-wider">
                   Connected
                 </span>
               </div>
@@ -289,7 +289,7 @@
               style="background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4);"
             >
               <Icon name="lock" size={12} color="#fcd34d" />
-              <p class="text-[10px] text-amber-300 font-bold">
+              <p class="text-mini text-amber-300 font-bold">
                 ${fmt(withdrawStatus.bonusLocked)} locked by bonus
               </p>
             </div>
@@ -308,7 +308,7 @@
                 <Icon name="gift" size={16} color="#6ee7b7" />
               </div>
               <div class="min-w-0">
-                <p class="text-[9px] text-white/45 uppercase tracking-wider font-bold">
+                <p class="text-micro text-white/45 uppercase tracking-wider font-bold">
                   Free Chips
                 </p>
                 <p class="text-[15px] font-extrabold text-emerald-400 tabular-nums leading-tight">
@@ -325,7 +325,7 @@
                 <img src="/ton-logo.png" alt="TON" class="w-6 h-6 object-contain" />
               </div>
               <div class="min-w-0">
-                <p class="text-[9px] text-white/45 uppercase tracking-wider font-bold">
+                <p class="text-micro text-white/45 uppercase tracking-wider font-bold">
                   TON Balance
                 </p>
                 <p class="text-[15px] font-extrabold text-cyan-300 tabular-nums leading-tight">
@@ -350,7 +350,7 @@
         {#each TABS as tab}
           <button
             on:click={() => (activeTab = tab.key)}
-            class="py-2.5 rounded-xl text-[11px] font-extrabold transition-all uppercase tracking-wider flex items-center justify-center gap-1.5"
+            class="py-2.5 rounded-xl text-tiny font-extrabold transition-all uppercase tracking-wider flex items-center justify-center gap-1.5"
             style="
               background: {activeTab === tab.key
               ? 'linear-gradient(180deg, #f4e5a8 0%, #d4af37 45%, #a87a15 100%)'
@@ -401,11 +401,11 @@
                 class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"
                 style="box-shadow: 0 0 6px #22d3ee;"
               ></span>
-              <span class="text-[10px] font-extrabold text-cyan-300 uppercase tracking-wider">
+              <span class="text-mini font-extrabold text-cyan-300 uppercase tracking-wider">
                 {depositInfo.network}
               </span>
             </div>
-            <span class="text-[10px] text-white/40 font-bold">
+            <span class="text-mini text-white/40 font-bold">
               Min {depositInfo.minDeposit} TON
             </span>
           </div>
@@ -421,12 +421,12 @@
             "
           >
             <div>
-              <p class="text-[10px] uppercase tracking-widest text-white/40 font-bold mb-2">
+              <p class="text-mini uppercase tracking-widest text-white/40 font-bold mb-2">
                 Deposit Address
               </p>
               <div class="flex gap-2">
                 <div
-                  class="flex-1 rounded-xl p-2.5 font-mono text-[10px] text-white/85 break-all leading-relaxed"
+                  class="flex-1 rounded-xl p-2.5 font-mono text-mini text-white/85 break-all leading-relaxed"
                   style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.06);"
                 >
                   {depositInfo.depositAddress || '—'}
@@ -447,7 +447,7 @@
 
             <div>
               <p
-                class="text-[10px] uppercase tracking-widest text-gold/70 font-bold mb-2 flex items-center gap-1.5"
+                class="text-mini uppercase tracking-widest text-gold/70 font-bold mb-2 flex items-center gap-1.5"
               >
                 <Icon name="warning" size={11} color="#f4c95d" />
                 <span>Memo · Required</span>
@@ -485,7 +485,7 @@
               "
             >
               <Icon name="zap" size={14} color="#f4c95d" />
-              <p class="text-[10px] text-gold/90 leading-relaxed">
+              <p class="text-mini text-gold/90 leading-relaxed">
                 Deposits are credited <strong class="text-white">automatically</strong> after network
                 confirmation (~15 seconds).
               </p>
@@ -513,18 +513,18 @@
           >
             <div class="flex items-center justify-between mb-3">
               <div>
-                <p class="text-[10px] text-white/45 uppercase font-bold tracking-wider mb-0.5">
+                <p class="text-mini text-white/45 uppercase font-bold tracking-wider mb-0.5">
                   Available
                 </p>
                 <p class="text-[22px] font-extrabold text-emerald-400 tabular-nums leading-none">
                   ${fmt(withdrawStatus.availableBalance)}
                 </p>
               </div>
-              <div class="text-right">
-                <p class="text-[9px] text-white/45 uppercase font-bold tracking-wider mb-1">
+              <div class="text-end">
+                <p class="text-micro text-white/45 uppercase font-bold tracking-wider mb-1">
                   Fee · Min
                 </p>
-                <p class="text-[11px] font-extrabold text-white/85 tabular-nums">
+                <p class="text-tiny font-extrabold text-white/85 tabular-nums">
                   {withdrawStatus.feeTon} · {withdrawStatus.minWithdrawTon} TON
                 </p>
               </div>
@@ -556,10 +556,10 @@
                   <Icon name="unlock" size={16} color="#93c5fd" />
                 </div>
                 <div class="flex-1">
-                  <p class="text-[11px] font-extrabold uppercase tracking-wider text-blue-300">
+                  <p class="text-tiny font-extrabold uppercase tracking-wider text-blue-300">
                     Unlock Withdrawals
                   </p>
-                  <p class="text-[9px] text-white/45 font-bold">Complete all conditions once</p>
+                  <p class="text-micro text-white/45 font-bold">Complete all conditions once</p>
                 </div>
               </div>
 
@@ -579,7 +579,7 @@
                       </span>
                     {:else}
                       <span
-                        class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px]"
+                        class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-mini"
                         style="
                           background: rgba(0,0,0,0.4);
                           border: 1px solid rgba(255,255,255,0.15);
@@ -591,13 +591,13 @@
                     {/if}
                     <div class="flex-1 min-w-0">
                       <p
-                        class="text-[11px] font-bold leading-tight"
+                        class="text-tiny font-bold leading-tight"
                         style="color: {chk.ok ? '#6ee7b7' : 'rgba(255,255,255,0.75)'};"
                       >
                         {chk.label}
                       </p>
                       <p
-                        class="text-[9px] tabular-nums text-white/40 font-mono leading-tight mt-0.5"
+                        class="text-micro tabular-nums text-white/40 font-mono leading-tight mt-0.5"
                       >
                         {chk.current} / {chk.target}
                       </p>
@@ -619,9 +619,9 @@
             >
               <div class="flex items-center gap-2 mb-2">
                 <Icon name="lock" size={14} color="#fcd34d" />
-                <p class="text-[11px] font-extrabold text-amber-300">Bonus Conditions</p>
+                <p class="text-tiny font-extrabold text-amber-300">Bonus Conditions</p>
               </div>
-              <div class="space-y-1 text-[10px] text-amber-200/90 font-mono">
+              <div class="space-y-1 text-mini text-amber-200/90 font-mono">
                 {#if withdrawStatus.conditions.playthroughRemaining > 0}
                   <p>· Playthrough: ${fmt(withdrawStatus.conditions.playthroughRemaining)}</p>
                 {/if}
@@ -644,7 +644,7 @@
               style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.35);"
             >
               <Icon name="warning" size={14} color="#fca5a5" />
-              <p class="text-[11px] text-red-300 font-bold">Withdrawals temporarily disabled</p>
+              <p class="text-tiny text-red-300 font-bold">Withdrawals temporarily disabled</p>
             </div>
           {/if}
 
@@ -657,7 +657,7 @@
             "
           >
             <div>
-              <p class="text-[10px] uppercase tracking-widest text-white/40 font-bold mb-2">
+              <p class="text-mini uppercase tracking-widest text-white/40 font-bold mb-2">
                 To Address
               </p>
               <div class="flex gap-2">
@@ -673,7 +673,7 @@
                   <button
                     on:click={useConnectedAddress}
                     disabled={!withdrawStatus.canWithdraw}
-                    class="px-3 rounded-xl text-[10px] font-extrabold text-gold active:scale-95 disabled:opacity-50"
+                    class="px-3 rounded-xl text-mini font-extrabold text-gold active:scale-95 disabled:opacity-50"
                     style="
                       background: linear-gradient(180deg, rgba(212,175,55,0.2), rgba(168,122,21,0.1));
                       border: 1px solid rgba(212,175,55,0.4);
@@ -687,13 +687,13 @@
 
             <div>
               <div class="flex items-center justify-between mb-2">
-                <p class="text-[10px] uppercase tracking-widest text-white/40 font-bold">
+                <p class="text-mini uppercase tracking-widest text-white/40 font-bold">
                   Amount (TON)
                 </p>
                 <button
                   on:click={setMaxWithdraw}
                   disabled={!withdrawStatus.canWithdraw}
-                  class="text-[10px] font-extrabold text-gold active:opacity-70 disabled:opacity-40"
+                  class="text-mini font-extrabold text-gold active:opacity-70 disabled:opacity-40"
                 >
                   MAX
                 </button>
@@ -719,7 +719,7 @@
                 <button
                   on:click={() => (withdrawAmount = String(v))}
                   disabled={!withdrawStatus.canWithdraw}
-                  class="py-2 rounded-lg text-[11px] font-extrabold text-white/85 active:scale-95 disabled:opacity-40"
+                  class="py-2 rounded-lg text-tiny font-extrabold text-white/85 active:scale-95 disabled:opacity-40"
                   style="
                     background: linear-gradient(180deg, rgba(30,58,138,0.4), rgba(15,31,58,0.6));
                     border: 1px solid rgba(96,165,250,0.3);
@@ -737,13 +737,13 @@
                 class="rounded-xl p-3 space-y-2"
                 style="background: rgba(0,0,0,0.35); border: 1px solid rgba(212,175,55,0.15);"
               >
-                <div class="flex justify-between text-[11px]">
+                <div class="flex justify-between text-tiny">
                   <span class="text-white/50">Requested</span>
                   <span class="text-white/85 font-bold tabular-nums">
                     {amt} TON · ${fmt(usd)}
                   </span>
                 </div>
-                <div class="flex justify-between text-[11px]">
+                <div class="flex justify-between text-tiny">
                   <span class="text-white/50">Network Fee</span>
                   <span class="text-red-300 font-bold tabular-nums">
                     −{withdrawStatus.feeTon} TON
@@ -783,7 +783,7 @@
               {/if}
             </button>
 
-            <p class="text-[10px] text-white/40 text-center font-mono">
+            <p class="text-mini text-white/40 text-center font-mono">
               Automated · Flat {withdrawStatus.feeTon} TON fee
             </p>
           </div>
@@ -813,7 +813,7 @@
               </div>
             </div>
             <p class="text-sm font-bold text-white/75">No transactions yet</p>
-            <p class="text-[11px] text-white/45 mt-1">
+            <p class="text-tiny text-white/45 mt-1">
               Your deposits and withdrawals will appear here
             </p>
           </div>
@@ -872,14 +872,14 @@
                 >
                   {isDep ? '+' : '−'}{fmt(tx.amountTon, 4)} TON
                 </p>
-                <p class="text-[10px] text-white/45 mt-0.5 truncate font-bold">
+                <p class="text-mini text-white/45 mt-0.5 truncate font-bold">
                   {isDep ? 'Deposit' : 'Withdrawal'} · {fmtDate(tx.createdAt)}
                 </p>
               </div>
 
               <!-- Status badge -->
               <span
-                class="text-[9px] px-2 py-1 rounded-full font-extrabold uppercase tracking-wider shrink-0"
+                class="text-micro px-2 py-1 rounded-full font-extrabold uppercase tracking-wider shrink-0"
                 style="background: {sc}25; color: {sc}; border: 1px solid {sc}60;"
               >
                 {tx.status}

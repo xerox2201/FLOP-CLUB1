@@ -80,7 +80,7 @@
     {#each PERIODS as p}
       <button
         on:click={() => setPeriod(p.key)}
-        class="flex-1 py-2 rounded-xl text-[11px] font-extrabold transition-all active:scale-95 uppercase tracking-wider"
+        class="flex-1 py-2 rounded-xl text-tiny font-extrabold transition-all active:scale-95 uppercase tracking-wider"
         style="
           background: {period === p.key
           ? 'linear-gradient(180deg, #f4e5a8 0%, #d4af37 45%, #a87a15 100%)'
@@ -106,7 +106,7 @@
       style="background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.35);"
     >
       <p class="text-sm text-red-300 font-bold">{error}</p>
-      <button on:click={load} class="mt-2 text-[11px] text-gold font-bold">Retry</button>
+      <button on:click={load} class="mt-2 text-tiny text-gold font-bold">Retry</button>
     </div>
   {:else if data}
     <!-- Rake vs Return hero -->
@@ -123,7 +123,7 @@
         "
       >
         <div class="relative">
-          <p class="text-[10px] uppercase tracking-widest text-emerald-300/80 font-bold mb-1">
+          <p class="text-mini uppercase tracking-widest text-emerald-300/80 font-bold mb-1">
             Total Returned
           </p>
           <div class="flex items-baseline gap-2 mb-3">
@@ -142,13 +142,15 @@
             style="border-top: 1px solid rgba(255,255,255,0.08);"
           >
             <div>
-              <p class="text-[9px] text-white/40 uppercase font-bold mb-1">Rake Paid</p>
+              <p class="text-micro text-white/40 uppercase font-bold mb-1">Rake Paid</p>
               <p class="text-base font-extrabold text-white tabular-nums leading-none">
                 ${fmt(data.rakePaid)}
               </p>
             </div>
-            <div style="border-left: 1px solid rgba(255,255,255,0.06); padding-left: 8px;">
-              <p class="text-[9px] text-white/40 uppercase font-bold mb-1">Platform Kept</p>
+            <div
+              style="border-inline-start: 1px solid rgba(255,255,255,0.06); padding-inline-start: 8px;"
+            >
+              <p class="text-micro text-white/40 uppercase font-bold mb-1">Platform Kept</p>
               <p class="text-base font-extrabold text-white/70 tabular-nums leading-none">
                 ${fmt(data.platformKept)}
               </p>
@@ -156,7 +158,7 @@
           </div>
 
           <div class="mt-3 pt-3" style="border-top: 1px solid rgba(255,255,255,0.08);">
-            <p class="text-[10px] text-white/60 leading-relaxed">
+            <p class="text-mini text-white/60 leading-relaxed">
               {data.note}
             </p>
           </div>
@@ -166,7 +168,7 @@
 
     <!-- Breakdown -->
     <div class="px-4 mb-3">
-      <p class="text-[10px] uppercase tracking-widest font-extrabold text-gold/80 mb-2 px-1">
+      <p class="text-mini uppercase tracking-widest font-extrabold text-gold/80 mb-2 px-1">
         Where Your Money Goes
       </p>
       <div
@@ -208,7 +210,7 @@
 
     <!-- Table performance -->
     <div class="px-4 mb-3">
-      <p class="text-[10px] uppercase tracking-widest font-extrabold text-gold/80 mb-2 px-1">
+      <p class="text-mini uppercase tracking-widest font-extrabold text-gold/80 mb-2 px-1">
         Table Performance
       </p>
       <div
@@ -217,13 +219,15 @@
       >
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <p class="text-[9px] text-white/45 uppercase font-bold mb-1">Cash Table Winnings</p>
+            <p class="text-micro text-white/45 uppercase font-bold mb-1">Cash Table Winnings</p>
             <p class="text-lg font-extrabold text-white tabular-nums leading-none">
               ${fmt(data.tableWon)}
             </p>
           </div>
-          <div style="border-left: 1px solid rgba(255,255,255,0.06); padding-left: 8px;">
-            <p class="text-[9px] text-white/45 uppercase font-bold mb-1">Tournament Prizes</p>
+          <div
+            style="border-inline-start: 1px solid rgba(255,255,255,0.06); padding-inline-start: 8px;"
+          >
+            <p class="text-micro text-white/45 uppercase font-bold mb-1">Tournament Prizes</p>
             <p class="text-lg font-extrabold text-gold tabular-nums leading-none">
               ${fmt(data.tournamentPrizes)}
             </p>
@@ -249,9 +253,9 @@
         >
           <Icon name="chart" size={18} color="#60a5fa" />
         </div>
-        <div class="flex-1 min-w-0 text-left">
+        <div class="flex-1 min-w-0 text-start">
           <p class="text-[12px] font-extrabold text-white">Live Books</p>
-          <p class="text-[10px] text-white/50 mt-0.5">See every dollar in and out — publicly</p>
+          <p class="text-mini text-white/50 mt-0.5">See every dollar in and out — publicly</p>
         </div>
         <Icon name="arrow-right" size={14} color="#60a5fa" />
       </button>

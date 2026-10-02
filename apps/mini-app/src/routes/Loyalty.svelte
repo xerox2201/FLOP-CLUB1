@@ -80,7 +80,7 @@
         >
           Loyalty
         </h1>
-        <p class="text-[10px] text-white/45 mt-1 font-bold truncate">
+        <p class="text-mini text-white/45 mt-1 font-bold truncate">
           XP levels, rakeback tiers and rewards
         </p>
       </div>
@@ -121,7 +121,7 @@
           <Icon name="star" size={40} color="#d4af37" />
         </div>
         <p class="text-sm font-extrabold text-white">No loyalty data yet</p>
-        <p class="text-[11px] text-white/55 mt-1 font-bold">
+        <p class="text-tiny text-white/55 mt-1 font-bold">
           Play a hand to start earning XP and rakeback
         </p>
       </div>
@@ -147,12 +147,12 @@
           >
             <Icon name="zap" size={12} color="#93c5fd" />
           </div>
-          <span class="text-[9px] font-extrabold uppercase tracking-wider" style="color: #93c5fd;">
+          <span class="text-micro font-extrabold uppercase tracking-wider" style="color: #93c5fd;">
             Level
           </span>
         </div>
         <p class="text-[17px] font-extrabold text-white tabular-nums leading-none">{level}</p>
-        <p class="text-[9px] text-white/45 mt-1 font-bold tabular-nums">
+        <p class="text-micro text-white/45 mt-1 font-bold tabular-nums">
           {fmtN(xpInto)} / {fmtN(xpNext)} XP
         </p>
       </div>
@@ -176,7 +176,7 @@
             <Icon name={tierIconName} size={12} color={tierColor} />
           </div>
           <span
-            class="text-[9px] font-extrabold uppercase tracking-wider"
+            class="text-micro font-extrabold uppercase tracking-wider"
             style="color: {tierColor};"
           >
             Rakeback
@@ -185,7 +185,7 @@
         <p class="text-[17px] font-extrabold tabular-nums leading-none" style="color: {tierColor};">
           {rakebackPct}%
         </p>
-        <p class="text-[9px] text-white/45 mt-1 font-bold truncate">{tierLabel} tier</p>
+        <p class="text-micro text-white/45 mt-1 font-bold truncate">{tierLabel} tier</p>
       </div>
 
       <!-- Rake paid -->
@@ -206,14 +206,14 @@
           >
             <Icon name="receipt" size={12} color="#fca5a5" />
           </div>
-          <span class="text-[9px] font-extrabold uppercase tracking-wider text-red-300">
+          <span class="text-micro font-extrabold uppercase tracking-wider text-red-300">
             Rake Paid
           </span>
         </div>
         <p class="text-[17px] font-extrabold text-red-300 tabular-nums leading-none">
           {fmt(loyalty?.rakePaidLifetime ?? 0)}
         </p>
-        <p class="text-[9px] text-white/45 mt-1 font-bold">Lifetime</p>
+        <p class="text-micro text-white/45 mt-1 font-bold">Lifetime</p>
       </div>
 
       <!-- Rakeback earned -->
@@ -234,14 +234,14 @@
           >
             <Icon name="gift" size={12} color="#6ee7b7" />
           </div>
-          <span class="text-[9px] font-extrabold uppercase tracking-wider text-emerald-300">
+          <span class="text-micro font-extrabold uppercase tracking-wider text-emerald-300">
             Rakeback
           </span>
         </div>
         <p class="text-[17px] font-extrabold text-emerald-400 tabular-nums leading-none">
           +{fmt(loyalty?.rakebackEarned ?? 0)}
         </p>
-        <p class="text-[9px] text-white/45 mt-1 font-bold">Returned to you</p>
+        <p class="text-micro text-white/45 mt-1 font-bold">Returned to you</p>
       </div>
     </div>
 
@@ -268,15 +268,15 @@
             <Icon name="zap" size={16} color="#93c5fd" />
           </div>
           <div class="flex-1 min-w-0">
-            <p class="text-[10px] uppercase tracking-widest font-extrabold" style="color: #60a5fa;">
+            <p class="text-mini uppercase tracking-widest font-extrabold" style="color: #60a5fa;">
               XP Level
             </p>
-            <p class="text-[9px] text-white/45 font-bold truncate">
+            <p class="text-micro text-white/45 font-bold truncate">
               {fmtN(Math.max(0, xpNext - xpInto))} XP to level {level + 1}
             </p>
           </div>
           <div class="flex items-baseline gap-1 shrink-0">
-            <span class="text-[9px] font-extrabold uppercase tracking-wider text-blue-300">
+            <span class="text-micro font-extrabold uppercase tracking-wider text-blue-300">
               LVL
             </span>
             <span class="text-2xl font-extrabold leading-none" style="color: #60a5fa;">{level}</span
@@ -297,7 +297,7 @@
             "
           ></div>
         </div>
-        <div class="flex justify-between text-[10px] text-white/60 tabular-nums mb-3">
+        <div class="flex justify-between text-mini text-white/60 tabular-nums mb-3">
           <span>{fmtN(xpInto)} / {fmtN(xpNext)} XP</span>
           <span>{fmtN(Math.max(0, xpNext - xpInto))} to L{level + 1}</span>
         </div>
@@ -307,19 +307,19 @@
           style="border-top: 1px solid rgba(255,255,255,0.08);"
         >
           <div>
-            <p class="text-[9px] text-white/40 uppercase font-bold">Lifetime</p>
+            <p class="text-micro text-white/40 uppercase font-bold">Lifetime</p>
             <p class="text-sm font-extrabold text-white tabular-nums">
               {fmtN(loyalty?.lifetimeXp ?? 0)}
             </p>
           </div>
           <div>
-            <p class="text-[9px] text-white/40 uppercase font-bold">Claimed</p>
+            <p class="text-micro text-white/40 uppercase font-bold">Claimed</p>
             <p class="text-sm font-extrabold text-amber-300 tabular-nums">
               {fmtN(loyalty?.claimedXp ?? 0)}
             </p>
           </div>
           <div>
-            <p class="text-[9px] text-white/40 uppercase font-bold">Available</p>
+            <p class="text-micro text-white/40 uppercase font-bold">Available</p>
             <p class="text-sm font-extrabold text-emerald-400 tabular-nums">
               {fmtN(loyalty?.availableXp ?? 0)}
             </p>
@@ -338,7 +338,7 @@
           <span class="flex items-center justify-center gap-1.5">
             <Icon name="gem" size={14} color="#ffffff" />
             <span>Cash Out XP</span>
-            <span class="text-[10px] font-mono opacity-80">
+            <span class="text-mini font-mono opacity-80">
               ({fmtN(loyalty?.availableXp ?? 0)} avail)
             </span>
           </span>
@@ -370,12 +370,12 @@
           </div>
           <div class="flex-1 min-w-0">
             <p
-              class="text-[10px] uppercase tracking-widest font-extrabold"
+              class="text-mini uppercase tracking-widest font-extrabold"
               style="color: {tierColor};"
             >
               Rakeback Tier
             </p>
-            <p class="text-[9px] text-white/45 font-bold truncate">
+            <p class="text-micro text-white/45 font-bold truncate">
               Lifetime rake unlocks better rates
             </p>
           </div>
@@ -383,7 +383,7 @@
             class="rounded-full px-2.5 py-1 shrink-0"
             style="background: {tierColor}22; border: 1px solid {tierColor}70;"
           >
-            <span class="text-[10px] font-extrabold leading-none" style="color: {tierColor};">
+            <span class="text-mini font-extrabold leading-none" style="color: {tierColor};">
               {tierLabel}
             </span>
           </div>
@@ -396,16 +396,16 @@
           >
             {rakebackPct}%
           </p>
-          <p class="text-[9px] text-white/45 font-bold uppercase tracking-wider pb-1">
+          <p class="text-micro text-white/45 font-bold uppercase tracking-wider pb-1">
             Rakeback rate
           </p>
         </div>
 
         <div class="flex justify-between items-center mb-1.5">
-          <span class="text-[9px] font-bold text-white/60 uppercase tracking-wider">
+          <span class="text-micro font-bold text-white/60 uppercase tracking-wider">
             Tier Progress
           </span>
-          <span class="text-[9px] font-bold tabular-nums" style="color: {tierColor};">
+          <span class="text-micro font-bold tabular-nums" style="color: {tierColor};">
             {progressTier}%
           </span>
         </div>
@@ -422,7 +422,7 @@
             "
           ></div>
         </div>
-        <div class="flex justify-between text-[10px] text-white/60 tabular-nums">
+        <div class="flex justify-between text-mini text-white/60 tabular-nums">
           <span>{fmt(loyalty?.lifetimeRake ?? 0)} rake</span>
           {#if loyalty?.nextTier}
             <span>{fmt(loyalty.nextTier.minRake)} to {loyalty.nextTier.label}</span>

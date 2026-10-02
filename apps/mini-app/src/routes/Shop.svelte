@@ -123,7 +123,7 @@
       "
     >
       <div
-        class="absolute -top-14 -right-14 w-44 h-44 rounded-full opacity-20 pointer-events-none"
+        class="absolute -top-14 -end-14 w-44 h-44 rounded-full opacity-20 pointer-events-none"
         style="background: radial-gradient(circle, #f4c95d, transparent 70%);"
       ></div>
 
@@ -165,14 +165,14 @@
           >
             Shop
           </h1>
-          <p class="text-[11px] text-white/50 mt-1 font-bold truncate">
+          <p class="text-tiny text-white/50 mt-1 font-bold truncate">
             Level {level} · Chips, XP and vouchers in one tap
           </p>
         </div>
 
         {#if discPct > 0}
           <span
-            class="text-[10px] font-extrabold px-2.5 py-1 rounded-full shrink-0"
+            class="text-mini font-extrabold px-2.5 py-1 rounded-full shrink-0"
             style="background: linear-gradient(180deg, #f4e5a8, #d4af37); color: #0a0800;"
           >
             -{discPct}% OFF
@@ -200,14 +200,14 @@
         >
           <Icon name="coin" size={12} color="#6ee7b7" />
         </div>
-        <span class="text-[9px] font-extrabold text-emerald-300 uppercase tracking-wider">
+        <span class="text-micro font-extrabold text-emerald-300 uppercase tracking-wider">
           Chips on offer
         </span>
       </div>
       <p class="text-[17px] font-extrabold text-white tabular-nums leading-none">
         {fmtChips(totalChips)}
       </p>
-      <p class="text-[9px] text-white/45 mt-1 font-bold">
+      <p class="text-micro text-white/45 mt-1 font-bold">
         {packs.length}
         {packs.length === 1 ? 'pack' : 'packs'} available
       </p>
@@ -229,14 +229,14 @@
         >
           <Icon name="star" size={12} color="#93c5fd" />
         </div>
-        <span class="text-[9px] font-extrabold text-blue-300 uppercase tracking-wider"
+        <span class="text-micro font-extrabold text-blue-300 uppercase tracking-wider"
           >Bonus XP</span
         >
       </div>
       <p class="text-[17px] font-extrabold text-white tabular-nums leading-none">
         {totalXp.toLocaleString()}
       </p>
-      <p class="text-[9px] text-white/45 mt-1 font-bold">
+      <p class="text-micro text-white/45 mt-1 font-bold">
         {voucherPacks} pack{voucherPacks === 1 ? '' : 's'} with vouchers
       </p>
     </div>
@@ -257,14 +257,14 @@
         >
           <Icon name="zap" size={12} color="#22d3ee" />
         </div>
-        <span class="text-[9px] font-extrabold text-cyan-300 uppercase tracking-wider">
+        <span class="text-micro font-extrabold text-cyan-300 uppercase tracking-wider">
           Best value
         </span>
       </div>
       <p class="text-[17px] font-extrabold text-white tabular-nums leading-none truncate">
         {bestPack ? `${fmtChips(bestPack.chips)}` : '—'}
       </p>
-      <p class="text-[9px] text-white/45 mt-1 font-bold truncate">
+      <p class="text-micro text-white/45 mt-1 font-bold truncate">
         {bestPack
           ? `${bestPack.name} · $${fmtAmount(bestPack.priceUsdDiscounted ?? bestPack.priceUsd)}`
           : 'no packs'}
@@ -287,12 +287,12 @@
         >
           <Icon name="dollar" size={12} color="#f4c95d" />
         </div>
-        <span class="text-[9px] font-extrabold text-gold uppercase tracking-wider">From</span>
+        <span class="text-micro font-extrabold text-gold uppercase tracking-wider">From</span>
       </div>
       <p class="text-[17px] font-extrabold text-gold tabular-nums leading-none">
         ${formatAmount(startingPrice)}
       </p>
-      <p class="text-[9px] text-white/45 mt-1 font-bold">
+      <p class="text-micro text-white/45 mt-1 font-bold">
         {discPct > 0 ? `${discPct}% level discount active` : 'Discount unlocks from L10'}
       </p>
     </div>
@@ -304,7 +304,7 @@
     style="background: rgba(37,99,235,0.1); border: 1px solid rgba(37,99,235,0.3);"
   >
     <Icon name="info" size={16} color="#93c5fd" />
-    <p class="text-[10px] text-white/70 flex-1">
+    <p class="text-mini text-white/70 flex-1">
       Every pack delivers chips instantly, plus XP and a rake-based voucher.
     </p>
   </div>
@@ -313,8 +313,8 @@
   {#if !loading}
     <div class="flex items-center gap-2 mb-2 px-4">
       <span class="w-1.5 h-1.5 rounded-full bg-gold" style="box-shadow: 0 0 6px #d4af37;"></span>
-      <p class="text-[10px] font-extrabold text-white/60 uppercase tracking-widest">Chip packs</p>
-      <span class="ml-auto text-[10px] font-mono text-white/40 tabular-nums">
+      <p class="text-mini font-extrabold text-white/60 uppercase tracking-widest">Chip packs</p>
+      <span class="ms-auto text-mini font-mono text-white/40 tabular-nums">
         {packs.length} option{packs.length === 1 ? '' : 's'}
       </span>
     </div>
@@ -352,7 +352,7 @@
           </div>
         </div>
         <p class="text-sm font-extrabold text-white">No packs available</p>
-        <p class="text-[11px] text-white/55 mt-1 font-bold">
+        <p class="text-tiny text-white/55 mt-1 font-bold">
           The store restocks soon — check back later
         </p>
       </div>
@@ -363,11 +363,11 @@
         {@const disc = p.priceUsdDiscounted ?? p.priceUsd}
         <button
           on:click={() => openPack(p)}
-          class="w-full rounded-3xl p-4 text-left active:scale-[0.98] transition relative overflow-hidden"
+          class="w-full rounded-3xl p-4 text-start active:scale-[0.98] transition relative overflow-hidden"
           style="background: linear-gradient(135deg, rgba(15,31,58,0.9), rgba(7,14,27,0.98)); border: 1.5px solid rgba(212,175,55,0.35); box-shadow: 0 8px 24px rgba(0,0,0,0.5);"
         >
           <div
-            class="absolute -top-10 -right-10 w-28 h-28 rounded-full opacity-20 pointer-events-none"
+            class="absolute -top-10 -end-10 w-28 h-28 rounded-full opacity-20 pointer-events-none"
             style="background: radial-gradient(circle, #d4af37, transparent 70%);"
           ></div>
 
@@ -385,15 +385,15 @@
                   >${formatAmount(disc)}</span
                 >
                 {#if p.priceUsdDiscounted && p.priceUsdDiscounted < p.priceUsd}
-                  <span class="text-[10px] text-white/40 line-through tabular-nums"
+                  <span class="text-mini text-white/40 line-through tabular-nums"
                     >${fmtAmount(p.priceUsd)}</span
                   >
                 {/if}
-                <span class="text-[10px] text-cyan-300 font-mono tabular-nums"
+                <span class="text-mini text-cyan-300 font-mono tabular-nums"
                   >{p.priceTonDiscounted ?? p.priceTon} TON</span
                 >
               </div>
-              <div class="flex flex-wrap gap-1.5 text-[9px] font-bold">
+              <div class="flex flex-wrap gap-1.5 text-micro font-bold">
                 <span
                   class="px-1.5 py-0.5 rounded-full"
                   style="background: rgba(16,185,129,0.2); color: #6ee7b7;"
@@ -446,31 +446,31 @@
       <p class="text-3xl font-extrabold text-gold tabular-nums mt-2">
         ${fmtAmount(currentDiscountedPrice)}
       </p>
-      <p class="text-[10px] text-cyan-300 font-mono mt-1">{currentTonPrice} TON</p>
+      <p class="text-mini text-cyan-300 font-mono mt-1">{currentTonPrice} TON</p>
     </div>
 
     <div
       class="rounded-2xl p-3 mb-4 space-y-1.5"
       style="background: rgba(0,0,0,0.4); border: 1px solid rgba(212,175,55,0.3);"
     >
-      <div class="flex justify-between text-[11px]">
+      <div class="flex justify-between text-tiny">
         <span class="text-white/50">Chips</span><span
           class="text-emerald-400 font-extrabold tabular-nums"
           >+{selected.chips.toLocaleString()}</span
         >
       </div>
-      <div class="flex justify-between text-[11px]">
+      <div class="flex justify-between text-tiny">
         <span class="text-white/50">XP</span><span class="text-blue-300 font-extrabold tabular-nums"
           >+{selected.xp.toLocaleString()}</span
         >
       </div>
       {#if selected.voucher > 0}
-        <div class="flex justify-between text-[11px]">
+        <div class="flex justify-between text-tiny">
           <span class="text-white/50">Voucher</span><span
             class="text-gold font-extrabold tabular-nums">${selected.voucher}</span
           >
         </div>
-        <div class="flex justify-between text-[11px]">
+        <div class="flex justify-between text-tiny">
           <span class="text-white/50">Need rake</span><span
             class="text-amber-300 font-extrabold tabular-nums"
             >${formatAmount(selected.voucher * 2.5)}</span
@@ -507,10 +507,10 @@
       {#if error}
         <div class="flex items-center justify-center gap-1.5 mt-3">
           <Icon name="warning" size={13} color="#fca5a5" />
-          <p class="text-[11px] text-red-300 text-center">{error}</p>
+          <p class="text-tiny text-red-300 text-center">{error}</p>
         </div>
       {/if}
-      <p class="text-[9px] text-white/40 text-center mt-3 leading-relaxed">
+      <p class="text-micro text-white/40 text-center mt-3 leading-relaxed">
         In dev mode purchases confirm instantly.<br />In production TON Connect and tx_hash
         verification are enabled.
       </p>

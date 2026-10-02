@@ -26,15 +26,13 @@
       <div
         class="rounded-full transition"
         style="
-          {selected === f.id
-            ? 'box-shadow: 0 0 0 2px #d4af37, 0 0 16px rgba(212,175,55,0.6);'
-            : ''}
+          {selected === f.id ? 'box-shadow: 0 0 0 2px #d4af37, 0 0 16px rgba(212,175,55,0.6);' : ''}
         "
       >
-        <Avatar avatarId={avatarId} size="lg" frame={f.id} />
+        <Avatar {avatarId} size="lg" frame={f.id} />
       </div>
       <span
-        class="text-[9px] font-bold"
+        class="text-micro font-bold"
         style="color: {selected === f.id ? '#f4e5a8' : 'rgba(255,255,255,0.55)'};"
       >
         {f.label}

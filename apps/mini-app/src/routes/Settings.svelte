@@ -115,9 +115,7 @@
       >
         Settings
       </h1>
-      <p class="text-[10px] text-white/45 mt-1.5 font-bold">
-        Tune your table, audio and preferences
-      </p>
+      <p class="text-mini text-white/45 mt-1.5 font-bold">Tune your table, audio and preferences</p>
     </div>
   </div>
 
@@ -142,7 +140,7 @@
             <Icon name={s.icon} size={12} color={s.color} />
           </div>
           <span
-            class="text-[9px] font-extrabold uppercase tracking-wider truncate"
+            class="text-micro font-extrabold uppercase tracking-wider truncate"
             style="color: {s.color};"
           >
             {s.label}
@@ -162,7 +160,7 @@
     {#each LANGUAGES as L}
       <button
         on:click={() => changeLang(L.code)}
-        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl active:scale-[0.98] transition-all text-left"
+        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl active:scale-[0.98] transition-all text-start"
         style="
           background: {$lang === L.code
           ? 'linear-gradient(180deg, rgba(212,175,55,0.2), rgba(168,122,21,0.08))'
@@ -185,7 +183,7 @@
 
         <!-- Language code tile -->
         <span
-          class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-[10px] font-extrabold uppercase tracking-wider"
+          class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-mini font-extrabold uppercase tracking-wider"
           style="
             background: {$lang === L.code ? 'rgba(212,175,55,0.2)' : 'rgba(255,255,255,0.06)'};
             border: 1px solid {$lang === L.code ? 'rgba(212,175,55,0.5)' : 'rgba(255,255,255,0.1)'};
@@ -225,7 +223,7 @@
     {#each CARD_THEMES as t}
       <button
         on:click={() => cardTheme.set(t.id)}
-        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl active:scale-[0.98] transition-all text-left"
+        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl active:scale-[0.98] transition-all text-start"
         style="background: {$cardTheme === t.id
           ? 'linear-gradient(180deg, rgba(212,175,55,0.2), rgba(168,122,21,0.08))'
           : 'transparent'}; border: 1.5px solid {$cardTheme === t.id
@@ -251,7 +249,7 @@
           >
             {t.name}
           </p>
-          <p class="text-[10px] text-white/40 leading-tight mt-0.5 truncate">{t.desc}</p>
+          <p class="text-mini text-white/40 leading-tight mt-0.5 truncate">{t.desc}</p>
         </div>
         <div class="flex gap-1 shrink-0">
           {#each t.previewColors as c}
@@ -288,7 +286,7 @@
         </div>
         <div>
           <p class="text-sm font-bold text-white">Sound Effects</p>
-          <p class="text-[10px] text-white/50">Card & chip sounds</p>
+          <p class="text-mini text-white/50">Card & chip sounds</p>
         </div>
       </div>
       <input
@@ -308,7 +306,7 @@
         </div>
         <div>
           <p class="text-sm font-bold text-white">Background Music</p>
-          <p class="text-[10px] text-white/50">Ambient pad</p>
+          <p class="text-mini text-white/50">Ambient pad</p>
         </div>
       </div>
       <input
@@ -343,7 +341,7 @@
         </div>
         <div>
           <p class="text-sm font-bold text-white">Haptics</p>
-          <p class="text-[10px] text-white/50">Vibration feedback</p>
+          <p class="text-mini text-white/50">Vibration feedback</p>
         </div>
       </div>
       <input
@@ -366,7 +364,7 @@
         </div>
         <div>
           <p class="text-sm font-bold text-white">Animations</p>
-          <p class="text-[10px] text-white/50">Card & chip animations</p>
+          <p class="text-mini text-white/50">Card & chip animations</p>
         </div>
       </div>
       <input
@@ -386,14 +384,14 @@
         </div>
         <div>
           <p class="text-sm font-bold text-white">Graphics Quality</p>
-          <p class="text-[10px] text-white/50">Visual fidelity & performance</p>
+          <p class="text-mini text-white/50">Visual fidelity & performance</p>
         </div>
       </div>
       <div class="grid grid-cols-4 gap-1.5">
         {#each GRAPHICS_LEVELS as g}
           <button
             on:click={() => setGraphics(g)}
-            class="py-2 rounded-xl text-[9px] font-extrabold uppercase tracking-wider transition active:scale-[0.96]"
+            class="py-2 rounded-xl text-micro font-extrabold uppercase tracking-wider transition active:scale-[0.96]"
             style="background: {prefs.graphics === g
               ? 'linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15)'
               : 'rgba(255,255,255,0.05)'}; color: {prefs.graphics === g
@@ -434,7 +432,7 @@
         </div>
         <div>
           <p class="text-sm font-bold text-white">Bet Slider</p>
-          <p class="text-[10px] text-white/50">Show slider on raise</p>
+          <p class="text-mini text-white/50">Show slider on raise</p>
         </div>
       </div>
       <input
@@ -457,7 +455,7 @@
         </div>
         <div>
           <p class="text-sm font-bold text-white">Auto-Muck</p>
-          <p class="text-[10px] text-white/50">Auto-fold losing hands at showdown</p>
+          <p class="text-mini text-white/50">Auto-fold losing hands at showdown</p>
         </div>
       </div>
       <input
@@ -477,7 +475,7 @@
         </div>
         <div>
           <p class="text-sm font-bold text-white">Four-Color Cards</p>
-          <p class="text-[10px] text-white/50">Clubs green, diamonds blue</p>
+          <p class="text-mini text-white/50">Clubs green, diamonds blue</p>
         </div>
       </div>
       <input
@@ -501,7 +499,7 @@
   >
     <button
       on:click={openTelegramSecurity}
-      class="w-full flex items-center gap-3 px-4 py-3 text-left active:bg-white/5"
+      class="w-full flex items-center gap-3 px-4 py-3 text-start active:bg-white/5"
       style="border-bottom: 1px solid rgba(212,175,55,0.08);"
     >
       <div
@@ -512,13 +510,13 @@
       </div>
       <div class="flex-1 min-w-0">
         <p class="text-sm font-bold text-white">Security</p>
-        <p class="text-[10px] text-white/50">Telegram account settings</p>
+        <p class="text-mini text-white/50">Telegram account settings</p>
       </div>
       <Icon name="arrow-right" size={14} color="rgba(212,175,55,0.6)" />
     </button>
     <button
       on:click={openWallet}
-      class="w-full flex items-center gap-3 px-4 py-3 text-left active:bg-white/5"
+      class="w-full flex items-center gap-3 px-4 py-3 text-start active:bg-white/5"
       style="border-bottom: 1px solid rgba(212,175,55,0.08);"
     >
       <div
@@ -529,13 +527,13 @@
       </div>
       <div class="flex-1 min-w-0">
         <p class="text-sm font-bold text-white">Connected Wallets</p>
-        <p class="text-[10px] text-white/50">Manage TON wallet</p>
+        <p class="text-mini text-white/50">Manage TON wallet</p>
       </div>
       <Icon name="arrow-right" size={14} color="rgba(212,175,55,0.6)" />
     </button>
     <button
       on:click={() => auth.logout()}
-      class="w-full flex items-center gap-3 px-4 py-3 text-left active:bg-white/5"
+      class="w-full flex items-center gap-3 px-4 py-3 text-start active:bg-white/5"
     >
       <div
         class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
@@ -545,7 +543,7 @@
       </div>
       <div class="flex-1 min-w-0">
         <p class="text-sm font-bold text-red-400">Log Out</p>
-        <p class="text-[10px] text-white/50">Sign out of account</p>
+        <p class="text-mini text-white/50">Sign out of account</p>
       </div>
     </button>
   </div>

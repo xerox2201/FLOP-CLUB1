@@ -59,7 +59,7 @@
         class="h-px w-10"
         style="background: linear-gradient(to right, transparent, #d4af37);"
       ></div>
-      <p class="text-[9px] font-extrabold tracking-[0.45em] text-gold/80 uppercase">
+      <p class="text-micro font-extrabold tracking-[0.45em] text-gold/80 uppercase">
         Play · Compete · Win
       </p>
       <div
@@ -81,7 +81,7 @@
         "
       ></div>
     </div>
-    <p class="mt-3 text-center text-[9px] font-extrabold uppercase tracking-[0.4em] text-gold/60">
+    <p class="mt-3 text-center text-micro font-extrabold uppercase tracking-[0.4em] text-gold/60">
       Loading
     </p>
   </div>

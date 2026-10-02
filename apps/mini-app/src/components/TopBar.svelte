@@ -16,7 +16,7 @@
   <button
     on:click={onOpenWallet}
     aria-label="Open Wallet"
-    class="rounded-full pl-1.5 pr-3 py-1 flex items-center gap-2 active:scale-95 transition"
+    class="rounded-full ps-1.5 pe-3 py-1 flex items-center gap-2 active:scale-95 transition"
     style="background: linear-gradient(180deg, rgba(37,99,235,0.2), rgba(109,40,217,0.1)); border: 1px solid rgba(37,99,235,0.35);"
   >
     <div class="w-8 h-8 flex items-center justify-center">

@@ -527,14 +527,37 @@
    they can not mirror. See P2_I18N_DESIGN.md.
    ============================================================ */
 
+@layer utilities {
+  /* Wave C text-size tokens, replacing the arbitrary text-[9px]/[10px]/[11px]
+     values. They read a variable so the RTL typography floor is a variable
+     change; a plain override rule would out-rank responsive variants such as
+     `sm:text-mini`. */
+  .text-micro {
+    font-size: var(--fs-micro, 9px);
+  }
+  .text-mini {
+    font-size: var(--fs-mini, 10px);
+  }
+  .text-tiny {
+    font-size: var(--fs-tiny, 11px);
+  }
+}
+
 :root {
   /* Multiplier for direction-aware transforms:
      translateX(calc(10px * var(--dir-sign))). */
   --dir-sign: 1;
+  --fs-micro: 9px;
+  --fs-mini: 10px;
+  --fs-tiny: 11px;
 }
 
 html[dir='rtl'] {
   --dir-sign: -1;
+  /* 9px Latin-sized labels are unreadable in Persian script. */
+  --fs-micro: 10.5px;
+  --fs-mini: 11.5px;
+  --fs-tiny: 12.5px;
 }
 
 /* An LTR island keeps left-to-right maths even inside an RTL document. */

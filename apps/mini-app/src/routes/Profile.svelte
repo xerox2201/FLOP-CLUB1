@@ -211,7 +211,7 @@
       >
         Profile
       </h1>
-      <p class="text-[11px] text-white/45 mt-1.5">Manage your account</p>
+      <p class="text-tiny text-white/45 mt-1.5">Manage your account</p>
     </div>
     <button
       on:click={() => onNavigate('settings')}
@@ -247,7 +247,7 @@
         >
           <Avatar avatarId={selectedAvatar} size="xl" frame={selectedFrame} />
           <div
-            class="absolute bottom-[13%] right-[7%] w-7 h-7 rounded-full flex items-center justify-center z-10"
+            class="absolute bottom-[13%] end-[7%] w-7 h-7 rounded-full flex items-center justify-center z-10"
             style="
               background: linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15);
               border: 2px solid #0a0d1a;
@@ -270,7 +270,7 @@
               <Icon name="check" size={9} color="#ffffff" />
             </span>
           </div>
-          <p class="text-[11px] text-white/50 font-mono mb-2 truncate">
+          <p class="text-tiny text-white/50 font-mono mb-2 truncate">
             @{user?.username || 'player'}
           </p>
 
@@ -293,7 +293,7 @@
               style="background: {tierColor}22; border: 1px solid {tierColor}70;"
             >
               <span class="text-sm leading-none">{tierIcon}</span>
-              <span class="text-[10px] font-extrabold leading-none" style="color: {tierColor};">
+              <span class="text-mini font-extrabold leading-none" style="color: {tierColor};">
                 {tierLabel}
               </span>
             </div>
@@ -308,7 +308,7 @@
     <!-- Real Money -->
     <button
       on:click={() => (infoOpen = 'real')}
-      class="rounded-2xl p-3 text-left active:scale-[0.97] transition-all relative overflow-hidden"
+      class="rounded-2xl p-3 text-start active:scale-[0.97] transition-all relative overflow-hidden"
       style="
         background:
           radial-gradient(ellipse at 100% 0%, rgba(96,165,250,0.15) 0%, transparent 60%),
@@ -323,12 +323,12 @@
         >
           <Icon name="dollar" size={12} color="#60a5fa" />
         </div>
-        <span class="text-[9px] font-extrabold text-blue-300 uppercase tracking-wider"> Real </span>
+        <span class="text-micro font-extrabold text-blue-300 uppercase tracking-wider"> Real </span>
       </div>
       <p class="text-[17px] font-extrabold text-white tabular-nums leading-none">
         ${fmtMoney(realWon).replace('$', '')}
       </p>
-      <p class="text-[9px] text-white/45 mt-1 font-bold">
+      <p class="text-micro text-white/45 mt-1 font-bold">
         {realHands.toLocaleString()} hands · {realWinRate}% win
       </p>
     </button>
@@ -336,7 +336,7 @@
     <!-- Free Play -->
     <button
       on:click={() => (showFreeDetail = true)}
-      class="rounded-2xl p-3 text-left active:scale-[0.97] transition-all relative overflow-hidden"
+      class="rounded-2xl p-3 text-start active:scale-[0.97] transition-all relative overflow-hidden"
       style="
         background:
           radial-gradient(ellipse at 100% 0%, rgba(16,185,129,0.15) 0%, transparent 60%),
@@ -351,14 +351,14 @@
         >
           <Icon name="gift" size={12} color="#6ee7b7" />
         </div>
-        <span class="text-[9px] font-extrabold text-emerald-300 uppercase tracking-wider">
+        <span class="text-micro font-extrabold text-emerald-300 uppercase tracking-wider">
           Free
         </span>
       </div>
       <p class="text-[17px] font-extrabold text-emerald-400 tabular-nums leading-none">
         {fmtChips(freeChipsBalance)}
       </p>
-      <p class="text-[9px] text-white/45 mt-1 font-bold">
+      <p class="text-micro text-white/45 mt-1 font-bold">
         {freeHands.toLocaleString()} hands · {freeHandsWon.toLocaleString()} wins
       </p>
     </button>
@@ -386,20 +386,17 @@
           <Icon name="star" size={16} color={tierColor} />
         </div>
         <div class="flex-1">
-          <p
-            class="text-[10px] uppercase tracking-widest font-extrabold"
-            style="color: {tierColor};"
-          >
+          <p class="text-mini uppercase tracking-widest font-extrabold" style="color: {tierColor};">
             Loyalty Progress
           </p>
-          <p class="text-[9px] text-white/45 font-bold">
+          <p class="text-micro text-white/45 font-bold">
             {rakebackPct}% rakeback · {tierLabel}
           </p>
         </div>
         <button
           on:click={() => (infoOpen = 'loyalty')}
           aria-label="Info"
-          class="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-extrabold text-white/50 active:scale-95"
+          class="w-6 h-6 rounded-full flex items-center justify-center text-tiny font-extrabold text-white/50 active:scale-95"
           style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);"
         >
           ?
@@ -409,10 +406,10 @@
       <!-- XP bar -->
       <div class="mb-3">
         <div class="flex justify-between items-center mb-1.5">
-          <span class="text-[9px] font-bold text-white/60 uppercase tracking-wider">
+          <span class="text-micro font-bold text-white/60 uppercase tracking-wider">
             XP · Level {level}
           </span>
-          <span class="text-[9px] font-mono text-white/50 tabular-nums">
+          <span class="text-micro font-mono text-white/50 tabular-nums">
             {xpIntoLevel.toLocaleString()} / {xpForNextLevel.toLocaleString()}
           </span>
         </div>
@@ -434,10 +431,10 @@
       <!-- Tier bar -->
       <div class="mb-3">
         <div class="flex justify-between items-center mb-1.5">
-          <span class="text-[9px] font-bold text-white/60 uppercase tracking-wider">
+          <span class="text-micro font-bold text-white/60 uppercase tracking-wider">
             Tier Progress
           </span>
-          <span class="text-[9px] font-bold tabular-nums" style="color: {tierColor};">
+          <span class="text-micro font-bold tabular-nums" style="color: {tierColor};">
             {progressToNextTier}%
           </span>
         </div>
@@ -459,7 +456,7 @@
       <!-- Cash Out XP button -->
       <button
         on:click={() => (showXpConvert = true)}
-        class="w-full rounded-xl py-2.5 text-[11px] font-extrabold active:scale-[0.98] flex items-center justify-center gap-1.5"
+        class="w-full rounded-xl py-2.5 text-tiny font-extrabold active:scale-[0.98] flex items-center justify-center gap-1.5"
         style="
           background: linear-gradient(180deg, rgba(37,99,235,0.3), rgba(109,40,217,0.15));
           border: 1px solid rgba(37,99,235,0.55);
@@ -468,7 +465,7 @@
       >
         <Icon name="gem" size={13} color="#e9d5ff" />
         <span>Cash Out XP</span>
-        <span class="text-[10px] font-mono opacity-70">
+        <span class="text-mini font-mono opacity-70">
           ({availableXp.toLocaleString()} avail)
         </span>
       </button>
@@ -489,10 +486,10 @@
       >
         <div class="flex items-center gap-2 mb-3">
           <Icon name="ticket" size={16} color="#f4c95d" />
-          <p class="text-[10px] uppercase tracking-widest font-extrabold text-gold flex-1">
+          <p class="text-mini uppercase tracking-widest font-extrabold text-gold flex-1">
             Vouchers
           </p>
-          <span class="text-[11px] font-extrabold text-gold tabular-nums">
+          <span class="text-tiny font-extrabold text-gold tabular-nums">
             {fmtMoney(vouchersTotal)}
           </span>
         </div>
@@ -502,7 +499,7 @@
               class="rounded-xl p-2.5"
               style="background: rgba(0,0,0,0.4); border: 1px solid rgba(244,201,93,0.25);"
             >
-              <div class="flex justify-between items-center text-[10px] mb-1.5">
+              <div class="flex justify-between items-center text-mini mb-1.5">
                 <span class="font-extrabold text-gold">{fmtMoney(v.amount)}</span>
                 <span class="text-white/50 font-mono tabular-nums">
                   {fmtMoney(v.currentRake)} / {fmtMoney(v.minRake)}
@@ -542,13 +539,13 @@
       >
         <div class="flex items-center gap-2 mb-3">
           <Icon name="seed" size={16} color="#4ade80" />
-          <p class="text-[10px] uppercase tracking-widest font-extrabold text-emerald-300 flex-1">
+          <p class="text-mini uppercase tracking-widest font-extrabold text-emerald-300 flex-1">
             Seeds
           </p>
           <button
             on:click={() => (infoOpen = 'seeds')}
             aria-label="Info"
-            class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-extrabold text-white/50 active:scale-95"
+            class="w-5 h-5 rounded-full flex items-center justify-center text-mini font-extrabold text-white/50 active:scale-95"
             style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);"
           >
             ?
@@ -564,7 +561,7 @@
               type="button"
               on:click={() => openSeedClaim(s)}
               disabled={!s.eligible || s.claimed}
-              class="w-full flex items-center gap-2.5 p-2 rounded-xl text-left active:scale-[0.98] transition disabled:cursor-default"
+              class="w-full flex items-center gap-2.5 p-2 rounded-xl text-start active:scale-[0.98] transition disabled:cursor-default"
               style="
                 background: rgba(0,0,0,0.35);
                 {s.eligible && !s.claimed
@@ -575,7 +572,7 @@
               <span class="text-lg">{s.icon}</span>
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 mb-0.5">
-                  <p class="text-[11px] font-extrabold text-white truncate">{s.label}</p>
+                  <p class="text-tiny font-extrabold text-white truncate">{s.label}</p>
                   {#if s.claimed}
                     <span
                       class="text-[8px] font-extrabold px-1.5 py-0.5 rounded-full"
@@ -608,15 +605,12 @@
                       "
                     ></div>
                   </div>
-                  <span class="text-[9px] font-mono tabular-nums text-white/60">
+                  <span class="text-micro font-mono tabular-nums text-white/60">
                     {s.progress.freeHands.toLocaleString()}/{s.progress.minFreeHands.toLocaleString()}
                   </span>
                 </div>
               </div>
-              <span
-                class="text-[11px] font-extrabold tabular-nums shrink-0"
-                style="color: #86efac;"
-              >
+              <span class="text-tiny font-extrabold tabular-nums shrink-0" style="color: #86efac;">
                 ${fmtAmount(s.amount)}
               </span>
             </button>
@@ -650,7 +644,7 @@
           >
             <Icon name={a.icon} size={16} color={a.color} />
           </div>
-          <p class="text-[9px] font-extrabold text-white/85 leading-none text-center">
+          <p class="text-micro font-extrabold text-white/85 leading-none text-center">
             {a.label}
           </p>
         </button>
@@ -670,7 +664,7 @@
       {#each MORE_MENU as item, i}
         <button
           on:click={() => onNavigate(item.page)}
-          class="w-full flex items-center gap-3 px-4 py-3 text-left active:bg-white/5 transition"
+          class="w-full flex items-center gap-3 px-4 py-3 text-start active:bg-white/5 transition"
           style="border-bottom: {i < MORE_MENU.length - 1
             ? '1px solid rgba(212,175,55,0.08)'
             : 'none'};"
@@ -686,7 +680,7 @@
           </div>
           <div class="flex-1 min-w-0">
             <p class="text-[13px] font-bold text-white/90 leading-tight">{item.label}</p>
-            <p class="text-[10px] text-white/40 leading-tight mt-0.5">{item.sub}</p>
+            <p class="text-mini text-white/40 leading-tight mt-0.5">{item.sub}</p>
           </div>
           <Icon name="arrow-right" size={12} color="rgba(212,175,55,0.6)" />
         </button>
@@ -710,9 +704,9 @@
       >
         <Icon name="logout" size={16} color="#fca5a5" />
       </div>
-      <div class="flex-1 min-w-0 text-left">
+      <div class="flex-1 min-w-0 text-start">
         <p class="text-[13px] font-bold text-red-400 leading-tight">Logout</p>
-        <p class="text-[10px] text-white/40 leading-tight mt-0.5">Sign out of account</p>
+        <p class="text-mini text-white/40 leading-tight mt-0.5">Sign out of account</p>
       </div>
     </button>
   </div>
@@ -783,7 +777,7 @@
     class="rounded-xl p-3"
     style="background: rgba(212,175,55,0.08); border: 1px solid rgba(212,175,55,0.25);"
   >
-    <p class="text-[11px]">
+    <p class="text-tiny">
       <strong class="text-gold">Example:</strong> 100 hands · $5 won · 45 wins → 45% win rate
     </p>
   </div>
@@ -800,7 +794,7 @@
     class="rounded-xl p-3 mb-3"
     style="background: rgba(212,175,55,0.08); border: 1px solid rgba(212,175,55,0.3);"
   >
-    <p class="text-[11px] mb-1"><strong class="text-gold">Your current rate:</strong></p>
+    <p class="text-tiny mb-1"><strong class="text-gold">Your current rate:</strong></p>
     <p class="text-[13px] font-extrabold" style="color: {tierColor};">
       {tierIcon}
       {tierLabel} → {rakebackPct}% Rakeback
@@ -837,8 +831,8 @@
       class="rounded-xl p-3"
       style="background: rgba(37,99,235,0.1); border: 1px solid rgba(37,99,235,0.3);"
     >
-      <p class="text-[11px] font-extrabold mb-1 text-blue-300">1. XP Level</p>
-      <p class="text-[11px]">
+      <p class="text-tiny font-extrabold mb-1 text-blue-300">1. XP Level</p>
+      <p class="text-tiny">
         Based on XP earned. Current: <strong class="text-white">Level {level}</strong>
       </p>
     </div>
@@ -846,8 +840,8 @@
       class="rounded-xl p-3"
       style="background: rgba(212,175,55,0.08); border: 1px solid rgba(212,175,55,0.3);"
     >
-      <p class="text-[11px] font-extrabold mb-1 text-gold">2. Rakeback Tier</p>
-      <p class="text-[11px]">
+      <p class="text-tiny font-extrabold mb-1 text-gold">2. Rakeback Tier</p>
+      <p class="text-tiny">
         Based on lifetime rake. Current:
         <strong style="color: {tierColor};">{rakebackPct}% ({tierLabel})</strong>
       </p>
@@ -862,7 +856,7 @@
   onClose={() => (infoOpen = null)}
 >
   <p class="mb-3">Free real-money rewards earned by playing free tables.</p>
-  <div class="space-y-1.5 mb-3 text-[11px]">
+  <div class="space-y-1.5 mb-3 text-tiny">
     <div class="flex justify-between">
       <span><Icon name="medal" size={18} color="#d97706" /> Bronze</span><span class="font-mono"
         >50 hands + 10 wins → $0.50</span

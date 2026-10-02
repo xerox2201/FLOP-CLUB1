@@ -150,13 +150,13 @@
 
     <!-- Gold hairline accent along the bottom edge -->
     <div
-      class="absolute bottom-0 left-0 right-0 h-px"
+      class="absolute bottom-0 start-0 end-0 h-px"
       style="background: linear-gradient(90deg, transparent, rgba(212,175,55,0.75), transparent);"
     ></div>
 
     <!-- Live stats pill — top right -->
     <div
-      class="absolute top-3 right-3 flex items-center gap-2 px-2.5 py-1 rounded-full z-10"
+      class="absolute top-3 end-3 flex items-center gap-2 px-2.5 py-1 rounded-full z-10"
       style="
         background: rgba(5,8,15,0.75);
         border: 1px solid rgba(16,185,129,0.4);
@@ -168,14 +168,14 @@
         class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"
         style="box-shadow: 0 0 6px #34d399;"
       ></span>
-      <span class="text-[11px] font-extrabold text-emerald-300 tabular-nums leading-none">
+      <span class="text-tiny font-extrabold text-emerald-300 tabular-nums leading-none">
         {livePlayers}
       </span>
       <span class="text-[8px] text-white/60 font-bold uppercase tracking-wider leading-none"
         >online</span
       >
       <span class="w-px h-3" style="background: rgba(255,255,255,0.2);"></span>
-      <span class="text-[11px] font-extrabold text-gold tabular-nums leading-none">
+      <span class="text-tiny font-extrabold text-gold tabular-nums leading-none">
         {activeTables}
       </span>
       <span class="text-[8px] text-white/60 font-bold uppercase tracking-wider leading-none"
@@ -186,7 +186,7 @@
     <!-- Content — left-aligned, vertically centered -->
     <div class="relative h-full flex flex-col justify-center p-5">
       <p
-        class="text-[9px] font-extrabold tracking-[0.32em] uppercase mb-2"
+        class="text-micro font-extrabold tracking-[0.32em] uppercase mb-2"
         style="color: #e8c45a; text-shadow: 0 2px 8px rgba(0,0,0,0.8);"
       >
         Welcome Back
@@ -204,7 +204,7 @@
         Play Poker<br />Win Big
       </h2>
       <p
-        class="text-[11px] text-white/85 mb-4 max-w-[180px] leading-relaxed"
+        class="text-tiny text-white/85 mb-4 max-w-[180px] leading-relaxed"
         style="text-shadow: 0 2px 8px rgba(0,0,0,0.9);"
       >
         Real players. Real action.
@@ -238,9 +238,9 @@
         <!-- Verified badge — bottom right -->
         <div class="flex items-center gap-2 shrink-0">
           <Icon name="shield" size={14} color="#6ee7b7" />
-          <div class="text-right">
+          <div class="text-end">
             <p
-              class="text-[10px] font-extrabold text-emerald-300 leading-none"
+              class="text-mini font-extrabold text-emerald-300 leading-none"
               style="text-shadow: 0 2px 6px rgba(0,0,0,0.9);"
             >
               Verified
@@ -283,7 +283,7 @@
     {#each games as g}
       <button
         on:click={() => openGame(g)}
-        class="surface-card shrink-0 relative overflow-hidden transition-transform text-left snap-start"
+        class="surface-card shrink-0 relative overflow-hidden transition-transform text-start snap-start"
         style="width: 132px;"
       >
         <div
@@ -298,7 +298,7 @@
             style="border: 1px solid rgba(212,175,55,0.32);"
           ></div>
 
-          <div class="flex justify-center -space-x-3 relative z-10">
+          <div class="flex justify-center -space-x-3 rtl:space-x-reverse relative z-10">
             {#each g.cards as c}
               <div
                 style="transform: rotate({c.rot}deg); filter: drop-shadow(0 3px 6px rgba(0,0,0,0.75));"
@@ -310,8 +310,8 @@
         </div>
 
         <div class="px-2.5 py-2">
-          <p class="text-[11px] font-extrabold text-white truncate leading-tight">{g.title}</p>
-          <p class="text-[9px] text-white/45 mt-0.5 truncate leading-tight">{g.sub}</p>
+          <p class="text-tiny font-extrabold text-white truncate leading-tight">{g.title}</p>
+          <p class="text-micro text-white/45 mt-0.5 truncate leading-tight">{g.sub}</p>
         </div>
       </button>
     {/each}

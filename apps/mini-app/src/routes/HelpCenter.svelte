@@ -183,7 +183,7 @@
         >
           Help Center
         </h1>
-        <p class="text-[11px] text-white/45 mt-1 font-bold">Answers, rules and 24/7 support</p>
+        <p class="text-tiny text-white/45 mt-1 font-bold">Answers, rules and 24/7 support</p>
       </div>
     </div>
   </div>
@@ -269,7 +269,7 @@
       type="text"
       bind:value={search}
       placeholder="Search help…"
-      class="w-full rounded-2xl pl-10 pr-10 py-3 text-sm text-white outline-none focus:border-gold"
+      class="w-full rounded-2xl ps-10 pe-10 py-3 text-sm text-white outline-none focus:border-gold"
       style="
         background:
           radial-gradient(ellipse at 0% 50%, rgba(212,175,55,0.08) 0%, transparent 60%),
@@ -278,7 +278,7 @@
         box-shadow: 0 4px 12px rgba(0,0,0,0.35);
       "
     />
-    <span class="absolute left-7 top-1/2 -translate-y-1/2 text-white/40 flex items-center">
+    <span class="absolute start-7 top-1/2 -translate-y-1/2 text-white/40 flex items-center">
       <Icon name="search" size={14} />
     </span>
     {#if search.trim()}
@@ -286,7 +286,7 @@
         type="button"
         on:click={() => (search = '')}
         aria-label="Clear search"
-        class="absolute right-7 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center active:scale-95 transition"
+        class="absolute end-7 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center active:scale-95 transition"
         style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);"
       >
         <Icon name="close" size={11} color="rgba(255,255,255,0.6)" />
@@ -316,7 +316,7 @@
           <Icon name="search" size={22} color="#f4c95d" />
         </div>
         <p class="text-sm font-extrabold text-white">No results found</p>
-        <p class="text-[11px] text-white/55 mt-1 font-bold">
+        <p class="text-tiny text-white/55 mt-1 font-bold">
           Nothing matches "{search}" — try another keyword
         </p>
       </div>
@@ -351,7 +351,7 @@
               {cat.title}
             </p>
             <span
-              class="text-[9px] font-extrabold px-2 py-0.5 rounded-full tabular-nums shrink-0"
+              class="text-micro font-extrabold px-2 py-0.5 rounded-full tabular-nums shrink-0"
               style="background: {cat.color}1f; border: 1px solid {cat.color}45; color: {cat.color};"
             >
               {cat.items.length}
@@ -363,7 +363,7 @@
               {@const key = `${cat.id}-${idx}`}
               <button
                 on:click={() => toggle(key)}
-                class="w-full text-left px-4 py-3 active:bg-white/5 transition"
+                class="w-full text-start px-4 py-3 active:bg-white/5 transition"
                 style="border-bottom: {idx < cat.items.length - 1
                   ? '1px solid rgba(212,175,55,0.06)'
                   : 'none'};"
@@ -383,7 +383,7 @@
                 </div>
 
                 {#if expanded === key}
-                  <p class="text-[11px] text-white/60 leading-relaxed mt-2 pr-6">{item.a}</p>
+                  <p class="text-tiny text-white/60 leading-relaxed mt-2 pe-6">{item.a}</p>
                 {/if}
               </button>
             {/each}
@@ -417,7 +417,7 @@
         </div>
         <div class="flex-1 min-w-0">
           <p class="text-[13px] font-extrabold text-white leading-tight">Still need help?</p>
-          <p class="text-[10px] text-white/55 font-bold mt-0.5 leading-tight">
+          <p class="text-mini text-white/55 font-bold mt-0.5 leading-tight">
             Our support team is here 24/7
           </p>
         </div>

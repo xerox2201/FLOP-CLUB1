@@ -74,13 +74,13 @@
     <div class="flex items-center justify-between mb-2">
       <div class="flex items-center gap-2">
         <Icon name="target" size={14} color="#f4c95d" />
-        <p class="text-[11px] font-extrabold text-white/90 uppercase tracking-widest">
+        <p class="text-tiny font-extrabold text-white/90 uppercase tracking-widest">
           Daily Missions
         </p>
       </div>
       <button
         on:click={onSeeAll}
-        class="text-[10px] font-bold text-gold active:opacity-70 flex items-center gap-1"
+        class="text-mini font-bold text-gold active:opacity-70 flex items-center gap-1"
       >
         <span>See All</span>
         <Icon name="arrow-right" size={10} />
@@ -90,7 +90,7 @@
 
   {#if toast}
     <div
-      class="rounded-xl px-3 py-2 mb-2 text-[10px] font-bold"
+      class="rounded-xl px-3 py-2 mb-2 text-mini font-bold"
       style="background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.4); color: #6ee7b7;"
     >
       {toast}
@@ -99,7 +99,7 @@
 
   {#if error}
     <div
-      class="rounded-xl px-3 py-2 mb-2 text-[10px] font-bold"
+      class="rounded-xl px-3 py-2 mb-2 text-mini font-bold"
       style="background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.4); color: #fca5a5;"
     >
       {error}
@@ -121,7 +121,7 @@
       style="background: linear-gradient(180deg, rgba(15,31,58,0.6), rgba(11,19,36,0.85)); border: 1px dashed rgba(212,175,55,0.3);"
     >
       <p class="text-[12px] font-extrabold text-white">No missions right now</p>
-      <p class="text-[10px] text-white/50 font-bold mt-1">
+      <p class="text-mini text-white/50 font-bold mt-1">
         New missions unlock every day at 00:00 UTC
       </p>
     </div>
@@ -175,21 +175,21 @@
                   </span>
                 {/if}
               </div>
-              <p class="text-[9px] text-white/45 font-bold mt-0.5 truncate">
+              <p class="text-micro text-white/45 font-bold mt-0.5 truncate">
                 {m.description}
               </p>
             </div>
 
-            <div class="text-right shrink-0">
+            <div class="text-end shrink-0">
               <div class="flex items-center gap-1 justify-end">
                 <Icon name="coin" size={9} color="#f4c95d" />
-                <span class="text-[10px] font-extrabold text-gold tabular-nums">
+                <span class="text-mini font-extrabold text-gold tabular-nums">
                   {m.rewardChips}
                 </span>
               </div>
               <div class="flex items-center gap-1 justify-end mt-0.5">
                 <Icon name="star" size={9} color="#a5b4fc" />
-                <span class="text-[9px] font-bold text-indigo-300 tabular-nums">
+                <span class="text-micro font-bold text-indigo-300 tabular-nums">
                   {m.rewardXp} XP
                 </span>
               </div>
@@ -212,13 +212,13 @@
               ></div>
             </div>
 
-            <span class="text-[9px] font-extrabold tabular-nums text-white/60 shrink-0">
+            <span class="text-micro font-extrabold tabular-nums text-white/60 shrink-0">
               {Math.min(Number(m.progress || 0), Number(m.threshold || 0))}/{m.threshold}
             </span>
 
             {#if done}
               <span
-                class="text-[9px] font-extrabold px-2 py-1 rounded-lg shrink-0"
+                class="text-micro font-extrabold px-2 py-1 rounded-lg shrink-0"
                 style="background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.35);"
               >
                 CLAIMED
@@ -227,13 +227,13 @@
               <button
                 on:click={() => claim(m.code)}
                 disabled={claiming === m.code}
-                class="text-[9px] font-extrabold px-2.5 py-1 rounded-lg shrink-0 active:scale-95 transition disabled:opacity-60"
+                class="text-micro font-extrabold px-2.5 py-1 rounded-lg shrink-0 active:scale-95 transition disabled:opacity-60"
                 style="background: linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15); color: #0a0800;"
               >
                 {claiming === m.code ? '...' : 'CLAIM'}
               </button>
             {:else}
-              <span class="text-[9px] font-bold text-white/30 shrink-0">IN PROGRESS</span>
+              <span class="text-micro font-bold text-white/30 shrink-0">IN PROGRESS</span>
             {/if}
           </div>
         </div>

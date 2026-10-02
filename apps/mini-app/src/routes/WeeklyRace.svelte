@@ -141,7 +141,7 @@
         >
           Weekly Race
         </h1>
-        <p class="text-[10px] text-white/50 mt-1 font-bold">
+        <p class="text-mini text-white/50 mt-1 font-bold">
           Most rake this week wins · resets Monday 00:00 UTC
         </p>
       </div>
@@ -162,15 +162,15 @@
     >
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-[9px] uppercase tracking-[0.3em] font-extrabold text-gold">
+          <p class="text-micro uppercase tracking-[0.3em] font-extrabold text-gold">
             {activeCfg.label} bracket
           </p>
-          <p class="text-[10px] text-white/50 font-bold mt-1">
+          <p class="text-mini text-white/50 font-bold mt-1">
             Top {paidPlaces || activeCfg.paidPlaces} paid
           </p>
         </div>
-        <div class="text-right">
-          <p class="text-[9px] uppercase tracking-wider text-white/40 font-bold">Resets in</p>
+        <div class="text-end">
+          <p class="text-micro uppercase tracking-wider text-white/40 font-bold">Resets in</p>
           <p class="text-[13px] font-extrabold text-white tabular-nums">{countdown}</p>
         </div>
       </div>
@@ -188,7 +188,7 @@
         >
           ${fmt(poolUsd || activeCfg.poolUsd)}
         </span>
-        <span class="text-[10px] uppercase tracking-wider text-white/40 font-bold">prize pool</span>
+        <span class="text-mini uppercase tracking-wider text-white/40 font-bold">prize pool</span>
       </div>
     </div>
   </div>
@@ -211,7 +211,7 @@
           "
         >
           <p
-            class="text-[11px] font-extrabold"
+            class="text-tiny font-extrabold"
             style="color: {bracket === b.key ? b.color : 'rgba(255,255,255,0.6)'};"
           >
             {b.label}
@@ -241,18 +241,18 @@
             box-shadow: 0 2px 0 #7a560a;
           "
         >
-          <span class="text-[11px] font-extrabold text-black leading-none">
+          <span class="text-tiny font-extrabold text-black leading-none">
             {me.rank ? `#${me.rank}` : '-'}
           </span>
         </div>
         <div class="flex-1 min-w-0">
-          <p class="text-[11px] font-extrabold text-white leading-none">Your position</p>
-          <p class="text-[9px] text-white/50 mt-1 leading-none">
+          <p class="text-tiny font-extrabold text-white leading-none">Your position</p>
+          <p class="text-micro text-white/50 mt-1 leading-none">
             ${fmt(me.totalRake)} rake · {me.bracketSize} players in {me.bracket}
           </p>
         </div>
-        <div class="text-right shrink-0">
-          <p class="text-[9px] text-gold/70 font-bold uppercase tracking-wider leading-none mb-1">
+        <div class="text-end shrink-0">
+          <p class="text-micro text-gold/70 font-bold uppercase tracking-wider leading-none mb-1">
             {me.paid ? 'Won' : 'Est. prize'}
           </p>
           <p class="text-[13px] font-extrabold text-gold tabular-nums leading-none">
@@ -286,14 +286,14 @@
           <Icon name="trophy" size={28} color="#f4c95d" />
         </div>
         <p class="text-[12px] font-extrabold text-white">No racers yet</p>
-        <p class="text-[10px] text-white/50 font-bold mt-1">
+        <p class="text-mini text-white/50 font-bold mt-1">
           Play real-money hands to enter this week's race
         </p>
       </div>
     {:else}
       <div class="flex items-center gap-2 mb-2">
         <span class="w-1.5 h-1.5 rounded-full bg-gold" style="box-shadow: 0 0 6px #d4af37;"></span>
-        <p class="text-[10px] font-extrabold text-white/60 uppercase tracking-widest">
+        <p class="text-mini font-extrabold text-white/60 uppercase tracking-widest">
           {activeCfg.label} standings
         </p>
       </div>
@@ -311,7 +311,7 @@
             "
           >
             <div
-              class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-[11px] font-extrabold tabular-nums"
+              class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-tiny font-extrabold tabular-nums"
               style="
                 background: {e.rank === 1
                 ? 'linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15)'
@@ -329,13 +329,13 @@
               <p class="text-[12px] font-extrabold text-white truncate leading-tight">
                 {e.displayName}
               </p>
-              <p class="text-[9px] text-white/40 font-bold mt-0.5">
+              <p class="text-micro text-white/40 font-bold mt-0.5">
                 ${fmt(e.totalRake)} rake
               </p>
             </div>
 
             {#if e.paid && e.prizeUsd > 0}
-              <div class="text-right shrink-0">
+              <div class="text-end shrink-0">
                 <p class="text-[12px] font-extrabold text-emerald-400 tabular-nums leading-none">
                   +${fmt(e.prizeUsd)}
                 </p>
@@ -347,7 +347,7 @@
       </div>
 
       {#if paidEntries.length === 0}
-        <p class="text-[9px] text-white/35 font-bold text-center mt-3">
+        <p class="text-micro text-white/35 font-bold text-center mt-3">
           Prizes unlock once the week settles
         </p>
       {/if}

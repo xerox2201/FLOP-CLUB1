@@ -33,7 +33,7 @@
     <button
       type="button"
       on:click={onOpen}
-      class="w-full rounded-2xl p-3.5 relative overflow-hidden active:scale-[0.98] transition-all text-left"
+      class="w-full rounded-2xl p-3.5 relative overflow-hidden active:scale-[0.98] transition-all text-start"
       style="
         background:
           radial-gradient(ellipse at 100% 0%, rgba(244,201,93,0.22) 0%, transparent 60%),
@@ -57,7 +57,7 @@
 
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-1.5 mb-0.5">
-            <p class="text-[10px] uppercase tracking-widest font-extrabold text-gold">
+            <p class="text-mini uppercase tracking-widest font-extrabold text-gold">
               Refer Friends
             </p>
             <span
@@ -72,18 +72,18 @@
             <div class="flex items-baseline gap-2">
               <p class="text-[13px] font-extrabold text-emerald-400 tabular-nums leading-none">
                 ${fmt(dashboard.lifetime)}
-                <span class="text-white/40 font-bold text-[10px]">earned</span>
+                <span class="text-white/40 font-bold text-mini">earned</span>
               </p>
-              <span class="text-white/30 text-[10px]">·</span>
-              <p class="text-[11px] font-bold text-white/70 tabular-nums">
+              <span class="text-white/30 text-mini">·</span>
+              <p class="text-tiny font-bold text-white/70 tabular-nums">
                 {dashboard.activeRefs} active
               </p>
             </div>
           {:else}
-            <p class="text-[11px] font-extrabold text-white leading-tight">
+            <p class="text-tiny font-extrabold text-white leading-tight">
               Earn 12% of friends' rake
             </p>
-            <p class="text-[9px] text-white/45 mt-0.5">For 12 months · Instant payout</p>
+            <p class="text-micro text-white/45 mt-0.5">For 12 months · Instant payout</p>
           {/if}
         </div>
 
