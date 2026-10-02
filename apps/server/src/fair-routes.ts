@@ -9,8 +9,8 @@
 import type { FastifyInstance } from 'fastify';
 import { Pool } from 'pg';
 import { FairSeedService, type FairSeedRecord } from './fair-seed-service.js';
-import { DECK_V1_ALGORITHM, type FairCard } from './fair/deck-v1.js';
-import { verifyHandV1 } from './fair/verify-v1.js';
+import { DECK_V1_ALGORITHM, type FairCard } from '../../../packages/shared/src/fair/deck-v1.js';
+import { verifyHandV1 } from '../../../packages/shared/src/fair/verify-v1.js';
 
 interface FairHandView {
   handId: number;

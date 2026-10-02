@@ -10,7 +10,11 @@
  */
 
 import { Pool } from 'pg';
-import { DECK_V1_ALGORITHM, deckFromSeedV1, deckHashV1 } from './fair/deck-v1.js';
+import {
+  DECK_V1_ALGORITHM,
+  deckFromSeedV1,
+  deckHashV1,
+} from '../../../packages/shared/src/fair/deck-v1.js';
 
 /**
  * Part B keeps the nonce fixed: deck-v1 does not mix the nonce in yet, so
