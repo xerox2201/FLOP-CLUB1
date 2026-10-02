@@ -88,36 +88,60 @@ export function fitSurface(
   return { w: Math.round(w), h: Math.round(h) };
 }
 
+/**
+ * One cell of the chip sprite `/chips-set-hq.webp`. The sheet is a 4 x 3 grid
+ * and every cell carries one printed denomination, so the value and the sprite
+ * coordinates belong together and live in exactly one place.
+ */
+export interface ChipDenom {
+  value: number;
+  row: number;
+  col: number;
+}
+
+/**
+ * THE chip denomination table for the whole app (sprite + every stack
+ * renderer). Ordered largest first, which is also the order in which
+ * chipBreakdown() lays the columns out.
+ */
+export const CHIP_DENOMS: readonly ChipDenom[] = [
+  { value: 1000000, row: 2, col: 3 },
+  { value: 500000, row: 2, col: 2 },
+  { value: 100000, row: 2, col: 1 },
+  { value: 50000, row: 2, col: 0 },
+  { value: 10000, row: 1, col: 3 },
+  { value: 5000, row: 1, col: 2 },
+  { value: 1000, row: 1, col: 1 },
+  { value: 500, row: 1, col: 0 },
+  { value: 100, row: 0, col: 3 },
+  { value: 25, row: 0, col: 2 },
+  { value: 5, row: 0, col: 1 },
+  { value: 1, row: 0, col: 0 },
+];
+
 export interface ChipStack {
   denom: number;
   count: number;
+  row: number;
+  col: number;
 }
 
-/** Denominations, largest first. */
-export const CHIP_DENOMS = [1000, 500, 100, 25, 5, 1, 0.5, 0.25] as const;
-
-/** Sprite colour per denomination (see /chips-set-hq.webp). */
-export const CHIP_COLORS: Record<number, string> = {
-  1000: '#d4af37',
-  500: '#3b82f6',
-  100: '#0f172a',
-  25: '#10b981',
-  5: '#dc2626',
-  1: '#f8fafc',
-  0.5: '#f97316',
-  0.25: '#0ea5e9',
-};
-
-/** Break an amount into real chip stacks, largest denomination first. */
+/** Break an amount into chip columns, largest denomination first. */
 export function chipBreakdown(amount: number): ChipStack[] {
   let rest = Math.max(0, Math.round((Number.isFinite(amount) ? amount : 0) * 100) / 100);
   const out: ChipStack[] = [];
-  for (const denom of CHIP_DENOMS) {
-    if (rest + 1e-9 < denom) continue;
-    const count = Math.floor((rest + 1e-9) / denom);
+  for (const d of CHIP_DENOMS) {
+    if (rest + 1e-9 < d.value) continue;
+    const count = Math.floor((rest + 1e-9) / d.value);
     if (count <= 0) continue;
-    out.push({ denom, count });
-    rest = Math.round((rest - count * denom) * 100) / 100;
+    out.push({ denom: d.value, count, row: d.row, col: d.col });
+    rest = Math.round((rest - count * d.value) * 100) / 100;
+  }
+  // Fractional amounts (0.25 blinds) have no sprite cell. Fall back to the
+  // smallest chip so a real bet can never render as nothing.
+  if (out.length === 0 && rest > 0) {
+    const smallest = CHIP_DENOMS[CHIP_DENOMS.length - 1];
+    out.push({ denom: smallest.value, count: 1, row: smallest.row, col: smallest.col });
   }
   return out;
 }

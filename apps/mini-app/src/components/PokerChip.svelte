@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { preferences } from '../lib/preferences';
+  import { chipBreakdown } from '../lib/table-geometry';
 
   export let amount: number = 0;
   export let size: number = 28;
@@ -11,37 +12,46 @@
   export let pulse: boolean = false; // winner highlight
   export let collecting: boolean = false; // fly-away when pot collected
 
-  const DENOMS = [
-    { value: 1, row: 0, col: 0 },
-    { value: 5, row: 0, col: 1 },
-    { value: 25, row: 0, col: 2 },
-    { value: 100, row: 0, col: 3 },
-    { value: 500, row: 1, col: 0 },
-    { value: 1000, row: 1, col: 1 },
-    { value: 5000, row: 1, col: 2 },
-    { value: 10000, row: 1, col: 3 },
-    { value: 50000, row: 2, col: 0 },
-    { value: 100000, row: 2, col: 1 },
-    { value: 500000, row: 2, col: 2 },
-    { value: 1000000, row: 2, col: 3 },
-  ];
-
-  function breakdown(amt: number) {
-    const result: { value: number; row: number; col: number; count: number }[] = [];
-    let remaining = Math.round(amt * 100) / 100;
-    for (let i = DENOMS.length - 1; i >= 0; i--) {
-      const d = DENOMS[i];
-      if (remaining >= d.value) {
-        const count = Math.floor(remaining / d.value);
-        result.push({ ...d, count });
-        remaining -= count * d.value;
-      }
-    }
-    if (result.length === 0 && amt > 0) result.push({ ...DENOMS[0], count: 1 });
-    return result;
+  interface Column {
+    key: string;
+    row: number;
+    col: number;
+    count: number;
+    visible: number;
+    disc: number;
+    offset: number;
+    height: number;
   }
 
-  $: stacks = breakdown(amount);
+  /**
+   * Chip columns for the amount, from the shared denomination table, plus the
+   * geometry of each stack. The height of a column grows with the number of
+   * chips it holds, so the visual weight follows the amount.
+   *
+   * The per-chip offset tapers once a stack is 4 chips tall, and the diameter
+   * shrinks only when an amount needs more than 4 denominations. Both keep the
+   * footprint at or below what it has always been: on the mobile felt a bet
+   * stack sits next to the board and must never grow into the cards.
+   */
+  $: columns = ((): Column[] => {
+    const stacks = chipBreakdown(amount);
+    const scale = Math.max(0.7, Math.min(1, 4 / Math.max(1, stacks.length)));
+    const disc = size * scale;
+    return stacks.map((s): Column => {
+      const visible = Math.max(1, Math.min(s.count, maxStack));
+      const offset = disc * (visible >= 4 ? 0.13 : 0.16);
+      return {
+        key: `${s.denom}-${s.col}-${s.row}`,
+        row: s.row,
+        col: s.col,
+        count: s.count,
+        visible,
+        disc,
+        offset,
+        height: disc + (visible - 1) * offset,
+      };
+    });
+  })();
 
   let mounted = false;
   onMount(() => {
@@ -57,43 +67,28 @@
 
 {#if amount > 0}
   <div class="chip-root {popClass} {pulseClass} {collectClass}" style="gap: {size * 0.1}px;">
-    {#each stacks as s}
-      <div
-        class="relative"
-        style="
-          width: {size}px;
-          height: {size + (Math.min(s.count, maxStack) - 1) * (size * 0.16)}px;
-        "
-      >
-        {#each Array(Math.min(s.count, maxStack)) as _, i}
+    {#each columns as c (c.key)}
+      <div class="chip-column" style="width: {c.disc}px; height: {c.height}px;">
+        {#each Array(c.visible) as _, i}
           <div
-            class="absolute chip-disc"
+            class="chip-disc"
             style="
-              width: {size}px;
-              height: {size}px;
-              bottom: {i * (size * 0.16)}px;
-              left: 0;
-              background-image: url('/chips-set-hq.webp');
-              background-size: 400% 300%;
-              background-position: {(s.col * 100) / 3}% {(s.row * 100) / 2}%;
-              background-repeat: no-repeat;
-              filter: drop-shadow(0 {size * 0.08}px {size * 0.13}px rgba(0,0,0,0.75));
+              width: {c.disc}px;
+              height: {c.disc}px;
+              bottom: {i * c.offset}px;
+              background-position: {(c.col * 100) / 3}% {(c.row * 100) / 2}%;
+              filter: drop-shadow(0 {c.disc * 0.08}px {c.disc * 0.13}px rgba(0,0,0,0.75));
               animation-delay: {i * 0.03}s;
             "
           ></div>
         {/each}
 
-        {#if s.count > maxStack}
+        {#if c.count > maxStack}
           <div
-            class="absolute -top-2 -right-2 rounded-full px-1.5 py-0.5 text-[9px] font-extrabold z-10"
-            style="
-              background: linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15);
-              color: #0a0800;
-              box-shadow: 0 2px 6px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,235,170,0.5);
-              line-height: 1;
-            "
+            class="chip-count absolute -top-2 -right-2 rounded-full px-1.5 py-0.5 font-extrabold z-10"
+            style="font-size: {Math.max(7, c.disc * 0.36)}px;"
           >
-            ×{s.count}
+            ×{c.count}
           </div>
         {/if}
       </div>
@@ -108,13 +103,21 @@
     will-change: transform, opacity, filter;
   }
 
-  /* Chip disc — the component had no dedicated class for the discs (they only
-     carried the `absolute` utility), so `chip-disc` was added to that element
-     rather than styling the shared `absolute` class.
-     `position: relative` here is overridden by the `absolute` utility, which is
-     fine: the element is still a positioned ancestor for the ::after. */
-  .chip-disc {
+  .chip-column {
     position: relative;
+  }
+
+  /* One chip disc = one cell of the 4 x 3 sprite sheet, masked to a circle so
+     the sheet's square cell can never show a corner. The sprite cell already
+     prints its denomination, so the circle IS the denomination. */
+  .chip-disc {
+    position: absolute;
+    left: 0;
+    border-radius: 50%;
+    overflow: hidden;
+    background-image: url('/chips-set-hq.webp');
+    background-size: 400% 300%;
+    background-repeat: no-repeat;
   }
 
   .chip-disc::after {
@@ -126,6 +129,17 @@
       inset 0 0 0 1px rgba(212, 175, 55, 0.35),
       inset 0 -1px 2px rgba(0, 0, 0, 0.4);
     pointer-events: none;
+  }
+
+  /* Overflow badge: how many chips of this denomination the stack stands for
+     when it is taller than maxStack. */
+  .chip-count {
+    background: linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15);
+    color: #0a0800;
+    line-height: 1;
+    box-shadow:
+      0 2px 6px rgba(0, 0, 0, 0.6),
+      inset 0 1px 0 rgba(255, 235, 170, 0.5);
   }
 
   /* ===== POP IN ===== */
