@@ -1,6 +1,7 @@
 <script lang="ts">
   import { formatAmount } from '../lib/format';
   import { auth } from '../stores/auth';
+  import { t, type MessageKey } from '../i18n';
   import Avatar from './Avatar.svelte';
   import Icon from './Icon.svelte';
 
@@ -12,15 +13,15 @@
   $: user = $auth.user;
   $: avatarId = (user as any)?.avatar_id || 'king';
 
-  const items = [
-    { id: 'home' as Page, label: 'Home', icon: 'home' },
-    { id: 'tables' as Page, label: 'Cash Games', icon: 'tables' },
-    { id: 'tournaments' as Page, label: 'Tournaments', icon: 'tournaments' },
-    { id: 'events' as Page, label: 'Sit & Go', icon: 'sitgo' },
-    { id: 'leaderboard' as Page, label: 'Leaderboards', icon: 'chart' },
-    { id: 'shop' as Page, label: 'Shop', icon: 'shop' },
-    { id: 'wallet' as Page, label: 'Wallet', icon: 'wallet' },
-    { id: 'profile' as Page, label: 'Profile', icon: 'user' },
+  const items: { id: Page; label: MessageKey; icon: string }[] = [
+    { id: 'home' as Page, label: 'sideNav.home', icon: 'home' },
+    { id: 'tables' as Page, label: 'sideNav.cashGames', icon: 'tables' },
+    { id: 'tournaments' as Page, label: 'sideNav.tournaments', icon: 'tournaments' },
+    { id: 'events' as Page, label: 'sideNav.sitAndGo', icon: 'sitgo' },
+    { id: 'leaderboard' as Page, label: 'sideNav.leaderboards', icon: 'chart' },
+    { id: 'shop' as Page, label: 'sideNav.shop', icon: 'shop' },
+    { id: 'wallet' as Page, label: 'sideNav.wallet', icon: 'wallet' },
+    { id: 'profile' as Page, label: 'sideNav.profile', icon: 'user' },
   ];
 </script>
 
@@ -56,7 +57,7 @@
       FLOP CLUB
     </p>
     <p class="text-[7px] font-extrabold tracking-[0.4em] text-gold/60 mt-1 uppercase">
-      Play · Compete · Win
+      {$t('brand.tagline')}
     </p>
   </div>
 
@@ -76,7 +77,7 @@
         "
       >
         <Icon name={item.icon} size={18} />
-        <span class="text-[12px] font-bold">{item.label}</span>
+        <span class="text-[12px] font-bold">{$t(item.label)}</span>
         {#if current === item.id}
           <span
             class="ms-auto w-1.5 h-1.5 rounded-full bg-gold"
@@ -97,7 +98,7 @@
       <Avatar {avatarId} size="md" />
       <div class="flex-1 text-start min-w-0">
         <p class="text-tiny font-extrabold text-white truncate">
-          {user?.display_name || 'Player'}
+          {user?.display_name || $t('common.player')}
         </p>
         <p class="text-micro text-gold/70 font-mono">
           ${formatAmount($auth.wallet?.balance_usd || 0)}

@@ -6,7 +6,7 @@
   import { cardTheme, CARD_THEMES } from '../stores/cardTheme';
   import { preferences } from '../lib/preferences';
   import { initMusic } from '../lib/music';
-  import { lang, setLang, LANGUAGES, type Lang } from '../i18n';
+  import { lang, setLang, LANGUAGES, t, type Lang, type MessageKey } from '../i18n';
 
   export let onBack: () => void = () => {};
 
@@ -40,36 +40,48 @@
     initMusic();
   });
 
-  // ── English-only display names for the language list (keeps the picker emoji-free) ──
-  const LANG_LABEL: Record<string, string> = {
-    en: 'English',
-    fa: 'Persian',
-    ar: 'Arabic',
-    tr: 'Turkish',
-    ru: 'Russian',
-    zh: 'Chinese',
-  };
-
   // ── Summary tiles ──
   const AUDIO_KEYS = ['sound', 'music'] as const;
   const GRAPHICS_LEVELS = ['ultra', 'high', 'medium', 'performance'] as const;
+  const GRAPHICS_KEYS: Record<(typeof GRAPHICS_LEVELS)[number], MessageKey> = {
+    ultra: 'settings.graphicsUltra',
+    high: 'settings.graphicsHigh',
+    medium: 'settings.graphicsMedium',
+    performance: 'settings.graphicsPerformance',
+  };
 
   $: activeLang = LANGUAGES.find((l) => l.code === $lang) ?? LANGUAGES[0];
-  $: langLabel = LANG_LABEL[activeLang.code] ?? activeLang.label;
-  $: activeTheme = CARD_THEMES.find((t) => t.id === $cardTheme) ?? CARD_THEMES[0];
+  $: activeTheme = CARD_THEMES.find((theme) => theme.id === $cardTheme) ?? CARD_THEMES[0];
   $: audioOn = AUDIO_KEYS.filter((k) => prefs[k]).length;
-  $: graphicsLabel = prefs.graphics.charAt(0).toUpperCase() + prefs.graphics.slice(1);
   $: summary = [
-    { key: 'lang', icon: 'chat', color: '#22d3ee', label: 'Language', value: langLabel },
-    { key: 'theme', icon: 'gem', color: '#3b82f6', label: 'Card Theme', value: activeTheme.name },
+    {
+      key: 'lang',
+      icon: 'chat',
+      color: '#22d3ee',
+      label: 'settings.language' as MessageKey,
+      value: activeLang.nativeLabel,
+    },
+    {
+      key: 'theme',
+      icon: 'gem',
+      color: '#3b82f6',
+      label: 'settings.cardTheme' as MessageKey,
+      value: activeTheme.name,
+    },
     {
       key: 'audio',
       icon: 'bell',
       color: '#f4c95d',
-      label: 'Audio',
-      value: `${audioOn}/${AUDIO_KEYS.length} on`,
+      label: 'settings.audio' as MessageKey,
+      value: $t('settings.audioOn', { on: audioOn, total: AUDIO_KEYS.length }),
     },
-    { key: 'graphics', icon: 'zap', color: '#10b981', label: 'Graphics', value: graphicsLabel },
+    {
+      key: 'graphics',
+      icon: 'zap',
+      color: '#10b981',
+      label: 'settings.graphics' as MessageKey,
+      value: $t(GRAPHICS_KEYS[prefs.graphics]),
+    },
   ];
 </script>
 
@@ -80,7 +92,7 @@
   <div class="flex items-center gap-3 mt-3 mb-4">
     <button
       on:click={onBack}
-      aria-label="Back"
+      aria-label={$t('common.back')}
       class="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 active:scale-95 transition"
       style="
         background: linear-gradient(180deg, rgba(30,58,138,0.4), rgba(15,31,58,0.7));
@@ -88,7 +100,7 @@
         box-shadow: 0 4px 12px rgba(0,0,0,0.4);
       "
     >
-      <Icon name="arrow-left" size={18} color="#ffffff" />
+      <Icon name="arrow-left" size={18} color="#ffffff" mirror={true} />
     </button>
 
     <div
@@ -113,9 +125,9 @@
           filter: drop-shadow(0 2px 8px rgba(244,201,93,0.4));
         "
       >
-        Settings
+        {$t('settings.title')}
       </h1>
-      <p class="text-mini text-white/45 mt-1.5 font-bold">Tune your table, audio and preferences</p>
+      <p class="text-mini text-white/45 mt-1.5 font-bold">{$t('settings.subtitle')}</p>
     </div>
   </div>
 
@@ -143,7 +155,7 @@
             class="text-micro font-extrabold uppercase tracking-wider truncate"
             style="color: {s.color};"
           >
-            {s.label}
+            {$t(s.label)}
           </span>
         </div>
         <p class="text-[13px] font-extrabold text-white truncate leading-tight">{s.value}</p>
@@ -152,7 +164,7 @@
   </div>
 
   <!-- ============ LANGUAGE ============ -->
-  <h2 class="t-label text-white/40 mb-2 px-1">Language</h2>
+  <h2 class="t-label text-white/40 mb-2 px-1">{$t('settings.language')}</h2>
   <div
     class="rounded-2xl p-1.5 mb-4"
     style="background: linear-gradient(180deg, rgba(15,31,58,0.7), rgba(11,19,36,0.9)); border: 1px solid rgba(212,175,55,0.15); box-shadow: var(--shadow-card), inset 0 1px 0 rgba(255,255,255,0.04);"
@@ -181,24 +193,24 @@
           {/if}
         </div>
 
-        <!-- Language code tile -->
-        <span
-          class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-mini font-extrabold uppercase tracking-wider"
-          style="
-            background: {$lang === L.code ? 'rgba(212,175,55,0.2)' : 'rgba(255,255,255,0.06)'};
-            border: 1px solid {$lang === L.code ? 'rgba(212,175,55,0.5)' : 'rgba(255,255,255,0.1)'};
-            color: {$lang === L.code ? '#f4e5a8' : 'rgba(255,255,255,0.6)'};
-          "
-        >
-          {L.code}
-        </span>
-
-        <!-- Label -->
-        <span
-          class="flex-1 text-[13px] font-extrabold truncate"
-          style="color: {$lang === L.code ? '#f4e5a8' : 'rgba(255,255,255,0.9)'};"
-        >
-          {LANG_LABEL[L.code] ?? L.label}
+        <!-- Native name over the English name -->
+        <span class="flex-1 min-w-0 flex flex-col text-start leading-tight">
+          <span
+            class="text-[13px] font-extrabold truncate"
+            style="color: {$lang === L.code ? '#f4e5a8' : 'rgba(255,255,255,0.9)'};"
+          >
+            {L.nativeLabel}
+          </span>
+          {#if L.label !== L.nativeLabel}
+            <span
+              class="text-micro font-bold truncate"
+              style="color: {$lang === L.code
+                ? 'rgba(244,229,168,0.6)'
+                : 'rgba(255,255,255,0.45)'};"
+            >
+              {L.label}
+            </span>
+          {/if}
         </span>
 
         <!-- RTL badge -->
@@ -215,44 +227,44 @@
   </div>
 
   <!-- ============ CARD THEME ============ -->
-  <h2 class="t-label text-gold/60 mb-2 px-1">Card Theme</h2>
+  <h2 class="t-label text-gold/60 mb-2 px-1">{$t('settings.cardTheme')}</h2>
   <div
     class="rounded-2xl p-1.5 mb-4"
     style="background: linear-gradient(180deg, rgba(15,31,58,0.7), rgba(11,19,36,0.9)); border: 1px solid rgba(212,175,55,0.15); box-shadow: var(--shadow-card), inset 0 1px 0 rgba(255,255,255,0.04);"
   >
-    {#each CARD_THEMES as t}
+    {#each CARD_THEMES as theme}
       <button
-        on:click={() => cardTheme.set(t.id)}
+        on:click={() => cardTheme.set(theme.id)}
         class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl active:scale-[0.98] transition-all text-start"
-        style="background: {$cardTheme === t.id
+        style="background: {$cardTheme === theme.id
           ? 'linear-gradient(180deg, rgba(212,175,55,0.2), rgba(168,122,21,0.08))'
-          : 'transparent'}; border: 1.5px solid {$cardTheme === t.id
+          : 'transparent'}; border: 1.5px solid {$cardTheme === theme.id
           ? 'rgba(212,175,55,0.5)'
           : 'transparent'};"
       >
         <div
           class="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0"
-          style="border-color: {$cardTheme === t.id
+          style="border-color: {$cardTheme === theme.id
             ? '#d4af37'
-            : 'rgba(255,255,255,0.25)'}; background: {$cardTheme === t.id
+            : 'rgba(255,255,255,0.25)'}; background: {$cardTheme === theme.id
             ? 'rgba(212,175,55,0.15)'
             : 'transparent'};"
         >
-          {#if $cardTheme === t.id}
+          {#if $cardTheme === theme.id}
             <div class="w-2.5 h-2.5 rounded-full" style="background: #d4af37;"></div>
           {/if}
         </div>
         <div class="flex-1 min-w-0">
           <p
             class="text-[13px] font-extrabold leading-tight"
-            style="color: {$cardTheme === t.id ? '#f4e5a8' : 'rgba(255,255,255,0.9)'};"
+            style="color: {$cardTheme === theme.id ? '#f4e5a8' : 'rgba(255,255,255,0.9)'};"
           >
-            {t.name}
+            {theme.name}
           </p>
-          <p class="text-mini text-white/40 leading-tight mt-0.5 truncate">{t.desc}</p>
+          <p class="text-mini text-white/40 leading-tight mt-0.5 truncate">{theme.desc}</p>
         </div>
         <div class="flex gap-1 shrink-0">
-          {#each t.previewColors as c}
+          {#each theme.previewColors as c}
             <div
               class="w-3 h-3 rounded-full"
               style="background: {c}; box-shadow: inset 0 0 0 0.5px rgba(255,255,255,0.3);"
@@ -264,7 +276,7 @@
   </div>
 
   <!-- ============ AUDIO ============ -->
-  <h2 class="t-label text-white/40 mb-2 px-1">Audio</h2>
+  <h2 class="t-label text-white/40 mb-2 px-1">{$t('settings.audio')}</h2>
   <div
     class="rounded-2xl overflow-hidden mb-4"
     style="
@@ -285,8 +297,8 @@
           <Icon name="bell" size={16} color="#f4c95d" />
         </div>
         <div>
-          <p class="text-sm font-bold text-white">Sound Effects</p>
-          <p class="text-mini text-white/50">Card & chip sounds</p>
+          <p class="text-sm font-bold text-white">{$t('settings.sound')}</p>
+          <p class="text-mini text-white/50">{$t('settings.soundSub')}</p>
         </div>
       </div>
       <input
@@ -305,8 +317,8 @@
           <Icon name="play" size={16} color="#22d3ee" />
         </div>
         <div>
-          <p class="text-sm font-bold text-white">Background Music</p>
-          <p class="text-mini text-white/50">Ambient pad</p>
+          <p class="text-sm font-bold text-white">{$t('settings.music')}</p>
+          <p class="text-mini text-white/50">{$t('settings.musicSub')}</p>
         </div>
       </div>
       <input
@@ -319,7 +331,7 @@
   </div>
 
   <!-- ============ EXPERIENCE ============ -->
-  <h2 class="t-label text-white/40 mb-2 px-1">Experience</h2>
+  <h2 class="t-label text-white/40 mb-2 px-1">{$t('settings.experience')}</h2>
   <div
     class="rounded-2xl overflow-hidden mb-4"
     style="
@@ -340,8 +352,8 @@
           <Icon name="zap" size={16} color="#93c5fd" />
         </div>
         <div>
-          <p class="text-sm font-bold text-white">Haptics</p>
-          <p class="text-mini text-white/50">Vibration feedback</p>
+          <p class="text-sm font-bold text-white">{$t('settings.haptics')}</p>
+          <p class="text-mini text-white/50">{$t('settings.hapticsSub')}</p>
         </div>
       </div>
       <input
@@ -363,8 +375,8 @@
           <Icon name="sparkles" size={16} color="#6ee7b7" />
         </div>
         <div>
-          <p class="text-sm font-bold text-white">Animations</p>
-          <p class="text-mini text-white/50">Card & chip animations</p>
+          <p class="text-sm font-bold text-white">{$t('settings.animations')}</p>
+          <p class="text-mini text-white/50">{$t('settings.animationsSub')}</p>
         </div>
       </div>
       <input
@@ -383,8 +395,8 @@
           <Icon name="chart" size={16} color="#60a5fa" />
         </div>
         <div>
-          <p class="text-sm font-bold text-white">Graphics Quality</p>
-          <p class="text-mini text-white/50">Visual fidelity & performance</p>
+          <p class="text-sm font-bold text-white">{$t('settings.graphicsQuality')}</p>
+          <p class="text-mini text-white/50">{$t('settings.graphicsQualitySub')}</p>
         </div>
       </div>
       <div class="grid grid-cols-4 gap-1.5">
@@ -402,7 +414,7 @@
               ? 'box-shadow: 0 2px 0 #7a560a, 0 4px 12px rgba(212,175,55,0.35);'
               : ''}"
           >
-            {g}
+            {$t(GRAPHICS_KEYS[g])}
           </button>
         {/each}
       </div>
@@ -410,7 +422,7 @@
   </div>
 
   <!-- ============ TABLE PREFERENCES ============ -->
-  <h2 class="t-label text-white/40 mb-2 px-1">Table Preferences</h2>
+  <h2 class="t-label text-white/40 mb-2 px-1">{$t('settings.tablePreferences')}</h2>
   <div
     class="rounded-2xl overflow-hidden mb-4"
     style="
@@ -431,8 +443,8 @@
           <Icon name="chart" size={16} color="#f4c95d" />
         </div>
         <div>
-          <p class="text-sm font-bold text-white">Bet Slider</p>
-          <p class="text-mini text-white/50">Show slider on raise</p>
+          <p class="text-sm font-bold text-white">{$t('settings.betSlider')}</p>
+          <p class="text-mini text-white/50">{$t('settings.betSliderSub')}</p>
         </div>
       </div>
       <input
@@ -454,8 +466,8 @@
           <Icon name="unlock" size={16} color="#cbd5e1" />
         </div>
         <div>
-          <p class="text-sm font-bold text-white">Auto-Muck</p>
-          <p class="text-mini text-white/50">Auto-fold losing hands at showdown</p>
+          <p class="text-sm font-bold text-white">{$t('settings.autoMuck')}</p>
+          <p class="text-mini text-white/50">{$t('settings.autoMuckSub')}</p>
         </div>
       </div>
       <input
@@ -474,8 +486,8 @@
           <Icon name="gem" size={16} color="#60a5fa" />
         </div>
         <div>
-          <p class="text-sm font-bold text-white">Four-Color Cards</p>
-          <p class="text-mini text-white/50">Clubs green, diamonds blue</p>
+          <p class="text-sm font-bold text-white">{$t('settings.fourColor')}</p>
+          <p class="text-mini text-white/50">{$t('settings.fourColorSub')}</p>
         </div>
       </div>
       <input
@@ -488,7 +500,7 @@
   </div>
 
   <!-- ============ ACCOUNT ============ -->
-  <h2 class="t-label text-white/40 mb-2 px-1">Account</h2>
+  <h2 class="t-label text-white/40 mb-2 px-1">{$t('settings.account')}</h2>
   <div
     class="rounded-2xl overflow-hidden"
     style="
@@ -509,10 +521,10 @@
         <Icon name="lock" size={16} color="#60a5fa" />
       </div>
       <div class="flex-1 min-w-0">
-        <p class="text-sm font-bold text-white">Security</p>
-        <p class="text-mini text-white/50">Telegram account settings</p>
+        <p class="text-sm font-bold text-white">{$t('settings.security')}</p>
+        <p class="text-mini text-white/50">{$t('settings.securitySub')}</p>
       </div>
-      <Icon name="arrow-right" size={14} color="rgba(212,175,55,0.6)" />
+      <Icon name="arrow-right" size={14} color="rgba(212,175,55,0.6)" mirror={true} />
     </button>
     <button
       on:click={openWallet}
@@ -526,10 +538,10 @@
         <Icon name="wallet" size={16} color="#22d3ee" />
       </div>
       <div class="flex-1 min-w-0">
-        <p class="text-sm font-bold text-white">Connected Wallets</p>
-        <p class="text-mini text-white/50">Manage TON wallet</p>
+        <p class="text-sm font-bold text-white">{$t('settings.wallets')}</p>
+        <p class="text-mini text-white/50">{$t('settings.walletsSub')}</p>
       </div>
-      <Icon name="arrow-right" size={14} color="rgba(212,175,55,0.6)" />
+      <Icon name="arrow-right" size={14} color="rgba(212,175,55,0.6)" mirror={true} />
     </button>
     <button
       on:click={() => auth.logout()}
@@ -542,8 +554,8 @@
         <Icon name="logout" size={16} color="#fca5a5" />
       </div>
       <div class="flex-1 min-w-0">
-        <p class="text-sm font-bold text-red-400">Log Out</p>
-        <p class="text-mini text-white/50">Sign out of account</p>
+        <p class="text-sm font-bold text-red-400">{$t('settings.logout')}</p>
+        <p class="text-mini text-white/50">{$t('settings.logoutSub')}</p>
       </div>
     </button>
   </div>
@@ -569,7 +581,7 @@
     content: '';
     position: absolute;
     top: 2px;
-    left: 2px;
+    inset-inline-start: 2px;
     width: 18px;
     height: 18px;
     border-radius: 50%;
@@ -579,5 +591,8 @@
   }
   .toggle:checked::after {
     transform: translateX(18px);
+  }
+  :global(html[dir='rtl']) .toggle:checked::after {
+    transform: translateX(-18px);
   }
 </style>

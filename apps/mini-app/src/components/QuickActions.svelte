@@ -1,31 +1,39 @@
 <script lang="ts">
+  import { t, type MessageKey } from '../i18n';
   import Icon from './Icon.svelte';
 
   export let onDeposit: () => void = () => {};
   export let onShop: () => void = () => {};
   export let onLeaderboard: () => void = () => {};
 
-  const actions = [
+  const actions: {
+    id: string;
+    label: MessageKey;
+    sub: MessageKey;
+    icon: string;
+    color: string;
+    handler: () => void;
+  }[] = [
     {
       id: 'deposit',
-      label: 'Deposit',
-      sub: 'Add funds',
+      label: 'quickActions.deposit',
+      sub: 'quickActions.depositSub',
       icon: 'dollar',
       color: '#f4c95d',
       handler: () => onDeposit(),
     },
     {
       id: 'shop',
-      label: 'Shop',
-      sub: 'Chips & packs',
+      label: 'quickActions.shop',
+      sub: 'quickActions.shopSub',
       icon: 'cart',
       color: '#22d3ee',
       handler: () => onShop(),
     },
     {
       id: 'leaderboard',
-      label: 'Ranks',
-      sub: 'Top players',
+      label: 'quickActions.ranks',
+      sub: 'quickActions.ranksSub',
       icon: 'trophy',
       color: '#60a5fa',
       handler: () => onLeaderboard(),
@@ -57,8 +65,8 @@
         <Icon name={a.icon} size={18} color={a.color} />
       </div>
       <div class="text-center leading-tight">
-        <p class="text-mini font-extrabold text-white">{a.label}</p>
-        <p class="text-[8px] text-white/45 mt-0.5">{a.sub}</p>
+        <p class="text-mini font-extrabold text-white">{$t(a.label)}</p>
+        <p class="text-[8px] text-white/45 mt-0.5">{$t(a.sub)}</p>
       </div>
     </button>
   {/each}

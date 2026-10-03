@@ -1,15 +1,16 @@
 <script lang="ts">
+  import { t } from '../i18n';
   import Icon from './Icon.svelte';
 
   export let open: boolean = false;
   export let title: string = '';
-  export let icon: string = 'ℹ️';
+  export let icon: string = '';
   export let onClose: () => void = () => {};
 </script>
 
 {#if open}
   <button
-    aria-label="Close"
+    aria-label={$t('common.close')}
     class="fixed inset-0 z-[95] cursor-default"
     style="background: rgba(5,8,15,0.85); backdrop-filter: blur(8px);"
     on:click={onClose}
@@ -46,7 +47,7 @@
       <h2 class="text-base font-extrabold text-white flex-1 leading-tight">{title}</h2>
       <button
         on:click={onClose}
-        aria-label="Close"
+        aria-label={$t('common.close')}
         class="w-8 h-8 rounded-full flex items-center justify-center text-white/60 active:scale-95"
         style="background: rgba(255,255,255,0.06);"
       >
@@ -68,7 +69,7 @@
         class="w-full rounded-2xl py-3 text-[12px] font-extrabold tracking-wider active:scale-[0.98] transition"
         style="background: linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15); color: #0a0800; box-shadow: 0 3px 0 #7a560a, inset 0 1px 0 rgba(255,235,170,0.5);"
       >
-        فهمیدم
+        {$t('common.gotIt')}
       </button>
     </div>
   </div>

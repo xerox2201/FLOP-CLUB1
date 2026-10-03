@@ -1,13 +1,14 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { t } from '../i18n';
 
   let visible = true;
   onMount(() => {
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       visible = false;
       window.dispatchEvent(new CustomEvent('splash-done'));
     }, 3200);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   });
 </script>
 
@@ -60,7 +61,7 @@
         style="background: linear-gradient(to right, transparent, #d4af37);"
       ></div>
       <p class="text-micro font-extrabold tracking-[0.45em] text-gold/80 uppercase">
-        Play · Compete · Win
+        {$t('brand.tagline')}
       </p>
       <div
         class="h-px w-10"
@@ -82,7 +83,7 @@
       ></div>
     </div>
     <p class="mt-3 text-center text-micro font-extrabold uppercase tracking-[0.4em] text-gold/60">
-      Loading
+      {$t('common.loading')}
     </p>
   </div>
 </div>

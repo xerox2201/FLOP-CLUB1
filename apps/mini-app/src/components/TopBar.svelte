@@ -1,6 +1,7 @@
 <script lang="ts">
   import { formatAmount } from '../lib/format';
   import { auth } from '../stores/auth';
+  import { t } from '../i18n';
   import Avatar from './Avatar.svelte';
   import Icon from './Icon.svelte';
 
@@ -15,7 +16,7 @@
 <div class="flex items-center justify-between gap-3 px-1 pt-3 pb-1">
   <button
     on:click={onOpenWallet}
-    aria-label="Open Wallet"
+    aria-label={$t('topBar.openWallet')}
     class="rounded-full ps-1.5 pe-3 py-1 flex items-center gap-2 active:scale-95 transition"
     style="background: linear-gradient(180deg, rgba(37,99,235,0.2), rgba(109,40,217,0.1)); border: 1px solid rgba(37,99,235,0.35);"
   >
@@ -43,14 +44,14 @@
 
   <div class="flex items-center gap-2">
     <span class="font-bold text-sm max-w-[80px] truncate text-white/90">
-      {user?.display_name || 'Player'}
+      {user?.display_name || $t('common.player')}
     </span>
     <Avatar {avatarId} size="md" showOnline={true} />
   </div>
 
   <button
     on:click={onOpenSettings}
-    aria-label="Open Settings"
+    aria-label={$t('topBar.openSettings')}
     class="w-10 h-10 rounded-full flex items-center justify-center text-white/80 active:scale-95 transition"
     style="background: rgba(37,99,235,0.15); border: 1px solid rgba(37,99,235,0.25);"
   >

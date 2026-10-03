@@ -29,7 +29,8 @@
         localStorage.setItem('admin_secret', secret);
         confirmAdmin();
       } else {
-        error = 'رمز اشتباه است';
+        // Admin surfaces stay English-only (P2_I18N_DESIGN.md, decisions #4).
+        error = 'Wrong secret';
         shake = true;
         setTimeout(() => (shake = false), 500);
         secret = '';

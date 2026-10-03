@@ -1,5 +1,6 @@
 <script lang="ts">
   import { auth } from '../stores/auth';
+  import { t } from '../i18n';
 
   let busy = false;
 
@@ -71,7 +72,7 @@
           style="background: linear-gradient(to right, transparent, #d4af37);"
         ></div>
         <p class="text-mini font-extrabold tracking-[0.4em] text-gold/90 uppercase">
-          Play · Compete · Win
+          {$t('brand.tagline')}
         </p>
         <div
           class="h-px w-12"
@@ -98,7 +99,7 @@
               0 2px 6px rgba(0,0,0,1);
           "
         >
-          Make Or Break
+          {$t('login.eyebrow')}
         </p>
         <div
           class="h-px w-8"
@@ -119,7 +120,7 @@
           filter: drop-shadow(0 4px 20px rgba(0,0,0,1)) drop-shadow(0 2px 4px rgba(0,0,0,1));
         "
       >
-        One Table.<br />One Decision.
+        {$t('login.heroLine1')}<br />{$t('login.heroLine2')}
       </h2>
 
       <!-- SUB — tagline -->
@@ -135,7 +136,7 @@
             0 0 32px rgba(0,0,0,0.9);
         "
       >
-        Real players. Real action.<br />The ultimate poker experience.
+        {$t('login.tagline1')}<br />{$t('login.tagline2')}
       </p>
     </div>
 
@@ -151,14 +152,14 @@
           <div
             class="w-5 h-5 border-2 border-black/40 border-t-black rounded-full animate-spin"
           ></div>
-          <span>Signing in…</span>
+          <span>{$t('login.signingIn')}</span>
         {:else}
           <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
             <path
               d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"
             />
           </svg>
-          <span>Enter with Telegram</span>
+          <span>{$t('login.enterBtn')}</span>
         {/if}
       </button>
 
@@ -166,9 +167,9 @@
         class="text-mini text-white/60 mt-4 text-center leading-relaxed max-w-xs"
         style="text-shadow: 0 1px 6px rgba(0,0,0,1);"
       >
-        By entering, you agree to our<br />
-        <span class="text-gold/90 font-bold">Terms of Service</span> &amp;
-        <span class="text-gold/90 font-bold">Fair Play Policy</span>
+        {$t('login.termsLead')}<br />
+        <span class="text-gold/90 font-bold">{$t('login.termsTos')}</span> &amp;
+        <span class="text-gold/90 font-bold">{$t('login.termsFair')}</span>
       </p>
     </div>
   </div>
