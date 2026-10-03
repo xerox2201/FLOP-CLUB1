@@ -1,5 +1,12 @@
 export default {
-  nav: { home: 'خانه', tables: 'میزها', wallet: 'کیف', profile: 'من', leaderboard: 'رتبه‌ها' },
+  nav: {
+    home: 'خانه',
+    tables: 'میزها',
+    wallet: 'کیف',
+    profile: 'من',
+    leaderboard: 'رتبه‌ها',
+    tournaments: 'تورنمنت‌ها',
+  },
   common: {
     loading: 'در حال بارگذاری…',
     save: 'ذخیره',
@@ -98,6 +105,10 @@ export default {
     close: 'بستن',
     register: 'ثبت‌نام',
     viewResult: 'مشاهده نتایج',
+  },
+  tournaments: {
+    title: 'تورنمنت‌ها',
+    noTournaments: 'تورنمنتی نیست',
   },
   table: {
     fold: 'فولد',

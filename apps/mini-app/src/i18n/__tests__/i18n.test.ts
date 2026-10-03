@@ -146,8 +146,8 @@ describe('translation', () => {
   it('returns English and falls back to it for a catalog gap', () => {
     const dict = get(t);
     expect(dict('nav.home')).toBe('Home');
-    // tournaments.title is missing from the fa baseline gap set
-    expect(dict('tournaments.title')).toBe('Tournaments');
+    // tournaments.players is still part of the fa baseline gap set
+    expect(dict('tournaments.players')).toBe('Players');
   });
 
   it('interpolates params', () => {
@@ -222,8 +222,12 @@ describe('direction', () => {
   it('switches the catalog with the language', async () => {
     await loadLanguage('fa');
     expect(get(t)('nav.home')).toBe('خانه');
+    expect(get(t)('nav.tournaments')).toBe('تورنمنت‌ها');
+    expect(get(t)('tournaments.title')).toBe('تورنمنت‌ها');
+    expect(get(t)('tournaments.noTournaments')).toBe('تورنمنتی نیست');
     await loadLanguage('en');
     expect(get(t)('nav.home')).toBe('Home');
+    expect(get(t)('nav.tournaments')).toBe('Tourneys');
   });
 });
 

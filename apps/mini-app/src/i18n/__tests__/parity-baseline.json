@@ -1,6 +1,5 @@
 {
   "fa": [
-    "nav.tournaments",
     "tournament.confirmStart",
     "tournament.currentLevel",
     "tournament.fee",
@@ -37,14 +36,12 @@
     "tournaments.inHours",
     "tournaments.inMinutes",
     "tournaments.level",
-    "tournaments.noTournaments",
     "tournaments.open",
     "tournaments.players",
     "tournaments.prize",
     "tournaments.running",
     "tournaments.starting",
     "tournaments.starts",
-    "tournaments.title",
     "tournaments.upcoming",
     "tournaments.whenFull"
   ],
