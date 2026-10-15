@@ -1,6 +1,8 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
   import { api } from '../lib/api';
+  import { t, tError, type MessageKey } from '../i18n';
+  import { get } from 'svelte/store';
   import {
     verifyHand,
     type FairProof,
@@ -19,7 +21,15 @@
   $: tableId = Number(gameState?.tableId ?? 0);
   $: shortHash = hash ? `${hash.slice(0, 8)}…` : '';
 
-  type Verdict = { state: 'ok' | 'pending' | 'not_found' | 'failed' | 'error'; detail: string };
+  type Verdict = {
+    state: 'ok' | 'pending' | 'not_found' | 'failed' | 'error';
+    detail: string;
+  };
+
+  /** Translates at call time; the store value is already reactive at render time. */
+  function tr(key: MessageKey, params?: Record<string, string | number>): string {
+    return get(t)(key, params);
+  }
 
   let verifying = false;
   let verdict: Verdict | null = null;
@@ -31,18 +41,10 @@
   let mySeedInput = '';
   let mySeed = '';
   let seedStatus = '';
+  let seedStatusKey: MessageKey | null = null;
+  let seedStatusParams: Record<string, string | number> | undefined;
   let seedBusy = false;
   let seedLoadedFor = '';
-
-  const SEED_ERRORS: Record<string, string> = {
-    seed_too_short: 'Too short (min 8 characters).',
-    seed_too_long: 'Too long (max 64 characters).',
-    seed_bad_charset: 'Only letters, digits, "-" and "_" are allowed.',
-    seed_change_cooldown: 'You can change the seed once every 5 minutes.',
-    hand_in_progress: 'A hand is being played. Try again between hands.',
-    invalid_table_id: 'Unknown table.',
-    notoken: 'Session expired, reopen the app.',
-  };
 
   // A new hand means a new commitment: drop the previous verdict.
   $: if (hash !== verdictCommitment) {

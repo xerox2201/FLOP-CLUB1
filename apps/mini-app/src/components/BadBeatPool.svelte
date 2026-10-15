@@ -2,6 +2,7 @@
   import { fmtAmount } from '../lib/table-geometry';
   import { onMount } from 'svelte';
   import { api } from '../lib/api';
+  import { t } from '../i18n';
   import Icon from './Icon.svelte';
 
   let pool = 0;
@@ -71,10 +72,10 @@
         </div>
         <div class="flex-1 min-w-0">
           <p class="text-micro uppercase tracking-[0.3em] font-extrabold" style="color: #f4c95d;">
-            BAD BEAT JACKPOT
+            {$t('badBeat.title')}
           </p>
           <p class="text-mini text-white/50 font-bold mt-0.5">
-            Lose with quads or better and get paid
+            {$t('badBeat.subtitle')}
           </p>
         </div>
       </div>
@@ -93,7 +94,7 @@
           {fmt(pool)}
         </span>
         <span class="text-mini uppercase tracking-wider text-white/40 font-bold">
-          in the pool
+          {$t('badBeat.inPool')}
         </span>
       </div>
 
@@ -102,7 +103,9 @@
         style="border-top: 1px solid rgba(244,201,93,0.2);"
       >
         <div class="min-w-0">
-          <p class="text-micro uppercase tracking-wider text-white/40 font-bold">Last payout</p>
+          <p class="text-micro uppercase tracking-wider text-white/40 font-bold">
+            {$t('badBeat.lastPayout')}
+          </p>
           {#if lastPayout}
             <p class="text-tiny font-extrabold text-white truncate">
               {fmt(lastPayout.amountUsd)}
@@ -111,12 +114,14 @@
               </span>
             </p>
           {:else}
-            <p class="text-tiny font-bold text-white/50">No payouts yet</p>
+            <p class="text-tiny font-bold text-white/50">{$t('badBeat.noPayouts')}</p>
           {/if}
         </div>
 
         <div class="text-end shrink-0">
-          <p class="text-micro uppercase tracking-wider text-white/40 font-bold">Paid all time</p>
+          <p class="text-micro uppercase tracking-wider text-white/40 font-bold">
+            {$t('badBeat.paidAllTime')}
+          </p>
           <p class="text-tiny font-extrabold tabular-nums" style="color: #6ee7b7;">
             {fmt(totalPaid)}
           </p>

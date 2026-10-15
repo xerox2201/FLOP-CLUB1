@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { api } from '../lib/api';
+  import { errorKey, t, type MessageKey } from '../i18n';
   import Icon from './Icon.svelte';
 
   export let showTitle = true;
@@ -9,8 +10,9 @@
   let missions: any[] = [];
   let loading = true;
   let claiming: string | null = null;
-  let error = '';
-  let toast = '';
+  let errorCode = '';
+  let toastKey: MessageKey | '' = '';
+  let toastParams: Record<string, string | number> = {};
 
   const METRIC_ICON: Record<string, string> = {
     hands_played: 'play',
@@ -36,10 +38,10 @@
       if (res.ok && res.data) {
         missions = res.data.missions || [];
       } else if (!res.ok && res.status !== 401) {
-        error = res.error || 'load_failed';
+        errorCode = res.error || 'load_failed';
       }
     } catch (e: any) {
-      error = e.message;
+      errorCode = e.message;
     } finally {
       loading = false;
     }
@@ -48,23 +50,27 @@
   async function claim(code: string) {
     if (claiming) return;
     claiming = code;
-    error = '';
-    toast = '';
+    errorCode = '';
+    toastKey = '';
     try {
       const res = await api.request<any>(`/api/missions/${code}/claim`, {
         method: 'POST',
         body: JSON.stringify({}),
       });
       if (res.ok && res.data) {
-        toast = `Claimed ${res.data.rewardChips} chips + ${res.data.rewardXp} XP`;
+        toastKey = 'missions.claimedToast';
+        toastParams = { chips: res.data.rewardChips, xp: res.data.rewardXp };
       } else {
-        error = res.error || 'claim_failed';
+        errorCode = res.error || 'claim_failed';
       }
       await load();
     } finally {
       claiming = null;
     }
   }
+
+  $: errorText = errorCode ? $t(errorKey(errorCode)) : '';
+  $: toast = toastKey ? $t(toastKey, toastParams) : '';
 
   onMount(load);
 </script>
@@ -75,14 +81,14 @@
       <div class="flex items-center gap-2">
         <Icon name="target" size={14} color="#f4c95d" />
         <p class="text-tiny font-extrabold text-white/90 uppercase tracking-widest">
-          Daily Missions
+          {$t('missions.title')}
         </p>
       </div>
       <button
         on:click={onSeeAll}
         class="text-mini font-bold text-gold active:opacity-70 flex items-center gap-1"
       >
-        <span>See All</span>
+        <span>{$t('missions.seeAll')}</span>
         <Icon name="arrow-right" size={10} />
       </button>
     </div>
@@ -97,12 +103,12 @@
     </div>
   {/if}
 
-  {#if error}
+  {#if errorText}
     <div
       class="rounded-xl px-3 py-2 mb-2 text-mini font-bold"
       style="background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.4); color: #fca5a5;"
     >
-      {error}
+      {errorText}
     </div>
   {/if}
 
@@ -120,9 +126,9 @@
       class="rounded-2xl p-5 text-center"
       style="background: linear-gradient(180deg, rgba(15,31,58,0.6), rgba(11,19,36,0.85)); border: 1px dashed rgba(212,175,55,0.3);"
     >
-      <p class="text-[12px] font-extrabold text-white">No missions right now</p>
+      <p class="text-[12px] font-extrabold text-white">{$t('missions.noMissions')}</p>
       <p class="text-mini text-white/50 font-bold mt-1">
-        New missions unlock every day at 00:00 UTC
+        {$t('missions.noMissionsBody')}
       </p>
     </div>
   {:else}
@@ -171,7 +177,7 @@
                     class="text-[8px] font-extrabold px-1.5 py-0.5 rounded-full tracking-wider shrink-0"
                     style="background: linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15); color: #0a0800;"
                   >
-                    READY
+                    {$t('missions.ready')}
                   </span>
                 {/if}
               </div>
@@ -221,7 +227,7 @@
                 class="text-micro font-extrabold px-2 py-1 rounded-lg shrink-0"
                 style="background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.35);"
               >
-                CLAIMED
+                {$t('missions.claimed')}
               </span>
             {:else if ready}
               <button
@@ -230,10 +236,12 @@
                 class="text-micro font-extrabold px-2.5 py-1 rounded-lg shrink-0 active:scale-95 transition disabled:opacity-60"
                 style="background: linear-gradient(180deg, #f4e5a8, #d4af37 45%, #a87a15); color: #0a0800;"
               >
-                {claiming === m.code ? '...' : 'CLAIM'}
+                {claiming === m.code ? '...' : $t('missions.claim')}
               </button>
             {:else}
-              <span class="text-micro font-bold text-white/30 shrink-0">IN PROGRESS</span>
+              <span class="text-micro font-bold text-white/30 shrink-0">
+                {$t('missions.inProgress')}
+              </span>
             {/if}
           </div>
         </div>

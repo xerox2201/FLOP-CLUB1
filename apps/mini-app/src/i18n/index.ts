@@ -110,6 +110,74 @@ export const t = derived(
       translate($messages, $lang, key, params)) as TranslateFn,
 );
 
+/** Server error code -> catalog key. Codes not listed fall back to `errors.unknown`. */
+const ERROR_KEYS: Record<string, MessageKey> = {
+  notoken: 'errors.notoken',
+  forbidden: 'errors.forbidden',
+  not_found: 'errors.not_found',
+  invalid_id: 'errors.invalid_id',
+  no_account: 'errors.no_account',
+  load_failed: 'errors.load_failed',
+  request_failed: 'errors.request_failed',
+  failed: 'errors.failed',
+  claim_failed: 'errors.claim_failed',
+  purchase_failed: 'errors.purchase_failed',
+  withdraw_failed: 'errors.withdraw_failed',
+  insufficient_balance: 'errors.insufficient_balance',
+  invalid_address: 'errors.invalid_address',
+  amount_below_minimum: 'errors.amount_below_minimum',
+  deposits_disabled: 'errors.deposits_disabled',
+  withdrawals_disabled: 'errors.withdrawals_disabled',
+  first_withdrawal_locked: 'errors.first_withdrawal_locked',
+  bonus_conditions_not_met: 'errors.bonus_conditions_not_met',
+  price_unavailable: 'errors.price_unavailable',
+  escrow_not_found: 'errors.escrow_not_found',
+  already_claimed_today: 'errors.already_claimed_today',
+  invalid_pack: 'errors.invalid_pack',
+  missing_pack_id: 'errors.missing_pack_id',
+  invalid_xp: 'errors.invalid_xp',
+  missing_type: 'errors.missing_type',
+  seed_too_short: 'errors.seed_too_short',
+  seed_too_long: 'errors.seed_too_long',
+  seed_bad_charset: 'errors.seed_bad_charset',
+  seed_change_cooldown: 'errors.seed_change_cooldown',
+  hand_in_progress: 'errors.hand_in_progress',
+  invalid_table_id: 'errors.invalid_table_id',
+  invalid_hand_id: 'errors.invalid_hand_id',
+  missing_hand_id_or_commitment: 'errors.missing_hand_id_or_commitment',
+  commitment_not_found: 'errors.commitment_not_found',
+};
+
+/**
+ * Maps a server machine code (`notoken`, `claim_failed`, …) to user-facing text.
+ * Empty codes and unknown codes both resolve to `errors.unknown`.
+ */
+export function errorKey(code: string | null | undefined): MessageKey {
+  return (code && ERROR_KEYS[code]) || 'errors.unknown';
+}
+
+/** Reactive sibling of `errorKey`: `$tError(res.error)`. */
+export const tError = derived(t, ($t) => (code: string | null | undefined) =>
+  $t(errorKey(code)),
+);
+
+/** Tier codes arrive as machine codes; the label is never rendered raw. */
+const TIER_KEYS: Record<string, MessageKey> = {
+  welcome: 'tiers.welcome',
+  bronze: 'tiers.bronze',
+  silver: 'tiers.silver',
+  gold: 'tiers.gold',
+  platinum: 'tiers.platinum',
+  diamond: 'tiers.diamond',
+};
+
+export function tierKey(code: string | null | undefined): MessageKey {
+  return (code && TIER_KEYS[code]) || 'tiers.welcome';
+}
+
+/** Reactive sibling of `tierKey`. */
+export const tTier = derived(t, ($t) => (code: string | null | undefined) => $t(tierKey(code)));
+
 async function applyMessages(l: Lang): Promise<void> {
   const dict = await loadCatalog(l);
   // A slower load must not overwrite a newer choice.

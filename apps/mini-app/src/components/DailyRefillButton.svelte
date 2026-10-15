@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { api } from '../lib/api';
   import { auth } from '../stores/auth';
+  import { t, tTier } from '../i18n';
   import Icon from './Icon.svelte';
 
   let status: any = null;
@@ -28,7 +29,7 @@
         body: '{}',
       });
       if (res.ok && res.data) {
-        toast = `+${(res.data as any).amount.toLocaleString()} chips!`;
+        toast = $t('refill.claimedToast', { amount: Number((res.data as any).amount || 0) });
         await auth.refresh();
         await load();
         setTimeout(() => (toast = ''), 2500);
@@ -120,7 +121,7 @@
           class="text-mini font-extrabold uppercase tracking-widest mb-0.5"
           style="color: {canClaim ? '#f4c95d' : '#60a5fa'};"
         >
-          {canClaim ? 'Daily Bonus Ready' : 'Daily Bonus'}
+          {canClaim ? $t('refill.ready') : $t('refill.title')}
         </p>
         <p
           class="text-xl font-extrabold leading-none tabular-nums"
@@ -130,11 +131,11 @@
         </p>
         <p class="text-micro text-white/45 mt-1 font-bold truncate">
           {#if canClaim}
-            Tap to claim · {status.tierLabel} tier
+            {$t('refill.tapToClaim')} · {$t('refill.tier', { tier: $tTier(status.tier) })}
           {:else if countdown}
-            Next in {countdown} · {status.tierLabel}
+            {$t('refill.nextIn', { time: countdown })} · {$tTier(status.tier)}
           {:else}
-            {status.tierLabel} tier
+            {$t('refill.tier', { tier: $tTier(status.tier) })}
           {/if}
         </p>
       </div>
@@ -152,7 +153,7 @@
       >
         {#if canClaim}
           <span class="text-tiny font-extrabold" style="color: #0a0800;">
-            {busy ? '…' : 'Claim'}
+            {busy ? '…' : $t('refill.claim')}
           </span>
         {:else}
           <svg

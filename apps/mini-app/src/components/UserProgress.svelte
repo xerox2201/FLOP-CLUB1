@@ -2,6 +2,7 @@
   import { formatAmount } from '../lib/format';
   import { onMount } from 'svelte';
   import { api } from '../lib/api';
+  import { formatNumber, t, tTier } from '../i18n';
   import Icon from './Icon.svelte';
 
   export let progress: any = null;
@@ -31,7 +32,7 @@
   $: xpInto = progress?.xpIntoLevel ?? 0;
   $: xpNext = progress?.xpForNextLevel ?? 100;
   $: xpPct = xpNext > 0 ? Math.min(100, (xpInto / xpNext) * 100) : 0;
-  $: tierLabel = progress?.tierLabel ?? 'Welcome';
+  $: tierLabel = $tTier(progress?.tier);
   $: tierIcon = progress?.tierIcon ?? '';
   $: tierColor = progress?.tierColor ?? '#6ee7b7';
   $: rakebackPct = Math.round((progress?.rakebackPct ?? 0) * 100);
@@ -64,17 +65,17 @@
         </div>
         <div class="flex-1 min-w-0">
           <p class="text-mini text-white/45 uppercase tracking-widest font-bold leading-none mb-1">
-            Your Progress
+            {$t('progress.yourProgress')}
           </p>
           <p class="text-[13px] font-extrabold text-white leading-none">
-            Level {level}
+            {$t('progress.level', { level: formatNumber(level) })}
             <span class="text-white/40 font-bold mx-1">·</span>
             <span style="color: {tierColor};">{tierLabel}</span>
           </p>
         </div>
         <div class="text-end shrink-0">
           <p class="text-micro text-white/40 uppercase tracking-wider font-bold leading-none mb-1">
-            Rakeback
+            {$t('progress.rakeback')}
           </p>
           <p
             class="text-[14px] font-extrabold tabular-nums leading-none"
@@ -89,10 +90,10 @@
       <div class="mb-2">
         <div class="flex justify-between items-center mb-1">
           <span class="text-micro text-white/50 font-bold uppercase tracking-wider">
-            XP · Level {level}
+            {$t('progress.xpLevel', { level: formatNumber(level) })}
           </span>
           <span class="text-micro text-white/60 font-bold tabular-nums">
-            {xpInto.toLocaleString()} / {xpNext.toLocaleString()}
+            {formatNumber(xpInto)} / {formatNumber(xpNext)}
           </span>
         </div>
         <div
@@ -114,7 +115,7 @@
       <div>
         <div class="flex justify-between items-center mb-1">
           <span class="text-micro text-white/50 font-bold uppercase tracking-wider">
-            Tier Progress
+            {$t('progress.tierProgress')}
           </span>
           <span class="text-micro font-bold tabular-nums" style="color: {tierColor};">
             {progressToNextTier}%
@@ -137,7 +138,9 @@
 
       <!-- Footer hint -->
       <div class="flex items-center justify-end gap-1 mt-2.5">
-        <span class="text-micro font-extrabold" style="color: {tierColor};"> View details </span>
+        <span class="text-micro font-extrabold" style="color: {tierColor};">
+          {$t('progress.viewDetails')}
+        </span>
         <Icon name="arrow-right" size={10} color={tierColor} />
       </div>
     </button>
@@ -166,11 +169,13 @@
             <p
               class="text-micro uppercase tracking-widest font-extrabold text-emerald-300/80 mb-0.5"
             >
-              Your Money · 30d
+              {$t('progress.yourMoney')} · 30d
             </p>
             <p class="text-tiny font-extrabold text-white/90 tabular-nums leading-tight">
-              Rake ${fmt(money.rakePaid, 2)} →
-              <span class="text-emerald-400">Back ${fmt(money.totalReturned, 2)}</span>
+              {$t('progress.rake', { amount: fmt(money.rakePaid, 2) })} →
+              <span class="text-emerald-400"
+                >{$t('progress.back', { amount: fmt(money.totalReturned, 2) })}</span
+              >
             </p>
           </div>
           <div class="text-end shrink-0">
@@ -178,7 +183,7 @@
               {fmtPct(money.returnPct)}
             </p>
             <p class="text-[8px] text-white/40 font-bold uppercase tracking-wider mt-0.5">
-              returned
+              {$t('progress.returned')}
             </p>
           </div>
         </div>
